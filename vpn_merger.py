@@ -35,7 +35,7 @@ import ssl
 import sys
 import time
 import socket
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union
@@ -139,7 +139,7 @@ CONFIG = Config(
     top_n=0,
     tls_fragment=None,
     include_protocols=None,
-    exclude_protocols=None,
+    exclude_protocols={"OTHER"},
     resume_file=None,
     max_ping_ms=1000,
     log_file=None,
@@ -1615,8 +1615,12 @@ def main():
                         help="Only keep configs containing this TLS fragment")
     parser.add_argument("--include-protocols", type=str, default=None,
                         help="Comma-separated list of protocols to include")
-    parser.add_argument("--exclude-protocols", type=str, default=None,
-                        help="Comma-separated list of protocols to exclude")
+    parser.add_argument(
+        "--exclude-protocols",
+        type=str,
+        default=None,
+        help="Comma-separated list of protocols to exclude (default: OTHER)"
+    )
     parser.add_argument("--resume", type=str, default=None,
                         help="Resume processing from existing raw/base64 file")
     parser.add_argument("--output-dir", type=str, default=CONFIG.output_dir,
@@ -1651,8 +1655,15 @@ def main():
     CONFIG.tls_fragment = args.tls_fragment
     if args.include_protocols:
         CONFIG.include_protocols = {p.strip().upper() for p in args.include_protocols.split(',') if p.strip()}
-    if args.exclude_protocols:
-        CONFIG.exclude_protocols = {p.strip().upper() for p in args.exclude_protocols.split(',') if p.strip()}
+
+    if args.exclude_protocols is None:
+        CONFIG.exclude_protocols = {"OTHER"}
+    elif args.exclude_protocols.strip() == "":
+        CONFIG.exclude_protocols = None
+    else:
+        CONFIG.exclude_protocols = {
+            p.strip().upper() for p in args.exclude_protocols.split(',') if p.strip()
+        }
     CONFIG.resume_file = args.resume
     # Resolve and validate output directory to prevent path traversal
     allowed_base = _get_script_dir()

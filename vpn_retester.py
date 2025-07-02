@@ -101,8 +101,12 @@ def main() -> None:
                         help="Discard configs slower than this ping in ms (0 disables)")
     parser.add_argument("--include-protocols", type=str, default=None,
                         help="Comma-separated protocols to include")
-    parser.add_argument("--exclude-protocols", type=str, default=None,
-                        help="Comma-separated protocols to exclude")
+    parser.add_argument(
+        "--exclude-protocols",
+        type=str,
+        default=None,
+        help="Comma-separated protocols to exclude (default: OTHER)"
+    )
     parser.add_argument("--output-dir", type=str, default=CONFIG.output_dir,
                         help="Directory to save output files")
     parser.add_argument("--no-base64", action="store_true", help="Do not save base64 file")
@@ -114,8 +118,14 @@ def main() -> None:
     CONFIG.max_ping_ms = args.max_ping if args.max_ping > 0 else None
     if args.include_protocols:
         CONFIG.include_protocols = {p.strip().upper() for p in args.include_protocols.split(',') if p.strip()}
-    if args.exclude_protocols:
-        CONFIG.exclude_protocols = {p.strip().upper() for p in args.exclude_protocols.split(',') if p.strip()}
+    if args.exclude_protocols is None:
+        CONFIG.exclude_protocols = {"OTHER"}
+    elif args.exclude_protocols.strip() == "":
+        CONFIG.exclude_protocols = None
+    else:
+        CONFIG.exclude_protocols = {
+            p.strip().upper() for p in args.exclude_protocols.split(',') if p.strip()
+        }
     CONFIG.output_dir = str(Path(args.output_dir).expanduser())
     CONFIG.write_base64 = not args.no_base64
     CONFIG.write_csv = not args.no_csv
