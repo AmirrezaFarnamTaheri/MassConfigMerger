@@ -14,7 +14,6 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 3. Execute `python vpn_merger.py` and wait for the `output` directory.
 4. *(Optional)* pass extra flags like `--max-ping 200`, `--concurrent-limit 10`, or `--proxy socks5://127.0.0.1:9050` to suit your connection.
 5. Import the `output/vpn_subscription_base64.txt` link into your VPN app or load `vpn_singbox.json` in clients like sing-box.
-6. For non-standard protocols like HTTP Injector or ArgoVPN, see [Advanced Methods](advanced_methods/README_advanced.md).
 
 ## ✨ Key Features & Use Cases
 
@@ -99,7 +98,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
       * [macOS & iOS (iPhone/iPad)](#-macos--ios-iphoneipad)
   * [📂 Understanding the Output Files](#-understanding-the-output-files)
   * [⚙️ Advanced Usage & Troubleshooting](#️-advanced-usage--troubleshooting)
-  * [Advanced Methods](advanced_methods/README_advanced.md)
+  * [Advanced Methods](advanced_methods/ADVANCED.md)
 
 ## 🧠 How It Works
 
@@ -292,7 +291,7 @@ During long runs, files prefixed with `cumulative_` mirror the latest results an
 
 ## ⚙️ Advanced Usage & Troubleshooting
 
-Additional optional features are documented in [Advanced Methods](advanced_methods/README_advanced.md).
+Additional optional features are documented in [Advanced Methods](advanced_methods/ADVANCED.md).
 
 #### **Command-Line Arguments**
 
