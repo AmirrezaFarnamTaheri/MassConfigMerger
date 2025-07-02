@@ -40,7 +40,7 @@ from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 import aiohttp
 from aiohttp.resolver import AsyncResolver
@@ -109,6 +109,8 @@ class Config:
     shuffle_sources: bool
     write_base64: bool
     write_csv: bool
+    mux_concurrency: int
+    smux_streams: int
 
 CONFIG = Config(
     headers={
@@ -153,7 +155,9 @@ CONFIG = Config(
     strict_batch=True,
     shuffle_sources=False,
     write_base64=True,
-    write_csv=True
+    write_csv=True,
+    mux_concurrency=8,
+    smux_streams=4
 )
 
 # ============================================================================
@@ -939,8 +943,26 @@ class EnhancedConfigProcessor:
         for prefix, protocol in protocol_map.items():
             if config.startswith(prefix):
                 return protocol
-        
+
         return "Other"
+
+    def apply_tuning(self, config: str) -> str:
+        """Apply mux and smux parameters to URI-style configs."""
+        try:
+            if "//" not in config or config.startswith("vmess://"):
+                return config
+            parsed = urlparse(config)
+            if not parsed.scheme:
+                return config
+            params = parse_qs(parsed.query)
+            if CONFIG.mux_concurrency > 0:
+                params["mux"] = [str(CONFIG.mux_concurrency)]
+            if CONFIG.smux_streams > 0:
+                params["smux"] = [str(CONFIG.smux_streams)]
+            new_query = urlencode(params, doseq=True)
+            return urlunparse(parsed._replace(query=new_query))
+        except Exception:
+            return config
 
 # ============================================================================
 # ASYNC SOURCE FETCHER WITH COMPREHENSIVE TESTING
@@ -1001,10 +1023,11 @@ class AsyncSourceFetcher:
                     config_results = []
                     
                     for line in lines:
-                        if (line.startswith(CONFIG.valid_prefixes) and 
+                        if (line.startswith(CONFIG.valid_prefixes) and
                             len(line) > 20 and len(line) < 2000 and
                             len(config_results) < CONFIG.max_configs_per_source):
-                            
+                            line = self.processor.apply_tuning(line)
+
                             # Create config result
                             host, port = self.processor.extract_host_port(line)
                             protocol = self.processor.categorize_protocol(line)
@@ -1109,6 +1132,7 @@ class UltimateVPNMerger:
             print(f"🔄 Loading existing configs from {CONFIG.resume_file} ...")
             self.all_results.extend(self._load_existing_results(CONFIG.resume_file))
             print(f"   ✔ Loaded {len(self.all_results)} configs from resume file")
+            await self._maybe_save_batch()
 
         # Step 1: Test source availability and remove dead links
         print("🔄 [1/6] Testing source availability and removing dead links...")
@@ -1506,9 +1530,10 @@ class UltimateVPNMerger:
         # Simple outbounds JSON
         outbounds = []
         for idx, r in enumerate(results):
+            tag = re.sub(r"[^A-Za-z0-9_-]+", "-", f"{r.protocol}-{idx}")
             ob = {
                 "type": r.protocol.lower(),
-                "tag": f"{r.protocol} {idx}",
+                "tag": tag,
                 "server": r.host or "",
                 "server_port": r.port,
                 "raw": r.config
@@ -1651,6 +1676,10 @@ def main():
                         help="Use batch size only as update threshold")
     parser.add_argument("--shuffle-sources", action="store_true",
                         help="Process sources in random order")
+    parser.add_argument("--mux", type=int, default=CONFIG.mux_concurrency,
+                        help="Set mux concurrency for URI configs (0=disable)")
+    parser.add_argument("--smux", type=int, default=CONFIG.smux_streams,
+                        help="Set smux streams for URI configs (0=disable)")
     args, unknown = parser.parse_known_args()
     if unknown:
         logging.warning("Ignoring unknown arguments: %s", unknown)
@@ -1687,6 +1716,8 @@ def main():
     CONFIG.cumulative_batches = args.cumulative_batches
     CONFIG.strict_batch = not args.no_strict_batch
     CONFIG.shuffle_sources = args.shuffle_sources
+    CONFIG.mux_concurrency = max(0, args.mux)
+    CONFIG.smux_streams = max(0, args.smux)
     if args.no_url_test:
         CONFIG.enable_url_testing = False
     if args.no_sort:
