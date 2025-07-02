@@ -7,6 +7,8 @@ Welcome to the VPN Subscription Merger! This project provides a powerful Python 
 
 This guide is designed for **everyone**, from absolute beginners with no coding experience to advanced users who want full automation.
 
+> **Note**: The default protocol list is optimised for the Hiddify client. Other VPN apps may require adjusting `--include-protocols`.
+
 ### ⚡ Quick Start
 
 1. Install **Python 3.8+** and clone this repository.
@@ -24,7 +26,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 | **Connectivity Testing** | Optional TCP checks measure real latency. | Prioritize servers that actually respond. |
 | **Smart Sorting** | Orders the final list by reachability and speed. | Quickly pick the best server in your VPN client. |
 | **Batch Saving** | Periodically saves intermediate results with `--batch-size` (default `100`). | Useful on unreliable connections. |
-| **Protocol Filtering** | Use `--include-protocols` or `--exclude-protocols` to filter by protocol (defaults to dropping `OTHER`). | Keep only VLESS servers or drop Shadowsocks, etc. |
+| **Protocol Filtering** | Use `--include-protocols` or `--exclude-protocols` to filter by protocol (defaults to the Hiddify list). | Keep only the protocols your client supports. |
 | **TLS Fragment / Top N** | Use `--tls-fragment` or `--top-n` to trim the output. | Obscure SNI or keep only the fastest N entries. |
 | **Resume from File** | `--resume` loads a previous raw/base64 output before fetching. | Continue a crashed run without starting over. |
 | **Custom Output Dir** | Use `--output-dir` to choose where files are saved. | Organize results anywhere you like. |
@@ -37,6 +39,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 | **Strict Split** | Batches are strictly capped at `--batch-size` by default. Add `--no-strict-batch` to simply trigger on size. | Control how incremental files are produced. |
 | **Shuffle Sources** | `--shuffle-sources` randomizes the source order. | Helpful when using `--threshold` to avoid bias. |
 | **Sing-box JSON Output** | Every batch also produces `vpn_singbox.json`. | Import directly into modern clients like sing-box/Stash. |
+| **Hiddify Optimised** | Default protocols match the Hiddify client. | Other clients may reject some entries. |
 
 ### 🔍 Feature Breakdown
 
@@ -288,19 +291,23 @@ Here’s how to add your new subscription link to the best **free** applications
 
 ### 🔑 Protocol Types and Defaults
 
-Each server link is classified into a protocol type. The merger knows these main kinds:
+Each server link is classified into a protocol type. By default the merger only keeps the following protocols, optimised for the Hiddify client:
 
-- **VLESS** – modern V2Ray replacement with great compatibility.
-- **VMess** – classic protocol, still widely used but easier to detect.
-- **Reality** – secure handshake extension of VLESS.
-- **Hysteria2**/**Hysteria** – UDP based for speed with built‑in obfuscation.
-- **TUIC** – another fast UDP protocol.
-- **Trojan** – looks like normal HTTPS traffic.
-- **Shadowsocks** – lightweight and supported almost everywhere.
-- **Naive**, **Juicity**, **WireGuard**, **ShadowTLS**, **Brook** – niche options with special features.
-- **Other** – anything that doesn't match the above (often plain SOCKS/HTTP proxies or experimental formats).
+- **Proxy** (HTTP/SOCKS)
+- **Shadowsocks**
+- **Clash** / **ClashMeta**
+- **V2Ray** / **Xray**
+- **Reality**
+- **VMess**
+- **WireGuard**
+- **ECH**
+- **VLESS**
+- **Hysteria** / **Hysteria2**
+- **TUIC**
+- **Sing-box** / **Singbox**
+- **ShadowTLS**
 
-`Other` entries are usually less stable or lack encryption, so both scripts drop them by default. Pass `--exclude-protocols ""` to keep everything or supply your own list.
+Some VPN clients may not recognise every item in this list, and other clients might support additional protocols that are omitted here. Use `--include-protocols` if you need to expand it.
 
 -----
 

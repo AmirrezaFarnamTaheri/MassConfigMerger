@@ -17,6 +17,7 @@ Features:
 • Multiple output formats (raw, base64, CSV, JSON)
 • Comprehensive error handling and retry logic
 • Best practices implemented throughout
+• Default protocol set optimised for the Hiddify client
 
 Requirements: pip install aiohttp aiodns nest-asyncio
 Author: Final Unified Edition - June 30, 2025
@@ -123,12 +124,12 @@ CONFIG = Config(
     concurrent_limit=50,
     max_configs_per_source=75000,
     valid_prefixes=(
-        "vmess://", "vless://", "ss://", "trojan://", "hy2://", 
-        "hysteria://", "hysteria2://", "tuic://", "reality://", 
-        "naive://", "juicity://", "shadowtls://", "wireguard://", 
-        "brook://", "socks://", "socks4://", "socks5://",
+        "vmess://", "vless://", "reality://",
+        "ss://", "hy2://", "hysteria://", "hysteria2://",
+        "tuic://", "shadowtls://", "wireguard://",
+        "socks://", "socks4://", "socks5://",
         "http://", "https://", "grpc://", "ws://", "wss://",
-        "ssr://", "tcp://", "kcp://", "quic://", "h2://",
+        "tcp://", "kcp://", "quic://", "h2://",
     ),
     enable_url_testing=True,
     enable_sorting=True,
@@ -138,7 +139,12 @@ CONFIG = Config(
     threshold=0,
     top_n=0,
     tls_fragment=None,
-    include_protocols=None,
+    include_protocols={
+        "PROXY", "SHADOWSOCKS", "CLASH", "V2RAY", "REALITY",
+        "VMESS", "XRAY", "WIREGUARD", "ECH", "VLESS",
+        "HYSTERIA", "TUIC", "SING-BOX", "SINGBOX",
+        "SHADOWTLS", "CLASHMETA", "HYSTERIA2",
+    },
     exclude_protocols={"OTHER"},
     resume_file=None,
     max_ping_ms=1000,
