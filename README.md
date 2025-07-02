@@ -24,7 +24,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 | **Connectivity Testing** | Optional TCP checks measure real latency. | Prioritize servers that actually respond. |
 | **Smart Sorting** | Orders the final list by reachability and speed. | Quickly pick the best server in your VPN client. |
 | **Batch Saving** | Periodically saves intermediate results with `--batch-size` (default `100`). | Useful on unreliable connections. |
-| **Protocol Filtering** | Use `--include-protocols` or `--exclude-protocols` to filter by protocol. | Keep only VLESS servers or drop Shadowsocks, etc. |
+| **Protocol Filtering** | Use `--include-protocols` or `--exclude-protocols` to filter by protocol (defaults to dropping `OTHER`). | Keep only VLESS servers or drop Shadowsocks, etc. |
 | **TLS Fragment / Top N** | Use `--tls-fragment` or `--top-n` to trim the output. | Obscure SNI or keep only the fastest N entries. |
 | **Resume from File** | `--resume` loads a previous raw/base64 output before fetching. | Continue a crashed run without starting over. |
 | **Custom Output Dir** | Use `--output-dir` to choose where files are saved. | Organize results anywhere you like. |
@@ -62,7 +62,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
 **Protocol Filtering**
 
-> Use `--include-protocols` or `--exclude-protocols` to keep only certain technologies (e.g. just Reality) or remove unwanted ones (like Shadowsocks). Combine with `--tls-fragment` or `--top-n` for even finer control.
+> Use `--include-protocols` or `--exclude-protocols` to keep only certain technologies (e.g. just Reality) or remove unwanted ones (like Shadowsocks). By default the scripts remove any config detected as `Other`. Combine with `--tls-fragment` or `--top-n` for even finer control.
 
 **Resume from File**
 
@@ -286,6 +286,24 @@ Here’s how to add your new subscription link to the best **free** applications
 
 -----
 
+### 🔑 Protocol Types and Defaults
+
+Each server link is classified into a protocol type. The merger knows these main kinds:
+
+- **VLESS** – modern V2Ray replacement with great compatibility.
+- **VMess** – classic protocol, still widely used but easier to detect.
+- **Reality** – secure handshake extension of VLESS.
+- **Hysteria2**/**Hysteria** – UDP based for speed with built‑in obfuscation.
+- **TUIC** – another fast UDP protocol.
+- **Trojan** – looks like normal HTTPS traffic.
+- **Shadowsocks** – lightweight and supported almost everywhere.
+- **Naive**, **Juicity**, **WireGuard**, **ShadowTLS**, **Brook** – niche options with special features.
+- **Other** – anything that doesn't match the above (often plain SOCKS/HTTP proxies or experimental formats).
+
+`Other` entries are usually less stable or lack encryption, so both scripts drop them by default. Pass `--exclude-protocols ""` to keep everything or supply your own list.
+
+-----
+
 During long runs, files prefixed with `cumulative_` mirror the latest results and are overwritten at each batch. Use these if you need up-to-the-minute progress.
 
 ## ⚙️ Advanced Usage & Troubleshooting
@@ -301,7 +319,7 @@ Run `python vpn_merger.py --help` to see all options. Important flags include:
   * `--top-n N` - keep only the best `N` configs after sorting.
   * `--tls-fragment TEXT` - only keep configs containing this TLS fragment.
   * `--include-protocols LIST` - comma-separated protocols to include (e.g. `VLESS,Reality`).
-  * `--exclude-protocols LIST` - comma-separated protocols to exclude.
+  * `--exclude-protocols LIST` - protocols to drop. By default `OTHER` is excluded; pass an empty string to keep everything.
   * `--resume FILE` - load a previous output file before fetching new sources.
   * `--output-dir DIR` - specify where output files are stored.
   * `--test-timeout SEC` - adjust connection test timeout.
@@ -330,7 +348,7 @@ If you already generated a subscription file, run `python vpn_retester.py <path>
 * `--concurrent-limit` limit how many tests run in parallel
 * `--test-timeout` set the connection timeout in seconds
 * `--max-ping` drop configs slower than this ping (ms)
-* `--include-protocols` or `--exclude-protocols` filter by protocol
+* `--include-protocols` or `--exclude-protocols` filter by protocol (default drops `OTHER`)
 * `--output-dir` choose where results are written
 * `--no-base64` / `--no-csv` disable those outputs
 
