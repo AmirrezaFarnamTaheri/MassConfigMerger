@@ -28,6 +28,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 | **Batch Saving** | Periodically saves intermediate results with `--batch-size` (default `100`). | Useful on unreliable connections. |
 | **Protocol Filtering** | Use `--include-protocols` or `--exclude-protocols` to filter by protocol (defaults to the Hiddify list). | Keep only the protocols your client supports. |
 | **TLS Fragment / Top N** | Use `--tls-fragment` or `--top-n` to trim the output. | Obscure SNI or keep only the fastest N entries. |
+| **MUX/SMUX Tuning** | `--mux` and `--smux` modify connection multiplexing. | Improve throughput with modern clients. |
 | **Resume from File** | `--resume` loads a previous raw/base64 output before fetching. | Continue a crashed run without starting over. |
 | **Custom Output Dir** | Use `--output-dir` to choose where files are saved. | Organize results anywhere you like. |
 | **Set Test Timeout** | Tune connection checks with `--test-timeout`. | Useful for slow or distant servers. |
@@ -333,11 +334,18 @@ Run `python vpn_merger.py --help` to see all options. Important flags include:
   * `--cumulative-batches` - make each batch cumulative instead of standalone.
   * `--no-strict-batch` - don't split strictly by `--batch-size`, just trigger when exceeded.
   * `--shuffle-sources` - randomize source processing order.
+  * `--mux N` - set connection multiplexing level (default `8`, `0` to disable).
+  * `--smux N` - set smux stream count for protocols that support it (default `4`).
 
 TLS fragments help obscure the real Server Name Indication (SNI) of each
 connection by splitting the handshake into pieces. This makes it harder for
 filtering systems to detect the destination server, especially when weak SNI
 protections would otherwise expose it.
+
+MUX and SMUX allow multiple streams to share a single connection. Higher values
+can improve throughput on stable links, but may increase latency on unstable
+networks. The defaults (`--mux 8` and `--smux 4`) work well for most users. Set
+them to `0` to disable if compatibility issues occur.
 
 #### **Adding Your Own Sources**
 
@@ -371,3 +379,23 @@ New files will appear in the chosen output directory:
 - `vpn_retested_raw.txt`
 - *(optional)* `vpn_retested_base64.txt`
 - *(optional)* `vpn_retested_detailed.csv`
+
+### 🚀 TLS Fragment, MUX & SMUX From Zero to Hero
+
+1. **TLS Fragment** (`--tls-fragment TEXT`)
+   - *Pros*: hides the full SNI during handshake which can bypass some censors.
+   - *Cons*: may break older servers if they do not support fragmenting.
+   - *Best Value*: a short word unique to your server, e.g. `hiddify`.
+   - *Default*: none (feature off).
+
+2. **MUX** (`--mux N`)
+   - *Pros*: multiplexes many requests over one connection for speed.
+   - *Cons*: high values can cause head-of-line blocking on unstable links.
+   - *Best Value*: `8` works well on stable broadband.
+   - *Default*: `8`.
+
+3. **SMUX** (`--smux N`)
+   - *Pros*: similar to MUX but used by Hysteria2/TUIC for UDP-like protocols.
+   - *Cons*: using too many streams might waste bandwidth.
+   - *Best Value*: `4` which balances speed and resource usage.
+   - *Default*: `4`.
