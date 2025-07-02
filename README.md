@@ -12,7 +12,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 1. Install **Python 3.8+** and clone this repository.
 2. Run `pip install -r requirements.txt` in the project folder.
 3. Execute `python vpn_merger.py` and wait for the `output` directory.
-4. *(Optional)* pass extra flags like `--max-ping 200`, `--concurrent-limit 10`, or `--proxy socks5://127.0.0.1:9050` to suit your connection.
+4. *(Optional)* pass extra flags like `--max-ping 200` or `--concurrent-limit 10` to suit your connection.
 5. Import the `output/vpn_subscription_base64.txt` link into your VPN app or load `vpn_singbox.json` in clients like sing-box.
 
 ## ✨ Key Features & Use Cases
@@ -98,7 +98,6 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
       * [macOS & iOS (iPhone/iPad)](#-macos--ios-iphoneipad)
   * [📂 Understanding the Output Files](#-understanding-the-output-files)
   * [⚙️ Advanced Usage & Troubleshooting](#️-advanced-usage--troubleshooting)
-  * [Advanced Methods](advanced_methods/ADVANCED.md)
 
 ## 🧠 How It Works
 
@@ -291,8 +290,6 @@ During long runs, files prefixed with `cumulative_` mirror the latest results an
 
 ## ⚙️ Advanced Usage & Troubleshooting
 
-Additional optional features are documented in [Advanced Methods](advanced_methods/ADVANCED.md).
-
 #### **Command-Line Arguments**
 
 Run `python vpn_merger.py --help` to see all options. Important flags include:
@@ -311,8 +308,6 @@ Run `python vpn_merger.py --help` to see all options. Important flags include:
   * `--cumulative-batches` - make each batch cumulative instead of standalone.
   * `--no-strict-batch` - don't split strictly by `--batch-size`, just trigger when exceeded.
   * `--shuffle-sources` - randomize source processing order.
-  * `--proxy URL` - fetch sources through an HTTP/SOCKS proxy.
-  * `--full-test` - perform a TLS handshake when testing servers.
 
 TLS fragments help obscure the real Server Name Indication (SNI) of each
 connection by splitting the handshake into pieces. This makes it harder for
