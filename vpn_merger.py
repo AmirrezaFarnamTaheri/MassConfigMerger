@@ -108,6 +108,8 @@ class Config:
     shuffle_sources: bool
     write_base64: bool
     write_csv: bool
+    upstream_proxy: Optional[str]
+    full_test: bool
 
 CONFIG = Config(
     headers={
@@ -147,13 +149,12 @@ CONFIG = Config(
     strict_batch=True,
     shuffle_sources=False,
     write_base64=True,
-    write_csv=True
+    write_csv=True,
+    upstream_proxy=None,
+    full_test=False
 )
-
 # ============================================================================
 # COMPREHENSIVE SOURCE COLLECTION (ALL UNIFIED SOURCES)
-# ============================================================================
-
 class UnifiedSources:
     """Complete unified collection of all VPN subscription sources."""
     
@@ -900,10 +901,22 @@ class EnhancedConfigProcessor:
             
         start = time.time()
         try:
-            # TCP connection test with timeout
-            _, writer = await asyncio.wait_for(
-                asyncio.open_connection(host, port),
-                timeout=CONFIG.test_timeout
+            ssl_context = None
+            server_hostname = None
+            if CONFIG.full_test:
+                ssl_context = ssl.create_default_context()
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+                server_hostname = host
+
+            reader, writer = await asyncio.wait_for(
+                asyncio.open_connection(
+                    host,
+                    port,
+                    ssl=ssl_context,
+                    server_hostname=server_hostname,
+                ),
+                timeout=CONFIG.test_timeout,
             )
             writer.close()
             await writer.wait_closed()
@@ -951,7 +964,10 @@ class AsyncSourceFetcher:
         """Test if a source URL is available (returns 200 status)."""
         try:
             timeout = aiohttp.ClientTimeout(total=10)
-            async with self.session.head(url, timeout=timeout, allow_redirects=True) as response:
+            async with self.session.head(
+                url, timeout=timeout, allow_redirects=True,
+                proxy=CONFIG.upstream_proxy
+            ) as response:
                 status = response.status
                 if status == 200:
                     return True
@@ -961,6 +977,7 @@ class AsyncSourceFetcher:
                         headers={**CONFIG.headers, 'Range': 'bytes=0-0'},
                         timeout=timeout,
                         allow_redirects=True,
+                        proxy=CONFIG.upstream_proxy,
                     ) as get_resp:
                         return get_resp.status in (200, 206)
                 return False
@@ -972,7 +989,12 @@ class AsyncSourceFetcher:
         for attempt in range(CONFIG.max_retries):
             try:
                 timeout = aiohttp.ClientTimeout(total=CONFIG.request_timeout)
-                async with self.session.get(url, headers=CONFIG.headers, timeout=timeout) as response:
+                async with self.session.get(
+                    url,
+                    headers=CONFIG.headers,
+                    timeout=timeout,
+                    proxy=CONFIG.upstream_proxy,
+                ) as response:
                     if response.status != 200:
                         continue
                         
@@ -1641,6 +1663,10 @@ def main():
                         help="Use batch size only as update threshold")
     parser.add_argument("--shuffle-sources", action="store_true",
                         help="Process sources in random order")
+    parser.add_argument("--proxy", type=str, default=None,
+                        help="HTTP/SOCKS proxy for fetching sources (e.g. socks5://127.0.0.1:9050)")
+    parser.add_argument("--full-test", action="store_true",
+                        help="Perform TLS handshake when testing servers")
     args, unknown = parser.parse_known_args()
     if unknown:
         logging.warning("Ignoring unknown arguments: %s", unknown)
@@ -1670,6 +1696,8 @@ def main():
     CONFIG.cumulative_batches = args.cumulative_batches
     CONFIG.strict_batch = not args.no_strict_batch
     CONFIG.shuffle_sources = args.shuffle_sources
+    CONFIG.upstream_proxy = args.proxy
+    CONFIG.full_test = args.full_test
     if args.no_url_test:
         CONFIG.enable_url_testing = False
     if args.no_sort:
