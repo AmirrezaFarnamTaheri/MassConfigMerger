@@ -1,0 +1,97 @@
+{
+  "generation_info": {
+    "timestamp_utc": "2025-07-03T16:30:33.660807+00:00",
+    "processing_time_seconds": 7271.08,
+    "script_version": "Unified & Polished Edition",
+    "url_testing_enabled": true,
+    "sorting_enabled": true
+  },
+  "statistics": {
+    "protocol_stats": {
+      "VLESS": 31720,
+      "VMess": 10369,
+      "Shadowsocks": 3140,
+      "WireGuard": 26,
+      "Hysteria2": 84,
+      "TUIC": 3,
+      "Hysteria": 3
+    },
+    "performance_stats": {
+      "VLESS": {
+        "count": 31720,
+        "avg_ms": 111.83,
+        "min_ms": 9.07,
+        "max_ms": 4864.89
+      },
+      "VMess": {
+        "count": 10369,
+        "avg_ms": 205.46,
+        "min_ms": 9.19,
+        "max_ms": 4300.15
+      },
+      "Shadowsocks": {
+        "count": 3140,
+        "avg_ms": 225.01,
+        "min_ms": 9.61,
+        "max_ms": 4465.1
+      },
+      "WireGuard": {
+        "count": 26,
+        "avg_ms": 20.17,
+        "min_ms": 10.09,
+        "max_ms": 33.65
+      },
+      "Hysteria2": {
+        "count": 84,
+        "avg_ms": 583.04,
+        "min_ms": 11.08,
+        "max_ms": 3372.31
+      },
+      "TUIC": {
+        "count": 3,
+        "avg_ms": 39.32,
+        "min_ms": 13.45,
+        "max_ms": 89.75
+      },
+      "Hysteria": {
+        "count": 3,
+        "avg_ms": 1226.68,
+        "min_ms": 20.9,
+        "max_ms": 2445.48
+      }
+    },
+    "total_configs": 45345,
+    "reachable_configs": 45345,
+    "available_sources": 336,
+    "total_sources": 622
+  },
+  "source_categories": {
+    "iranian_priority": 102,
+    "international_major": 140,
+    "comprehensive_batch": 419,
+    "total_unique_sources": 622
+  },
+  "output_files": {
+    "raw": "C:\\Users\\Acer\\Desktop\\ping100 - Copy\\output\\vpn_subscription_raw.txt",
+    "base64": "C:\\Users\\Acer\\Desktop\\ping100 - Copy\\output\\vpn_subscription_base64.txt",
+    "detailed_csv": "C:\\Users\\Acer\\Desktop\\ping100 - Copy\\output\\vpn_detailed.csv",
+    "json_report": "vpn_report.json",
+    "singbox": "C:\\Users\\Acer\\Desktop\\ping100 - Copy\\output\\vpn_singbox.json"
+  },
+  "usage_instructions": {
+    "base64_subscription": "Copy content of base64 file as subscription URL",
+    "raw_subscription": "Host raw file and use URL as subscription link",
+    "csv_analysis": "Use CSV file for detailed analysis and custom filtering",
+    "supported_clients": [
+      "V2rayNG",
+      "V2rayN",
+      "Hiddify Next",
+      "Shadowrocket",
+      "NekoBox",
+      "Clash Meta",
+      "Sing-Box",
+      "Streisand",
+      "Karing"
+    ]
+  }
+}
