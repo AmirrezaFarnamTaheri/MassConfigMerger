@@ -995,8 +995,8 @@ class AsyncSourceFetcher:
         except Exception:
             return False
         
-    async def fetch_source(self, url: str) -> Tuple[str, List[ConfigResult]]:
-        """Fetch single source with comprehensive testing."""
+    async def fetch_source(self, url: str, processed_hashes: Set[str]) -> Tuple[str, List[ConfigResult]]:
+        """Fetch single source with comprehensive testing and deduplication."""
         for attempt in range(CONFIG.max_retries):
             try:
                 timeout = aiohttp.ClientTimeout(total=CONFIG.request_timeout)
@@ -1026,6 +1026,11 @@ class AsyncSourceFetcher:
                         if (line.startswith(CONFIG.valid_prefixes) and
                             len(line) > 20 and len(line) < 2000 and
                             len(config_results) < CONFIG.max_configs_per_source):
+                            cfg_hash = self.processor.create_semantic_hash(line)
+                            if cfg_hash in processed_hashes:
+                                continue
+                            processed_hashes.add(cfg_hash)
+
                             line = self.processor.apply_tuning(line)
 
                             # Create config result
@@ -1077,6 +1082,7 @@ class UltimateVPNMerger:
         self.all_results: List[ConfigResult] = []
         self.stop_fetching = False
         self.saved_hashes: Set[str] = set()
+        self.processed_hashes: Set[str] = set()
         self.cumulative_unique: List[ConfigResult] = []
         self.last_processed_index = 0
         self.last_saved_count = 0
@@ -1100,6 +1106,10 @@ class UltimateVPNMerger:
             line = line.strip()
             if not line:
                 continue
+            h = self.processor.create_semantic_hash(line)
+            if h in self.processed_hashes:
+                continue
+            self.processed_hashes.add(h)
             protocol = self.processor.categorize_protocol(line)
             host, port = self.processor.extract_host_port(line)
             results.append(
@@ -1228,6 +1238,7 @@ class UltimateVPNMerger:
         # Append results directly to self.all_results so that _maybe_save_batch
         # sees the running total and can save incremental batches.
         successful_sources = 0
+        sources_with_results = []
         
         try:
             # Process sources with semaphore
@@ -1235,7 +1246,7 @@ class UltimateVPNMerger:
             
             async def process_single_source(url: str) -> Tuple[str, List[ConfigResult]]:
                 async with semaphore:
-                    return await self.fetcher.fetch_source(url)
+                    return await self.fetcher.fetch_source(url, self.processed_hashes)
             
             # Create tasks
             tasks = [process_single_source(url) for url in available_sources]
@@ -1249,6 +1260,7 @@ class UltimateVPNMerger:
                 self.all_results.extend(results)
                 if results:
                     successful_sources += 1
+                    sources_with_results.append(url)
                     reachable = sum(1 for r in results if r.is_reachable)
                     status = f"✓ {len(results):,} configs ({reachable} reachable)"
                 else:
@@ -1267,6 +1279,7 @@ class UltimateVPNMerger:
                     t.cancel()
 
             print(f"\n   📈 Sources with configs: {successful_sources}/{len(available_sources)}")
+            self.available_sources = sources_with_results
             
         finally:
             await self.fetcher.session.close()

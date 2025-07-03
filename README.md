@@ -23,6 +23,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 | ------- | ----------- | ---------------- |
 | **Huge Source List** | Over 470 public subscription sources are built in. | Get a massive selection of servers with a single command. |
 | **Availability Testing** | Checks each source before downloading. | Skip dead links and save time. |
+| **Zero-Config Filtering** | Sources returning no configs are discarded automatically. | Keeps the source list clean. |
 | **Connectivity Testing** | Optional TCP checks measure real latency. | Prioritize servers that actually respond. |
 | **Smart Sorting** | Orders the final list by reachability and speed. | Quickly pick the best server in your VPN client. |
 | **Batch Saving** | Periodically saves intermediate results with `--batch-size` (default `100`). | Useful on unreliable connections. |
@@ -34,6 +35,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 | **Set Test Timeout** | Tune connection checks with `--test-timeout`. | Useful for slow or distant servers. |
 | **Disable Features** | Flags `--no-url-test` and `--no-sort` give full control. | Run fast tests or skip sorting when not needed. |
 | **Max Ping Filter** | Remove configs with latency above `--max-ping` ms. | Keep only fast servers for gaming or streaming. |
+| **Duplicate Removal** | Configs are hashed and checked globally to avoid testing the same server twice. | Saves bandwidth and speeds up processing. |
 | **Concurrent Limit / Retries** | Tweak network load with `--concurrent-limit` and `--max-retries`. | Prevent crashes on slow networks or strict hosts. |
 | **Logging to File** | Save all output to a file with `--log-file`. | Useful for headless servers or debugging. |
 | **Standalone or Cumulative Batches** | Use `--cumulative-batches` to keep growing files, otherwise each batch only contains new configs. | Flexible automation for heavy runs. |
@@ -110,10 +112,11 @@ The script automates a simple but powerful process to create the best possible s
 1.  **📰 Gathers Sources**: It starts with a massive, built-in list of over 470 links where VPN configurations are publicly shared.
 2.  **✅ Tests Source Availability**: It quickly checks each of the 470+ links to see which ones are currently online and accessible.
 3.  **📥 Fetches All Configs**: It visits every active link and downloads all the individual VPN server configurations (`VLESS://`, `VMess://`, etc.).
-4.  **⚡ Tests Server Performance**: This is the key step. It attempts a direct connection to each individual server to measure its real-world connection speed (latency/ping). Servers that are offline or too slow are discarded.
-5.  **🧹 Cleans and Sorts**: Finally, it removes any duplicate servers and sorts the remaining, working servers from **fastest to slowest**.
-6.  **📦 Generates Outputs**: It saves this final, sorted list into multiple formats, including the `base64` subscription file that you use in your app.
-7.  **📁 Optional Batch Saving**: With `--batch-size` (default `100`), the script periodically saves intermediate results while it runs.
+4.  **♻️ Deduplicates Early**: As each config is read it is hashed. If the same server appears again from another source it is skipped before any testing.
+5.  **⚡ Tests Server Performance**: This is the key step. It attempts a direct connection to each unique server to measure real latency. Offline or slow servers are discarded.
+6.  **🧹 Cleans and Sorts**: Finally, the remaining servers are sorted from **fastest to slowest**.
+7.  **📦 Generates Outputs**: It saves this final, sorted list into multiple formats, including the `base64` subscription file that you use in your app.
+8.  **📁 Optional Batch Saving**: With `--batch-size` (default `100`), the script periodically saves intermediate results while it runs.
 
 -----
 
@@ -399,3 +402,84 @@ New files will appear in the chosen output directory:
    - *Cons*: using too many streams might waste bandwidth.
    - *Best Value*: `4` which balances speed and resource usage.
    - *Default*: `4`.
+
+## 📚 Protocol and Client Primer
+
+Below is a beginner-friendly overview of the most common VPN protocols you will
+encounter in the merged list. Understanding their design helps you choose the
+best option for your situation.
+
+### VLESS / VMess
+
+- **Mechanism**: Both protocols stem from the V2Ray project. VMess is the
+  original protocol using unique user IDs for authentication. VLESS improves on
+  it by removing encryption at the protocol layer, relying on TLS for privacy.
+- **Pros**: Widely supported, flexible, and works with all major clients. VLESS
+  reduces overhead and is generally faster than VMess.
+- **Cons**: VMess can be fingerprinted more easily. Both require a TLS layer to
+  hide traffic from deep packet inspection.
+- **Best Practice**: Use VLESS over TLS+Reality when possible for the best mix
+  of performance and resistance to blocking.
+- **Example Clients**: V2rayN/NG, Hiddify Next, NekoBox, Clash Meta.
+
+### Reality
+
+- **Mechanism**: Reality is a clever enhancement to TLS that disguises traffic
+  as ordinary HTTPS. It proxies connections through an innocuous-looking domain
+  while connecting to the real server in the background.
+- **Pros**: Excellent at bypassing censorship; almost indistinguishable from
+  normal web traffic.
+- **Cons**: Slightly more complex to set up on the server side and requires a
+  recent client (Sing-box, Hiddify, etc.).
+- **Use Cases**: Ideal when regular TLS tunnels are blocked or throttled.
+
+### Trojan
+
+- **Mechanism**: Trojan wraps connections in standard TLS and uses the password
+  field for authentication. Because it behaves almost exactly like HTTPS, it is
+  difficult to differentiate from normal traffic.
+- **Pros**: Simple configuration and very stable performance.
+- **Cons**: Relies on TLS certificates that match the fronting domain. If the
+  certificate is revoked, the server becomes unusable.
+- **Best Practice**: Pair with a trusted CDN or domain to avoid detection.
+
+### Shadowsocks
+
+- **Mechanism**: A lightweight proxy protocol that encrypts traffic using a
+  pre-shared key. It is popular because of its simplicity and wide client
+  support.
+- **Pros**: Minimal overhead and works on nearly every platform.
+- **Cons**: By itself it is easy to detect. Most providers run it over WebSocket
+  or TCP with TLS to hide it.
+- **Use Cases**: Good for devices with limited resources or when only a basic
+  proxy is required.
+
+### Hysteria / Hysteria2 / TUIC
+
+- **Mechanism**: These newer protocols are built on top of QUIC/UDP. They focus
+  on performance and use modern congestion control algorithms.
+- **Pros**: Extremely fast on high-latency networks and resilient to packet
+  loss. Great for streaming or gaming.
+- **Cons**: Some networks block UDP traffic entirely, which would prevent use.
+- **Best Practice**: Experiment with the `--smux` option to tune throughput.
+
+### WireGuard
+
+- **Mechanism**: A modern VPN protocol designed for simplicity and high speed.
+  It uses state-of-the-art cryptography and runs over UDP.
+- **Pros**: Very fast handshake and small code base. Supported by the Linux
+  kernel and many apps.
+- **Cons**: Needs kernel-level support or a special driver on some platforms.
+- **Use Cases**: Excellent choice for mobile clients and routers where low
+  overhead is critical.
+
+### Recommended Clients
+
+- **Hiddify Next** – All-in-one client with Reality and advanced features.
+- **V2rayN** / **V2rayNG** – Popular graphical clients for Windows and Android.
+- **Clash Meta** – Flexible rule-based client, great for power users.
+- **Sing-box** – Modern, powerful core used by many other apps.
+- **Shadowrocket** – iOS client with extensive protocol support.
+
+Armed with this knowledge, you can pick the protocol and client that best fits
+your connection and censorship environment.
