@@ -278,6 +278,34 @@ Here’s how to add your new subscription link to the best **free** applications
 
 -----
 
+### 🏁 Alternative Clients
+
+There are many other applications that can import the generated subscription. Below are a few noteworthy ones:
+
+* **Shadowrocket** (iOS)
+  * **Pros**: Extremely feature rich with fine‑grained routing rules.
+  * **Cons**: Paid app and only available on the App Store.
+  * **Best Use**: Power users on iPhone/iPad who want maximum control.
+
+* **Clash Meta** (Windows/macOS/Linux)
+  * **Pros**: Supports a huge range of protocols and advanced rule based routing.
+  * **Cons**: Configuration files can be complicated for beginners.
+  * **Best Use**: Desktop users who need custom routing by domain or IP.
+
+* **Stash** (iOS/macOS)
+  * **Pros**: Built on the sing-box core with a polished interface.
+  * **Cons**: Some features require a purchase.
+  * **Best Use**: Users who want sing-box features on Apple devices.
+
+* **Leaf** (macOS)
+  * **Pros**: Simple GUI front‑end for Clash. Easy to get started.
+  * **Cons**: Less customisation than editing Clash configs directly.
+  * **Best Use**: Mac users who prefer a small native app.
+
+Each client has its own strengths, so choose the one that fits your platform and skill level.
+
+-----
+
 ## 📂 Understanding the Output Files
 
 | File Name                              | Purpose                                                                                                  |
@@ -309,6 +337,62 @@ Each server link is classified into a protocol type. By default the merger only 
 - **ShadowTLS**
 
 Some VPN clients may not recognise every item in this list, and other clients might support additional protocols that are omitted here. Use `--include-protocols` if you need to expand it.
+
+-----
+
+## 📡 Protocol Deep Dive
+
+Below is a high-level overview of how the most common protocols work along with their strengths and weaknesses.
+
+### Proxy (HTTP/SOCKS)
+* **Mechanism**: Simple data forwarding through an intermediary server. Mostly unencrypted.
+* **Pros**: Extremely lightweight and widely supported.
+* **Cons**: Offers little privacy since traffic is unencrypted.
+* **Use Case**: Bypassing IP blocks where encryption is not required.
+
+### Shadowsocks
+* **Mechanism**: A secure SOCKS5 proxy with traffic obfuscation. Uses symmetric encryption.
+* **Pros**: Fast and simple to deploy. Works well in China and Iran.
+* **Cons**: No built‑in forward secrecy and vulnerable if the shared key is known.
+* **Use Case**: General browsing where moderate censorship resistance is needed.
+
+### V2Ray / Xray (VMess & VLESS)
+* **Mechanism**: A modular platform supporting multiple transports like TCP, WebSocket and gRPC.
+* **Pros**: Highly configurable and supports advanced features such as multiplexing.
+* **Cons**: Configuration complexity can be intimidating for new users.
+* **Use Case**: Power users needing flexibility or cutting‑edge transports.
+
+### Reality
+* **Mechanism**: Uses TLS with X25519 keys to mimic ordinary HTTPS traffic while carrying encrypted payloads.
+* **Pros**: Excellent stealth in hostile networks thanks to genuine TLS fingerprints.
+* **Cons**: Requires a server with a real domain and valid TLS certificate.
+* **Use Case**: Circumventing deep packet inspection with minimal traffic anomaly.
+
+### Hysteria / Hysteria2
+* **Mechanism**: Runs over UDP using QUIC to achieve low latency. Hysteria2 adds SMUX multiplexing.
+* **Pros**: Great for high throughput and long distance connections.
+* **Cons**: Some firewalls block UDP entirely which prevents use.
+* **Use Case**: Gaming or high‑speed file transfers where latency matters.
+
+### TUIC
+* **Mechanism**: Another QUIC based protocol with built‑in congestion control tuned for unstable networks.
+* **Pros**: Handles packet loss well and supports SMUX streams.
+* **Cons**: Newer protocol with fewer client implementations.
+* **Use Case**: Mobile networks or other unreliable links.
+
+### WireGuard
+* **Mechanism**: Modern VPN protocol using Curve25519 keys. Runs at kernel level on most systems.
+* **Pros**: Extremely fast, lean and secure with state‑of‑the‑art cryptography.
+* **Cons**: Less obfuscation compared to other protocols and requires static IP/port.
+* **Use Case**: When raw performance is preferred over stealth.
+
+### ShadowTLS
+* **Mechanism**: Wraps traffic inside a legitimate TLS handshake to defeat SNI filtering.
+* **Pros**: Very stealthy when paired with a real domain.
+* **Cons**: Configuration can be complex and requires a working web server.
+* **Use Case**: Avoiding censorship in networks that block by SNI or TLS fingerprint.
+
+These summaries should help you pick the right protocol for your situation. Remember that not all clients support every protocol.
 
 -----
 

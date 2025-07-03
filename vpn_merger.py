@@ -970,10 +970,11 @@ class EnhancedConfigProcessor:
 
 class AsyncSourceFetcher:
     """Async source fetcher with comprehensive testing and availability checking."""
-    
-    def __init__(self, processor: EnhancedConfigProcessor):
+
+    def __init__(self, processor: EnhancedConfigProcessor, seen_hashes: Set[str]):
         self.processor = processor
         self.session: Optional[aiohttp.ClientSession] = None
+        self.seen_hashes = seen_hashes
         
     async def test_source_availability(self, url: str) -> bool:
         """Test if a source URL is available (returns 200 status)."""
@@ -996,7 +997,7 @@ class AsyncSourceFetcher:
             return False
         
     async def fetch_source(self, url: str) -> Tuple[str, List[ConfigResult]]:
-        """Fetch single source with comprehensive testing."""
+        """Fetch single source with comprehensive testing and deduplication."""
         for attempt in range(CONFIG.max_retries):
             try:
                 timeout = aiohttp.ClientTimeout(total=CONFIG.request_timeout)
@@ -1023,15 +1024,23 @@ class AsyncSourceFetcher:
                     config_results = []
                     
                     for line in lines:
-                        if (line.startswith(CONFIG.valid_prefixes) and
-                            len(line) > 20 and len(line) < 2000 and
-                            len(config_results) < CONFIG.max_configs_per_source):
+                        if (
+                            line.startswith(CONFIG.valid_prefixes)
+                            and len(line) > 20
+                            and len(line) < 2000
+                            and len(config_results) < CONFIG.max_configs_per_source
+                        ):
+                            config_hash = self.processor.create_semantic_hash(line)
+                            if config_hash in self.seen_hashes:
+                                continue
+                            self.seen_hashes.add(config_hash)
+
                             line = self.processor.apply_tuning(line)
 
                             # Create config result
                             host, port = self.processor.extract_host_port(line)
                             protocol = self.processor.categorize_protocol(line)
-                            
+
                             result = ConfigResult(
                                 config=line,
                                 protocol=protocol,
@@ -1069,7 +1078,8 @@ class UltimateVPNMerger:
         if CONFIG.shuffle_sources:
             random.shuffle(self.sources)
         self.processor = EnhancedConfigProcessor()
-        self.fetcher = AsyncSourceFetcher(self.processor)
+        self.seen_hashes: Set[str] = set()
+        self.fetcher = AsyncSourceFetcher(self.processor, self.seen_hashes)
         self.batch_counter = 0
         self.next_batch_threshold = CONFIG.batch_size if CONFIG.batch_size else float('inf')
         self.start_time = 0.0
@@ -1111,6 +1121,8 @@ class UltimateVPNMerger:
                     source_url="(resume)"
                 )
             )
+            h = self.processor.create_semantic_hash(line)
+            self.seen_hashes.add(h)
         return results
         
     async def run(self) -> None:
@@ -1152,6 +1164,12 @@ class UltimateVPNMerger:
             unique_results = self._sort_by_performance(unique_results)
         else:
             print(f"\n⏭️ [4/6] Skipping sorting (disabled)")
+
+        if CONFIG.enable_url_testing:
+            before = len(unique_results)
+            unique_results = [r for r in unique_results if r.ping_time is not None]
+            removed = before - len(unique_results)
+            print(f"   ❌ Removed {removed} configs with no ping")
 
         if CONFIG.top_n > 0:
             unique_results = unique_results[:CONFIG.top_n]
@@ -1288,6 +1306,8 @@ class UltimateVPNMerger:
             if CONFIG.include_protocols and r.protocol.upper() not in CONFIG.include_protocols:
                 continue
             if CONFIG.exclude_protocols and r.protocol.upper() in CONFIG.exclude_protocols:
+                continue
+            if CONFIG.enable_url_testing and r.ping_time is None:
                 continue
             h = self.processor.create_semantic_hash(r.config)
             if h not in self.saved_hashes:
