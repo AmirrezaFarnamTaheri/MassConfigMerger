@@ -483,3 +483,24 @@ New files will appear in the chosen output directory:
    - *Cons*: using too many streams might waste bandwidth.
    - *Best Value*: `4` which balances speed and resource usage.
    - *Default*: `4`.
+
+## Mass Config Aggregator Tool
+
+This repository now includes **aggregator_tool.py**, a simplified script for merging VPN configuration links from a list of HTTP sources and Telegram channels. Unlike `vpn_merger.py`, which focuses on speed testing, this tool is geared toward on-demand aggregation and cleaning.
+
+### Setup
+
+1. Install the required packages:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. Edit `config.json`, `sources.txt`, and `channels.txt` to supply your own Telegram credentials and lists.
+3. Run `python aggregator_tool.py` to fetch sources and scrape the listed Telegram channels.
+4. The cleaned results will appear in the `output` folder as `merged.txt` and `merged_base64.txt`.
+5. Use `python aggregator_tool.py --bot` to enable a Telegram bot that responds to `/update` and `/status` commands from the whitelisted user IDs in `config.json`.
+
+### Important Notes
+
+- The script only runs when executed and does **not** run as a background service. Use your operating system's scheduler if you require automation.
+- When scraping Telegram, ensure you comply with Telegram's Terms of Service and only access public channels.
+- All logs are written to the `logs` directory for troubleshooting.
