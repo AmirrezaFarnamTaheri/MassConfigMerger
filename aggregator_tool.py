@@ -12,7 +12,6 @@ import asyncio
 import base64
 import json
 import logging
-import os
 import re
 from dataclasses import dataclass, field, fields
 from datetime import datetime, timedelta
@@ -122,6 +121,7 @@ class Config:
             raise ValueError(f"{path} must contain a JSON object")
 
         # Pull telegram credentials from environment and override when set
+        import os
         env_values = {
             "telegram_api_id": os.getenv("TELEGRAM_API_ID"),
             "telegram_api_hash": os.getenv("TELEGRAM_API_HASH"),
