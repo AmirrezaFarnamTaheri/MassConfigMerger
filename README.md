@@ -17,6 +17,15 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 4. *(Optional)* pass extra flags like `--max-ping 200` or `--concurrent-limit 10` to suit your connection.
 5. Import the `output/vpn_subscription_base64.txt` link into your VPN app or load `vpn_singbox.json` in clients like sing-box.
 
+### 🐳 Docker
+
+Build the image and run the merger without installing Python locally:
+
+```bash
+docker build -t vpn-merger .
+docker run --rm vpn-merger
+```
+
 ## ✨ Key Features & Use Cases
 
 | Feature | Description | Typical Use Case |
