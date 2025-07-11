@@ -14,7 +14,7 @@ import json
 import logging
 import os
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterable, List, Set
@@ -105,6 +105,9 @@ class Config:
         except json.JSONDecodeError as exc:
             raise ValueError(f"Invalid JSON in {path}: {exc}") from exc
 
+        if not isinstance(data, dict):
+            raise ValueError(f"{path} must contain a JSON object")
+
         merged_defaults = {
             "protocols": [],
             "exclude_patterns": [],
@@ -123,21 +126,22 @@ class Config:
             "telegram_bot_token",
             "allowed_user_ids",
         ]
+        known_fields = {f.name for f in fields(cls)}
         missing = [k for k in required if k not in data]
-        if missing:
-            msg = f"config.json missing required fields: {', '.join(missing)}"
-            print(msg)
+        unknown = [k for k in data if k not in known_fields]
+        if missing or unknown:
+            parts = []
+            if missing:
+                parts.append("missing required fields: " + ", ".join(missing))
+            if unknown:
+                parts.append("unknown fields: " + ", ".join(unknown))
+            msg = f"Invalid config.json - {'; '.join(parts)}"
             raise ValueError(msg)
 
         try:
             return cls(**data)
-        except (KeyError, TypeError) as exc:
-            msg = (
-                "config.json missing required fields: "
-                + ", ".join(required)
-            )
-            print(msg)
-            raise ValueError(msg) from exc
+        except TypeError as exc:
+            raise ValueError(f"Invalid configuration: {exc}") from exc
 
 
 async def fetch_text(session: ClientSession, url: str) -> str | None:
