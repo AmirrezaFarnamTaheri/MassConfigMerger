@@ -59,10 +59,22 @@ def is_valid_config(link: str) -> bool:
             return True
         except Exception:
             return False
-    if scheme in {"naive", "hy2"}:
+    host_required = {
+        "naive",
+        "hy2",
+        "vless",
+        "trojan",
+        "reality",
+        "hysteria",
+        "hysteria2",
+        "tuic",
+        "ss",
+        "ssr",
+    }
+    if scheme in host_required:
         if "@" not in rest:
             return False
-        host = rest.split("@", 1)[1]
+        host = rest.split("@", 1)[1].split("/", 1)[0]
         return ":" in host
     if scheme == "wireguard":
         return bool(rest)

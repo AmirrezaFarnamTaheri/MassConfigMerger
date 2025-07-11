@@ -26,3 +26,13 @@ def test_hy2_basic_format():
 def test_wireguard_basic_format():
     link = "wireguard://peer?publicKey=abc"
     assert is_valid_config(link)
+
+
+def test_trojan_requires_host_port():
+    assert is_valid_config("trojan://pass@example.com:443")
+    assert not is_valid_config("trojan://pass@example.com")
+
+
+def test_shadowsocks_requires_host_port():
+    assert is_valid_config("ss://method:pw@example.com:8388")
+    assert not is_valid_config("ss://method:pw@example.com")

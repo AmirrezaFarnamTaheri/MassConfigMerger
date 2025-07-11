@@ -493,7 +493,8 @@ quickly collecting VPN configuration links from a list of HTTP sources and a set
 of Telegram channels.  It performs basic cleaning and deduplication and can run
 as a Telegram bot when you need updates on demand.  Unlike `vpn_merger.py` which
 focuses on speed testing, this script is meant for fast aggregation of working
-links.
+links.  The tool now performs light syntax validation—for instance, Shadowsocks
+and Trojan links must include an `@host:port`—and malformed entries are skipped.
 
 
 ### Setup
