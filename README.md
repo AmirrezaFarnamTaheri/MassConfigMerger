@@ -538,7 +538,7 @@ and Trojan links must include an `@host:port`—and malformed entries are skippe
    starting with `vmess`, `vless`, `trojan`, `ss`,
    `ssr`, `hysteria`, `hysteria2`, `tuic`, `reality`, `naive`, `hy2` and
    `wireguard`.
-4. Run the tool (by default it scans the last 24 hours of channel history):
+4. Run the tool. The `--hours` option controls how many hours of channel history are scanned (default is 24):
    ```bash
    python aggregator_tool.py --hours 12
    ```
