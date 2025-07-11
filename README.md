@@ -509,8 +509,10 @@ and Trojan links must include an `@host:port`—and malformed entries are skippe
    in `config.json.example`.
 3. Edit `sources.txt` and `channels.txt` to include any extra subscription URLs
    or channel names you wish to scrape. **Each line of `sources.txt` should
-   contain exactly one valid URL with no extra text or spaces.** By default the
-   aggregator recognizes links starting with `vmess`, `vless`, `trojan`, `ss`,
+   contain exactly one valid URL with no extra text or spaces.** Each line of
+   `channels.txt` may contain a full `https://t.me/...` link or just the channel
+   name. Empty lines are ignored. By default the aggregator recognizes links
+   starting with `vmess`, `vless`, `trojan`, `ss`,
    `ssr`, `hysteria`, `hysteria2`, `tuic`, `reality`, `naive`, `hy2` and
    `wireguard`.
 4. Run the tool:
