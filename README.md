@@ -1,6 +1,6 @@
 # VPN Subscription Merger 🚀
 
-[](https://www.google.com/search?q=https://github.com/AmirrezaFarnamTaheri/CleanConfigs-SubMerger/actions)
+[![CI](https://github.com/AmirrezaFarnamTaheri/CleanConfigs-SubMerger/actions/workflows/ci.yml/badge.svg)](https://github.com/AmirrezaFarnamTaheri/CleanConfigs-SubMerger/actions/workflows/ci.yml)
 [](https://opensource.org/licenses/MIT)
 
 Welcome to the VPN Subscription Merger! This project provides a powerful Python script that automatically fetches VPN configurations from over 470 public sources, tests their connectivity, and merges them into a single, performance-sorted subscription link for use in your favorite VPN client. It can even save incremental batches while running so you always have up-to-date results.
