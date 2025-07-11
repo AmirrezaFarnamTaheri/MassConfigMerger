@@ -145,6 +145,7 @@ async def fetch_and_parse_configs(sources: Iterable[str]) -> Set[str]:
         tasks = [asyncio.create_task(fetch_one(session, u)) for u in sources]
         for task in asyncio.as_completed(tasks):
             configs.update(await task)
+
     return configs
 
 
@@ -160,7 +161,6 @@ async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Con
     client = TelegramClient("user", cfg.telegram_api_id, cfg.telegram_api_hash)
     await client.start()
     configs: Set[str] = set()
-
     async with aiohttp.ClientSession() as session:
         for channel in channels:
             count_before = len(configs)
@@ -176,6 +176,7 @@ async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Con
             except Exception as e:
                 logging.warning("Failed to scrape %s: %s", channel, e)
             logging.info("Channel %s -> %d new configs", channel, len(configs) - count_before)
+
 
     await client.disconnect()
     logging.info("Telegram configs found: %d", len(configs))
@@ -194,6 +195,7 @@ def deduplicate_and_filter(config_set: Set[str], cfg: Config, protocols: List[st
         if any(r.search(l_lower) for r in exclude):
             continue
         if not is_valid_config(link):
+
             continue
         final.append(link)
     logging.info("Final configs count: %d", len(final))
@@ -235,6 +237,7 @@ async def run_pipeline(cfg: Config, protocols: List[str] | None = None,
     sources = await check_and_update_sources(sources_file)
     configs = await fetch_and_parse_configs(sources)
     configs |= await scrape_telegram_configs(channels_file, 24, cfg)
+
     final = deduplicate_and_filter(configs, cfg, protocols)
     out_dir = Path(cfg.output_dir)
     output_files(final, out_dir)
@@ -244,6 +247,7 @@ async def run_pipeline(cfg: Config, protocols: List[str] | None = None,
 async def telegram_bot_mode(cfg: Config,
                             sources_file: Path = SOURCES_FILE,
                             channels_file: Path = CHANNELS_FILE) -> None:
+
     """Launch Telegram bot for on-demand updates."""
     bot = TelegramClient("bot", cfg.telegram_api_id, cfg.telegram_api_hash).start(bot_token=cfg.telegram_bot_token)
     last_update = None
@@ -261,6 +265,7 @@ async def telegram_bot_mode(cfg: Config,
             return
         await event.respond("Running update...")
         out_dir = await run_pipeline(cfg, None, sources_file, channels_file)
+
         for path in out_dir.iterdir():
             await event.respond(file=str(path))
         last_update = datetime.utcnow()
@@ -304,6 +309,7 @@ def main() -> None:
     cfg = Config.load(Path(args.config))
     if args.output_dir:
         cfg.output_dir = args.output_dir
+
     if args.protocols:
         protocols = [p.strip() for p in args.protocols.split(",") if p.strip()]
     else:
@@ -314,7 +320,7 @@ def main() -> None:
     if args.bot:
         asyncio.run(telegram_bot_mode(cfg, Path(args.sources), Path(args.channels)))
     else:
-        asyncio.run(run_pipeline(cfg, protocols, Path(args.sources), Path(args.channels)))
+
 
 
 if __name__ == "__main__":
