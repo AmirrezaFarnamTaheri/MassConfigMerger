@@ -35,10 +35,9 @@ def test_load_invalid_json(tmp_path):
 def test_missing_required_fields(tmp_path, capsys):
     p = tmp_path / "cfg.json"
     p.write_text("{}")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as exc:
         Config.load(p)
-    captured = capsys.readouterr()
-    assert "missing required fields" in captured.out
+    assert "missing required fields" in str(exc.value)
 
 
 def test_custom_defaults(tmp_path):

@@ -14,7 +14,7 @@ import json
 import logging
 import os
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterable, List, Set
@@ -36,6 +36,14 @@ PROTOCOL_RE = re.compile(
 )
 BASE64_RE = re.compile(r"^[A-Za-z0-9+/=]+$")
 HTTP_RE = re.compile(r"https?://\S+", re.IGNORECASE)
+
+
+def _get_script_dir() -> Path:
+    """Return a safe base directory for writing output."""
+    try:
+        return Path(__file__).resolve().parent
+    except NameError:
+        return Path.cwd()
 
 
 def extract_subscription_urls(text: str) -> Set[str]:
@@ -105,6 +113,9 @@ class Config:
         except json.JSONDecodeError as exc:
             raise ValueError(f"Invalid JSON in {path}: {exc}") from exc
 
+        if not isinstance(data, dict):
+            raise ValueError(f"{path} must contain a JSON object")
+
         merged_defaults = {
             "protocols": [],
             "exclude_patterns": [],
@@ -123,21 +134,22 @@ class Config:
             "telegram_bot_token",
             "allowed_user_ids",
         ]
+        known_fields = {f.name for f in fields(cls)}
         missing = [k for k in required if k not in data]
-        if missing:
-            msg = f"config.json missing required fields: {', '.join(missing)}"
-            print(msg)
+        unknown = [k for k in data if k not in known_fields]
+        if missing or unknown:
+            parts = []
+            if missing:
+                parts.append("missing required fields: " + ", ".join(missing))
+            if unknown:
+                parts.append("unknown fields: " + ", ".join(unknown))
+            msg = f"Invalid config.json - {'; '.join(parts)}"
             raise ValueError(msg)
 
         try:
             return cls(**data)
-        except (KeyError, TypeError) as exc:
-            msg = (
-                "config.json missing required fields: "
-                + ", ".join(required)
-            )
-            print(msg)
-            raise ValueError(msg) from exc
+        except TypeError as exc:
+            raise ValueError(f"Invalid configuration: {exc}") from exc
 
 
 async def fetch_text(session: ClientSession, url: str) -> str | None:
@@ -175,6 +187,7 @@ async def check_and_update_sources(path: Path, concurrent_limit: int = 20) -> Li
     if not path.exists():
         logging.warning("sources file not found: %s", path)
         return []
+
     with path.open() as f:
         sources = {line.strip() for line in f if line.strip()}
 
@@ -199,6 +212,7 @@ async def check_and_update_sources(path: Path, concurrent_limit: int = 20) -> Li
             result = await task
             if result:
                 valid_sources.append(result)
+
 
     with path.open("w") as f:
         for url in valid_sources:
@@ -435,6 +449,14 @@ def main() -> None:
         cfg.max_concurrent = args.concurrent_limit
     elif args.max_concurrent is not None:
         cfg.max_concurrent = args.max_concurrent
+
+    allowed_base = _get_script_dir()
+    resolved_output = Path(cfg.output_dir).expanduser().resolve()
+    try:
+        resolved_output.relative_to(allowed_base)
+    except ValueError:
+        parser.error(f"--output-dir must be within {allowed_base}")
+    cfg.output_dir = str(resolved_output)
 
     if args.protocols:
         protocols = [p.strip() for p in args.protocols.split(",") if p.strip()]
