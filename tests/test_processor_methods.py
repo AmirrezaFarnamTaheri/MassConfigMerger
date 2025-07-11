@@ -2,6 +2,7 @@ import base64
 import json
 import os
 import sys
+import types
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from vpn_merger import (
@@ -87,3 +88,27 @@ def test_print_final_summary_zero_configs(capsys):
     captured = capsys.readouterr().out
     assert "Success rate: N/A" in captured
     assert "Top protocol: N/A" in captured
+
+
+def test_lookup_country(monkeypatch):
+    proc = EnhancedConfigProcessor()
+    monkeypatch.setattr(CONFIG, "geoip_db", "dummy.mmdb")
+
+    class DummyCountry:
+        iso_code = "US"
+
+    class DummyReader:
+        def __init__(self, path):
+            pass
+
+        def country(self, ip):
+            return types.SimpleNamespace(country=DummyCountry())
+
+    dummy_geoip2 = types.ModuleType("geoip2")
+    dummy_database = types.ModuleType("geoip2.database")
+    dummy_database.Reader = DummyReader
+    dummy_geoip2.database = dummy_database
+    monkeypatch.setitem(sys.modules, "geoip2", dummy_geoip2)
+    monkeypatch.setitem(sys.modules, "geoip2.database", dummy_database)
+
+    assert proc.lookup_country("1.2.3.4") == "US"

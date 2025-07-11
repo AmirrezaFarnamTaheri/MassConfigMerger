@@ -15,6 +15,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
 1. Install **Python 3.8+** and clone this repository.
 2. Run `pip install -r requirements.txt` in the project folder to install all dependencies **before running any script**.
+   *For country lookups, also install the optional `geoip2` package and download the free MaxMind database.*
 3. Execute `python vpn_merger.py` and wait for the `output` directory.
 4. *(Optional)* pass extra flags like `--max-ping 200` or `--concurrent-limit 10` to suit your connection.
 5. Import the `output/vpn_subscription_base64.txt` link (unless `--no-base64` was used) into your VPN app or load `vpn_singbox.json` in clients like sing-box.
@@ -445,6 +446,7 @@ Run `python vpn_merger.py --help` to see all options. Important flags include:
   * `--shuffle-sources` - randomize source processing order.
   * `--mux N` - set connection multiplexing level (default `8`, `0` to disable).
   * `--smux N` - set smux stream count for protocols that support it (default `4`).
+  * `--geoip-db PATH` - enable country lookup using a GeoLite2 database file.
 
 TLS fragments help obscure the real Server Name Indication (SNI) of each
 connection by splitting the handshake into pieces. This makes it harder for
