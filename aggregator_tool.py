@@ -14,7 +14,7 @@ import json
 import logging
 import os
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterable, List, Set
@@ -36,6 +36,14 @@ PROTOCOL_RE = re.compile(
 )
 BASE64_RE = re.compile(r"^[A-Za-z0-9+/=]+$")
 HTTP_RE = re.compile(r"https?://\S+", re.IGNORECASE)
+
+
+def _get_script_dir() -> Path:
+    """Return a safe base directory for writing output."""
+    try:
+        return Path(__file__).resolve().parent
+    except NameError:
+        return Path.cwd()
 
 
 def extract_subscription_urls(text: str) -> Set[str]:
@@ -107,6 +115,9 @@ class Config:
         except json.JSONDecodeError as exc:
             raise ValueError(f"Invalid JSON in {path}: {exc}") from exc
 
+        if not isinstance(data, dict):
+            raise ValueError(f"{path} must contain a JSON object")
+
         merged_defaults = {
             "protocols": [],
             "exclude_patterns": [],
@@ -125,10 +136,16 @@ class Config:
             "telegram_bot_token",
             "allowed_user_ids",
         ]
+        known_fields = {f.name for f in fields(cls)}
         missing = [k for k in required if k not in data]
-        if missing:
-            msg = f"config.json missing required fields: {', '.join(missing)}"
-            print(msg)
+        unknown = [k for k in data if k not in known_fields]
+        if missing or unknown:
+            parts = []
+            if missing:
+                parts.append("missing required fields: " + ", ".join(missing))
+            if unknown:
+                parts.append("unknown fields: " + ", ".join(unknown))
+            msg = f"Invalid config.json - {'; '.join(parts)}"
             raise ValueError(msg)
 
         try:
@@ -137,6 +154,7 @@ class Config:
             msg = f"Invalid configuration values: {exc}"
             print(msg)
             raise ValueError(msg) from exc
+
 
 
 async def fetch_text(session: ClientSession, url: str) -> str | None:
@@ -169,25 +187,37 @@ def parse_configs_from_text(text: str) -> Set[str]:
     return configs
 
 
-async def check_and_update_sources(path: Path) -> List[str]:
-    """Validate and deduplicate sources list."""
+async def check_and_update_sources(path: Path, concurrent_limit: int = 20) -> List[str]:
+    """Validate and deduplicate sources list concurrently."""
     if not path.exists():
         logging.warning("sources file not found: %s", path)
         return []
+
     with path.open() as f:
         sources = {line.strip() for line in f if line.strip()}
 
     valid_sources: List[str] = []
-    async with aiohttp.ClientSession() as session:
-        for url in sorted(sources):
+    semaphore = asyncio.Semaphore(concurrent_limit)
+    connector = aiohttp.TCPConnector(limit=concurrent_limit)
+
+    async def check(url: str) -> str | None:
+        async with semaphore:
             text = await fetch_text(session, url)
-            if not text:
-                logging.info("Removing dead source: %s", url)
-                continue
-            if not parse_configs_from_text(text):
-                logging.info("Removing empty source: %s", url)
-                continue
-            valid_sources.append(url)
+        if not text:
+            logging.info("Removing dead source: %s", url)
+            return None
+        if not parse_configs_from_text(text):
+            logging.info("Removing empty source: %s", url)
+            return None
+        return url
+
+    async with aiohttp.ClientSession(connector=connector) as session:
+        tasks = [asyncio.create_task(check(u)) for u in sorted(sources)]
+        for task in asyncio.as_completed(tasks):
+            result = await task
+            if result:
+                valid_sources.append(result)
+
 
     with path.open("w") as f:
         for url in valid_sources:
@@ -335,7 +365,7 @@ async def run_pipeline(cfg: Config, protocols: List[str] | None = None,
                        sources_file: Path = SOURCES_FILE,
                        channels_file: Path = CHANNELS_FILE) -> Path:
     """Full aggregation pipeline. Returns output directory."""
-    sources = await check_and_update_sources(sources_file)
+    sources = await check_and_update_sources(sources_file, cfg.max_concurrent)
     configs = await fetch_and_parse_configs(sources, cfg.max_concurrent)
     configs |= await scrape_telegram_configs(channels_file, 24, cfg)
 
@@ -424,6 +454,14 @@ def main() -> None:
         cfg.max_concurrent = args.concurrent_limit
     elif args.max_concurrent is not None:
         cfg.max_concurrent = args.max_concurrent
+
+    allowed_base = _get_script_dir()
+    resolved_output = Path(cfg.output_dir).expanduser().resolve()
+    try:
+        resolved_output.relative_to(allowed_base)
+    except ValueError:
+        parser.error(f"--output-dir must be within {allowed_base}")
+    cfg.output_dir = str(resolved_output)
 
     if args.protocols:
         protocols = [p.strip() for p in args.protocols.split(",") if p.strip()]

@@ -12,7 +12,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 ### ⚡ Quick Start
 
 1. Install **Python 3.8+** and clone this repository.
-2. Run `pip install -r requirements.txt` in the project folder.
+2. Run `pip install -r requirements.txt` in the project folder to install all dependencies **before running any script**.
 3. Execute `python vpn_merger.py` and wait for the `output` directory.
 4. *(Optional)* pass extra flags like `--max-ping 200` or `--concurrent-limit 10` to suit your connection.
 5. Import the `output/vpn_subscription_base64.txt` link into your VPN app or load `vpn_singbox.json` in clients like sing-box.
@@ -508,10 +508,11 @@ and Trojan links must include an `@host:port`—and malformed entries are skippe
    IDs that are allowed to interact with the bot. A starter template is provided
    in `config.json.example`.
 3. Edit `sources.txt` and `channels.txt` to include any extra subscription URLs
-   or channel names you wish to scrape. **Put one valid URL on each line of**
-   `sources.txt`. By default the aggregator recognizes links starting with
-   `vmess`, `vless`, `trojan`, `ss`, `ssr`, `hysteria`,
-   `hysteria2`, `tuic`, `reality`, `naive`, `hy2` and `wireguard`.
+   or channel names you wish to scrape. **Each line of `sources.txt` should
+   contain exactly one valid URL with no extra text or spaces.** By default the
+   aggregator recognizes links starting with `vmess`, `vless`, `trojan`, `ss`,
+   `ssr`, `hysteria`, `hysteria2`, `tuic`, `reality`, `naive`, `hy2` and
+   `wireguard`.
 4. Run the tool:
    ```bash
    python aggregator_tool.py
@@ -547,6 +548,10 @@ and Trojan links must include an `@host:port`—and malformed entries are skippe
 }
 ```
 
+`config.json` must be a single JSON object. Only the fields shown above are
+recognized—any unknown keys will cause an error. Missing required fields will
+also trigger a helpful message listing what is absent.
+
 Required fields: `telegram_api_id`, `telegram_api_hash`, `telegram_bot_token`, `allowed_user_ids`.
 If any are missing you'll see an error like:
 
@@ -564,7 +569,7 @@ Optional fields use these defaults when omitted:
 - **exclude_patterns** – regular expressions to remove unwanted links.
 - **output_dir** – where merged files are created.
 - **log_dir** – daily log files are written here.
-- **max_concurrent** – maximum simultaneous HTTP requests (override with `--concurrent-limit`).
+- **max_concurrent** – maximum simultaneous HTTP requests for validating and fetching sources (override with `--concurrent-limit`).
 
 The command line options `--config`, `--sources`, `--channels`, `--output-dir`, `--concurrent-limit`
 let you override these file locations when running the tool.
