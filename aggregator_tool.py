@@ -472,7 +472,7 @@ def main() -> None:
         "--hours",
         type=int,
         default=24,
-        help="how many hours of Telegram history to scan",
+        help="how many hours of Telegram history to scan (default %(default)s)",
     )
     parser.add_argument("--output-dir", help="override output directory from config")
     parser.add_argument(
