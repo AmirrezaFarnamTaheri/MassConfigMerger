@@ -319,8 +319,12 @@ def deduplicate_and_filter(config_set: Set[str], cfg: Config, protocols: List[st
     final = []
     protocols = protocols or cfg.protocols
     exclude = [re.compile(p) for p in cfg.exclude_patterns]
-    for link in sorted(set(c.strip() for c in config_set)):
+    seen: Set[str] = set()
+    for link in sorted(c.strip() for c in config_set):
         l_lower = link.lower()
+        if l_lower in seen:
+            continue
+        seen.add(l_lower)
         if not any(l_lower.startswith(p + "://") for p in protocols):
             continue
         if any(r.search(l_lower) for r in exclude):
