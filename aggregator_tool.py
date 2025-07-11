@@ -174,9 +174,9 @@ def parse_configs_from_text(text: str) -> Set[str]:
     configs: Set[str] = set()
     for line in text.splitlines():
         line = line.strip()
-        match = PROTOCOL_RE.search(line)
-        if match:
-            configs.add(match.group(0))
+        matches = PROTOCOL_RE.findall(line)
+        if matches:
+            configs.update(matches)
             continue
         if BASE64_RE.match(line):
             try:
