@@ -531,7 +531,7 @@ links.
   "telegram_api_hash": "YOUR_HASH",
   "telegram_bot_token": "BOT_TOKEN",
   "allowed_user_ids": [11111111],
-  "protocols": ["vmess", "vless", "trojan", "ss"],
+  "protocols": ["vmess", "vless", "trojan", "ss", "ssr", "hysteria", "hysteria2", "tuic"],
   "exclude_patterns": [],
   "output_dir": "output",
   "log_dir": "logs"
