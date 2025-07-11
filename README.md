@@ -563,7 +563,7 @@ Optional fields use these defaults when omitted:
 - **exclude_patterns** – regular expressions to remove unwanted links.
 - **output_dir** – where merged files are created.
 - **log_dir** – daily log files are written here.
-- **max_concurrent** – maximum simultaneous HTTP requests (override with `--concurrent-limit`).
+- **max_concurrent** – maximum simultaneous HTTP requests for validating and fetching sources (override with `--concurrent-limit`).
 
 The command line options `--config`, `--sources`, `--channels`, `--output-dir`, `--concurrent-limit`
 let you override these file locations when running the tool.

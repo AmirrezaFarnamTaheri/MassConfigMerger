@@ -170,8 +170,8 @@ def parse_configs_from_text(text: str) -> Set[str]:
     return configs
 
 
-async def check_and_update_sources(path: Path) -> List[str]:
-    """Validate and deduplicate sources list."""
+async def check_and_update_sources(path: Path, concurrent_limit: int = 20) -> List[str]:
+    """Validate and deduplicate sources list concurrently."""
     if not path.exists():
         logging.warning("sources file not found: %s", path)
         return []
@@ -179,16 +179,26 @@ async def check_and_update_sources(path: Path) -> List[str]:
         sources = {line.strip() for line in f if line.strip()}
 
     valid_sources: List[str] = []
-    async with aiohttp.ClientSession() as session:
-        for url in sorted(sources):
+    semaphore = asyncio.Semaphore(concurrent_limit)
+    connector = aiohttp.TCPConnector(limit=concurrent_limit)
+
+    async def check(url: str) -> str | None:
+        async with semaphore:
             text = await fetch_text(session, url)
-            if not text:
-                logging.info("Removing dead source: %s", url)
-                continue
-            if not parse_configs_from_text(text):
-                logging.info("Removing empty source: %s", url)
-                continue
-            valid_sources.append(url)
+        if not text:
+            logging.info("Removing dead source: %s", url)
+            return None
+        if not parse_configs_from_text(text):
+            logging.info("Removing empty source: %s", url)
+            return None
+        return url
+
+    async with aiohttp.ClientSession(connector=connector) as session:
+        tasks = [asyncio.create_task(check(u)) for u in sorted(sources)]
+        for task in asyncio.as_completed(tasks):
+            result = await task
+            if result:
+                valid_sources.append(result)
 
     with path.open("w") as f:
         for url in valid_sources:
@@ -336,7 +346,7 @@ async def run_pipeline(cfg: Config, protocols: List[str] | None = None,
                        sources_file: Path = SOURCES_FILE,
                        channels_file: Path = CHANNELS_FILE) -> Path:
     """Full aggregation pipeline. Returns output directory."""
-    sources = await check_and_update_sources(sources_file)
+    sources = await check_and_update_sources(sources_file, cfg.max_concurrent)
     configs = await fetch_and_parse_configs(sources, cfg.max_concurrent)
     configs |= await scrape_telegram_configs(channels_file, 24, cfg)
 
