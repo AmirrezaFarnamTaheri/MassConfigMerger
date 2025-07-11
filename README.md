@@ -9,6 +9,8 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
 > **Note**: The default protocol list is optimised for the Hiddify client. Other VPN apps may require adjusting `--include-protocols`.
 
+**Important**: Install the dependencies with `pip install -r requirements.txt` before running **any** of the Python scripts.
+
 ### ⚡ Quick Start
 
 1. Install **Python 3.8+** and clone this repository.
