@@ -71,11 +71,13 @@ class Config:
     exclude_patterns: List[str] = field(default_factory=list)
     output_dir: str = "output"
     log_dir: str = "logs"
+    max_concurrent: int = 20
 
     @classmethod
     def load(cls, path: Path) -> "Config":
         with path.open("r") as f:
             data = json.load(f)
+        data.setdefault("max_concurrent", 20)
         return cls(**data)
 
 
@@ -136,12 +138,15 @@ async def check_and_update_sources(path: Path) -> List[str]:
     return valid_sources
 
 
-async def fetch_and_parse_configs(sources: Iterable[str]) -> Set[str]:
+async def fetch_and_parse_configs(sources: Iterable[str], max_concurrent: int = 20) -> Set[str]:
     """Fetch configs from sources."""
     configs: Set[str] = set()
 
+    sem = asyncio.Semaphore(max_concurrent)
+
     async def fetch_one(session: ClientSession, url: str) -> Set[str]:
-        text = await fetch_text(session, url)
+        async with sem:
+            text = await fetch_text(session, url)
         if not text:
             logging.warning("Failed to fetch %s", url)
             return set()
@@ -257,7 +262,7 @@ async def run_pipeline(cfg: Config, protocols: List[str] | None = None,
                        channels_file: Path = CHANNELS_FILE) -> Path:
     """Full aggregation pipeline. Returns output directory."""
     sources = await check_and_update_sources(sources_file)
-    configs = await fetch_and_parse_configs(sources)
+    configs = await fetch_and_parse_configs(sources, cfg.max_concurrent)
     configs |= await scrape_telegram_configs(channels_file, 24, cfg)
 
     final = deduplicate_and_filter(configs, cfg, protocols)
@@ -326,11 +331,14 @@ def main() -> None:
     parser.add_argument("--sources", default=str(SOURCES_FILE), help="path to sources.txt")
     parser.add_argument("--channels", default=str(CHANNELS_FILE), help="path to channels.txt")
     parser.add_argument("--output-dir", help="override output directory from config")
+    parser.add_argument("--max-concurrent", type=int, help="max concurrent HTTP requests")
     args = parser.parse_args()
 
     cfg = Config.load(Path(args.config))
     if args.output_dir:
         cfg.output_dir = args.output_dir
+    if args.max_concurrent:
+        cfg.max_concurrent = args.max_concurrent
 
     if args.protocols:
         protocols = [p.strip() for p in args.protocols.split(",") if p.strip()]

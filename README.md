@@ -534,7 +534,8 @@ links.
   "protocols": ["vmess", "vless", "trojan", "ss", "ssr", "hysteria", "hysteria2", "reality", "tuic"],
   "exclude_patterns": [],
   "output_dir": "output",
-  "log_dir": "logs"
+  "log_dir": "logs",
+  "max_concurrent": 20
 }
 ```
 
@@ -542,8 +543,9 @@ links.
 - **exclude_patterns** – regular expressions to remove unwanted links.
 - **output_dir** – where merged files are created.
 - **log_dir** – daily log files are written here.
+- **max_concurrent** – maximum simultaneous HTTP requests.
 
-The command line options `--config`, `--sources`, `--channels`, `--output-dir`
+The command line options `--config`, `--sources`, `--channels`, `--output-dir`, `--max-concurrent`
 let you override these file locations when running the tool.
 
 ### Important Notes
