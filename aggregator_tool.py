@@ -365,13 +365,17 @@ def output_files(configs: List[str], out_dir: Path) -> None:
     logging.info("Wrote %s, %s and merged_singbox.json", merged_path, merged_b64)
 
 
-async def run_pipeline(cfg: Config, protocols: List[str] | None = None,
-                       sources_file: Path = SOURCES_FILE,
-                       channels_file: Path = CHANNELS_FILE) -> Path:
+async def run_pipeline(
+    cfg: Config,
+    protocols: List[str] | None = None,
+    sources_file: Path = SOURCES_FILE,
+    channels_file: Path = CHANNELS_FILE,
+    last_hours: int = 24,
+) -> Path:
     """Full aggregation pipeline. Returns output directory."""
     sources = await check_and_update_sources(sources_file, cfg.max_concurrent)
     configs = await fetch_and_parse_configs(sources, cfg.max_concurrent)
-    configs |= await scrape_telegram_configs(channels_file, 24, cfg)
+    configs |= await scrape_telegram_configs(channels_file, last_hours, cfg)
 
     final = deduplicate_and_filter(configs, cfg, protocols)
     out_dir = Path(cfg.output_dir)
@@ -438,6 +442,12 @@ def main() -> None:
     parser.add_argument("--config", default=str(CONFIG_FILE), help="path to config.json")
     parser.add_argument("--sources", default=str(SOURCES_FILE), help="path to sources.txt")
     parser.add_argument("--channels", default=str(CHANNELS_FILE), help="path to channels.txt")
+    parser.add_argument(
+        "--hours",
+        type=int,
+        default=24,
+        help="how many hours of Telegram history to scan",
+    )
     parser.add_argument("--output-dir", help="override output directory from config")
     parser.add_argument(
         "--concurrent-limit",
@@ -484,6 +494,7 @@ def main() -> None:
                 protocols,
                 Path(args.sources),
                 Path(args.channels),
+                args.hours,
             )
         )
         print(f"Aggregation complete. Files written to {out_dir.resolve()}")
