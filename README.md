@@ -17,6 +17,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 4. *(Optional)* pass extra flags like `--max-ping 200` or `--concurrent-limit 10` to suit your connection.
 5. Import the `output/vpn_subscription_base64.txt` link (unless `--no-base64` was used) into your VPN app or load `vpn_singbox.json` in clients like sing-box.
 
+
 ### 🐳 Docker
 
 Build the image and run the merger without installing Python locally:
@@ -49,6 +50,7 @@ docker run --rm vpn-merger
 | **Strict Split** | Batches are strictly capped at `--batch-size` by default. Add `--no-strict-batch` to simply trigger on size. | Control how incremental files are produced. |
 | **Shuffle Sources** | `--shuffle-sources` randomizes the source order. | Helpful when using `--threshold` to avoid bias. |
 | **Sing-box JSON Output** | Every batch also produces `vpn_singbox.json`. | Import directly into modern clients like sing-box/Stash. |
+| **Clash YAML Output** | Generate `vpn_clash.yaml` for Clash/Stash users. | Works with any client supporting Clash configs. |
 | **Hiddify Optimised** | Default protocols match the Hiddify client. | Other clients may reject some entries. |
 
 ### 🔍 Feature Breakdown
@@ -313,6 +315,8 @@ There are many other applications that can import the generated subscription. Be
 
 Each client has its own strengths, so choose the one that fits your platform and skill level.
 
+Users of Clash Meta or Stash can import the provided `vpn_clash.yaml` for a ready-to-use proxy list.
+
 -----
 
 ## 📂 Understanding the Output Files
@@ -324,6 +328,7 @@ Each client has its own strengths, so choose the one that fits your platform and
 | `vpn_detailed.csv`            | *(optional)* A spreadsheet with detailed info about each server, including protocol, host, and ping time. |
 | `vpn_report.json`             | A detailed report with all stats and configurations in a developer-friendly format.                      |
 | `vpn_singbox.json`            | Outbound objects ready for import into sing-box/Stash.                                                   |
+| `vpn_clash.yaml`              | Clash configuration with all proxies and a basic group.                                                   |
 
 -----
 
@@ -513,9 +518,11 @@ and Trojan links must include an `@host:port`—and malformed entries are skippe
    pip install -r requirements.txt
    ```
 2. Obtain a Telegram **API ID** and **API Hash** from <https://my.telegram.org>.
-   Place them in `config.json` together with your bot token and the Telegram user
-   IDs that are allowed to interact with the bot. A starter template is provided
-   in `config.json.example`.
+   Create your own `config.json` (you can copy `config.json.example`) and add
+   them along with your bot token and the Telegram user IDs allowed to interact
+   with the bot, **or** set the environment variables `TELEGRAM_API_ID`,
+   `TELEGRAM_API_HASH` and `TELEGRAM_BOT_TOKEN` instead.  The example file shows
+   all available options.
 3. Edit `sources.txt` and `channels.txt` to include any extra subscription URLs
    or channel names you wish to scrape. **Each line of `sources.txt` should
    contain exactly one valid URL with no extra text or spaces.** Each line of
@@ -540,7 +547,7 @@ and Trojan links must include an `@host:port`—and malformed entries are skippe
 
 ### Configuration
 
-`config.json` contains all runtime options (see `config.json.example` for a complete template):
+`config.json` contains all runtime options (see `config.json.example` for a complete template).  The values `telegram_api_id`, `telegram_api_hash` and `telegram_bot_token` may also be supplied through the environment variables `TELEGRAM_API_ID`, `TELEGRAM_API_HASH` and `TELEGRAM_BOT_TOKEN` when they are not present in the file:
 
 ```json
 {
@@ -564,6 +571,7 @@ recognized—any unknown keys will cause an error. Missing required fields will
 also trigger a helpful message listing what is absent.
 
 Required fields: `telegram_api_id`, `telegram_api_hash`, `telegram_bot_token`, `allowed_user_ids`.
+If the telegram fields are omitted from the file they will be looked up from the corresponding environment variables.
 If any are missing you'll see an error like:
 
 ```text
