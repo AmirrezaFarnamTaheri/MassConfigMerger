@@ -546,6 +546,10 @@ and Trojan links must include an `@host:port`—and malformed entries are skippe
 }
 ```
 
+`config.json` must be a single JSON object. Only the fields shown above are
+recognized—any unknown keys will cause an error. Missing required fields will
+also trigger a helpful message listing what is absent.
+
 Required fields: `telegram_api_id`, `telegram_api_hash`, `telegram_bot_token`, `allowed_user_ids`.
 If any are missing you'll see an error like:
 
