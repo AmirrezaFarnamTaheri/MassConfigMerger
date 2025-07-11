@@ -102,6 +102,7 @@ class Config:
     tls_fragment: Optional[str]
     include_protocols: Optional[Set[str]]
     exclude_protocols: Optional[Set[str]]
+    exclude_patterns: List[str]
     resume_file: Optional[str]
     max_ping_ms: Optional[int]
     log_file: Optional[str]
@@ -153,6 +154,7 @@ CONFIG = Config(
         "SHADOWTLS", "CLASHMETA", "HYSTERIA2",
     },
     exclude_protocols={"OTHER"},
+    exclude_patterns=[],
     resume_file=None,
     max_ping_ms=1000,
     log_file=None,
@@ -166,6 +168,9 @@ CONFIG = Config(
     mux_concurrency=8,
     smux_streams=4
 )
+
+# Compiled regular expressions from --exclude-pattern
+EXCLUDE_REGEXES: List[re.Pattern] = []
 
 # ============================================================================
 # COMPREHENSIVE SOURCE COLLECTION (ALL UNIFIED SOURCES)
@@ -1326,11 +1331,14 @@ class UltimateVPNMerger:
         new_slice = self.all_results[self.last_processed_index:]
         self.last_processed_index = len(self.all_results)
         for r in new_slice:
-            if CONFIG.tls_fragment and CONFIG.tls_fragment.lower() not in r.config.lower():
+            text = r.config.lower()
+            if CONFIG.tls_fragment and CONFIG.tls_fragment.lower() not in text:
                 continue
             if CONFIG.include_protocols and r.protocol.upper() not in CONFIG.include_protocols:
                 continue
             if CONFIG.exclude_protocols and r.protocol.upper() in CONFIG.exclude_protocols:
+                continue
+            if EXCLUDE_REGEXES and any(rx.search(text) for rx in EXCLUDE_REGEXES):
                 continue
             if CONFIG.enable_url_testing and r.ping_time is None:
                 continue
@@ -1397,11 +1405,14 @@ class UltimateVPNMerger:
         unique_results: List[ConfigResult] = []
 
         for result in results:
-            if CONFIG.tls_fragment and CONFIG.tls_fragment.lower() not in result.config.lower():
+            text = result.config.lower()
+            if CONFIG.tls_fragment and CONFIG.tls_fragment.lower() not in text:
                 continue
             if CONFIG.include_protocols and result.protocol.upper() not in CONFIG.include_protocols:
                 continue
             if CONFIG.exclude_protocols and result.protocol.upper() in CONFIG.exclude_protocols:
+                continue
+            if EXCLUDE_REGEXES and any(r.search(text) for r in EXCLUDE_REGEXES):
                 continue
             config_hash = self.processor.create_semantic_hash(result.config)
             if config_hash not in seen_hashes:
@@ -1850,6 +1861,11 @@ def main():
         default=None,
         help="Comma-separated list of protocols to exclude (default: OTHER)"
     )
+    parser.add_argument(
+        "--exclude-pattern",
+        action="append",
+        help="Regular expression to skip configs (can be repeated)",
+    )
     parser.add_argument("--resume", type=str, default=None,
                         help="Resume processing from existing raw/base64 file")
     parser.add_argument("--output-dir", type=str, default=CONFIG.output_dir,
@@ -1903,6 +1919,9 @@ def main():
         CONFIG.exclude_protocols = {
             p.strip().upper() for p in args.exclude_protocols.split(',') if p.strip()
         }
+    CONFIG.exclude_patterns = args.exclude_pattern or []
+    global EXCLUDE_REGEXES
+    EXCLUDE_REGEXES = [re.compile(p) for p in CONFIG.exclude_patterns]
     CONFIG.resume_file = args.resume
     # Resolve and validate output directory to prevent path traversal
     allowed_base = _get_script_dir()
