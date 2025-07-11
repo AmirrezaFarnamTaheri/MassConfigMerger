@@ -622,3 +622,8 @@ let you override these file locations when running the tool.
   respect Telegram's Terms of Service along with your local laws.
 - All events are logged to the directory specified in `log_dir` so you can audit
   what was fetched and from where.
+
+## Changelog & Contributing
+
+See [CHANGELOG.md](CHANGELOG.md) for a summary of new features and updates.
+If you encounter problems or have improvements, please open an issue or submit a pull request on [GitHub](https://github.com/AmirrezaFarnamTaheri/MassConfigMerger).
