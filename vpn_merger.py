@@ -1536,6 +1536,7 @@ class UltimateVPNMerger:
             tmp_csv.replace(csv_file)
         
         # Comprehensive JSON report
+        report_file = output_dir / f"{prefix}vpn_report.json"
         report = {
             "generation_info": {
                 "timestamp_utc": datetime.now(timezone.utc).isoformat(),
@@ -1555,7 +1556,7 @@ class UltimateVPNMerger:
                 "raw": str(raw_file),
                 **({"base64": str(base64_file)} if CONFIG.write_base64 else {}),
                 **({"detailed_csv": str(csv_file)} if CONFIG.write_csv else {}),
-                "json_report": "vpn_report.json",
+                "json_report": str(report_file),
                 "singbox": str(output_dir / f"{prefix}vpn_singbox.json"),
                 "clash": str(output_dir / f"{prefix}vpn_clash.yaml"),
             },
@@ -1571,7 +1572,6 @@ class UltimateVPNMerger:
             }
         }
         
-        report_file = output_dir / f"{prefix}vpn_report.json"
         tmp_report = report_file.with_suffix('.tmp')
         tmp_report.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
         tmp_report.replace(report_file)
