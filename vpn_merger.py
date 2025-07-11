@@ -1729,14 +1729,22 @@ class UltimateVPNMerger:
         print(f"⏱️  Total processing time: {elapsed_time:.2f} seconds")
         print(f"📊 Final unique configs: {config_count:,}")
         print(f"🌐 Reachable configs: {stats['reachable_configs']:,}")
-        print(f"📈 Success rate: {stats['reachable_configs']/config_count*100:.1f}%")
+        if config_count:
+            success = f"{stats['reachable_configs']/config_count*100:.1f}%"
+        else:
+            success = "N/A"
+        print(f"📈 Success rate: {success}")
         print(f"🔗 Available sources: {stats['available_sources']}/{stats['total_sources']}")
-        print(f"⚡ Processing speed: {config_count/elapsed_time:.0f} configs/second")
+        speed = (config_count / elapsed_time) if elapsed_time else 0
+        print(f"⚡ Processing speed: {speed:.0f} configs/second")
         
         if CONFIG.enable_sorting and stats['reachable_configs'] > 0:
             print(f"🚀 Configs sorted by performance (fastest first)")
         
-        top_protocol = max(stats['protocol_stats'].items(), key=lambda x: x[1])[0]
+        if stats['protocol_stats']:
+            top_protocol = max(stats['protocol_stats'].items(), key=lambda x: x[1])[0]
+        else:
+            top_protocol = "N/A"
         print(f"🏆 Top protocol: {top_protocol}")
         print(f"📁 Output directory: ./{CONFIG.output_dir}/")
         print("\n🔗 Usage Instructions:")

@@ -69,3 +69,21 @@ def test_deduplicate_config_results(monkeypatch):
     assert len(unique) == 2
     hashes = [merger.processor.create_semantic_hash(r.config) for r in unique]
     assert len(set(hashes)) == 2
+
+
+def test_print_final_summary_zero_configs(capsys):
+    """Ensure summary handles empty results gracefully."""
+    merger = UltimateVPNMerger()
+    stats = {
+        "protocol_stats": {},
+        "performance_stats": {},
+        "total_configs": 0,
+        "reachable_configs": 0,
+        "available_sources": 0,
+        "total_sources": 0,
+    }
+
+    merger._print_final_summary(0, 0.5, stats)
+    captured = capsys.readouterr().out
+    assert "Success rate: N/A" in captured
+    assert "Top protocol: N/A" in captured
