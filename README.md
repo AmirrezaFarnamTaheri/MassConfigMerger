@@ -539,6 +539,14 @@ links.
 }
 ```
 
+Required fields: `telegram_api_id`, `telegram_api_hash`, `telegram_bot_token`, `allowed_user_ids`.
+Optional fields use these defaults when omitted:
+- `protocols` – `[]`
+- `exclude_patterns` – `[]`
+- `output_dir` – `output`
+- `log_dir` – `logs`
+- `max_concurrent` – `20`
+
 - **protocols** – only links starting with these schemes are kept.
 - **exclude_patterns** – regular expressions to remove unwanted links.
 - **output_dir** – where merged files are created.

@@ -75,9 +75,22 @@ class Config:
 
     @classmethod
     def load(cls, path: Path) -> "Config":
-        with path.open("r") as f:
-            data = json.load(f)
-        data.setdefault("max_concurrent", 20)
+        try:
+            with path.open("r") as f:
+                data = json.load(f)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid JSON in {path}: {exc}") from exc
+
+        defaults = {
+            "protocols": [],
+            "exclude_patterns": [],
+            "output_dir": "output",
+            "log_dir": "logs",
+            "max_concurrent": 20,
+        }
+        for key, value in defaults.items():
+            data.setdefault(key, value)
+
         return cls(**data)
 
 
