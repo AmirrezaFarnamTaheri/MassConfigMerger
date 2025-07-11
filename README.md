@@ -547,6 +547,11 @@ and Trojan links must include an `@host:port`—and malformed entries are skippe
 ```
 
 Required fields: `telegram_api_id`, `telegram_api_hash`, `telegram_bot_token`, `allowed_user_ids`.
+If any are missing you'll see an error like:
+
+```text
+config.json missing required fields: telegram_api_id, telegram_api_hash
+```
 Optional fields use these defaults when omitted:
 - `protocols` – `[]`
 - `exclude_patterns` – `[]`
