@@ -38,6 +38,14 @@ BASE64_RE = re.compile(r"^[A-Za-z0-9+/=]+$")
 HTTP_RE = re.compile(r"https?://\S+", re.IGNORECASE)
 
 
+def _get_script_dir() -> Path:
+    """Return a safe base directory for writing output."""
+    try:
+        return Path(__file__).resolve().parent
+    except NameError:
+        return Path.cwd()
+
+
 def extract_subscription_urls(text: str) -> Set[str]:
     """Return all HTTP(S) URLs in the text block."""
     return set(HTTP_RE.findall(text))
@@ -425,6 +433,14 @@ def main() -> None:
         cfg.max_concurrent = args.concurrent_limit
     elif args.max_concurrent is not None:
         cfg.max_concurrent = args.max_concurrent
+
+    allowed_base = _get_script_dir()
+    resolved_output = Path(cfg.output_dir).expanduser().resolve()
+    try:
+        resolved_output.relative_to(allowed_base)
+    except ValueError:
+        parser.error(f"--output-dir must be within {allowed_base}")
+    cfg.output_dir = str(resolved_output)
 
     if args.protocols:
         protocols = [p.strip() for p in args.protocols.split(",") if p.strip()]
