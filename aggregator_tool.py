@@ -2,8 +2,9 @@
 
 This module provides a command line tool to collect VPN configuration links from
 HTTP sources and Telegram channels, clean and deduplicate them, and output the
-results in multiple formats. A Telegram bot mode is also available for on-demand
-updates.
+results in multiple formats.  A Telegram bot mode is also available for
+on-demand updates.  The script is intended for local, one-shot execution and can
+be scheduled with cron or Task Scheduler if desired.
 """
 from __future__ import annotations
 
@@ -30,6 +31,28 @@ CHANNELS_FILE = Path("channels.txt")
 
 PROTOCOL_RE = re.compile(r"(vmess|vless|trojan|ssr?|hysteria2?|tuic)://\S+", re.IGNORECASE)
 BASE64_RE = re.compile(r"^[A-Za-z0-9+/=]+$")
+HTTP_RE = re.compile(r"https?://\S+", re.IGNORECASE)
+
+
+def extract_subscription_urls(text: str) -> Set[str]:
+    """Return all HTTP(S) URLs in the text block."""
+    return set(HTTP_RE.findall(text))
+
+
+def is_valid_config(link: str) -> bool:
+    """Simple validation for known protocols."""
+    if "warp://" in link:
+        return False
+    if link.startswith("vmess://"):
+        b64 = link.split("://", 1)[1]
+        # pad base64 string if needed
+        padded = b64 + "=" * (-len(b64) % 4)
+        try:
+            json.loads(base64.b64decode(padded).decode())
+            return True
+        except Exception:
+            return False
+    return True
 
 
 @dataclass
@@ -110,13 +133,19 @@ async def check_and_update_sources(path: Path) -> List[str]:
 async def fetch_and_parse_configs(sources: Iterable[str]) -> Set[str]:
     """Fetch configs from sources."""
     configs: Set[str] = set()
+
+    async def fetch_one(session: ClientSession, url: str) -> Set[str]:
+        text = await fetch_text(session, url)
+        if not text:
+            logging.warning("Failed to fetch %s", url)
+            return set()
+        return parse_configs_from_text(text)
+
     async with aiohttp.ClientSession() as session:
-        for url in sources:
-            text = await fetch_text(session, url)
-            if not text:
-                logging.warning("Failed to fetch %s", url)
-                continue
-            configs.update(parse_configs_from_text(text))
+        tasks = [asyncio.create_task(fetch_one(session, u)) for u in sources]
+        for task in asyncio.as_completed(tasks):
+            configs.update(await task)
+
     return configs
 
 
@@ -132,13 +161,23 @@ async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Con
     client = TelegramClient("user", cfg.telegram_api_id, cfg.telegram_api_hash)
     await client.start()
     configs: Set[str] = set()
-    for channel in channels:
-        try:
-            async for msg in client.iter_messages(channel, offset_date=since):
-                if isinstance(msg, Message) and msg.message:
-                    configs.update(parse_configs_from_text(msg.message))
-        except Exception as e:
-            logging.warning("Failed to scrape %s: %s", channel, e)
+    async with aiohttp.ClientSession() as session:
+        for channel in channels:
+            count_before = len(configs)
+            try:
+                async for msg in client.iter_messages(channel, offset_date=since):
+                    if isinstance(msg, Message) and msg.message:
+                        text = msg.message
+                        configs.update(parse_configs_from_text(text))
+                        for sub in extract_subscription_urls(text):
+                            text2 = await fetch_text(session, sub)
+                            if text2:
+                                configs.update(parse_configs_from_text(text2))
+            except Exception as e:
+                logging.warning("Failed to scrape %s: %s", channel, e)
+            logging.info("Channel %s -> %d new configs", channel, len(configs) - count_before)
+
+
     await client.disconnect()
     logging.info("Telegram configs found: %d", len(configs))
     return configs
@@ -149,12 +188,14 @@ def deduplicate_and_filter(config_set: Set[str], cfg: Config, protocols: List[st
     final = []
     protocols = protocols or cfg.protocols
     exclude = [re.compile(p) for p in cfg.exclude_patterns]
-    for link in sorted(set(c.lower() for c in config_set)):
-        if not any(link.startswith(p + "://") for p in protocols):
+    for link in sorted(set(c.strip() for c in config_set)):
+        l_lower = link.lower()
+        if not any(l_lower.startswith(p + "://") for p in protocols):
             continue
-        if any(r.search(link) for r in exclude):
+        if any(r.search(l_lower) for r in exclude):
             continue
-        if "warp://" in link:
+        if not is_valid_config(link):
+
             continue
         final.append(link)
     logging.info("Final configs count: %d", len(final))
@@ -166,23 +207,47 @@ def output_files(configs: List[str], out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     merged_path = out_dir / "merged.txt"
     merged_b64 = out_dir / "merged_base64.txt"
-    merged_path.write_text("\n".join(configs))
-    merged_b64.write_text(base64.b64encode("\n".join(configs).encode()).decode())
-    logging.info("Wrote %s and %s", merged_path, merged_b64)
+    text = "\n".join(configs)
+    merged_path.write_text(text)
+    b64_content = base64.b64encode(text.encode()).decode()
+    merged_b64.write_text(b64_content)
+
+    # Validate base64 decodes cleanly
+    try:
+        base64.b64decode(b64_content).decode()
+    except Exception:
+        logging.warning("Base64 validation failed")
+
+    # Simple sing-box style JSON
+    outbounds = []
+    for idx, link in enumerate(configs):
+        proto = link.split("://", 1)[0].lower()
+        outbounds.append({"type": proto, "tag": f"node-{idx}", "raw": link})
+    (out_dir / "merged_singbox.json").write_text(
+        json.dumps({"outbounds": outbounds}, indent=2, ensure_ascii=False)
+    )
+
+    logging.info("Wrote %s, %s and merged_singbox.json", merged_path, merged_b64)
 
 
-async def run_pipeline(cfg: Config, protocols: List[str] | None = None) -> Path:
+async def run_pipeline(cfg: Config, protocols: List[str] | None = None,
+                       sources_file: Path = SOURCES_FILE,
+                       channels_file: Path = CHANNELS_FILE) -> Path:
     """Full aggregation pipeline. Returns output directory."""
-    sources = await check_and_update_sources(SOURCES_FILE)
+    sources = await check_and_update_sources(sources_file)
     configs = await fetch_and_parse_configs(sources)
-    configs |= await scrape_telegram_configs(CHANNELS_FILE, 24, cfg)
+    configs |= await scrape_telegram_configs(channels_file, 24, cfg)
+
     final = deduplicate_and_filter(configs, cfg, protocols)
     out_dir = Path(cfg.output_dir)
     output_files(final, out_dir)
     return out_dir
 
 
-async def telegram_bot_mode(cfg: Config) -> None:
+async def telegram_bot_mode(cfg: Config,
+                            sources_file: Path = SOURCES_FILE,
+                            channels_file: Path = CHANNELS_FILE) -> None:
+
     """Launch Telegram bot for on-demand updates."""
     bot = TelegramClient("bot", cfg.telegram_api_id, cfg.telegram_api_hash).start(bot_token=cfg.telegram_bot_token)
     last_update = None
@@ -199,7 +264,8 @@ async def telegram_bot_mode(cfg: Config) -> None:
         if event.sender_id not in cfg.allowed_user_ids:
             return
         await event.respond("Running update...")
-        out_dir = await run_pipeline(cfg)
+        out_dir = await run_pipeline(cfg, None, sources_file, channels_file)
+
         for path in out_dir.iterdir():
             await event.respond(file=str(path))
         last_update = datetime.utcnow()
@@ -234,9 +300,16 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Mass VPN Config Aggregator")
     parser.add_argument("--bot", action="store_true", help="run in telegram bot mode")
     parser.add_argument("--protocols", help="comma separated protocols to keep")
+    parser.add_argument("--config", default=str(CONFIG_FILE), help="path to config.json")
+    parser.add_argument("--sources", default=str(SOURCES_FILE), help="path to sources.txt")
+    parser.add_argument("--channels", default=str(CHANNELS_FILE), help="path to channels.txt")
+    parser.add_argument("--output-dir", help="override output directory from config")
     args = parser.parse_args()
 
-    cfg = Config.load(CONFIG_FILE)
+    cfg = Config.load(Path(args.config))
+    if args.output_dir:
+        cfg.output_dir = args.output_dir
+
     if args.protocols:
         protocols = [p.strip() for p in args.protocols.split(",") if p.strip()]
     else:
@@ -245,9 +318,9 @@ def main() -> None:
     setup_logging(Path(cfg.log_dir))
 
     if args.bot:
-        asyncio.run(telegram_bot_mode(cfg))
+        asyncio.run(telegram_bot_mode(cfg, Path(args.sources), Path(args.channels)))
     else:
-        asyncio.run(run_pipeline(cfg, protocols))
+
 
 
 if __name__ == "__main__":
