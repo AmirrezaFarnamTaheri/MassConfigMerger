@@ -49,6 +49,8 @@ def is_valid_config(link: str) -> bool:
         return False
     if link.startswith("vmess://"):
         b64 = link.split("://", 1)[1]
+        # remove notes or query parameters
+        b64 = re.split(r"[?#]", b64, 1)[0]
         # pad base64 string if needed
         padded = b64 + "=" * (-len(b64) % 4)
         try:
