@@ -49,9 +49,11 @@ from aiohttp.resolver import AsyncResolver
 try:
     import nest_asyncio
     nest_asyncio.apply()
-    print("✅ Applied nest_asyncio patch for event loop compatibility")
+    if __name__ == "__main__":
+        print("✅ Applied nest_asyncio patch for event loop compatibility")
 except ImportError:
-    print("📦 Installing nest_asyncio...")
+    if __name__ == "__main__":
+        print("📦 Installing nest_asyncio...")
     import subprocess
     subprocess.check_call([sys.executable, "-m", "pip", "install", "nest-asyncio"])
     import nest_asyncio
@@ -60,7 +62,8 @@ except ImportError:
 try:
     import aiodns
 except ImportError:
-    print("📦 Installing aiodns...")
+    if __name__ == "__main__":
+        print("📦 Installing aiodns...")
     import subprocess
     subprocess.check_call([sys.executable, "-m", "pip", "install", "aiodns"])
     import aiodns
@@ -1780,11 +1783,12 @@ def main():
 if __name__ == "__main__":
     main()
 
-# ============================================================================
-# USAGE INSTRUCTIONS
-# ============================================================================
+    # ========================================================================
+    # USAGE INSTRUCTIONS
+    # ========================================================================
 
-print("""
+    print(
+        """\
 🚀 VPN Subscription Merger - Final Unified Edition
 
 📋 Execution Methods:
@@ -1814,4 +1818,5 @@ print("""
    • vpn_subscription_base64.txt (for direct import)
    • vpn_detailed.csv (with performance metrics)
    • vpn_report.json (comprehensive statistics)
-""")
+"""
+    )
