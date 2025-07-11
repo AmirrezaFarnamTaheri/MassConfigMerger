@@ -123,6 +123,7 @@ class Config:
             "telegram_api_id": os.getenv("TELEGRAM_API_ID"),
             "telegram_api_hash": os.getenv("TELEGRAM_API_HASH"),
             "telegram_bot_token": os.getenv("TELEGRAM_BOT_TOKEN"),
+            "allowed_user_ids": os.getenv("ALLOWED_USER_IDS"),
         }
 
         if env_values["telegram_api_id"] is not None:
@@ -134,6 +135,19 @@ class Config:
         for key in ("telegram_api_hash", "telegram_bot_token"):
             if env_values[key] is not None:
                 data[key] = env_values[key]
+
+        if env_values["allowed_user_ids"] is not None:
+            try:
+                ids = [
+                    int(i)
+                    for i in re.split(r"[ ,]+", env_values["allowed_user_ids"].strip())
+                    if i
+                ]
+            except ValueError as exc:
+                raise ValueError(
+                    "ALLOWED_USER_IDS must be a comma separated list of integers"
+                ) from exc
+            data["allowed_user_ids"] = ids
 
         merged_defaults = {
             "protocols": [],
