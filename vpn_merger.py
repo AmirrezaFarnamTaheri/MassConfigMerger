@@ -52,22 +52,19 @@ try:
     nest_asyncio.apply()
     if __name__ == "__main__":
         print("✅ Applied nest_asyncio patch for event loop compatibility")
-except ImportError:
-    if __name__ == "__main__":
-        print("📦 Installing nest_asyncio...")
-    import subprocess
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "nest-asyncio"])
-    import nest_asyncio
-    nest_asyncio.apply()
+except ImportError as exc:
+    raise ImportError(
+        "Missing optional dependency 'nest_asyncio'. "
+        "Run `pip install -r requirements.txt` before running this script."
+    ) from exc
 
 try:
     import aiodns
-except ImportError:
-    if __name__ == "__main__":
-        print("📦 Installing aiodns...")
-    import subprocess
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "aiodns"])
-    import aiodns
+except ImportError as exc:
+    raise ImportError(
+        "Missing optional dependency 'aiodns'. "
+        "Run `pip install -r requirements.txt` before running this script."
+    ) from exc
 
 # ============================================================================
 # CONFIGURATION & SETTINGS
