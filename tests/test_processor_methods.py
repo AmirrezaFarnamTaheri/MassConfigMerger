@@ -112,3 +112,20 @@ def test_lookup_country(monkeypatch):
     monkeypatch.setitem(sys.modules, "geoip2.database", dummy_database)
 
     assert proc.lookup_country("1.2.3.4") == "US"
+
+
+def test_deduplicate_semantic_equivalent(monkeypatch):
+    """Ensure deduplication relies on semantic hashes, not raw strings."""
+    merger = UltimateVPNMerger()
+    monkeypatch.setattr(CONFIG, "tls_fragment", None)
+    monkeypatch.setattr(CONFIG, "include_protocols", None)
+    monkeypatch.setattr(CONFIG, "exclude_protocols", None)
+
+    base = make_vmess("id1", host="h.example", port=80)
+    uri = "vmess://id1@h.example:80?type=ws"
+    r1 = ConfigResult(config=base, protocol="VMess", host="h.example", port=80)
+    r2 = ConfigResult(config=uri, protocol="VMess", host="h.example", port=80)
+
+    unique = merger._deduplicate_config_results([r1, r2])
+    assert len(unique) == 1
+    assert unique[0].config in {base, uri}
