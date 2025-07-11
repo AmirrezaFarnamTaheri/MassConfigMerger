@@ -30,7 +30,10 @@ SOURCES_FILE = Path("sources.txt")
 CHANNELS_FILE = Path("channels.txt")
 
 # Match full config links for supported protocols
-PROTOCOL_RE = re.compile(r"(?:vmess|vless|trojan|ssr?|hysteria2?|tuic)://\S+", re.IGNORECASE)
+PROTOCOL_RE = re.compile(
+    r"(?:vmess|vless|trojan|ssr?|hysteria2?|tuic|reality)://\S+",
+    re.IGNORECASE,
+)
 BASE64_RE = re.compile(r"^[A-Za-z0-9+/=]+$")
 HTTP_RE = re.compile(r"https?://\S+", re.IGNORECASE)
 
