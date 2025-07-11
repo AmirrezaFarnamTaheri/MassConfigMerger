@@ -43,8 +43,14 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
-import aiohttp
-from aiohttp.resolver import AsyncResolver
+try:
+    import aiohttp
+    from aiohttp.resolver import AsyncResolver
+except ImportError as exc:
+    raise ImportError(
+        "Missing optional dependency 'aiohttp'. "
+        "Run `pip install -r requirements.txt` before running this script."
+    ) from exc
 
 # Event loop compatibility fix
 try:
