@@ -1,0 +1,25 @@
+import base64
+import json
+import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+import aggregator_tool
+
+
+def test_case_insensitive_deduplication():
+    data = {"v": "2"}
+    b64 = base64.b64encode(json.dumps(data).encode()).decode().strip("=")
+    lower = f"vmess://{b64}"
+    upper = f"Vmess://{b64}"
+    cfg = aggregator_tool.Config(
+        telegram_api_id=1,
+        telegram_api_hash="h",
+        telegram_bot_token="t",
+        allowed_user_ids=[1],
+        protocols=["vmess"],
+    )
+    result = aggregator_tool.deduplicate_and_filter({lower, upper}, cfg)
+    assert len(result) == 1
+    assert result[0] in {lower, upper}
+
