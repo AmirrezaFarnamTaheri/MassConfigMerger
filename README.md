@@ -506,8 +506,9 @@ links.
    Place them in `config.json` together with your bot token and the Telegram user
    IDs that are allowed to interact with the bot.
 3. Edit `sources.txt` and `channels.txt` to include any extra subscription URLs
-   or channel names you wish to scrape. By default the aggregator recognizes
-   links starting with `vmess`, `vless`, `trojan`, `ss`, `ssr`, `hysteria`,
+   or channel names you wish to scrape. **Put one valid URL on each line of**
+   `sources.txt`. By default the aggregator recognizes links starting with
+   `vmess`, `vless`, `trojan`, `ss`, `ssr`, `hysteria`,
    `hysteria2`, `tuic`, `reality`, `naive`, `hy2` and `wireguard`.
 4. Run the tool:
    ```bash
