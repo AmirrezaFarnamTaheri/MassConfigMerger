@@ -158,28 +158,44 @@ async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Con
     with channels_path.open() as f:
         channels = [line.strip().removeprefix("https://t.me/") for line in f if line.strip()]
 
+    if not channels:
+        logging.info("No channels specified in %s", channels_path)
+        return set()
+
     since = datetime.utcnow() - timedelta(hours=last_hours)
     client = TelegramClient("user", cfg.telegram_api_id, cfg.telegram_api_hash)
-    await client.start()
     configs: Set[str] = set()
-    async with aiohttp.ClientSession() as session:
-        for channel in channels:
-            count_before = len(configs)
-            try:
-                async for msg in client.iter_messages(channel, offset_date=since):
-                    if isinstance(msg, Message) and msg.message:
-                        text = msg.message
-                        configs.update(parse_configs_from_text(text))
-                        for sub in extract_subscription_urls(text):
-                            text2 = await fetch_text(session, sub)
-                            if text2:
-                                configs.update(parse_configs_from_text(text2))
-            except Exception as e:
-                logging.warning("Failed to scrape %s: %s", channel, e)
-            logging.info("Channel %s -> %d new configs", channel, len(configs) - count_before)
 
+    try:
+        await client.start()
+        async with aiohttp.ClientSession() as session:
+            for channel in channels:
+                count_before = len(configs)
+                try:
+                    async for msg in client.iter_messages(channel, offset_date=since):
+                        if isinstance(msg, Message) and msg.message:
+                            text = msg.message
+                            configs.update(parse_configs_from_text(text))
+                            for sub in extract_subscription_urls(text):
+                                text2 = await fetch_text(session, sub)
+                                if text2:
+                                    configs.update(parse_configs_from_text(text2))
+                except Exception as e:
+                    logging.warning("Failed to scrape %s: %s", channel, e)
+                logging.info(
+                    "Channel %s -> %d new configs",
+                    channel,
+                    len(configs) - count_before,
+                )
+        await client.disconnect()
+    except Exception as e:
+        logging.warning("Telegram connection failed: %s", e)
+        try:
+            await client.disconnect()
+        except Exception:
+            pass
+        return set()
 
-    await client.disconnect()
     logging.info("Telegram configs found: %d", len(configs))
     return configs
 
