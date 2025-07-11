@@ -17,7 +17,7 @@ import re
 from dataclasses import dataclass, field, fields
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Iterable, List, Set, Optional, Dict, Union
+from typing import Iterable, List, Set, Optional, Dict, Union, Tuple
 from urllib.parse import urlparse, parse_qs
 
 import yaml
@@ -380,15 +380,20 @@ def deduplicate_and_filter(
     return final
 
 
-def output_files(configs: List[str], out_dir: Path) -> None:
-    """Write merged files."""
+def output_files(configs: List[str], out_dir: Path) -> List[Path]:
+    """Write merged files and return list of written file paths."""
     out_dir.mkdir(parents=True, exist_ok=True)
+    written: List[Path] = []
+
     merged_path = out_dir / "merged.txt"
     merged_b64 = out_dir / "merged_base64.txt"
     text = "\n".join(configs)
     merged_path.write_text(text)
+    written.append(merged_path)
+
     b64_content = base64.b64encode(text.encode()).decode()
     merged_b64.write_text(b64_content)
+    written.append(merged_b64)
 
     # Validate base64 decodes cleanly
     try:
@@ -401,9 +406,11 @@ def output_files(configs: List[str], out_dir: Path) -> None:
     for idx, link in enumerate(configs):
         proto = link.split("://", 1)[0].lower()
         outbounds.append({"type": proto, "tag": f"node-{idx}", "raw": link})
-    (out_dir / "merged_singbox.json").write_text(
+    merged_singbox = out_dir / "merged_singbox.json"
+    merged_singbox.write_text(
         json.dumps({"outbounds": outbounds}, indent=2, ensure_ascii=False)
     )
+    written.append(merged_singbox)
 
     def _config_to_clash_proxy(config: str, idx: int) -> Optional[Dict[str, Union[str, int, bool]]]:
         """Convert a single config link to a Clash proxy dictionary."""
@@ -517,10 +524,23 @@ def output_files(configs: List[str], out_dir: Path) -> None:
             proxies.append(proxy)
     if proxies:
         group = {"name": "Proxy", "type": "select", "proxies": [p["name"] for p in proxies]}
-        clash_yaml = yaml.safe_dump({"proxies": proxies, "proxy-groups": [group]}, allow_unicode=True, sort_keys=False)
-        (out_dir / "clash.yaml").write_text(clash_yaml)
+        clash_yaml = yaml.safe_dump(
+            {"proxies": proxies, "proxy-groups": [group]},
+            allow_unicode=True,
+            sort_keys=False,
+        )
+        clash_file = out_dir / "clash.yaml"
+        clash_file.write_text(clash_yaml)
+        written.append(clash_file)
 
-    logging.info("Wrote %s, %s, merged_singbox.json and clash.yaml", merged_path, merged_b64)
+    logging.info(
+        "Wrote %s, %s, merged_singbox.json%s",
+        merged_path,
+        merged_b64,
+        " and clash.yaml" if proxies else "",
+    )
+
+    return written
 
 
 async def run_pipeline(
@@ -529,16 +549,17 @@ async def run_pipeline(
     sources_file: Path = SOURCES_FILE,
     channels_file: Path = CHANNELS_FILE,
     last_hours: int = 24,
-) -> Path:
-    """Full aggregation pipeline. Returns output directory."""
+) -> Tuple[Path, List[Path]]:
+    """Full aggregation pipeline.
+    Returns output directory and list of created files."""
     sources = await check_and_update_sources(sources_file, cfg.max_concurrent)
     configs = await fetch_and_parse_configs(sources, cfg.max_concurrent)
     configs |= await scrape_telegram_configs(channels_file, last_hours, cfg)
 
     final = deduplicate_and_filter(configs, cfg, protocols)
     out_dir = Path(cfg.output_dir)
-    output_files(final, out_dir)
-    return out_dir
+    files = output_files(final, out_dir)
+    return out_dir, files
 
 
 async def telegram_bot_mode(
@@ -564,7 +585,7 @@ async def telegram_bot_mode(
         if event.sender_id not in cfg.allowed_user_ids:
             return
         await event.respond("Running update...")
-        out_dir = await run_pipeline(
+        out_dir, files = await run_pipeline(
             cfg,
             None,
             sources_file,
@@ -572,7 +593,7 @@ async def telegram_bot_mode(
             last_hours,
         )
 
-        for path in out_dir.iterdir():
+        for path in files:
             await event.respond(file=str(path))
         last_update = datetime.utcnow()
 
@@ -669,7 +690,7 @@ def main() -> None:
         )
     else:
 
-        out_dir = asyncio.run(
+        out_dir, _ = asyncio.run(
             run_pipeline(
                 cfg,
                 protocols,
