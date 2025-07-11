@@ -3,7 +3,7 @@
   "telegram_api_hash": "YOUR_API_HASH",
   "telegram_bot_token": "YOUR_BOT_TOKEN",
   "allowed_user_ids": [123456789],
-  "protocols": ["vmess", "vless", "trojan", "ss", "ssr", "hysteria", "hysteria2", "tuic"],
+  "protocols": ["vmess", "vless", "trojan", "ss", "ssr", "hysteria", "hysteria2", "reality", "tuic"],
   "exclude_patterns": [],
   "output_dir": "output",
   "log_dir": "logs"
