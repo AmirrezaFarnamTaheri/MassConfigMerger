@@ -845,6 +845,7 @@ class EnhancedConfigProcessor:
 
     def __init__(self):
         self.dns_cache = {}
+        self.resolver: Optional[AsyncResolver] = None
         
     def extract_host_port(self, config: str) -> Tuple[Optional[str], Optional[int]]:
         """Extract host and port from configuration for testing."""
@@ -912,9 +913,25 @@ class EnhancedConfigProcessor:
             
         start = time.time()
         try:
-            # TCP connection test with timeout
+            target = host
+            if 'aiodns' in sys.modules:
+                if self.resolver is None:
+                    try:
+                        self.resolver = AsyncResolver()
+                    except Exception:
+                        self.resolver = None
+                if self.resolver is not None:
+                    try:
+                        if host not in self.dns_cache:
+                            result = await self.resolver.resolve(host, port)
+                            if result:
+                                self.dns_cache[host] = result[0]["host"]
+                        target = self.dns_cache.get(host, host)
+                    except Exception:
+                        target = host
+
             _, writer = await asyncio.wait_for(
-                asyncio.open_connection(host, port),
+                asyncio.open_connection(target, port),
                 timeout=CONFIG.test_timeout
             )
             writer.close()
