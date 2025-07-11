@@ -50,7 +50,7 @@ docker run --rm vpn-merger
 | **Strict Split** | Batches are strictly capped at `--batch-size` by default. Add `--no-strict-batch` to simply trigger on size. | Control how incremental files are produced. |
 | **Shuffle Sources** | `--shuffle-sources` randomizes the source order. | Helpful when using `--threshold` to avoid bias. |
 | **Sing-box JSON Output** | Every batch also produces `vpn_singbox.json`. | Import directly into modern clients like sing-box/Stash. |
-| **Clash YAML Output** | Generate `vpn_clash.yaml` for Clash/Stash users. | Works with any client supporting Clash configs. |
+| **Clash YAML Output** | Generate `clash.yaml` (or `batch_*clash.yaml`) for Clash/Clash Meta users. | Works with any client supporting Clash configs. |
 | **Hiddify Optimised** | Default protocols match the Hiddify client. | Other clients may reject some entries. |
 
 ### 🔍 Feature Breakdown
@@ -315,7 +315,7 @@ There are many other applications that can import the generated subscription. Be
 
 Each client has its own strengths, so choose the one that fits your platform and skill level.
 
-Users of Clash Meta or Stash can import the provided `vpn_clash.yaml` for a ready-to-use proxy list.
+Users of **Clash** or **Clash Meta** can import the provided `clash.yaml` for a ready-to-use proxy list.
 
 #### Example: import YAML into Clash Meta
 1. Open **Clash Meta** and go to **Profiles**.
@@ -333,7 +333,7 @@ Users of Clash Meta or Stash can import the provided `vpn_clash.yaml` for a read
 | `vpn_detailed.csv`            | *(optional)* A spreadsheet with detailed info about each server, including protocol, host, and ping time. |
 | `vpn_report.json`             | A detailed report with all stats and configurations in a developer-friendly format.                      |
 | `vpn_singbox.json`            | Outbound objects ready for import into sing-box/Stash.                                                   |
-| `vpn_clash.yaml`              | Clash configuration with all proxies and a basic group.                                                   |
+| `clash.yaml`                  | Clash configuration with all proxies and a basic group. Compatible with Clash/Clash Meta.                  |
 | `vpn_clash_proxies.yaml`      | Minimal Clash YAML listing only the proxies, suitable as a provider.                                      |
 
 -----
@@ -515,6 +515,7 @@ as a Telegram bot when you need updates on demand.  Unlike `vpn_merger.py` which
 focuses on speed testing, this script is meant for fast aggregation of working
 links.  The tool now performs light syntax validation—for instance, Shadowsocks
 and Trojan links must include an `@host:port`—and malformed entries are skipped.
+It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
 
 
 ### Setup
@@ -543,8 +544,8 @@ and Trojan links must include an `@host:port`—and malformed entries are skippe
    python aggregator_tool.py --hours 12
    ```
    The aggregated configuration links will be written to the folder specified in
-   `output_dir` (default `output/`) as `merged.txt`, `merged_base64.txt` and
-   `merged_singbox.json`.
+   `output_dir` (default `output/`) as `merged.txt`, `merged_base64.txt`,
+   `merged_singbox.json` and `clash.yaml`.
 5. To enable the bot mode run (you can also pass `--hours` to control how much
    channel history is scanned):
    ```bash

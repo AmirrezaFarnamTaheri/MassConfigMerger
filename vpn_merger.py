@@ -1560,14 +1560,14 @@ class UltimateVPNMerger:
                 **({"detailed_csv": str(csv_file)} if CONFIG.write_csv else {}),
                 "json_report": str(report_file),
                 "singbox": str(output_dir / f"{prefix}vpn_singbox.json"),
-                "clash": str(output_dir / f"{prefix}vpn_clash.yaml"),
+                "clash": str(output_dir / f"{prefix}clash.yaml"),
                 **({"clash_proxies": str(output_dir / f"{prefix}vpn_clash_proxies.yaml")} if CONFIG.write_clash_proxies else {}),
             },
             "usage_instructions": {
                 "base64_subscription": "Copy content of base64 file as subscription URL",
                 "raw_subscription": "Host raw file and use URL as subscription link",
                 "csv_analysis": "Use CSV file for detailed analysis and custom filtering",
-                "clash_yaml": "Load vpn_clash.yaml in Clash Meta or Stash",
+                "clash_yaml": "Load clash.yaml in Clash Meta or Stash",
                 "clash_proxies_yaml": "Import vpn_clash_proxies.yaml as a simple provider",
                 "supported_clients": [
                     "V2rayNG", "V2rayN", "Hiddify Next", "Shadowrocket",
@@ -1600,7 +1600,7 @@ class UltimateVPNMerger:
 
         if CONFIG.write_clash:
             clash_yaml = self._results_to_clash_yaml(results)
-            clash_file = output_dir / f"{prefix}vpn_clash.yaml"
+            clash_file = output_dir / f"{prefix}clash.yaml"
             tmp_clash = clash_file.with_suffix('.tmp')
             tmp_clash.write_text(clash_yaml, encoding="utf-8")
             tmp_clash.replace(clash_file)
