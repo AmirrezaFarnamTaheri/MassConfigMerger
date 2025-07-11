@@ -398,9 +398,12 @@ async def run_pipeline(
     return out_dir
 
 
-async def telegram_bot_mode(cfg: Config,
-                            sources_file: Path = SOURCES_FILE,
-                            channels_file: Path = CHANNELS_FILE) -> None:
+async def telegram_bot_mode(
+    cfg: Config,
+    sources_file: Path = SOURCES_FILE,
+    channels_file: Path = CHANNELS_FILE,
+    last_hours: int = 24,
+) -> None:
 
     """Launch Telegram bot for on-demand updates."""
     bot = TelegramClient("bot", cfg.telegram_api_id, cfg.telegram_api_hash).start(bot_token=cfg.telegram_bot_token)
@@ -418,7 +421,13 @@ async def telegram_bot_mode(cfg: Config,
         if event.sender_id not in cfg.allowed_user_ids:
             return
         await event.respond("Running update...")
-        out_dir = await run_pipeline(cfg, None, sources_file, channels_file)
+        out_dir = await run_pipeline(
+            cfg,
+            None,
+            sources_file,
+            channels_file,
+            last_hours,
+        )
 
         for path in out_dir.iterdir():
             await event.respond(file=str(path))
@@ -500,7 +509,14 @@ def main() -> None:
     setup_logging(Path(cfg.log_dir))
 
     if args.bot:
-        asyncio.run(telegram_bot_mode(cfg, Path(args.sources), Path(args.channels)))
+        asyncio.run(
+            telegram_bot_mode(
+                cfg,
+                Path(args.sources),
+                Path(args.channels),
+                args.hours,
+            )
+        )
     else:
 
         out_dir = asyncio.run(
