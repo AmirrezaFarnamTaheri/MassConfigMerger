@@ -114,6 +114,7 @@ class Config:
     write_base64: bool
     write_csv: bool
     write_clash: bool
+    write_clash_proxies: bool
     mux_concurrency: int
     smux_streams: int
 
@@ -164,6 +165,7 @@ CONFIG = Config(
     write_base64=True,
     write_csv=True,
     write_clash=True,
+    write_clash_proxies=True,
     mux_concurrency=8,
     smux_streams=4
 )
@@ -1559,12 +1561,14 @@ class UltimateVPNMerger:
                 "json_report": str(report_file),
                 "singbox": str(output_dir / f"{prefix}vpn_singbox.json"),
                 "clash": str(output_dir / f"{prefix}vpn_clash.yaml"),
+                **({"clash_proxies": str(output_dir / f"{prefix}vpn_clash_proxies.yaml")} if CONFIG.write_clash_proxies else {}),
             },
             "usage_instructions": {
                 "base64_subscription": "Copy content of base64 file as subscription URL",
                 "raw_subscription": "Host raw file and use URL as subscription link",
                 "csv_analysis": "Use CSV file for detailed analysis and custom filtering",
                 "clash_yaml": "Load vpn_clash.yaml in Clash Meta or Stash",
+                "clash_proxies_yaml": "Import vpn_clash_proxies.yaml as a simple provider",
                 "supported_clients": [
                     "V2rayNG", "V2rayN", "Hiddify Next", "Shadowrocket",
                     "NekoBox", "Clash Meta", "Sing-Box", "Streisand", "Karing"
@@ -1600,6 +1604,18 @@ class UltimateVPNMerger:
             tmp_clash = clash_file.with_suffix('.tmp')
             tmp_clash.write_text(clash_yaml, encoding="utf-8")
             tmp_clash.replace(clash_file)
+
+        if CONFIG.write_clash_proxies:
+            proxies = []
+            for idx, r in enumerate(results):
+                proxy = self._config_to_clash_proxy(r.config, r.protocol, idx)
+                if proxy:
+                    proxies.append(proxy)
+            proxy_yaml = yaml.safe_dump({"proxies": proxies}, allow_unicode=True, sort_keys=False) if proxies else ""
+            proxies_file = output_dir / f"{prefix}vpn_clash_proxies.yaml"
+            tmp_proxies = proxies_file.with_suffix('.tmp')
+            tmp_proxies.write_text(proxy_yaml, encoding="utf-8")
+            tmp_proxies.replace(proxies_file)
 
     def _config_to_clash_proxy(self, config: str, protocol: str, idx: int) -> Optional[Dict[str, Union[str, int, bool]]]:
         """Convert a single config link to a Clash proxy dictionary."""
@@ -1869,6 +1885,8 @@ def main():
                         help="Do not save base64 subscription file")
     parser.add_argument("--no-csv", action="store_true",
                         help="Do not save CSV report")
+    parser.add_argument("--no-proxy-yaml", action="store_true",
+                        help="Do not save simple Clash proxy list")
     args, unknown = parser.parse_known_args()
     if unknown:
         logging.warning("Ignoring unknown arguments: %s", unknown)
@@ -1904,6 +1922,7 @@ def main():
     CONFIG.log_file = args.log_file
     CONFIG.write_base64 = not args.no_base64
     CONFIG.write_csv = not args.no_csv
+    CONFIG.write_clash_proxies = not args.no_proxy_yaml
     CONFIG.cumulative_batches = args.cumulative_batches
     CONFIG.strict_batch = not args.no_strict_batch
     CONFIG.shuffle_sources = args.shuffle_sources

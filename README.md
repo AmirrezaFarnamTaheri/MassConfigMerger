@@ -317,6 +317,11 @@ Each client has its own strengths, so choose the one that fits your platform and
 
 Users of Clash Meta or Stash can import the provided `vpn_clash.yaml` for a ready-to-use proxy list.
 
+#### Example: import YAML into Clash Meta
+1. Open **Clash Meta** and go to **Profiles**.
+2. Click **Import** and select the path or URL to `vpn_clash_proxies.yaml`.
+3. Enable the new profile to see all proxies.
+
 -----
 
 ## 📂 Understanding the Output Files
@@ -329,6 +334,7 @@ Users of Clash Meta or Stash can import the provided `vpn_clash.yaml` for a read
 | `vpn_report.json`             | A detailed report with all stats and configurations in a developer-friendly format.                      |
 | `vpn_singbox.json`            | Outbound objects ready for import into sing-box/Stash.                                                   |
 | `vpn_clash.yaml`              | Clash configuration with all proxies and a basic group.                                                   |
+| `vpn_clash_proxies.yaml`      | Minimal Clash YAML listing only the proxies, suitable as a provider.                                      |
 
 -----
 

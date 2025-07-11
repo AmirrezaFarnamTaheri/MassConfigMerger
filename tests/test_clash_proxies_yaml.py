@@ -1,0 +1,39 @@
+import os
+import sys
+import asyncio
+import yaml
+from pathlib import Path
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from vpn_merger import UltimateVPNMerger, ConfigResult, CONFIG
+
+
+def test_clash_proxies_yaml(tmp_path, monkeypatch):
+    monkeypatch.setattr(CONFIG, "output_dir", str(tmp_path))
+    monkeypatch.setattr(CONFIG, "write_clash_proxies", True)
+    merger = UltimateVPNMerger()
+    res1 = ConfigResult(
+        config="vmess://uuid@host:80",
+        protocol="VMess",
+        host="host",
+        port=80,
+        ping_time=0.1,
+        is_reachable=True,
+        source_url="s",
+    )
+    res2 = ConfigResult(
+        config="trojan://pw@host:443",
+        protocol="Trojan",
+        host="host",
+        port=443,
+        ping_time=0.2,
+        is_reachable=True,
+        source_url="s",
+    )
+    stats = merger._analyze_results([res1, res2], [])
+    asyncio.run(merger._generate_comprehensive_outputs([res1, res2], stats, 0.0))
+    path = tmp_path / "vpn_clash_proxies.yaml"
+    assert path.exists()
+    data = yaml.safe_load(path.read_text())
+    assert "proxies" in data
+    assert len(data["proxies"]) == 2
