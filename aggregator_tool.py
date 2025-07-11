@@ -21,7 +21,7 @@ from typing import Iterable, List, Set
 
 import aiohttp
 from aiohttp import ClientSession, ClientTimeout
-from telethon import TelegramClient, events
+from telethon import TelegramClient, events, errors
 from telethon.tl.custom.message import Message
 
 
@@ -206,17 +206,30 @@ async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Con
         async with aiohttp.ClientSession() as session:
             for channel in channels:
                 count_before = len(configs)
-                try:
-                    async for msg in client.iter_messages(channel, offset_date=since):
-                        if isinstance(msg, Message) and msg.message:
-                            text = msg.message
-                            configs.update(parse_configs_from_text(text))
-                            for sub in extract_subscription_urls(text):
-                                text2 = await fetch_text(session, sub)
-                                if text2:
-                                    configs.update(parse_configs_from_text(text2))
-                except Exception as e:
-                    logging.warning("Failed to scrape %s: %s", channel, e)
+                success = False
+                for _ in range(2):
+                    try:
+                        async for msg in client.iter_messages(channel, offset_date=since):
+                            if isinstance(msg, Message) and msg.message:
+                                text = msg.message
+                                configs.update(parse_configs_from_text(text))
+                                for sub in extract_subscription_urls(text):
+                                    text2 = await fetch_text(session, sub)
+                                    if text2:
+                                        configs.update(parse_configs_from_text(text2))
+                        success = True
+                        break
+                    except (errors.RPCError, OSError) as e:
+                        logging.warning("Error scraping %s: %s", channel, e)
+                        try:
+                            await client.disconnect()
+                            await client.connect()
+                        except Exception as rexc:
+                            logging.warning("Reconnect failed: %s", rexc)
+                            break
+                if not success:
+                    logging.warning("Skipping %s due to repeated errors", channel)
+                    continue
                 logging.info(
                     "Channel %s -> %d new configs",
                     channel,
