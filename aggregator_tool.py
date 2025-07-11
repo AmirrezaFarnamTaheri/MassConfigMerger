@@ -160,21 +160,24 @@ async def check_and_update_sources(path: Path) -> List[str]:
     return valid_sources
 
 
-async def fetch_and_parse_configs(sources: Iterable[str], max_concurrent: int = 20) -> Set[str]:
-    """Fetch configs from sources."""
+async def fetch_and_parse_configs(
+    sources: Iterable[str], max_concurrent: int = 20
+) -> Set[str]:
+    """Fetch configs from sources respecting concurrency limits."""
     configs: Set[str] = set()
 
-    sem = asyncio.Semaphore(max_concurrent)
+    semaphore = asyncio.Semaphore(max_concurrent)
 
     async def fetch_one(session: ClientSession, url: str) -> Set[str]:
-        async with sem:
+        async with semaphore:
             text = await fetch_text(session, url)
         if not text:
             logging.warning("Failed to fetch %s", url)
             return set()
         return parse_configs_from_text(text)
 
-    async with aiohttp.ClientSession() as session:
+    connector = aiohttp.TCPConnector(limit=max_concurrent)
+    async with aiohttp.ClientSession(connector=connector) as session:
         tasks = [asyncio.create_task(fetch_one(session, u)) for u in sources]
         for task in asyncio.as_completed(tasks):
             configs.update(await task)
@@ -353,13 +356,24 @@ def main() -> None:
     parser.add_argument("--sources", default=str(SOURCES_FILE), help="path to sources.txt")
     parser.add_argument("--channels", default=str(CHANNELS_FILE), help="path to channels.txt")
     parser.add_argument("--output-dir", help="override output directory from config")
-    parser.add_argument("--max-concurrent", type=int, help="max concurrent HTTP requests")
+    parser.add_argument(
+        "--concurrent-limit",
+        type=int,
+        help="maximum simultaneous HTTP requests",
+    )
+    parser.add_argument(
+        "--max-concurrent",
+        type=int,
+        help=argparse.SUPPRESS,
+    )
     args = parser.parse_args()
 
     cfg = Config.load(Path(args.config))
     if args.output_dir:
         cfg.output_dir = args.output_dir
-    if args.max_concurrent:
+    if args.concurrent_limit is not None:
+        cfg.max_concurrent = args.concurrent_limit
+    elif args.max_concurrent is not None:
         cfg.max_concurrent = args.max_concurrent
 
     if args.protocols:
