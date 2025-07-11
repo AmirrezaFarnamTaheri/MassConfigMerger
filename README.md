@@ -21,6 +21,19 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 5. Import the `output/vpn_subscription_base64.txt` link (unless `--no-base64` was used) into your VPN app or load `vpn_singbox.json` in clients like sing-box.
 
 
+## Data Pipeline Overview
+
+```mermaid
+graph TD
+    A[Sources.txt & Channels.txt] --> B[aggregator_tool.py]
+    B --> C{Deduplication}
+    C --> D[vpn_merger.py]
+    D --> E{Testing & Sorting}
+    E --> F[vpn_retester.py]
+    F --> G[(Output Files)]
+```
+
+
 ### 🐳 Docker
 
 Build the image and run the merger without installing Python locally:
