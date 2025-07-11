@@ -103,6 +103,9 @@ class Config:
     output_dir: str = "output"
     log_dir: str = "logs"
     max_concurrent: int = 20
+    write_base64: bool = True
+    write_singbox: bool = True
+    write_clash: bool = True
 
     @classmethod
     def load(
@@ -158,6 +161,9 @@ class Config:
             "output_dir": "output",
             "log_dir": "logs",
             "max_concurrent": 20,
+            "write_base64": True,
+            "write_singbox": True,
+            "write_clash": True,
         }
         if defaults:
             merged_defaults.update(defaults)
@@ -371,37 +377,39 @@ def deduplicate_and_filter(
     return final
 
 
-def output_files(configs: List[str], out_dir: Path) -> List[Path]:
-    """Write merged files and return list of written file paths."""
+def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
+    """Write merged files and return list of written file paths respecting cfg flags."""
     out_dir.mkdir(parents=True, exist_ok=True)
     written: List[Path] = []
 
     merged_path = out_dir / "merged.txt"
-    merged_b64 = out_dir / "merged_base64.txt"
     text = "\n".join(configs)
     merged_path.write_text(text)
     written.append(merged_path)
 
-    b64_content = base64.b64encode(text.encode()).decode()
-    merged_b64.write_text(b64_content)
-    written.append(merged_b64)
+    if cfg.write_base64:
+        merged_b64 = out_dir / "merged_base64.txt"
+        b64_content = base64.b64encode(text.encode()).decode()
+        merged_b64.write_text(b64_content)
+        written.append(merged_b64)
 
-    # Validate base64 decodes cleanly
-    try:
-        base64.b64decode(b64_content).decode()
-    except Exception:
-        logging.warning("Base64 validation failed")
+        # Validate base64 decodes cleanly
+        try:
+            base64.b64decode(b64_content).decode()
+        except Exception:
+            logging.warning("Base64 validation failed")
 
-    # Simple sing-box style JSON
-    outbounds = []
-    for idx, link in enumerate(configs):
-        proto = link.split("://", 1)[0].lower()
-        outbounds.append({"type": proto, "tag": f"node-{idx}", "raw": link})
-    merged_singbox = out_dir / "merged_singbox.json"
-    merged_singbox.write_text(
-        json.dumps({"outbounds": outbounds}, indent=2, ensure_ascii=False)
-    )
-    written.append(merged_singbox)
+    if cfg.write_singbox:
+        # Simple sing-box style JSON
+        outbounds = []
+        for idx, link in enumerate(configs):
+            proto = link.split("://", 1)[0].lower()
+            outbounds.append({"type": proto, "tag": f"node-{idx}", "raw": link})
+        merged_singbox = out_dir / "merged_singbox.json"
+        merged_singbox.write_text(
+            json.dumps({"outbounds": outbounds}, indent=2, ensure_ascii=False)
+        )
+        written.append(merged_singbox)
 
     def _config_to_clash_proxy(config: str, idx: int) -> Optional[Dict[str, Union[str, int, bool]]]:
         """Convert a single config link to a Clash proxy dictionary."""
@@ -509,26 +517,28 @@ def output_files(configs: List[str], out_dir: Path) -> List[Path]:
             return None
 
     proxies = []
-    for idx, link in enumerate(configs):
-        proxy = _config_to_clash_proxy(link, idx)
-        if proxy:
-            proxies.append(proxy)
-    if proxies:
-        group = {"name": "Proxy", "type": "select", "proxies": [p["name"] for p in proxies]}
-        clash_yaml = yaml.safe_dump(
-            {"proxies": proxies, "proxy-groups": [group]},
-            allow_unicode=True,
-            sort_keys=False,
-        )
-        clash_file = out_dir / "clash.yaml"
-        clash_file.write_text(clash_yaml)
-        written.append(clash_file)
+    if cfg.write_clash:
+        for idx, link in enumerate(configs):
+            proxy = _config_to_clash_proxy(link, idx)
+            if proxy:
+                proxies.append(proxy)
+        if proxies:
+            group = {"name": "Proxy", "type": "select", "proxies": [p["name"] for p in proxies]}
+            clash_yaml = yaml.safe_dump(
+                {"proxies": proxies, "proxy-groups": [group]},
+                allow_unicode=True,
+                sort_keys=False,
+            )
+            clash_file = out_dir / "clash.yaml"
+            clash_file.write_text(clash_yaml)
+            written.append(clash_file)
 
     logging.info(
-        "Wrote %s, %s, merged_singbox.json%s",
+        "Wrote %s%s%s%s",
         merged_path,
-        merged_b64,
-        " and clash.yaml" if proxies else "",
+        ", merged_base64.txt" if cfg.write_base64 else "",
+        ", merged_singbox.json" if cfg.write_singbox else "",
+        ", clash.yaml" if cfg.write_clash and proxies else "",
     )
 
     return written
@@ -549,7 +559,7 @@ async def run_pipeline(
 
     final = deduplicate_and_filter(configs, cfg, protocols)
     out_dir = Path(cfg.output_dir)
-    files = output_files(final, out_dir)
+    files = output_files(final, out_dir, cfg)
     return out_dir, files
 
 
