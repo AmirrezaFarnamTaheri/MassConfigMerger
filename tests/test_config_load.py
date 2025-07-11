@@ -88,3 +88,30 @@ def test_env_override(tmp_path, monkeypatch):
     assert loaded.telegram_api_id == 99
     assert loaded.telegram_api_hash == "newhash"
     assert loaded.telegram_bot_token == "newtoken"
+
+
+def test_allowed_ids_env_fallback(tmp_path, monkeypatch):
+    cfg = {
+        "telegram_api_id": 1,
+        "telegram_api_hash": "hash",
+        "telegram_bot_token": "token",
+    }
+    p = tmp_path / "c.json"
+    p.write_text(json.dumps(cfg))
+    monkeypatch.setenv("ALLOWED_USER_IDS", "5,6")
+    loaded = Config.load(p)
+    assert loaded.allowed_user_ids == [5, 6]
+
+
+def test_allowed_ids_env_override(tmp_path, monkeypatch):
+    cfg = {
+        "telegram_api_id": 1,
+        "telegram_api_hash": "hash",
+        "telegram_bot_token": "token",
+        "allowed_user_ids": [1],
+    }
+    p = tmp_path / "c.json"
+    p.write_text(json.dumps(cfg))
+    monkeypatch.setenv("ALLOWED_USER_IDS", "2 3")
+    loaded = Config.load(p)
+    assert loaded.allowed_user_ids == [2, 3]
