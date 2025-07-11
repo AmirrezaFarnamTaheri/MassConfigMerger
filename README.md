@@ -175,7 +175,7 @@ This is the best method. You will create a personal copy (a "fork") of this repo
 
 **Step 3: Run the Workflow for the First Time**
 
-1.  In the left sidebar, click on the workflow named **`Merge VPN Subscriptions`**.
+1.  In the left sidebar, click on the workflow named **`Merge VPN Subscriptions`** (defined in `.github/workflows/merge.yml`).
 2.  You will see a blue banner that says "This workflow has a `workflow_dispatch` event trigger." Look to the right side of the screen and click the **`Run workflow`** dropdown button.
 3.  Leave the settings as they are and click the final green **`Run workflow`** button.
 4.  The script will now start running on GitHub's servers. Wait about 3-5 minutes for it to complete. You can click on the run to see its progress.
@@ -188,6 +188,8 @@ This is the best method. You will create a personal copy (a "fork") of this repo
 4.  On the file view page, click the **`Raw`** button.
 5.  **This is your link\!** The URL in your browser's address bar is your permanent, auto-updating subscription link. Copy it. It will look like this:
     `https://raw.githubusercontent.com/YOUR_USERNAME/CleanConfigs-SubMerger/main/output/vpn_subscription_base64.txt`
+
+This workflow runs automatically every day and commits the latest results to the `output/` folder so your link stays updated.
 
 You are now ready to use this link in any VPN app\!
 
