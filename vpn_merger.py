@@ -127,7 +127,8 @@ CONFIG = Config(
     max_configs_per_source=75000,
     valid_prefixes=(
         "vmess://", "vless://", "reality://",
-        "ss://", "hy2://", "hysteria://", "hysteria2://",
+        "ss://", "ssr://", "trojan://",
+        "hy2://", "hysteria://", "hysteria2://",
         "tuic://", "shadowtls://", "wireguard://",
         "socks://", "socks4://", "socks5://",
         "http://", "https://", "grpc://", "ws://", "wss://",
@@ -142,7 +143,8 @@ CONFIG = Config(
     top_n=0,
     tls_fragment=None,
     include_protocols={
-        "PROXY", "SHADOWSOCKS", "CLASH", "V2RAY", "REALITY",
+        "PROXY", "SHADOWSOCKS", "SHADOWSOCKSR", "TROJAN",
+        "CLASH", "V2RAY", "REALITY",
         "VMESS", "XRAY", "WIREGUARD", "ECH", "VLESS",
         "HYSTERIA", "TUIC", "SING-BOX", "SINGBOX",
         "SHADOWTLS", "CLASHMETA", "HYSTERIA2",
@@ -927,6 +929,7 @@ class EnhancedConfigProcessor:
             "vmess://": "VMess",
             "vless://": "VLESS", 
             "ss://": "Shadowsocks",
+            "ssr://": "ShadowsocksR",
             "trojan://": "Trojan",
             "hy2://": "Hysteria2",
             "hysteria2://": "Hysteria2",
