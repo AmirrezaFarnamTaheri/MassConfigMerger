@@ -15,7 +15,8 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 2. Run `pip install -r requirements.txt` in the project folder to install all dependencies **before running any script**.
 3. Execute `python vpn_merger.py` and wait for the `output` directory.
 4. *(Optional)* pass extra flags like `--max-ping 200` or `--concurrent-limit 10` to suit your connection.
-5. Import the `output/vpn_subscription_base64.txt` link into your VPN app or load `vpn_singbox.json` / `vpn_clash.yaml` in clients like sing-box or Clash.
+5. Import the `output/vpn_subscription_base64.txt` link (unless `--no-base64` was used) into your VPN app or load `vpn_singbox.json` in clients like sing-box.
+
 
 ### 🐳 Docker
 
@@ -41,7 +42,7 @@ docker run --rm vpn-merger
 | **Resume from File** | `--resume` loads a previous raw/base64 output before fetching. | Continue a crashed run without starting over. |
 | **Custom Output Dir** | Use `--output-dir` to choose where files are saved. | Organize results anywhere you like. |
 | **Set Test Timeout** | Tune connection checks with `--test-timeout`. | Useful for slow or distant servers. |
-| **Disable Features** | Flags `--no-url-test` and `--no-sort` give full control. | Run fast tests or skip sorting when not needed. |
+| **Disable Features** | Flags `--no-url-test`, `--no-sort`, `--no-base64` and `--no-csv` give full control. | Skip slow checks or extra files when not needed. |
 | **Max Ping Filter** | Remove configs with latency above `--max-ping` ms. | Keep only fast servers for gaming or streaming. |
 | **Concurrent Limit / Retries** | Tweak network load with `--concurrent-limit` and `--max-retries`. | Prevent crashes on slow networks or strict hosts. |
 | **Logging to File** | Save all output to a file with `--log-file`. | Useful for headless servers or debugging. |
@@ -84,7 +85,7 @@ docker run --rm vpn-merger
 
 **Custom Output Dir / Test Timeout / Disable Features**
 
-> Tailor where files are saved, how long connection tests run and whether optional steps run at all. These switches allow the script to fit many different environments, from low-power devices to cloud servers.
+> Tailor where files are saved, how long connection tests run and whether optional steps (like base64 or CSV output) run at all. These switches allow the script to fit many different environments, from low-power devices to cloud servers.
 
 **Max Ping Filter**
 
@@ -167,7 +168,7 @@ This is the best method. You will create a personal copy (a "fork") of this repo
 
 1.  Once the workflow is complete (it will have a green checkmark ✓), go back to the main page of your repository (the **`< > Code`** tab).
 2.  You will now see a new `output` folder. Click on it.
-3.  Click on the file named `vpn_subscription_base64.txt`.
+3.  Click on the file named `vpn_subscription_base64.txt` (if you didn't use `--no-base64`).
 4.  On the file view page, click the **`Raw`** button.
 5.  **This is your link\!** The URL in your browser's address bar is your permanent, auto-updating subscription link. Copy it. It will look like this:
     `https://raw.githubusercontent.com/YOUR_USERNAME/CleanConfigs-SubMerger/main/output/vpn_subscription_base64.txt`
@@ -202,7 +203,7 @@ In the same terminal, run:
 python vpn_merger.py
 ```
 
-After 5-15 minutes, the `output` folder will appear with your files. To use the output, you'll need to upload the content of `vpn_subscription_base64.txt` somewhere (like a private [GitHub Gist](https://gist.github.com/)) and use that file's "Raw" URL.
+After 5-15 minutes, the `output` folder will appear with your files. To use the output, upload the content of `vpn_subscription_base64.txt` (if created) somewhere (like a private [GitHub Gist](https://gist.github.com/)) and use that file's "Raw" URL.
 
 ### Method 3: Using Google Colab (Easy, No Setup)
 
@@ -322,9 +323,9 @@ Users of Clash Meta or Stash can import the provided `vpn_clash.yaml` for a read
 
 | File Name                              | Purpose                                                                                                  |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `vpn_subscription_base64.txt` | A base64-encoded file. Most apps import directly from this file's raw URL.                               |
+| `vpn_subscription_base64.txt` | *(optional)* A base64-encoded file. Most apps import directly from this file's raw URL.                  |
 | `vpn_subscription_raw.txt`    | A plain text list of all the VPN configuration links.                                                    |
-| `vpn_detailed.csv`            | A spreadsheet with detailed info about each server, including protocol, host, and ping time.             |
+| `vpn_detailed.csv`            | *(optional)* A spreadsheet with detailed info about each server, including protocol, host, and ping time. |
 | `vpn_report.json`             | A detailed report with all stats and configurations in a developer-friendly format.                      |
 | `vpn_singbox.json`            | Outbound objects ready for import into sing-box/Stash.                                                   |
 | `vpn_clash.yaml`              | Clash configuration with all proxies and a basic group.                                                   |
