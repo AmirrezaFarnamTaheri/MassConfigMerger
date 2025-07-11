@@ -17,7 +17,10 @@ import re
 from dataclasses import dataclass, field, fields
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Iterable, List, Set
+from typing import Iterable, List, Set, Optional, Dict, Union
+from urllib.parse import urlparse, parse_qs
+
+import yaml
 
 import aiohttp
 from aiohttp import ClientSession, ClientTimeout
@@ -379,7 +382,122 @@ def output_files(configs: List[str], out_dir: Path) -> None:
         json.dumps({"outbounds": outbounds}, indent=2, ensure_ascii=False)
     )
 
-    logging.info("Wrote %s, %s and merged_singbox.json", merged_path, merged_b64)
+    def _config_to_clash_proxy(config: str, idx: int) -> Optional[Dict[str, Union[str, int, bool]]]:
+        """Convert a single config link to a Clash proxy dictionary."""
+        try:
+            scheme = config.split("://", 1)[0].lower()
+            name = f"{scheme}-{idx}"
+            if scheme == "vmess":
+                after = config.split("://", 1)[1]
+                base = after.split("#", 1)[0]
+                try:
+                    padded = base + "=" * (-len(base) % 4)
+                    data = json.loads(base64.b64decode(padded).decode())
+                    name = data.get("ps") or data.get("name") or name
+                    proxy = {
+                        "name": name,
+                        "type": "vmess",
+                        "server": data.get("add") or data.get("host", ""),
+                        "port": int(data.get("port", 0)),
+                        "uuid": data.get("id") or data.get("uuid", ""),
+                        "alterId": int(data.get("aid", 0)),
+                        "cipher": data.get("type", "auto"),
+                    }
+                    if data.get("tls") or data.get("security"):
+                        proxy["tls"] = True
+                    return proxy
+                except Exception:
+                    p = urlparse(config)
+                    q = parse_qs(p.query)
+                    proxy = {
+                        "name": p.fragment or name,
+                        "type": "vmess",
+                        "server": p.hostname or "",
+                        "port": p.port or 0,
+                        "uuid": p.username or "",
+                        "alterId": int(q.get("aid", [0])[0]),
+                        "cipher": q.get("type", ["auto"])[0],
+                    }
+                    if q.get("security"):
+                        proxy["tls"] = True
+                    return proxy
+            elif scheme == "vless":
+                p = urlparse(config)
+                q = parse_qs(p.query)
+                proxy = {
+                    "name": p.fragment or name,
+                    "type": "vless",
+                    "server": p.hostname or "",
+                    "port": p.port or 0,
+                    "uuid": p.username or "",
+                    "encryption": q.get("encryption", ["none"])[0],
+                }
+                if q.get("security"):
+                    proxy["tls"] = True
+                return proxy
+            elif scheme == "trojan":
+                p = urlparse(config)
+                q = parse_qs(p.query)
+                proxy = {
+                    "name": p.fragment or name,
+                    "type": "trojan",
+                    "server": p.hostname or "",
+                    "port": p.port or 0,
+                    "password": p.username or p.password or "",
+                }
+                if q.get("sni"):
+                    proxy["sni"] = q.get("sni")[0]
+                if q.get("security"):
+                    proxy["tls"] = True
+                return proxy
+            elif scheme in ("ss", "shadowsocks"):
+                p = urlparse(config)
+                if p.username and p.password and p.hostname and p.port:
+                    method = p.username
+                    password = p.password
+                    server = p.hostname
+                    port = p.port
+                else:
+                    base = config.split("://", 1)[1].split("#", 1)[0]
+                    padded = base + "=" * (-len(base) % 4)
+                    decoded = base64.b64decode(padded).decode()
+                    before_at, host_port = decoded.split("@")
+                    method, password = before_at.split(":")
+                    server, port = host_port.split(":")
+                    port = int(port)
+                return {
+                    "name": p.fragment or name,
+                    "type": "ss",
+                    "server": server,
+                    "port": int(port),
+                    "cipher": method,
+                    "password": password,
+                }
+            else:
+                p = urlparse(config)
+                if not p.hostname or not p.port:
+                    return None
+                typ = "socks5" if scheme.startswith("socks") else "http"
+                return {
+                    "name": p.fragment or name,
+                    "type": typ,
+                    "server": p.hostname,
+                    "port": p.port,
+                }
+        except Exception:
+            return None
+
+    proxies = []
+    for idx, link in enumerate(configs):
+        proxy = _config_to_clash_proxy(link, idx)
+        if proxy:
+            proxies.append(proxy)
+    if proxies:
+        group = {"name": "Proxy", "type": "select", "proxies": [p["name"] for p in proxies]}
+        clash_yaml = yaml.safe_dump({"proxies": proxies, "proxy-groups": [group]}, allow_unicode=True, sort_keys=False)
+        (out_dir / "clash.yaml").write_text(clash_yaml)
+
+    logging.info("Wrote %s, %s, merged_singbox.json and clash.yaml", merged_path, merged_b64)
 
 
 async def run_pipeline(
