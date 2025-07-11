@@ -545,9 +545,10 @@ and Trojan links must include an `@host:port`—and malformed entries are skippe
    The aggregated configuration links will be written to the folder specified in
    `output_dir` (default `output/`) as `merged.txt`, `merged_base64.txt` and
    `merged_singbox.json`.
-5. To enable the bot mode run:
+5. To enable the bot mode run (you can also pass `--hours` to control how much
+   channel history is scanned):
    ```bash
-   python aggregator_tool.py --bot
+   python aggregator_tool.py --bot --hours 12
    ```
    Send `/update` in your Telegram chat with the bot to trigger a run.  The bot
    will reply with the generated files.
