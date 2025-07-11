@@ -562,8 +562,10 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
    python aggregator_tool.py --hours 12
    ```
    The aggregated configuration links will be written to the folder specified in
-   `output_dir` (default `output/`) as `merged.txt`, `merged_base64.txt`,
-   `merged_singbox.json` and `clash.yaml`.
+   `output_dir` (default `output/`) as `merged.txt`. Depending on the
+   `write_base64`, `write_singbox` and `write_clash` options the files
+   `merged_base64.txt`, `merged_singbox.json` and `clash.yaml` may also be
+   created.
 5. To enable the bot mode run (you can also pass `--hours` to control how much
    channel history is scanned):
    ```bash
@@ -589,7 +591,10 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
   "exclude_patterns": [],
   "output_dir": "output",
   "log_dir": "logs",
-  "max_concurrent": 20
+  "max_concurrent": 20,
+  "write_base64": true,
+  "write_singbox": true,
+  "write_clash": true
 }
 ```
 
@@ -603,12 +608,18 @@ Optional fields use these defaults when omitted:
 - `output_dir` – `output`
 - `log_dir` – `logs`
 - `max_concurrent` – `20`
+- `write_base64` – `true`
+- `write_singbox` – `true`
+- `write_clash` – `true`
 
 - **protocols** – only links starting with these schemes are kept.
 - **exclude_patterns** – regular expressions to remove unwanted links.
 - **output_dir** – where merged files are created.
 - **log_dir** – daily log files are written here.
 - **max_concurrent** – maximum simultaneous HTTP requests for validating and fetching sources (override with `--concurrent-limit`).
+- **write_base64** – create `merged_base64.txt` when `true`.
+- **write_singbox** – create `merged_singbox.json` when `true`.
+- **write_clash** – create `clash.yaml` when `true`.
 
 The command line options `--config`, `--sources`, `--channels`, `--output-dir`, `--concurrent-limit`, `--hours`
 let you override these file locations when running the tool.
