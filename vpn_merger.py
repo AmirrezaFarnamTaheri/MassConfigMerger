@@ -1510,26 +1510,27 @@ class UltimateVPNMerger:
         tmp_raw.write_text("\n".join(configs), encoding="utf-8")
         tmp_raw.replace(raw_file)
         
-        # Base64 output
-        base64_content = base64.b64encode("\n".join(configs).encode("utf-8")).decode("utf-8")
         base64_file = output_dir / f"{prefix}vpn_subscription_base64.txt"
-        tmp_base64 = base64_file.with_suffix('.tmp')
-        tmp_base64.write_text(base64_content, encoding="utf-8")
-        tmp_base64.replace(base64_file)
-        
+        if CONFIG.write_base64:
+            base64_content = base64.b64encode("\n".join(configs).encode("utf-8")).decode("utf-8")
+            tmp_base64 = base64_file.with_suffix('.tmp')
+            tmp_base64.write_text(base64_content, encoding="utf-8")
+            tmp_base64.replace(base64_file)
+
         # Enhanced CSV with comprehensive performance data
         csv_file = output_dir / f"{prefix}vpn_detailed.csv"
-        tmp_csv = csv_file.with_suffix('.tmp')
-        with open(tmp_csv, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(['Config', 'Protocol', 'Host', 'Port', 'Ping_MS', 'Reachable', 'Source'])
-            for result in results:
-                ping_ms = round(result.ping_time * 1000, 2) if result.ping_time else None
-                writer.writerow([
-                    result.config, result.protocol, result.host, result.port,
-                    ping_ms, result.is_reachable, result.source_url
-                ])
-        tmp_csv.replace(csv_file)
+        if CONFIG.write_csv:
+            tmp_csv = csv_file.with_suffix('.tmp')
+            with open(tmp_csv, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(['Config', 'Protocol', 'Host', 'Port', 'Ping_MS', 'Reachable', 'Source'])
+                for result in results:
+                    ping_ms = round(result.ping_time * 1000, 2) if result.ping_time else None
+                    writer.writerow([
+                        result.config, result.protocol, result.host, result.port,
+                        ping_ms, result.is_reachable, result.source_url
+                    ])
+            tmp_csv.replace(csv_file)
         
         # Comprehensive JSON report
         report = {
@@ -1549,8 +1550,8 @@ class UltimateVPNMerger:
             },
             "output_files": {
                 "raw": str(raw_file),
-                "base64": str(base64_file),
-                "detailed_csv": str(csv_file),
+                **({"base64": str(base64_file)} if CONFIG.write_base64 else {}),
+                **({"detailed_csv": str(csv_file)} if CONFIG.write_csv else {}),
                 "json_report": "vpn_report.json",
                 "singbox": str(output_dir / f"{prefix}vpn_singbox.json"),
             },
@@ -1723,6 +1724,10 @@ def main():
                         help="Set mux concurrency for URI configs (0=disable)")
     parser.add_argument("--smux", type=int, default=CONFIG.smux_streams,
                         help="Set smux streams for URI configs (0=disable)")
+    parser.add_argument("--no-base64", action="store_true",
+                        help="Do not save base64 subscription file")
+    parser.add_argument("--no-csv", action="store_true",
+                        help="Do not save CSV report")
     args, unknown = parser.parse_known_args()
     if unknown:
         logging.warning("Ignoring unknown arguments: %s", unknown)
@@ -1756,6 +1761,8 @@ def main():
     CONFIG.max_retries = max(1, args.max_retries)
     CONFIG.max_ping_ms = args.max_ping if args.max_ping > 0 else None
     CONFIG.log_file = args.log_file
+    CONFIG.write_base64 = not args.no_base64
+    CONFIG.write_csv = not args.no_csv
     CONFIG.cumulative_batches = args.cumulative_batches
     CONFIG.strict_batch = not args.no_strict_batch
     CONFIG.shuffle_sources = args.shuffle_sources
@@ -1815,8 +1822,8 @@ if __name__ == "__main__":
 
 📁 Output Files:
    • vpn_subscription_raw.txt (for hosting)
-   • vpn_subscription_base64.txt (for direct import)
-   • vpn_detailed.csv (with performance metrics)
+   • vpn_subscription_base64.txt (optional, for direct import)
+   • vpn_detailed.csv (optional, with performance metrics)
    • vpn_report.json (comprehensive statistics)
 """
     )
