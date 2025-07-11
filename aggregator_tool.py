@@ -110,6 +110,8 @@ class Config:
         try:
             with path.open("r") as f:
                 data = json.load(f)
+        except FileNotFoundError as exc:
+            raise ValueError(f"Config file not found: {path}") from exc
         except json.JSONDecodeError as exc:
             raise ValueError(f"Invalid JSON in {path}: {exc}") from exc
 
@@ -148,8 +150,11 @@ class Config:
 
         try:
             return cls(**data)
-        except TypeError as exc:
-            raise ValueError(f"Invalid configuration: {exc}") from exc
+        except (KeyError, TypeError) as exc:
+            msg = f"Invalid configuration values: {exc}"
+            print(msg)
+            raise ValueError(msg) from exc
+
 
 
 async def fetch_text(session: ClientSession, url: str) -> str | None:

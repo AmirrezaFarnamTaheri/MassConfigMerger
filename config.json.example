@@ -1,0 +1,14 @@
+{
+  "telegram_api_id": 123456,
+  "telegram_api_hash": "YOUR_HASH",
+  "telegram_bot_token": "BOT_TOKEN",
+  "allowed_user_ids": [11111111],
+  "protocols": [
+    "vmess", "vless", "trojan", "ss", "ssr", "hysteria", "hysteria2",
+    "tuic", "reality", "naive", "hy2", "wireguard"
+  ],
+  "exclude_patterns": [],
+  "output_dir": "output",
+  "log_dir": "logs",
+  "max_concurrent": 20
+}
