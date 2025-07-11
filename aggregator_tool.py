@@ -335,7 +335,7 @@ def deduplicate_and_filter(config_set: Set[str], cfg: Config, protocols: List[st
     """Apply filters and return sorted configs."""
     final = []
     protocols = protocols or cfg.protocols
-    exclude = [re.compile(p) for p in cfg.exclude_patterns]
+    exclude = [re.compile(p, re.IGNORECASE) for p in cfg.exclude_patterns]
     seen: Set[str] = set()
     for link in sorted(c.strip() for c in config_set):
         l_lower = link.lower()

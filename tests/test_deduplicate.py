@@ -23,3 +23,17 @@ def test_case_insensitive_deduplication():
     assert len(result) == 1
     assert result[0] in {lower, upper}
 
+
+def test_exclude_patterns_ignore_case():
+    link = "trojan://pw@foo.com:443"
+    cfg = aggregator_tool.Config(
+        telegram_api_id=1,
+        telegram_api_hash="h",
+        telegram_bot_token="t",
+        allowed_user_ids=[1],
+        protocols=["trojan"],
+        exclude_patterns=["FOO"],
+    )
+    result = aggregator_tool.deduplicate_and_filter({link}, cfg)
+    assert result == []
+
