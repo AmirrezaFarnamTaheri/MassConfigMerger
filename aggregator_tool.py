@@ -182,8 +182,8 @@ def parse_configs_from_text(text: str) -> Set[str]:
     return configs
 
 
-async def check_and_update_sources(path: Path, max_concurrent: int = 20) -> List[str]:
-    """Validate and deduplicate sources list using concurrent checks."""
+async def check_and_update_sources(path: Path, concurrent_limit: int = 20) -> List[str]:
+    """Validate and deduplicate sources list concurrently."""
     if not path.exists():
         logging.warning("sources file not found: %s", path)
         return []
@@ -191,9 +191,11 @@ async def check_and_update_sources(path: Path, max_concurrent: int = 20) -> List
     with path.open() as f:
         sources = {line.strip() for line in f if line.strip()}
 
-    semaphore = asyncio.Semaphore(max_concurrent)
+    valid_sources: List[str] = []
+    semaphore = asyncio.Semaphore(concurrent_limit)
+    connector = aiohttp.TCPConnector(limit=concurrent_limit)
 
-    async def check_one(session: ClientSession, url: str) -> str | None:
+    async def check(url: str) -> str | None:
         async with semaphore:
             text = await fetch_text(session, url)
         if not text:
@@ -204,12 +206,13 @@ async def check_and_update_sources(path: Path, max_concurrent: int = 20) -> List
             return None
         return url
 
-    connector = aiohttp.TCPConnector(limit=max_concurrent)
     async with aiohttp.ClientSession(connector=connector) as session:
-        tasks = [asyncio.create_task(check_one(session, u)) for u in sorted(sources)]
-        results = await asyncio.gather(*tasks)
+        tasks = [asyncio.create_task(check(u)) for u in sorted(sources)]
+        for task in asyncio.as_completed(tasks):
+            result = await task
+            if result:
+                valid_sources.append(result)
 
-    valid_sources = [r for r in results if r]
 
     with path.open("w") as f:
         for url in valid_sources:
