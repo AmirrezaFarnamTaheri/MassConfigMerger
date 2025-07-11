@@ -1,3 +1,4 @@
 aiohttp
 aiodns
 nest-asyncio
+telethon

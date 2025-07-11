@@ -483,3 +483,72 @@ New files will appear in the chosen output directory:
    - *Cons*: using too many streams might waste bandwidth.
    - *Best Value*: `4` which balances speed and resource usage.
    - *Default*: `4`.
+
+## Mass Config Aggregator Tool
+
+This repository now includes **`aggregator_tool.py`**, a lightweight script for
+quickly collecting VPN configuration links from a list of HTTP sources and a set
+of Telegram channels.  It performs basic cleaning and deduplication and can run
+as a Telegram bot when you need updates on demand.  Unlike `vpn_merger.py` which
+focuses on speed testing, this script is meant for fast aggregation of working
+links.
+
+### Setup
+
+1. Install the required packages:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. Obtain a Telegram **API ID** and **API Hash** from <https://my.telegram.org>.
+   Place them in `config.json` together with your bot token and the Telegram user
+   IDs that are allowed to interact with the bot.
+3. Edit `sources.txt` and `channels.txt` to include any extra subscription URLs
+   or channel names you wish to scrape.
+4. Run the tool:
+   ```bash
+   python aggregator_tool.py
+   ```
+   The aggregated configuration links will be written to the folder specified in
+   `output_dir` (default `output/`) as `merged.txt`, `merged_base64.txt` and
+   `merged_singbox.json`.
+5. To enable the bot mode run:
+   ```bash
+   python aggregator_tool.py --bot
+   ```
+   Send `/update` in your Telegram chat with the bot to trigger a run.  The bot
+   will reply with the generated files.
+
+### Configuration
+
+`config.json` contains all runtime options:
+
+```json
+{
+  "telegram_api_id": 123456,
+  "telegram_api_hash": "YOUR_HASH",
+  "telegram_bot_token": "BOT_TOKEN",
+  "allowed_user_ids": [11111111],
+  "protocols": ["vmess", "vless", "trojan", "ss"],
+  "exclude_patterns": [],
+  "output_dir": "output",
+  "log_dir": "logs"
+}
+```
+
+- **protocols** – only links starting with these schemes are kept.
+- **exclude_patterns** – regular expressions to remove unwanted links.
+- **output_dir** – where merged files are created.
+- **log_dir** – daily log files are written here.
+
+The command line options `--config`, `--sources`, `--channels`, `--output-dir`
+let you override these file locations when running the tool.
+
+### Important Notes
+
+- The script only runs when executed and does **not** stay running in the
+  background.  Use your operating system's scheduler if you need periodic
+  updates.
+- When scraping Telegram make sure you only access **public** channels and
+  respect Telegram's Terms of Service along with your local laws.
+- All events are logged to the directory specified in `log_dir` so you can audit
+  what was fetched and from where.
