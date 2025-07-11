@@ -3,3 +3,4 @@ aiodns
 nest-asyncio
 telethon
 pytest
+PyYAML

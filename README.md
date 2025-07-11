@@ -15,7 +15,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 2. Run `pip install -r requirements.txt` in the project folder to install all dependencies **before running any script**.
 3. Execute `python vpn_merger.py` and wait for the `output` directory.
 4. *(Optional)* pass extra flags like `--max-ping 200` or `--concurrent-limit 10` to suit your connection.
-5. Import the `output/vpn_subscription_base64.txt` link into your VPN app or load `vpn_singbox.json` in clients like sing-box.
+5. Import the `output/vpn_subscription_base64.txt` link into your VPN app or load `vpn_singbox.json` / `vpn_clash.yaml` in clients like sing-box or Clash.
 
 ### 🐳 Docker
 
@@ -49,6 +49,7 @@ docker run --rm vpn-merger
 | **Strict Split** | Batches are strictly capped at `--batch-size` by default. Add `--no-strict-batch` to simply trigger on size. | Control how incremental files are produced. |
 | **Shuffle Sources** | `--shuffle-sources` randomizes the source order. | Helpful when using `--threshold` to avoid bias. |
 | **Sing-box JSON Output** | Every batch also produces `vpn_singbox.json`. | Import directly into modern clients like sing-box/Stash. |
+| **Clash YAML Output** | Generate `vpn_clash.yaml` for Clash/Stash users. | Works with any client supporting Clash configs. |
 | **Hiddify Optimised** | Default protocols match the Hiddify client. | Other clients may reject some entries. |
 
 ### 🔍 Feature Breakdown
@@ -313,6 +314,8 @@ There are many other applications that can import the generated subscription. Be
 
 Each client has its own strengths, so choose the one that fits your platform and skill level.
 
+Users of Clash Meta or Stash can import the provided `vpn_clash.yaml` for a ready-to-use proxy list.
+
 -----
 
 ## 📂 Understanding the Output Files
@@ -324,6 +327,7 @@ Each client has its own strengths, so choose the one that fits your platform and
 | `vpn_detailed.csv`            | A spreadsheet with detailed info about each server, including protocol, host, and ping time.             |
 | `vpn_report.json`             | A detailed report with all stats and configurations in a developer-friendly format.                      |
 | `vpn_singbox.json`            | Outbound objects ready for import into sing-box/Stash.                                                   |
+| `vpn_clash.yaml`              | Clash configuration with all proxies and a basic group.                                                   |
 
 -----
 
