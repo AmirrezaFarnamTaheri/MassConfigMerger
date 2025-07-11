@@ -31,7 +31,7 @@ CHANNELS_FILE = Path("channels.txt")
 
 # Match full config links for supported protocols
 PROTOCOL_RE = re.compile(
-    r"(?:vmess|vless|trojan|ssr?|hysteria2?|tuic|reality)://\S+",
+    r"(?:vmess|vless|trojan|ssr?|hysteria2?|tuic|reality|naive|hy2|wireguard)://\S+",
     re.IGNORECASE,
 )
 BASE64_RE = re.compile(r"^[A-Za-z0-9+/=]+$")
@@ -47,18 +47,27 @@ def is_valid_config(link: str) -> bool:
     """Simple validation for known protocols."""
     if "warp://" in link:
         return False
-    if link.startswith("vmess://"):
-        b64 = link.split("://", 1)[1]
-        # remove notes or query parameters
-        b64 = re.split(r"[?#]", b64, 1)[0]
-        # pad base64 string if needed
-        padded = b64 + "=" * (-len(b64) % 4)
+
+    scheme, _, rest = link.partition("://")
+    scheme = scheme.lower()
+    rest = re.split(r"[?#]", rest, 1)[0]
+
+    if scheme == "vmess":
+        padded = rest + "=" * (-len(rest) % 4)
         try:
             json.loads(base64.b64decode(padded).decode())
             return True
         except Exception:
             return False
-    return True
+    if scheme in {"naive", "hy2"}:
+        if "@" not in rest:
+            return False
+        host = rest.split("@", 1)[1]
+        return ":" in host
+    if scheme == "wireguard":
+        return bool(rest)
+
+    return bool(rest)
 
 
 @dataclass
