@@ -30,3 +30,25 @@ def test_load_invalid_json(tmp_path):
     p.write_text("{ invalid }")
     with pytest.raises(ValueError):
         Config.load(p)
+
+
+def test_missing_required_fields(tmp_path, capsys):
+    p = tmp_path / "cfg.json"
+    p.write_text("{}")
+    with pytest.raises(ValueError):
+        Config.load(p)
+    captured = capsys.readouterr()
+    assert "missing required fields" in captured.out
+
+
+def test_custom_defaults(tmp_path):
+    cfg = {
+        "telegram_api_id": 1,
+        "telegram_api_hash": "hash",
+        "telegram_bot_token": "token",
+        "allowed_user_ids": [1],
+    }
+    p = tmp_path / "config.json"
+    p.write_text(json.dumps(cfg))
+    loaded = Config.load(p, defaults={"output_dir": "alt"})
+    assert loaded.output_dir == "alt"

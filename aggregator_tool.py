@@ -95,24 +95,49 @@ class Config:
     max_concurrent: int = 20
 
     @classmethod
-    def load(cls, path: Path) -> "Config":
+    def load(
+        cls, path: Path, defaults: dict | None = None
+    ) -> "Config":
+        """Load configuration from ``path`` applying optional defaults."""
         try:
             with path.open("r") as f:
                 data = json.load(f)
         except json.JSONDecodeError as exc:
             raise ValueError(f"Invalid JSON in {path}: {exc}") from exc
 
-        defaults = {
+        merged_defaults = {
             "protocols": [],
             "exclude_patterns": [],
             "output_dir": "output",
             "log_dir": "logs",
             "max_concurrent": 20,
         }
-        for key, value in defaults.items():
+        if defaults:
+            merged_defaults.update(defaults)
+        for key, value in merged_defaults.items():
             data.setdefault(key, value)
 
-        return cls(**data)
+        required = [
+            "telegram_api_id",
+            "telegram_api_hash",
+            "telegram_bot_token",
+            "allowed_user_ids",
+        ]
+        missing = [k for k in required if k not in data]
+        if missing:
+            msg = f"config.json missing required fields: {', '.join(missing)}"
+            print(msg)
+            raise ValueError(msg)
+
+        try:
+            return cls(**data)
+        except (KeyError, TypeError) as exc:
+            msg = (
+                "config.json missing required fields: "
+                + ", ".join(required)
+            )
+            print(msg)
+            raise ValueError(msg) from exc
 
 
 async def fetch_text(session: ClientSession, url: str) -> str | None:
