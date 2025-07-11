@@ -32,6 +32,12 @@ def test_load_invalid_json(tmp_path):
         Config.load(p)
 
 
+def test_file_not_found(tmp_path):
+    missing = tmp_path / "absent.json"
+    with pytest.raises(ValueError):
+        Config.load(missing)
+
+
 def test_missing_required_fields(tmp_path, capsys):
     p = tmp_path / "cfg.json"
     p.write_text("{}")

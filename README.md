@@ -505,7 +505,8 @@ and Trojan links must include an `@host:port`—and malformed entries are skippe
    ```
 2. Obtain a Telegram **API ID** and **API Hash** from <https://my.telegram.org>.
    Place them in `config.json` together with your bot token and the Telegram user
-   IDs that are allowed to interact with the bot.
+   IDs that are allowed to interact with the bot. A starter template is provided
+   in `config.json.example`.
 3. Edit `sources.txt` and `channels.txt` to include any extra subscription URLs
    or channel names you wish to scrape. **Put one valid URL on each line of**
    `sources.txt`. By default the aggregator recognizes links starting with
@@ -527,7 +528,7 @@ and Trojan links must include an `@host:port`—and malformed entries are skippe
 
 ### Configuration
 
-`config.json` contains all runtime options:
+`config.json` contains all runtime options (see `config.json.example` for a complete template):
 
 ```json
 {
