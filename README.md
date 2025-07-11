@@ -324,6 +324,8 @@ Each server link is classified into a protocol type. By default the merger only 
 
 - **Proxy** (HTTP/SOCKS)
 - **Shadowsocks**
+- **ShadowsocksR**
+- **Trojan**
 - **Clash** / **ClashMeta**
 - **V2Ray** / **Xray**
 - **Reality**
