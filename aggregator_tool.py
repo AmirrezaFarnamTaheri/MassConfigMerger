@@ -348,10 +348,19 @@ async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Con
     return configs
 
 
-def deduplicate_and_filter(config_set: Set[str], cfg: Config, protocols: List[str] | None = None) -> List[str]:
-    """Apply filters and return sorted configs."""
+def deduplicate_and_filter(
+    config_set: Set[str], cfg: Config, protocols: List[str] | None = None
+) -> List[str]:
+    """Apply filters and return sorted configs.
+
+    If ``protocols`` resolves to an empty list after considering ``cfg.protocols``,
+    no protocol filtering is applied and all links are accepted (subject to the
+    other filters).
+    """
     final = []
-    protocols = protocols or cfg.protocols
+    # ``protocols`` overrides ``cfg.protocols`` when provided, even if empty
+    if protocols is None:
+        protocols = cfg.protocols
     exclude = [re.compile(p, re.IGNORECASE) for p in cfg.exclude_patterns]
     seen: Set[str] = set()
     for link in sorted(c.strip() for c in config_set):
@@ -359,7 +368,7 @@ def deduplicate_and_filter(config_set: Set[str], cfg: Config, protocols: List[st
         if l_lower in seen:
             continue
         seen.add(l_lower)
-        if not any(l_lower.startswith(p + "://") for p in protocols):
+        if protocols and not any(l_lower.startswith(p + "://") for p in protocols):
             continue
         if any(r.search(l_lower) for r in exclude):
             continue
