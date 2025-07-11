@@ -118,6 +118,21 @@ class Config:
         if not isinstance(data, dict):
             raise ValueError(f"{path} must contain a JSON object")
 
+        # Pull telegram credentials from environment when not present
+        env_values = {
+            "telegram_api_id": os.getenv("TELEGRAM_API_ID"),
+            "telegram_api_hash": os.getenv("TELEGRAM_API_HASH"),
+            "telegram_bot_token": os.getenv("TELEGRAM_BOT_TOKEN"),
+        }
+        if "telegram_api_id" not in data and env_values["telegram_api_id"]:
+            try:
+                data["telegram_api_id"] = int(env_values["telegram_api_id"])
+            except ValueError as exc:
+                raise ValueError("TELEGRAM_API_ID must be an integer") from exc
+        for key in ("telegram_api_hash", "telegram_bot_token"):
+            if key not in data and env_values[key]:
+                data[key] = env_values[key]
+
         merged_defaults = {
             "protocols": [],
             "exclude_patterns": [],

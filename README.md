@@ -513,9 +513,11 @@ and Trojan links must include an `@host:port`—and malformed entries are skippe
    pip install -r requirements.txt
    ```
 2. Obtain a Telegram **API ID** and **API Hash** from <https://my.telegram.org>.
-   Place them in `config.json` together with your bot token and the Telegram user
-   IDs that are allowed to interact with the bot. A starter template is provided
-   in `config.json.example`.
+   Create your own `config.json` (you can copy `config.json.example`) and add
+   them along with your bot token and the Telegram user IDs allowed to interact
+   with the bot, **or** set the environment variables `TELEGRAM_API_ID`,
+   `TELEGRAM_API_HASH` and `TELEGRAM_BOT_TOKEN` instead.  The example file shows
+   all available options.
 3. Edit `sources.txt` and `channels.txt` to include any extra subscription URLs
    or channel names you wish to scrape. **Each line of `sources.txt` should
    contain exactly one valid URL with no extra text or spaces.** Each line of
@@ -540,7 +542,7 @@ and Trojan links must include an `@host:port`—and malformed entries are skippe
 
 ### Configuration
 
-`config.json` contains all runtime options (see `config.json.example` for a complete template):
+`config.json` contains all runtime options (see `config.json.example` for a complete template).  The values `telegram_api_id`, `telegram_api_hash` and `telegram_bot_token` may also be supplied through the environment variables `TELEGRAM_API_ID`, `TELEGRAM_API_HASH` and `TELEGRAM_BOT_TOKEN` when they are not present in the file:
 
 ```json
 {
@@ -564,6 +566,7 @@ recognized—any unknown keys will cause an error. Missing required fields will
 also trigger a helpful message listing what is absent.
 
 Required fields: `telegram_api_id`, `telegram_api_hash`, `telegram_bot_token`, `allowed_user_ids`.
+If the telegram fields are omitted from the file they will be looked up from the corresponding environment variables.
 If any are missing you'll see an error like:
 
 ```text
