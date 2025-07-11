@@ -57,3 +57,16 @@ def test_custom_defaults(tmp_path):
     p.write_text(json.dumps(cfg))
     loaded = Config.load(p, defaults={"output_dir": "alt"})
     assert loaded.output_dir == "alt"
+
+
+def test_env_fallback(tmp_path, monkeypatch):
+    cfg = {"allowed_user_ids": [1]}
+    p = tmp_path / "config.json"
+    p.write_text(json.dumps(cfg))
+    monkeypatch.setenv("TELEGRAM_API_ID", "42")
+    monkeypatch.setenv("TELEGRAM_API_HASH", "hash")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "token")
+    loaded = Config.load(p)
+    assert loaded.telegram_api_id == 42
+    assert loaded.telegram_api_hash == "hash"
+    assert loaded.telegram_bot_token == "token"
