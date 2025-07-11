@@ -321,6 +321,16 @@ def main() -> None:
         asyncio.run(telegram_bot_mode(cfg, Path(args.sources), Path(args.channels)))
     else:
 
+        out_dir = asyncio.run(
+            run_pipeline(
+                cfg,
+                protocols,
+                Path(args.sources),
+                Path(args.channels),
+            )
+        )
+        print(f"Aggregation complete. Files written to {out_dir.resolve()}")
+
 
 
 if __name__ == "__main__":
