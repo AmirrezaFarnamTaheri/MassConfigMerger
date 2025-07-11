@@ -38,12 +38,15 @@ def test_file_not_found(tmp_path):
         Config.load(missing)
 
 
-def test_missing_required_fields(tmp_path, capsys):
+def test_load_without_credentials(tmp_path):
+    """Loading an empty config should succeed with Telegram fields unset."""
     p = tmp_path / "cfg.json"
     p.write_text("{}")
-    with pytest.raises(ValueError) as exc:
-        Config.load(p)
-    assert "missing required fields" in str(exc.value)
+    cfg = Config.load(p)
+    assert cfg.telegram_api_id is None
+    assert cfg.telegram_api_hash is None
+    assert cfg.telegram_bot_token is None
+    assert cfg.allowed_user_ids == []
 
 
 def test_custom_defaults(tmp_path):
@@ -60,16 +63,17 @@ def test_custom_defaults(tmp_path):
 
 
 def test_env_fallback(tmp_path, monkeypatch):
-    cfg = {"allowed_user_ids": [1]}
     p = tmp_path / "config.json"
-    p.write_text(json.dumps(cfg))
+    p.write_text("{}")
     monkeypatch.setenv("TELEGRAM_API_ID", "42")
     monkeypatch.setenv("TELEGRAM_API_HASH", "hash")
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "token")
+    monkeypatch.setenv("ALLOWED_USER_IDS", "1")
     loaded = Config.load(p)
     assert loaded.telegram_api_id == 42
     assert loaded.telegram_api_hash == "hash"
     assert loaded.telegram_bot_token == "token"
+    assert loaded.allowed_user_ids == [1]
 
 
 def test_env_override(tmp_path, monkeypatch):

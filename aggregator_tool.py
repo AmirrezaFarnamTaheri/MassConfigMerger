@@ -94,10 +94,10 @@ def is_valid_config(link: str) -> bool:
 
 @dataclass
 class Config:
-    telegram_api_id: int
-    telegram_api_hash: str
-    telegram_bot_token: str
-    allowed_user_ids: List[int]
+    telegram_api_id: Optional[int] = None
+    telegram_api_hash: Optional[str] = None
+    telegram_bot_token: Optional[str] = None
+    allowed_user_ids: List[int] = field(default_factory=list)
     protocols: List[str] = field(default_factory=list)
     exclude_patterns: List[str] = field(default_factory=list)
     output_dir: str = "output"
@@ -164,22 +164,10 @@ class Config:
         for key, value in merged_defaults.items():
             data.setdefault(key, value)
 
-        required = [
-            "telegram_api_id",
-            "telegram_api_hash",
-            "telegram_bot_token",
-            "allowed_user_ids",
-        ]
         known_fields = {f.name for f in fields(cls)}
-        missing = [k for k in required if k not in data]
         unknown = [k for k in data if k not in known_fields]
-        if missing or unknown:
-            parts = []
-            if missing:
-                parts.append("missing required fields: " + ", ".join(missing))
-            if unknown:
-                parts.append("unknown fields: " + ", ".join(unknown))
-            msg = f"Invalid config.json - {'; '.join(parts)}"
+        if unknown:
+            msg = "Invalid config.json - unknown fields: " + ", ".join(unknown)
             raise ValueError(msg)
 
         try:
@@ -287,6 +275,9 @@ async def fetch_and_parse_configs(
 
 async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Config) -> Set[str]:
     """Scrape telegram channels for configs."""
+    if cfg.telegram_api_id is None or cfg.telegram_api_hash is None:
+        logging.info("Telegram credentials not provided; skipping Telegram scrape")
+        return set()
     if not channels_path.exists():
         logging.warning("channels file missing: %s", channels_path)
         return set()
@@ -570,7 +561,18 @@ async def telegram_bot_mode(
 ) -> None:
 
     """Launch Telegram bot for on-demand updates."""
-    bot = TelegramClient("bot", cfg.telegram_api_id, cfg.telegram_api_hash).start(bot_token=cfg.telegram_bot_token)
+    if not (
+        cfg.telegram_api_id
+        and cfg.telegram_api_hash
+        and cfg.telegram_bot_token
+        and cfg.allowed_user_ids
+    ):
+        logging.info("Telegram credentials not provided; skipping bot mode")
+        return
+
+    bot = TelegramClient("bot", cfg.telegram_api_id, cfg.telegram_api_hash).start(
+        bot_token=cfg.telegram_bot_token
+    )
     last_update = None
 
     @bot.on(events.NewMessage(pattern="/help"))
@@ -624,7 +626,12 @@ def setup_logging(log_dir: Path) -> None:
 def main() -> None:
     import argparse
 
-    parser = argparse.ArgumentParser(description="Mass VPN Config Aggregator")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Mass VPN Config Aggregator. Telegram credentials are only required "
+            "when scraping Telegram or running bot mode"
+        )
+    )
     parser.add_argument("--bot", action="store_true", help="run in telegram bot mode")
     parser.add_argument("--protocols", help="comma separated protocols to keep")
     parser.add_argument("--config", default=str(CONFIG_FILE), help="path to config.json")
