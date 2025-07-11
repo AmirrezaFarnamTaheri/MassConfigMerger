@@ -12,7 +12,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 ### ⚡ Quick Start
 
 1. Install **Python 3.8+** and clone this repository.
-2. Run `pip install -r requirements.txt` in the project folder.
+2. Run `pip install -r requirements.txt` in the project folder to install all dependencies **before running any script**.
 3. Execute `python vpn_merger.py` and wait for the `output` directory.
 4. *(Optional)* pass extra flags like `--max-ping 200` or `--concurrent-limit 10` to suit your connection.
 5. Import the `output/vpn_subscription_base64.txt` link into your VPN app or load `vpn_singbox.json` in clients like sing-box.

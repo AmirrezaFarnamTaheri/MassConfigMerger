@@ -2,3 +2,4 @@ aiohttp
 aiodns
 nest-asyncio
 telethon
+pytest
