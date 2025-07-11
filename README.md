@@ -529,13 +529,13 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
    ```bash
    pip install -r requirements.txt
    ```
-2. Obtain a Telegram **API ID** and **API Hash** from <https://my.telegram.org>.
-   Create your own `config.json` (you can copy `config.json.example`) and add
-  them along with your bot token and the Telegram user IDs allowed to interact
-  with the bot.  Alternatively set the environment variables `TELEGRAM_API_ID`,
-  `TELEGRAM_API_HASH`, `TELEGRAM_BOT_TOKEN` and `ALLOWED_USER_IDS`.
-  These variables override any values in your `config.json`.  The example file
-   shows all available options.
+2. *(Only for Telegram scraping or bot mode)* Obtain a Telegram **API ID** and
+   **API Hash** from <https://my.telegram.org>.  Create your own `config.json`
+   (you can copy `config.json.example`) and add them along with your bot token
+   and the Telegram user IDs allowed to interact with the bot.  Alternatively
+   set the environment variables `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`,
+   `TELEGRAM_BOT_TOKEN` and `ALLOWED_USER_IDS`.  These variables override any
+   values in your `config.json`.  The example file shows all available options.
 3. Edit `sources.txt` and `channels.txt` to include any extra subscription URLs
    or channel names you wish to scrape. **Each line of `sources.txt` should
    contain exactly one valid URL with no extra text or spaces.** Each line of
@@ -581,16 +581,9 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
 ```
 
 `config.json` must be a single JSON object. Only the fields shown above are
-recognized—any unknown keys will cause an error. Missing required fields will
-also trigger a helpful message listing what is absent.
-
-Required fields: `telegram_api_id`, `telegram_api_hash`, `telegram_bot_token`, `allowed_user_ids`.
-If any of these fields are omitted they will be looked up from the corresponding environment variables.  When present, environment variables take precedence over the file values.
-If any are missing you'll see an error like:
-
-```text
-config.json missing required fields: telegram_api_id, telegram_api_hash
-```
+recognized—any unknown keys will cause an error. Telegram credentials are
+optional unless you plan to scrape Telegram channels or run the bot mode.
+When provided, environment variables take precedence over the file values.
 Optional fields use these defaults when omitted:
 - `protocols` – `[]`
 - `exclude_patterns` – `[]`
