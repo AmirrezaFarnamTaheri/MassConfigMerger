@@ -17,7 +17,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Iterable, List, Set
+from typing import Iterable, List, Set, Dict
 
 import aiohttp
 from aiohttp import ClientSession, ClientTimeout
@@ -154,20 +154,22 @@ async def fetch_text(session: ClientSession, url: str) -> str | None:
 
 def parse_configs_from_text(text: str) -> Set[str]:
     """Extract all config links from a text block."""
-    configs: Set[str] = set()
+    configs: Dict[str, str] = {}
     for line in text.splitlines():
         line = line.strip()
         match = PROTOCOL_RE.search(line)
         if match:
-            configs.add(match.group(0))
+            cfg = match.group(0)
+            configs.setdefault(cfg.lower(), cfg)
             continue
         if BASE64_RE.match(line):
             try:
                 decoded = base64.b64decode(line).decode()
-                configs.update(PROTOCOL_RE.findall(decoded))
+                for cfg in PROTOCOL_RE.findall(decoded):
+                    configs.setdefault(cfg.lower(), cfg)
             except Exception:
                 continue
-    return configs
+    return set(configs.values())
 
 
 async def check_and_update_sources(path: Path) -> List[str]:
@@ -201,7 +203,7 @@ async def fetch_and_parse_configs(
     sources: Iterable[str], max_concurrent: int = 20
 ) -> Set[str]:
     """Fetch configs from sources respecting concurrency limits."""
-    configs: Set[str] = set()
+    configs: Dict[str, str] = {}
 
     semaphore = asyncio.Semaphore(max_concurrent)
 
@@ -217,9 +219,11 @@ async def fetch_and_parse_configs(
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = [asyncio.create_task(fetch_one(session, u)) for u in sources]
         for task in asyncio.as_completed(tasks):
-            configs.update(await task)
+            for cfg in await task:
+                key = cfg.lower()
+                configs.setdefault(key, cfg)
 
-    return configs
+    return set(configs.values())
 
 
 async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Config) -> Set[str]:
@@ -236,7 +240,7 @@ async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Con
 
     since = datetime.utcnow() - timedelta(hours=last_hours)
     client = TelegramClient("user", cfg.telegram_api_id, cfg.telegram_api_hash)
-    configs: Set[str] = set()
+    configs: Dict[str, str] = {}
 
     try:
         await client.start()
@@ -249,11 +253,13 @@ async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Con
                         async for msg in client.iter_messages(channel, offset_date=since):
                             if isinstance(msg, Message) and msg.message:
                                 text = msg.message
-                                configs.update(parse_configs_from_text(text))
+                                for c in parse_configs_from_text(text):
+                                    configs.setdefault(c.lower(), c)
                                 for sub in extract_subscription_urls(text):
                                     text2 = await fetch_text(session, sub)
                                     if text2:
-                                        configs.update(parse_configs_from_text(text2))
+                                        for c2 in parse_configs_from_text(text2):
+                                            configs.setdefault(c2.lower(), c2)
                         success = True
                         break
                     except (errors.RPCError, OSError) as e:
@@ -282,24 +288,26 @@ async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Con
         return set()
 
     logging.info("Telegram configs found: %d", len(configs))
-    return configs
+    return set(configs.values())
 
 
 def deduplicate_and_filter(config_set: Set[str], cfg: Config, protocols: List[str] | None = None) -> List[str]:
     """Apply filters and return sorted configs."""
-    final = []
     protocols = protocols or cfg.protocols
     exclude = [re.compile(p) for p in cfg.exclude_patterns]
-    for link in sorted(set(c.strip() for c in config_set)):
+    canonical: Dict[str, str] = {}
+    for link in config_set:
+        link = link.strip()
         l_lower = link.lower()
         if not any(l_lower.startswith(p + "://") for p in protocols):
             continue
         if any(r.search(l_lower) for r in exclude):
             continue
         if not is_valid_config(link):
-
             continue
-        final.append(link)
+        canonical.setdefault(l_lower, link)
+
+    final = [canonical[k] for k in sorted(canonical)]
     logging.info("Final configs count: %d", len(final))
     return final
 
