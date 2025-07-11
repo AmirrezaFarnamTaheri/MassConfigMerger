@@ -117,6 +117,7 @@ class Config:
     write_clash_proxies: bool
     mux_concurrency: int
     smux_streams: int
+    geoip_db: Optional[str] = None
 
 CONFIG = Config(
     headers={
@@ -167,7 +168,8 @@ CONFIG = Config(
     write_clash=True,
     write_clash_proxies=True,
     mux_concurrency=8,
-    smux_streams=4
+    smux_streams=4,
+    geoip_db=None
 )
 
 # ============================================================================
@@ -845,6 +847,7 @@ class ConfigResult:
     ping_time: Optional[float] = None
     is_reachable: bool = False
     source_url: str = ""
+    country: Optional[str] = None
 
 class EnhancedConfigProcessor:
     """Advanced configuration processor with comprehensive testing capabilities."""
@@ -854,6 +857,7 @@ class EnhancedConfigProcessor:
     def __init__(self):
         self.dns_cache = {}
         self.resolver: Optional[AsyncResolver] = None
+        self._geoip_reader = None
         
     def extract_host_port(self, config: str) -> Tuple[Optional[str], Optional[int]]:
         """Extract host and port from configuration for testing."""
@@ -947,7 +951,30 @@ class EnhancedConfigProcessor:
             return time.time() - start
         except Exception:
             return None
-    
+
+    def lookup_country(self, host: str) -> Optional[str]:
+        """Return ISO country code for host if GeoIP is configured."""
+        if not host or not CONFIG.geoip_db:
+            return None
+        try:
+            from geoip2.database import Reader
+        except Exception:
+            return None
+        if self._geoip_reader is None:
+            try:
+                self._geoip_reader = Reader(CONFIG.geoip_db)
+            except Exception:
+                self._geoip_reader = None
+                return None
+        try:
+            ip = host
+            if not re.match(r"^[0-9.]+$", host):
+                ip = socket.gethostbyname(host)
+            resp = self._geoip_reader.country(ip)
+            return resp.country.iso_code
+        except Exception:
+            return None
+
     def categorize_protocol(self, config: str) -> str:
         """Categorize configuration by protocol."""
         protocol_map = {
@@ -1069,12 +1096,14 @@ class AsyncSourceFetcher:
                             host, port = self.processor.extract_host_port(line)
                             protocol = self.processor.categorize_protocol(line)
 
+                            country = self.processor.lookup_country(host) if host else None
                             result = ConfigResult(
                                 config=line,
                                 protocol=protocol,
                                 host=host,
                                 port=port,
-                                source_url=url
+                                source_url=url,
+                                country=country
                             )
                             
                             # Test connection if enabled
@@ -1140,13 +1169,15 @@ class UltimateVPNMerger:
                 continue
             protocol = self.processor.categorize_protocol(line)
             host, port = self.processor.extract_host_port(line)
+            country = self.processor.lookup_country(host) if host else None
             results.append(
                 ConfigResult(
                     config=line,
                     protocol=protocol,
                     host=host,
                     port=port,
-                    source_url="(resume)"
+                    source_url="(resume)",
+                    country=country
                 )
             )
             h = self.processor.create_semantic_hash(line)
@@ -1528,12 +1559,13 @@ class UltimateVPNMerger:
             tmp_csv = csv_file.with_suffix('.tmp')
             with open(tmp_csv, 'w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
-                writer.writerow(['Config', 'Protocol', 'Host', 'Port', 'Ping_MS', 'Reachable', 'Source'])
+                writer.writerow(['Config', 'Protocol', 'Host', 'Port', 'Ping_MS', 'Reachable', 'Source', 'Country'])
                 for result in results:
                     ping_ms = round(result.ping_time * 1000, 2) if result.ping_time else None
                     writer.writerow([
                         result.config, result.protocol, result.host, result.port,
-                        ping_ms, result.is_reachable, result.source_url
+                        ping_ms, result.is_reachable, result.source_url,
+                        result.country
                     ])
             tmp_csv.replace(csv_file)
         
@@ -1591,6 +1623,8 @@ class UltimateVPNMerger:
                 "server_port": r.port,
                 "raw": r.config
             }
+            if r.country:
+                ob["country"] = r.country
             outbounds.append(ob)
 
         singbox_file = output_dir / f"{prefix}vpn_singbox.json"
@@ -1887,6 +1921,8 @@ def main():
                         help="Do not save CSV report")
     parser.add_argument("--no-proxy-yaml", action="store_true",
                         help="Do not save simple Clash proxy list")
+    parser.add_argument("--geoip-db", type=str, default=None,
+                        help="Path to GeoLite2 Country database for GeoIP lookup")
     args, unknown = parser.parse_known_args()
     if unknown:
         logging.warning("Ignoring unknown arguments: %s", unknown)
@@ -1928,6 +1964,7 @@ def main():
     CONFIG.shuffle_sources = args.shuffle_sources
     CONFIG.mux_concurrency = max(0, args.mux)
     CONFIG.smux_streams = max(0, args.smux)
+    CONFIG.geoip_db = args.geoip_db
     if args.no_url_test:
         CONFIG.enable_url_testing = False
     if args.no_sort:

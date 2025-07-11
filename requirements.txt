@@ -4,3 +4,4 @@ nest-asyncio
 telethon
 pytest
 PyYAML
+geoip2
