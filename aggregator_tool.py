@@ -644,6 +644,13 @@ def main() -> None:
         parser.error(f"--output-dir must be within {allowed_base}")
     cfg.output_dir = str(resolved_output)
 
+    resolved_log_dir = Path(cfg.log_dir).expanduser().resolve()
+    try:
+        resolved_log_dir.relative_to(allowed_base)
+    except ValueError:
+        parser.error(f"log_dir must be within {allowed_base}")
+    cfg.log_dir = str(resolved_log_dir)
+
     if args.protocols:
         protocols = [p.strip() for p in args.protocols.split(",") if p.strip()]
     else:
