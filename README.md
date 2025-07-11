@@ -524,9 +524,9 @@ and Trojan links must include an `@host:port`—and malformed entries are skippe
    starting with `vmess`, `vless`, `trojan`, `ss`,
    `ssr`, `hysteria`, `hysteria2`, `tuic`, `reality`, `naive`, `hy2` and
    `wireguard`.
-4. Run the tool:
+4. Run the tool (by default it scans the last 24 hours of channel history):
    ```bash
-   python aggregator_tool.py
+   python aggregator_tool.py --hours 12
    ```
    The aggregated configuration links will be written to the folder specified in
    `output_dir` (default `output/`) as `merged.txt`, `merged_base64.txt` and
@@ -582,7 +582,7 @@ Optional fields use these defaults when omitted:
 - **log_dir** – daily log files are written here.
 - **max_concurrent** – maximum simultaneous HTTP requests for validating and fetching sources (override with `--concurrent-limit`).
 
-The command line options `--config`, `--sources`, `--channels`, `--output-dir`, `--concurrent-limit`
+The command line options `--config`, `--sources`, `--channels`, `--output-dir`, `--concurrent-limit`, `--hours`
 let you override these file locations when running the tool.
 
 ### Important Notes
