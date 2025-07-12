@@ -18,7 +18,7 @@ from dataclasses import dataclass, field, fields
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterable, List, Set, Optional, Dict, Union, Tuple, cast
-from urllib.parse import urlparse, parse_qs
+from clash_utils import config_to_clash_proxy
 
 import yaml
 
@@ -490,150 +490,11 @@ def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
         )
         written.append(merged_singbox)
 
-    def _config_to_clash_proxy(config: str, idx: int) -> Optional[Dict[str, Union[str, int, bool]]]:
-        """Convert a single config link to a Clash proxy dictionary."""
-        try:
-            scheme = config.split("://", 1)[0].lower()
-            name = f"{scheme}-{idx}"
-            if scheme == "vmess":
-                after = config.split("://", 1)[1]
-                base = after.split("#", 1)[0]
-                try:
-                    padded = base + "=" * (-len(base) % 4)
-                    data = json.loads(base64.b64decode(padded).decode())
-                    name = data.get("ps") or data.get("name") or name
-                    proxy = {
-                        "name": name,
-                        "type": "vmess",
-                        "server": data.get("add") or data.get("host", ""),
-                        "port": int(data.get("port", 0)),
-                        "uuid": data.get("id") or data.get("uuid", ""),
-                        "alterId": int(data.get("aid", 0)),
-                        "cipher": data.get("type", "auto"),
-                    }
-                    if data.get("tls") or data.get("security"):
-                        proxy["tls"] = True
-                    return proxy
-                except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
-                    logging.debug("Fallback Clash parse for vmess: %s", exc)
-                    p = urlparse(config)
-                    q = parse_qs(p.query)
-                    proxy = {
-                        "name": p.fragment or name,
-                        "type": "vmess",
-                        "server": p.hostname or "",
-                        "port": p.port or 0,
-                        "uuid": p.username or "",
-                        "alterId": int(q.get("aid", [0])[0]),
-                        "cipher": q.get("type", ["auto"])[0],
-                    }
-                security = q.get("security")
-                if security:
-                    proxy["tls"] = True
-                return proxy
-            elif scheme == "vless":
-                p = urlparse(config)
-                q = parse_qs(p.query)
-                proxy = {
-                    "name": p.fragment or name,
-                    "type": "vless",
-                    "server": p.hostname or "",
-                    "port": p.port or 0,
-                    "uuid": p.username or "",
-                    "encryption": q.get("encryption", ["none"])[0],
-                }
-                security = q.get("security")
-                if security:
-                    proxy["tls"] = True
-                return proxy
-            elif scheme == "reality":
-                p = urlparse(config)
-                q = parse_qs(p.query)
-                proxy = {
-                    "name": p.fragment or name,
-                    "type": "vless",
-                    "server": p.hostname or "",
-                    "port": p.port or 0,
-                    "uuid": p.username or "",
-                    "encryption": q.get("encryption", ["none"])[0],
-                    "tls": True,
-                }
-                flow = q.get("flow")
-                if flow:
-                    proxy["flow"] = flow[0]
-                return proxy
-            elif scheme == "trojan":
-                p = urlparse(config)
-                q = parse_qs(p.query)
-                proxy = {
-                    "name": p.fragment or name,
-                    "type": "trojan",
-                    "server": p.hostname or "",
-                    "port": p.port or 0,
-                    "password": p.username or p.password or "",
-                }
-                sni = q.get("sni")
-                if sni:
-                    proxy["sni"] = sni[0]
-                security = q.get("security")
-                if security:
-                    proxy["tls"] = True
-                return proxy
-            elif scheme in ("ss", "shadowsocks"):
-                p = urlparse(config)
-                if p.username and p.password and p.hostname and p.port:
-                    method = p.username
-                    password = p.password
-                    server = p.hostname
-                    port = p.port
-                else:
-                    base = config.split("://", 1)[1].split("#", 1)[0]
-                    padded = base + "=" * (-len(base) % 4)
-                    decoded = base64.b64decode(padded).decode()
-                    before_at, host_port = decoded.split("@")
-                    method, password = before_at.split(":")
-                    server, port_str = host_port.split(":")
-                    port = int(port_str)
-                return {
-                    "name": p.fragment or name,
-                    "type": "ss",
-                    "server": server,
-                    "port": int(port),
-                    "cipher": method,
-                    "password": password,
-                }
-            elif scheme == "naive":
-                p = urlparse(config)
-                if not p.hostname or not p.port:
-                    return None
-                return {
-                    "name": p.fragment or name,
-                    "type": "http",
-                    "server": p.hostname,
-                    "port": p.port,
-                    "username": p.username or "",
-                    "password": p.password or "",
-                    "tls": True,
-                }
-            else:
-                p = urlparse(config)
-                if not p.hostname or not p.port:
-                    return None
-                typ = "socks5" if scheme.startswith("socks") else "http"
-                return {
-                    "name": p.fragment or name,
-                    "type": typ,
-                    "server": p.hostname,
-                    "port": p.port,
-                }
-        except (ValueError, binascii.Error, UnicodeDecodeError, json.JSONDecodeError) as exc:
-            logging.debug("Failed to build Clash proxy: %s", exc)
-            return None
 
     proxies = []
     if cfg.write_clash:
         for idx, link in enumerate(configs):
-            proxy = _config_to_clash_proxy(link, idx)
+            proxy = config_to_clash_proxy(link, idx)
             if proxy:
                 proxies.append(proxy)
         if proxies:
