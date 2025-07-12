@@ -605,7 +605,10 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
    `output_dir` (default `output/`) as `merged.txt`. Depending on the
    `write_base64`, `write_singbox` and `write_clash` options—overridable with the
    flags above—the files `merged_base64.txt`, `merged_singbox.json` and
-   `clash.yaml` may also be created.
+   `clash.yaml` may also be created. Failing sources are tracked in
+   `sources_failures.json` and only removed after **3** consecutive runs.
+   Adjust this with `--fail-limit N` or disable pruning entirely with
+   `--no-prune`.
 5. To enable the bot mode run (you can also pass `--hours` to control how much
    channel history is scanned):
    ```bash

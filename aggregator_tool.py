@@ -220,8 +220,17 @@ def parse_configs_from_text(text: str) -> Set[str]:
     return configs
 
 
-async def check_and_update_sources(path: Path, concurrent_limit: int = 20) -> List[str]:
-    """Validate and deduplicate sources list concurrently."""
+async def check_and_update_sources(
+    path: Path,
+    concurrent_limit: int = 20,
+    failure_limit: int = 3,
+    prune: bool = True,
+) -> List[str]:
+    """Validate sources and track consecutive failures.
+
+    Sources are only removed when they fail ``failure_limit`` runs in a row
+    unless ``prune`` is ``False``.
+    """
     if not path.exists():
         logging.warning("sources file not found: %s", path)
         return []
@@ -229,32 +238,48 @@ async def check_and_update_sources(path: Path, concurrent_limit: int = 20) -> Li
     with path.open() as f:
         sources = {line.strip() for line in f if line.strip()}
 
+    failures_path = path.with_name(f"{path.stem}_failures.json")
+    try:
+        with failures_path.open() as f:
+            failures: Dict[str, int] = json.load(f)
+    except FileNotFoundError:
+        failures = {}
+
     valid_sources: List[str] = []
     semaphore = asyncio.Semaphore(concurrent_limit)
     connector = aiohttp.TCPConnector(limit=concurrent_limit)
 
-    async def check(url: str) -> str | None:
+    async def check(url: str) -> bool:
         async with semaphore:
             text = await fetch_text(session, url)
-        if not text:
-            logging.info("Removing dead source: %s", url)
-            return None
-        if not parse_configs_from_text(text):
-            logging.info("Removing empty source: %s", url)
-            return None
-        return url
+        if not text or not parse_configs_from_text(text):
+            return False
+        return True
 
     async with aiohttp.ClientSession(connector=connector) as session:
-        tasks = [asyncio.create_task(check(u)) for u in sorted(sources)]
-        for task in asyncio.as_completed(tasks):
-            result = await task
-            if result:
-                valid_sources.append(result)
-
+        urls = sorted(sources)
+        tasks = [asyncio.create_task(check(u)) for u in urls]
+        results = await asyncio.gather(*tasks)
+        for url, ok in zip(urls, results):
+            if ok:
+                valid_sources.append(url)
+                failures.pop(url, None)
+            else:
+                failures[url] = failures.get(url, 0) + 1
+                if prune and failures[url] >= failure_limit:
+                    logging.info(
+                        "Pruning source after %d failures: %s",
+                        failures[url],
+                        url,
+                    )
+                else:
+                    valid_sources.append(url)
 
     with path.open("w") as f:
         for url in valid_sources:
             f.write(f"{url}\n")
+    with failures_path.open("w") as f:
+        json.dump(failures, f, indent=2)
     logging.info("Valid sources: %d", len(valid_sources))
     return valid_sources
 
@@ -582,10 +607,23 @@ async def run_pipeline(
     sources_file: Path = SOURCES_FILE,
     channels_file: Path = CHANNELS_FILE,
     last_hours: int = 24,
+    failure_limit: int = 3,
+    prune: bool = True,
 ) -> Tuple[Path, List[Path]]:
     """Full aggregation pipeline.
-    Returns output directory and list of created files."""
-    sources = await check_and_update_sources(sources_file, cfg.max_concurrent)
+
+    ``failure_limit`` controls how many consecutive failures are allowed
+    before a source is removed. Set ``prune`` to ``False`` to keep all
+    sources regardless of failures.
+
+    Returns output directory and list of created files.
+    """
+    sources = await check_and_update_sources(
+        sources_file,
+        cfg.max_concurrent,
+        failure_limit=failure_limit,
+        prune=prune,
+    )
     configs = await fetch_and_parse_configs(sources, cfg.max_concurrent)
     configs |= await scrape_telegram_configs(channels_file, last_hours, cfg)
 
@@ -600,9 +638,15 @@ async def telegram_bot_mode(
     sources_file: Path = SOURCES_FILE,
     channels_file: Path = CHANNELS_FILE,
     last_hours: int = 24,
+    failure_limit: int = 3,
+    prune: bool = True,
 ) -> None:
 
-    """Launch Telegram bot for on-demand updates."""
+    """Launch Telegram bot for on-demand updates.
+
+    Parameters mirror :func:`run_pipeline` so failure tracking works the same
+    when triggered via Telegram commands.
+    """
     if not (
         cfg.telegram_api_id
         and cfg.telegram_api_hash
@@ -635,6 +679,8 @@ async def telegram_bot_mode(
             sources_file,
             channels_file,
             last_hours,
+            failure_limit=failure_limit,
+            prune=prune,
         )
 
         for path in files:
@@ -684,6 +730,17 @@ def main() -> None:
         type=int,
         default=24,
         help="how many hours of Telegram history to scan (default %(default)s)",
+    )
+    parser.add_argument(
+        "--fail-limit",
+        type=int,
+        default=3,
+        help="remove source after this many consecutive failures",
+    )
+    parser.add_argument(
+        "--no-prune",
+        action="store_true",
+        help="do not remove failing sources",
     )
     parser.add_argument("--output-dir", help="override output directory from config")
     parser.add_argument(
@@ -745,6 +802,8 @@ def main() -> None:
                 Path(args.sources),
                 Path(args.channels),
                 args.hours,
+                failure_limit=args.fail_limit,
+                prune=not args.no_prune,
             )
         )
     else:
@@ -756,6 +815,8 @@ def main() -> None:
                 Path(args.sources),
                 Path(args.channels),
                 args.hours,
+                failure_limit=args.fail_limit,
+                prune=not args.no_prune,
             )
         )
         print(f"Aggregation complete. Files written to {out_dir.resolve()}")
