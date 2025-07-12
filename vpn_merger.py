@@ -284,7 +284,15 @@ class EnhancedConfigProcessor:
         elif scheme == "trojan":
             try:
                 parsed = urlparse(config)
-                identifier = parsed.username or parsed.password
+                if parsed.username or parsed.password:
+                    identifier = parsed.username or ""
+                    if parsed.password is not None:
+                        if identifier:
+                            identifier += f":{parsed.password}"
+                        else:
+                            identifier = parsed.password
+                else:
+                    identifier = None
             except Exception:
                 pass
         elif scheme in ("ss", "shadowsocks"):
