@@ -178,6 +178,12 @@ class Config:
                 ) from exc
             data["allowed_user_ids"] = ids
 
+        if "allowed_user_ids" in data:
+            try:
+                data["allowed_user_ids"] = [int(i) for i in data["allowed_user_ids"]]
+            except Exception as exc:
+                raise ValueError("allowed_user_ids must be a list of integers") from exc
+
         merged_defaults = {
             "protocols": [],
             "exclude_patterns": [],

@@ -119,3 +119,16 @@ def test_allowed_ids_env_override(tmp_path, monkeypatch):
     monkeypatch.setenv("ALLOWED_USER_IDS", "2 3")
     loaded = Config.load(p)
     assert loaded.allowed_user_ids == [2, 3]
+
+
+def test_allowed_ids_string_values(tmp_path):
+    cfg = {
+        "telegram_api_id": 1,
+        "telegram_api_hash": "hash",
+        "telegram_bot_token": "token",
+        "allowed_user_ids": ["7", "8"],
+    }
+    p = tmp_path / "cfg.json"
+    p.write_text(json.dumps(cfg))
+    loaded = Config.load(p)
+    assert loaded.allowed_user_ids == [7, 8]
