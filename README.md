@@ -55,7 +55,8 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
    python aggregator_tool.py --with-merger
    ```
 
-   The merger automatically runs after aggregation finishes.
+   The merger automatically runs on the freshly aggregated results using the
+   resume feature.
 
 7. **Country filters**
 
@@ -687,7 +688,7 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
 4. Run the tool. The `--hours` option controls how many hours of channel history
    are scanned (default is 24). Use `--no-base64`, `--no-singbox` or
    `--no-clash` to skip optional outputs. Add `--with-merger` to automatically
-   run `vpn_merger.py` on the generated output directory:
+   run `vpn_merger.py` on the freshly aggregated configs via `--resume`:
    ```bash
    python aggregator_tool.py --hours 12
    ```
@@ -759,8 +760,9 @@ Optional fields use these defaults when omitted:
 The command line options `--config`, `--sources`, `--channels`, `--output-dir`,
 `--concurrent-limit`, `--request-timeout`, `--hours`, `--no-base64`,
 `--no-singbox`, `--no-clash` and `--with-merger` let you override file locations
-or disable specific outputs. When `--with-merger` is used the script invokes
-`vpn_merger.py` on the generated output directory after the aggregation finishes.
+or disable specific outputs. When `--with-merger` is used the script sets
+`vpn_merger`'s `resume_file` to `output_dir/merged.txt` and runs the merger on
+that file.
 
 ### Important Notes
 
