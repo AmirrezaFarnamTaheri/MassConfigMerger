@@ -13,6 +13,7 @@ import base64
 import binascii
 import json
 import logging
+import random
 import re
 from dataclasses import dataclass, field, fields
 from datetime import datetime, timedelta
@@ -239,15 +240,29 @@ class Config:
 async def fetch_text(
     session: ClientSession, url: str, timeout: int = 10
 ) -> str | None:
-    """Fetch text content from ``url`` with retries."""
-    for _ in range(3):
+    """Fetch text content from ``url`` with retries and backoff."""
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        logging.debug("fetch_text invalid url: %s", url)
+        return None
+
+    delay = 1.0
+    for attempt in range(3):
         try:
             async with session.get(url, timeout=ClientTimeout(total=timeout)) as resp:
                 if resp.status == 200:
                     return await resp.text()
+                if resp.status == 404:
+                    return None
+                if 400 <= resp.status < 500 and resp.status != 429:
+                    logging.debug("fetch_text non-retry status %s on %s", resp.status, url)
+                    return None
         except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
             logging.debug("fetch_text error on %s: %s", url, exc)
-            await asyncio.sleep(1)
+
+        if attempt < 2:
+            await asyncio.sleep(delay + random.random())
+            delay *= 2
     return None
 
 
