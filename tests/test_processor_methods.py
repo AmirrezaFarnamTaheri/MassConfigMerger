@@ -22,6 +22,14 @@ def make_vmess(id_value, host="example.com", port=443, note=None):
     return link
 
 
+def make_vmess_from_dict(data, note=None):
+    b64 = base64.b64encode(json.dumps(data).encode()).decode().strip("=")
+    link = f"vmess://{b64}"
+    if note:
+        link += f"#{note}"
+    return link
+
+
 def make_trojan(passwd="pw", host="example.com", port=443, note=None):
     link = f"trojan://{passwd}@{host}:{port}"
     if note:
@@ -62,6 +70,22 @@ def test_create_semantic_hash_query_param_order():
     proc = EnhancedConfigProcessor()
     link1 = "foo://example.com/path?a=1&b=2#frag"
     link2 = "foo://example.com/path?b=2&a=1"
+    assert proc.create_semantic_hash(link1) == proc.create_semantic_hash(link2)
+
+
+def test_create_semantic_hash_vmess_key_order():
+    proc = EnhancedConfigProcessor()
+    d1 = {"add": "ex.com", "port": 80, "id": "abc"}
+    d2 = {"id": "abc", "add": "ex.com", "port": 80}
+    link1 = make_vmess_from_dict(d1)
+    link2 = make_vmess_from_dict(d2)
+    assert proc.create_semantic_hash(link1) == proc.create_semantic_hash(link2)
+
+
+def test_create_semantic_hash_trojan_query_param_order():
+    proc = EnhancedConfigProcessor()
+    link1 = "trojan://pw@example.com:443?a=1&b=2"
+    link2 = "trojan://pw@example.com:443?b=2&a=1#foo"
     assert proc.create_semantic_hash(link1) == proc.create_semantic_hash(link2)
 
 

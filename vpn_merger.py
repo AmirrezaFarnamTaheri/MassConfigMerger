@@ -289,27 +289,33 @@ class EnhancedConfigProcessor:
     
     def create_semantic_hash(self, config: str) -> str:
         """Create semantic hash for intelligent deduplication."""
-        host, port = self.extract_host_port(config)
+        parsed = urlparse(config)
+        query_pairs = parse_qsl(parsed.query, keep_blank_values=True)
+        sorted_query = urlencode(sorted(query_pairs), doseq=True)
+        normalized_config = urlunparse(parsed._replace(query=sorted_query, fragment=""))
+
+        host, port = self.extract_host_port(normalized_config)
         identifier = None
 
-        scheme = config.split("://", 1)[0].lower()
+        scheme = parsed.scheme.lower()
 
         if scheme in ("vmess", "vless"):
             try:
-                after_scheme = config.split("://", 1)[1]
-                parsed = urlparse(config)
+                after_scheme = normalized_config.split("://", 1)[1].split("?", 1)[0]
                 if parsed.username:
                     identifier = parsed.username
                 else:
                     padded = after_scheme + "=" * (-len(after_scheme) % 4)
                     decoded = base64.b64decode(padded).decode("utf-8", "ignore")
                     data = json.loads(decoded)
+                    # Re-serialize with sorted keys for consistent hashing
+                    json.dumps(data, sort_keys=True)
                     identifier = data.get("id") or data.get("uuid") or data.get("user")
             except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
                 logging.debug("semantic_hash vmess failed: %s", exc)
         elif scheme == "trojan":
             try:
-                parsed = urlparse(config)
+                parsed = urlparse(normalized_config)
                 if parsed.username or parsed.password:
                     identifier = parsed.username or ""
                     if parsed.password is not None:
@@ -323,11 +329,12 @@ class EnhancedConfigProcessor:
                 logging.debug("semantic_hash trojan failed: %s", exc)
         elif scheme in ("ss", "shadowsocks"):
             try:
-                parsed = urlparse(config)
+                parsed = urlparse(normalized_config)
                 if parsed.username and parsed.password:
                     identifier = parsed.password
                 else:
-                    base = config.split("://", 1)[1].split("#", 1)[0]
+                    base = normalized_config.split("://", 1)[1]
+                    base = base.split("?", 1)[0]
                     padded = base + "=" * (-len(base) % 4)
                     decoded = base64.b64decode(padded).decode("utf-8", "ignore")
                     before_at = decoded.split("@", 1)[0]
@@ -341,11 +348,7 @@ class EnhancedConfigProcessor:
             if identifier:
                 key = f"{identifier}@{key}"
         else:
-            parsed = urlparse(config)
-            query_pairs = parse_qsl(parsed.query, keep_blank_values=True)
-            sorted_query = urlencode(sorted(query_pairs), doseq=True)
-            normalized = urlunparse(parsed._replace(query=sorted_query, fragment=""))
-            key = normalized.strip()
+            key = normalized_config.strip()
         return hashlib.sha256(key.encode()).hexdigest()[:16]
     
     async def test_connection(self, host: str, port: int) -> Optional[float]:
