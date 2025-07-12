@@ -631,6 +631,7 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
   "exclude_patterns": [],
   "output_dir": "output",
   "log_dir": "logs",
+  "request_timeout": 10,
   "max_concurrent": 20,
   "write_base64": true,
   "write_singbox": true,
@@ -647,6 +648,7 @@ Optional fields use these defaults when omitted:
 - `exclude_patterns` – `[]`
 - `output_dir` – `output`
 - `log_dir` – `logs`
+- `request_timeout` – `10`
 - `max_concurrent` – `20`
 - `write_base64` – `true`
 - `write_singbox` – `true`
@@ -656,15 +658,16 @@ Optional fields use these defaults when omitted:
 - **exclude_patterns** – regular expressions to remove unwanted links.
 - **output_dir** – where merged files are created.
 - **log_dir** – daily log files are written here.
+- **request_timeout** – HTTP request timeout in seconds (override with `--request-timeout`).
 - **max_concurrent** – maximum simultaneous HTTP requests for validating and fetching sources (override with `--concurrent-limit`).
 - **write_base64** – create `merged_base64.txt` when `true`.
 - **write_singbox** – create `merged_singbox.json` when `true`.
 - **write_clash** – create `clash.yaml` when `true`.
 
 The command line options `--config`, `--sources`, `--channels`, `--output-dir`,
-`--concurrent-limit`, `--hours`, `--no-base64`, `--no-singbox` and `--no-clash`
-let you override file locations or disable specific outputs when running the
-tool.
+`--concurrent-limit`, `--request-timeout`, `--hours`, `--no-base64`,
+`--no-singbox` and `--no-clash` let you override file locations or disable
+specific outputs when running the tool.
 
 ### Important Notes
 

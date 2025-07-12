@@ -11,7 +11,7 @@ def test_check_and_update_sources(monkeypatch, tmp_path):
     path = tmp_path / "sources.txt"
     path.write_text("good\nbad\n")
 
-    async def fake_fetch_text(session, url):
+    async def fake_fetch_text(session, url, timeout=10):
         if "good" in url:
             return "vmess://test"
         return None
