@@ -204,7 +204,6 @@ class Config:
             return cls(**data)
         except (KeyError, TypeError) as exc:
             msg = f"Invalid configuration values: {exc}"
-            print(msg)
             raise ValueError(msg) from exc
 
 
