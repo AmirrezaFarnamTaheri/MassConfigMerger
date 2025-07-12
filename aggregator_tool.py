@@ -18,6 +18,7 @@ from dataclasses import dataclass, field, fields
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterable, List, Set, Optional, Dict, Union, Tuple, cast
+from urllib.parse import urlparse
 from clash_utils import config_to_clash_proxy
 
 import yaml
@@ -111,6 +112,24 @@ def is_valid_config(link: str) -> bool:
             return False
         host = rest.split("@", 1)[1].split("/", 1)[0]
         return ":" in host
+
+    simple_host_port = {
+        "http",
+        "https",
+        "grpc",
+        "ws",
+        "wss",
+        "socks",
+        "socks4",
+        "socks5",
+        "tcp",
+        "kcp",
+        "quic",
+        "h2",
+    }
+    if scheme in simple_host_port:
+        parsed = urlparse(link)
+        return bool(parsed.hostname and parsed.port)
     if scheme == "wireguard":
         return bool(rest)
 

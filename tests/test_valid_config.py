@@ -57,3 +57,8 @@ def test_ssr_basic_valid():
     b64 = base64.urlsafe_b64encode(raw.encode()).decode().strip("=")
     link = f"ssr://{b64}"
     assert is_valid_config(link)
+
+
+def test_http_requires_port():
+    assert not is_valid_config("http://example.com")
+    assert is_valid_config("http://example.com:8080")
