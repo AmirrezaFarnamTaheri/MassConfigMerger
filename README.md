@@ -634,7 +634,7 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
 4. Run the tool. The `--hours` option controls how many hours of channel history
    are scanned (default is 24). Use `--no-base64`, `--no-singbox` or
    `--no-clash` to skip optional outputs. Add `--with-merger` to automatically
-   process the results with `vpn_merger.py`:
+   run `vpn_merger.py` on the generated `merged.txt` file:
    ```bash
    python aggregator_tool.py --hours 12
    ```
@@ -704,8 +704,8 @@ Optional fields use these defaults when omitted:
 The command line options `--config`, `--sources`, `--channels`, `--output-dir`,
 `--concurrent-limit`, `--request-timeout`, `--hours`, `--no-base64`,
 `--no-singbox`, `--no-clash` and `--with-merger` let you override file locations
-or disable specific outputs and optionally run the merger when the aggregation
-finishes.
+or disable specific outputs. When `--with-merger` is used the script invokes
+`vpn_merger.py` on `merged.txt` after the aggregation finishes.
 
 ### Important Notes
 
