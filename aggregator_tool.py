@@ -851,8 +851,8 @@ def main() -> None:
         print(f"Aggregation complete. Files written to {out_dir.resolve()}")
 
         if args.with_merger:
-            for path in files:
-                vpn_merger.detect_and_run(path)
+            if files:
+                vpn_merger.detect_and_run(files[0])
 
 
 
