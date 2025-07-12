@@ -43,6 +43,26 @@ docker build -t vpn-merger .
 docker run --rm vpn-merger
 ```
 
+### Docker Compose
+
+You can also run the merger on a schedule with Docker Compose. Build the image
+and start the service:
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+By default the `vpn_merger` service runs once a day. Start the optional
+`aggregator` service with:
+
+```bash
+docker compose --profile aggregator up -d
+```
+
+Adjust `MERGE_INTERVAL` and `AGGREGATE_INTERVAL` in `docker-compose.yml` to
+change how frequently each script runs.
+
 ## ✨ Key Features & Use Cases
 
 | Feature | Description | Typical Use Case |
