@@ -785,7 +785,7 @@ def main() -> None:
     parser.add_argument(
         "--with-merger",
         action="store_true",
-        help="run vpn_merger on the generated files after aggregation",
+        help="run UltimateVPNMerger on the output directory after aggregation",
     )
     args = parser.parse_args()
 
@@ -852,9 +852,10 @@ def main() -> None:
         )
         print(f"Aggregation complete. Files written to {out_dir.resolve()}")
 
-        if args.with_merger:
-            if files:
-                vpn_merger.detect_and_run(files[0])
+        if args.with_merger and files:
+            vpn_merger.CONFIG.output_dir = str(out_dir)
+            merger = vpn_merger.UltimateVPNMerger(files[0])
+            asyncio.run(merger.run())
 
 
 

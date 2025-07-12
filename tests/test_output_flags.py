@@ -108,15 +108,19 @@ def test_cli_with_merger(monkeypatch, tmp_path):
             f.write_text("data")
         return tmp_path / "o", files
 
-    called = []
+    called = {}
 
-    def fake_detect_and_run(path):
-        called.append(Path(path))
+    class FakeMerger:
+        def __init__(self, path):
+            called['arg'] = Path(path)
+
+        async def run(self):
+            called['ran'] = True
 
     monkeypatch.setattr(aggregator_tool, "run_pipeline", fake_run_pipeline)
     monkeypatch.setattr(aggregator_tool, "setup_logging", lambda *_: None)
     monkeypatch.setattr(aggregator_tool, "_get_script_dir", lambda: tmp_path)
-    monkeypatch.setattr(aggregator_tool.vpn_merger, "detect_and_run", fake_detect_and_run)
+    monkeypatch.setattr(aggregator_tool.vpn_merger, "UltimateVPNMerger", FakeMerger)
     monkeypatch.setattr(sys, "argv", [
         "aggregator_tool.py",
         "--config",
@@ -126,4 +130,5 @@ def test_cli_with_merger(monkeypatch, tmp_path):
 
     aggregator_tool.main()
 
-    assert called == [files[0]]
+    assert called.get('arg') == files[0]
+    assert called.get('ran') is True
