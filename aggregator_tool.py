@@ -344,8 +344,12 @@ async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Con
     if not channels_path.exists():
         logging.warning("channels file missing: %s", channels_path)
         return set()
+    prefix = "https://t.me/"
     with channels_path.open() as f:
-        channels = [line.strip().removeprefix("https://t.me/") for line in f if line.strip()]
+        channels = [
+            line.strip()[len(prefix):] if line.strip().startswith(prefix) else line.strip()
+            for line in f if line.strip()
+        ]
 
     if not channels:
         logging.info("No channels specified in %s", channels_path)
