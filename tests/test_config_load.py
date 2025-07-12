@@ -1,11 +1,9 @@
 import json
 import os
-import sys
 from pathlib import Path
 import pytest
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from aggregator_tool import Config
+from massconfigmerger.aggregator_tool import Config
 
 
 def test_load_defaults(tmp_path):

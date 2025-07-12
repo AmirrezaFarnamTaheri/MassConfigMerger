@@ -9,12 +9,12 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
 > **Note**: The default protocol list is optimised for the Hiddify client. Other VPN apps may require adjusting `--include-protocols`.
 
-**Important**: Install the dependencies with `pip install -r requirements.txt` before running **any** of the Python scripts.
+**Important**: Install the package with `pip install -e .` before running **any** of the Python scripts.
 
 ### ⚡ Quick Start
 
 1. Install **Python 3.8+** and clone this repository.
-2. Run `pip install -r requirements.txt` in the project folder to install all dependencies **before running any script**.
+2. Run `pip install -e .` in the project folder to install all dependencies **before running any script**.
    *For country lookups, also install the optional `geoip2` package and download the free MaxMind database.*
 3. Execute `python vpn_merger.py` and wait for the `output` directory.
 4. *(Optional)* pass extra flags like `--max-ping 200` or `--concurrent-limit 10` to suit your connection.
@@ -211,8 +211,8 @@ If you don't have it, download from [python.org](https://www.python.org/download
 
 1.  Open a terminal (or `cmd` on Windows).
 2.  Navigate to the project folder: `cd path/to/your/folder`.
-3.  Run: `pip install -r requirements.txt`.
-      * *Troubleshooting*: If you get a "permission denied" error, try `sudo pip install -r requirements.txt` on macOS/Linux, or right-click `cmd` and "Run as administrator" on Windows.
+3.  Run: `pip install -e .`.
+     * *Troubleshooting*: If you get a "permission denied" error, try `sudo pip install -e .` on macOS/Linux, or right-click `cmd` and "Run as administrator" on Windows.
 
 **Step 4: Run the Script**
 In the same terminal, run:
@@ -540,9 +540,9 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
 
 ### Setup
 
-1. Install the required packages:
+1. Install the package in editable mode:
    ```bash
-   pip install -r requirements.txt
+   pip install -e .
    ```
 2. *(Only for Telegram scraping or bot mode)* Obtain a Telegram **API ID** and
    **API Hash** from <https://my.telegram.org>.  Create your own `config.json`
