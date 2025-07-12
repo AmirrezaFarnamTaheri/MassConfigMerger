@@ -1,0 +1,10 @@
+# Core runtime dependencies
+aiohttp
+aiodns
+nest-asyncio
+
+# Optional/feature dependencies
+telethon
+pytest
+PyYAML
+geoip2
