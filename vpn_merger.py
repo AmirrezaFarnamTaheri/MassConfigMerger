@@ -636,6 +636,7 @@ class UltimateVPNMerger:
         # Step 3: Deduplicate efficiently  
         print(f"\n🔍 [3/6] Deduplicating {len(self.all_results):,} configs...")
         unique_results = self._deduplicate_config_results(self.all_results)
+        unique_results = self._apply_country_filters(unique_results)
         
         # Step 4: Sort by performance if enabled
         if CONFIG.enable_sorting:
@@ -808,6 +809,7 @@ class UltimateVPNMerger:
                     batch_results = self.cumulative_unique[start:end]
                     self.last_saved_count = end
 
+                batch_results = self._apply_country_filters(batch_results)
                 if CONFIG.enable_sorting:
                     batch_results = self._sort_by_performance(batch_results)
                 if CONFIG.top_n > 0:
@@ -831,6 +833,7 @@ class UltimateVPNMerger:
                 else:
                     batch_results = self.cumulative_unique[self.last_saved_count:]
                     self.last_saved_count = len(self.cumulative_unique)
+                batch_results = self._apply_country_filters(batch_results)
 
                 if CONFIG.enable_sorting:
                     batch_results = self._sort_by_performance(batch_results)
@@ -883,6 +886,21 @@ class UltimateVPNMerger:
             efficiency = 0
         print(f"   📊 Deduplication efficiency: {efficiency:.1f}%")
         return unique_results
+
+    def _apply_country_filters(self, results: List[ConfigResult]) -> List[ConfigResult]:
+        """Filter results using include/exclude country lists."""
+        filtered = results
+        if CONFIG.include_countries:
+            filtered = [
+                r for r in filtered
+                if r.country and r.country.upper() in CONFIG.include_countries
+            ]
+        if CONFIG.exclude_countries:
+            filtered = [
+                r for r in filtered
+                if not r.country or r.country.upper() not in CONFIG.exclude_countries
+            ]
+        return filtered
     
     def _sort_by_performance(self, results: List[ConfigResult]) -> List[ConfigResult]:
         """Sort results by connection performance and protocol preference."""
@@ -1419,10 +1437,18 @@ def main():
                         help="Do not save simple Clash proxy list")
     parser.add_argument("--geoip-db", type=str, default=None,
                         help="Path to GeoLite2 Country database for GeoIP lookup")
-    parser.add_argument("--include-country", type=str, default=None,
-                        help="Comma-separated ISO codes to include (requires GeoIP)")
-    parser.add_argument("--exclude-country", type=str, default=None,
-                        help="Comma-separated ISO codes to exclude")
+    parser.add_argument(
+        "--include-country",
+        type=str,
+        default=None,
+        help="Only keep configs from these ISO country codes (requires --geoip-db)"
+    )
+    parser.add_argument(
+        "--exclude-country",
+        type=str,
+        default=None,
+        help="Drop configs from these ISO country codes"
+    )
     args, unknown = parser.parse_known_args()
     if unknown:
         logging.warning("Ignoring unknown arguments: %s", unknown)

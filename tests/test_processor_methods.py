@@ -230,3 +230,19 @@ def test_country_filters(monkeypatch):
     monkeypatch.setattr(CONFIG, "exclude_countries", {"FR"})
     unique = merger._deduplicate_config_results([r1, r2])
     assert {u.config for u in unique} == {"a"}
+
+
+def test_apply_country_filters(monkeypatch):
+    merger = UltimateVPNMerger()
+    r1 = ConfigResult(config="a", protocol="VMess", country="US")
+    r2 = ConfigResult(config="b", protocol="VMess", country="FR")
+
+    monkeypatch.setattr(CONFIG, "include_countries", {"US"})
+    monkeypatch.setattr(CONFIG, "exclude_countries", None)
+    filtered = merger._apply_country_filters([r1, r2])
+    assert [f.config for f in filtered] == ["a"]
+
+    monkeypatch.setattr(CONFIG, "include_countries", None)
+    monkeypatch.setattr(CONFIG, "exclude_countries", {"FR"})
+    filtered = merger._apply_country_filters([r1, r2])
+    assert [f.config for f in filtered] == ["a"]

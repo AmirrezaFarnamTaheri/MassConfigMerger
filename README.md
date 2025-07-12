@@ -18,7 +18,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 2. Run `pip install -r requirements.txt` in the project folder to install all dependencies **before running any script**.
    *For country lookups, also install the optional `geoip2` package and download the free MaxMind database.*
 3. Execute `python vpn_merger.py` and wait for the `output` directory.
-4. *(Optional)* pass extra flags like `--max-ping 200`, `--include-country US,CA` or `--concurrent-limit 10` to suit your connection.
+4. *(Optional)* pass extra flags like `--max-ping 200`, `--include-country US,CA` or `--exclude-country CN` to suit your connection.
 5. Import the `output/vpn_subscription_base64.txt` link (unless `--no-base64` was used) into your VPN app or load `vpn_singbox.json` in clients like sing-box.
 
 
@@ -166,6 +166,13 @@ environment variable in `docker-compose.yml` to change how often it runs.
 **Country Filtering**
 
 > Use `--include-country` or `--exclude-country` with a GeoIP database to limit servers to specific countries.
+
+Example:
+
+```bash
+python vpn_merger.py --geoip-db GeoLite2-Country.mmdb \
+  --include-country US,CA --exclude-country CN
+```
 
 **Resume from File**
 
