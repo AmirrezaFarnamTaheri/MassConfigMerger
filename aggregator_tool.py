@@ -239,42 +239,69 @@ def parse_configs_from_text(text: str) -> Set[str]:
 
 
 async def check_and_update_sources(
-    path: Path, concurrent_limit: int = 20, request_timeout: int = 10
+    path: Path,
+    concurrent_limit: int = 20,
+    request_timeout: int = 10,
+    failures_path: Path | None = None,
+    max_failures: int = 3,
+    prune: bool = True,
+    disabled_path: Path | None = None,
 ) -> List[str]:
     """Validate and deduplicate sources list concurrently."""
     if not path.exists():
         logging.warning("sources file not found: %s", path)
         return []
 
+    if failures_path is None:
+        failures_path = path.with_suffix(".failures.json")
+
+    try:
+        failures = json.loads(failures_path.read_text())
+    except Exception:
+        failures = {}
+
     with path.open() as f:
         sources = {line.strip() for line in f if line.strip()}
 
     valid_sources: List[str] = []
+    removed: List[str] = []
     semaphore = asyncio.Semaphore(concurrent_limit)
     connector = aiohttp.TCPConnector(limit=concurrent_limit)
 
-    async def check(url: str) -> str | None:
+    async def check(url: str) -> tuple[str, bool]:
         async with semaphore:
             text = await fetch_text(session, url, request_timeout)
-        if not text:
-            logging.info("Removing dead source: %s", url)
-            return None
-        if not parse_configs_from_text(text):
-            logging.info("Removing empty source: %s", url)
-            return None
-        return url
+        if not text or not parse_configs_from_text(text):
+            return url, False
+        return url, True
 
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = [asyncio.create_task(check(u)) for u in sorted(sources)]
         for task in asyncio.as_completed(tasks):
-            result = await task
-            if result:
-                valid_sources.append(result)
+            url, ok = await task
+            if ok:
+                failures.pop(url, None)
+                valid_sources.append(url)
+            else:
+                failures[url] = failures.get(url, 0) + 1
+                if prune and failures[url] >= max_failures:
+                    removed.append(url)
 
-
+    remaining = [u for u in sorted(sources) if u not in removed]
     with path.open("w") as f:
-        for url in valid_sources:
+        for url in remaining:
             f.write(f"{url}\n")
+
+    if disabled_path and removed:
+        timestamp = datetime.utcnow().isoformat()
+        with disabled_path.open("a") as f:
+            for url in removed:
+                f.write(f"{timestamp} {url}\n")
+    for url in removed:
+        failures.pop(url, None)
+
+    failures_path.write_text(json.dumps(failures, indent=2))
+
     logging.info("Valid sources: %d", len(valid_sources))
     return valid_sources
 
@@ -603,11 +630,20 @@ async def run_pipeline(
     sources_file: Path = SOURCES_FILE,
     channels_file: Path = CHANNELS_FILE,
     last_hours: int = 24,
+    *,
+    failure_threshold: int = 3,
+    prune: bool = True,
 ) -> Tuple[Path, List[Path]]:
     """Full aggregation pipeline.
     Returns output directory and list of created files."""
     sources = await check_and_update_sources(
-        sources_file, cfg.max_concurrent, cfg.request_timeout
+        sources_file,
+        cfg.max_concurrent,
+        cfg.request_timeout,
+        failures_path=sources_file.with_suffix(".failures.json"),
+        max_failures=failure_threshold,
+        prune=prune,
+        disabled_path=sources_file.with_name("sources_disabled.txt") if prune else None,
     )
     configs = await fetch_and_parse_configs(
         sources, cfg.max_concurrent, cfg.request_timeout
@@ -726,6 +762,13 @@ def main() -> None:
         type=int,
         help=argparse.SUPPRESS,
     )
+    parser.add_argument(
+        "--failure-threshold",
+        type=int,
+        default=3,
+        help="consecutive failures before pruning a source",
+    )
+    parser.add_argument("--no-prune", action="store_true", help="do not remove failing sources")
     parser.add_argument("--no-base64", action="store_true", help="skip merged_base64.txt")
     parser.add_argument("--no-singbox", action="store_true", help="skip merged_singbox.json")
     parser.add_argument("--no-clash", action="store_true", help="skip clash.yaml")
@@ -788,6 +831,8 @@ def main() -> None:
                 Path(args.sources),
                 Path(args.channels),
                 args.hours,
+                failure_threshold=args.failure_threshold,
+                prune=not args.no_prune,
             )
         )
         print(f"Aggregation complete. Files written to {out_dir.resolve()}")
