@@ -18,7 +18,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 2. Run `pip install -r requirements.txt` in the project folder to install all dependencies **before running any script**.
    *For country lookups, also install the optional `geoip2` package and download the free MaxMind database.*
 3. Execute `python vpn_merger.py` and wait for the `output` directory.
-4. *(Optional)* pass extra flags like `--max-ping 200` or `--concurrent-limit 10` to suit your connection.
+4. *(Optional)* pass extra flags like `--max-ping 200`, `--include-country US,CA` or `--concurrent-limit 10` to suit your connection.
 5. Import the `output/vpn_subscription_base64.txt` link (unless `--no-base64` was used) into your VPN app or load `vpn_singbox.json` in clients like sing-box.
 
 
@@ -90,6 +90,7 @@ environment variable in `docker-compose.yml` to change how often it runs.
 | **Smart Sorting** | Orders the final list by reachability and speed. | Quickly pick the best server in your VPN client. |
 | **Batch Saving** | Periodically saves intermediate results with `--batch-size` (default `100`). | Useful on unreliable connections. |
 | **Protocol Filtering** | Use `--include-protocols` or `--exclude-protocols` to filter by protocol (defaults to the Hiddify list). | Keep only the protocols your client supports. |
+| **Country Filtering** | Use `--include-country` or `--exclude-country` with a GeoIP database to select specific regions. | Limit servers to preferred countries. |
 | **TLS Fragment / Top N** | Use `--tls-fragment` or `--top-n` to trim the output. | Obscure SNI or keep only the fastest N entries. |
 | **MUX/SMUX Tuning** | `--mux` and `--smux` modify connection multiplexing. | Improve throughput with modern clients. |
 | **Resume from File** | `--resume` loads a previous raw/base64 output before fetching. | Continue a crashed run without starting over. |
@@ -131,6 +132,10 @@ environment variable in `docker-compose.yml` to change how often it runs.
 **Protocol Filtering**
 
 > Use `--include-protocols` or `--exclude-protocols` to keep only certain technologies (e.g. just Reality) or remove unwanted ones (like Shadowsocks). By default the scripts remove any config detected as `Other`. Combine with `--tls-fragment` or `--top-n` for even finer control.
+
+**Country Filtering**
+
+> Use `--include-country` or `--exclude-country` with a GeoIP database to limit servers to specific countries.
 
 **Resume from File**
 
@@ -500,6 +505,8 @@ Run `python vpn_merger.py --help` to see all options. Important flags include:
   * `--mux N` - set connection multiplexing level (default `8`, `0` to disable).
   * `--smux N` - set smux stream count for protocols that support it (default `4`).
   * `--geoip-db PATH` - enable country lookup using a GeoLite2 database file.
+  * `--include-country LIST` - comma-separated ISO codes to include (e.g. `US,CA`).
+  * `--exclude-country LIST` - ISO codes to drop.
 
 TLS fragments help obscure the real Server Name Indication (SNI) of each
 connection by splitting the handshake into pieces. This makes it harder for
