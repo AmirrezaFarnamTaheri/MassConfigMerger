@@ -645,23 +645,28 @@ async def run_pipeline(
 ) -> Tuple[Path, List[Path]]:
     """Full aggregation pipeline.
     Returns output directory and list of created files."""
-    sources = await check_and_update_sources(
-        sources_file,
-        cfg.max_concurrent,
-        cfg.request_timeout,
-        failures_path=sources_file.with_suffix(".failures.json"),
-        max_failures=failure_threshold,
-        prune=prune,
-        disabled_path=sources_file.with_name("sources_disabled.txt") if prune else None,
-    )
-    configs = await fetch_and_parse_configs(
-        sources, cfg.max_concurrent, cfg.request_timeout
-    )
-    configs |= await scrape_telegram_configs(channels_file, last_hours, cfg)
 
-    final = deduplicate_and_filter(configs, cfg, protocols)
     out_dir = Path(cfg.output_dir)
-    files = output_files(final, out_dir, cfg)
+    configs: Set[str] = set()
+    try:
+        sources = await check_and_update_sources(
+            sources_file,
+            cfg.max_concurrent,
+            cfg.request_timeout,
+            failures_path=sources_file.with_suffix(".failures.json"),
+            max_failures=failure_threshold,
+            prune=prune,
+            disabled_path=sources_file.with_name("sources_disabled.txt") if prune else None,
+        )
+        configs = await fetch_and_parse_configs(
+            sources, cfg.max_concurrent, cfg.request_timeout
+        )
+        configs |= await scrape_telegram_configs(channels_file, last_hours, cfg)
+    except KeyboardInterrupt:
+        logging.warning("Interrupted. Writing partial results...")
+    finally:
+        final = deduplicate_and_filter(configs, cfg, protocols)
+        files = output_files(final, out_dir, cfg)
     return out_dir, files
 
 
