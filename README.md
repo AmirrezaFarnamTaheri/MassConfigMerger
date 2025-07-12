@@ -676,7 +676,17 @@ tool.
 - All events are logged to the directory specified in `log_dir` so you can audit
   what was fetched and from where.
 
+## Testing
+
+Run `pytest` to execute the test suite. Install dependencies first with:
+
+```bash
+pip install -r requirements.txt
+```
+
+
 ## Changelog & Contributing
 
 See [CHANGELOG.md](CHANGELOG.md) for a summary of new features and updates.
 If you encounter problems or have improvements, please open an issue or submit a pull request on [GitHub](https://github.com/AmirrezaFarnamTaheri/MassConfigMerger).
+Contributors can also install packages from `dev-requirements.txt`.
