@@ -559,15 +559,17 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
    starting with `vmess`, `vless`, `trojan`, `ss`,
    `ssr`, `hysteria`, `hysteria2`, `tuic`, `reality`, `naive`, `hy2` and
    `wireguard`.
-4. Run the tool. The `--hours` option controls how many hours of channel history are scanned (default is 24):
+4. Run the tool. The `--hours` option controls how many hours of channel history
+   are scanned (default is 24). Use `--no-base64`, `--no-singbox` or
+   `--no-clash` to skip optional outputs:
    ```bash
    python aggregator_tool.py --hours 12
    ```
    The aggregated configuration links will be written to the folder specified in
    `output_dir` (default `output/`) as `merged.txt`. Depending on the
-   `write_base64`, `write_singbox` and `write_clash` options the files
-   `merged_base64.txt`, `merged_singbox.json` and `clash.yaml` may also be
-   created.
+   `write_base64`, `write_singbox` and `write_clash` options—overridable with the
+   flags above—the files `merged_base64.txt`, `merged_singbox.json` and
+   `clash.yaml` may also be created.
 5. To enable the bot mode run (you can also pass `--hours` to control how much
    channel history is scanned):
    ```bash
@@ -623,8 +625,10 @@ Optional fields use these defaults when omitted:
 - **write_singbox** – create `merged_singbox.json` when `true`.
 - **write_clash** – create `clash.yaml` when `true`.
 
-The command line options `--config`, `--sources`, `--channels`, `--output-dir`, `--concurrent-limit`, `--hours`
-let you override these file locations when running the tool.
+The command line options `--config`, `--sources`, `--channels`, `--output-dir`,
+`--concurrent-limit`, `--hours`, `--no-base64`, `--no-singbox` and `--no-clash`
+let you override file locations or disable specific outputs when running the
+tool.
 
 ### Important Notes
 

@@ -664,6 +664,9 @@ def main() -> None:
         type=int,
         help=argparse.SUPPRESS,
     )
+    parser.add_argument("--no-base64", action="store_true", help="skip merged_base64.txt")
+    parser.add_argument("--no-singbox", action="store_true", help="skip merged_singbox.json")
+    parser.add_argument("--no-clash", action="store_true", help="skip clash.yaml")
     args = parser.parse_args()
 
     cfg = Config.load(Path(args.config))
@@ -673,6 +676,13 @@ def main() -> None:
         cfg.max_concurrent = args.concurrent_limit
     elif args.max_concurrent is not None:
         cfg.max_concurrent = args.max_concurrent
+
+    if args.no_base64:
+        cfg.write_base64 = False
+    if args.no_singbox:
+        cfg.write_singbox = False
+    if args.no_clash:
+        cfg.write_clash = False
 
     allowed_base = _get_script_dir()
     resolved_output = Path(cfg.output_dir).expanduser().resolve()
