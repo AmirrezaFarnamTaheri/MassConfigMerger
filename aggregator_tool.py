@@ -215,7 +215,8 @@ async def fetch_text(
             async with session.get(url, timeout=ClientTimeout(total=timeout)) as resp:
                 if resp.status == 200:
                     return await resp.text()
-        except Exception:
+        except Exception as e:
+            logging.debug("fetch_text error on %s: %s", url, e)
             await asyncio.sleep(1)
     return None
 
@@ -233,7 +234,8 @@ def parse_configs_from_text(text: str) -> Set[str]:
             try:
                 decoded = base64.b64decode(line).decode()
                 configs.update(PROTOCOL_RE.findall(decoded))
-            except Exception:
+            except Exception as e:
+                logging.debug("Failed to decode base64 line: %s", e)
                 continue
     return configs
 
