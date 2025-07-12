@@ -50,3 +50,18 @@ def test_ssr_with_fragment():
     b64 = base64.urlsafe_b64encode(raw.encode()).decode().strip("=")
     link = f"ssr://{b64}#note"
     assert is_valid_config(link)
+
+
+def test_shadowtls_basic_format():
+    link = "shadowtls://example.com:443"
+    assert is_valid_config(link)
+
+
+def test_brook_basic_format():
+    link = "brook://user@example.com:8080"
+    assert is_valid_config(link)
+
+
+def test_juicity_basic_format():
+    link = "juicity://pass@example.com:4443"
+    assert is_valid_config(link)

@@ -1163,6 +1163,38 @@ class UltimateVPNMerger:
                     "password": p.password or "",
                     "tls": True,
                 }
+            elif scheme == "juicity":
+                p = urlparse(config)
+                if not p.hostname or not p.port:
+                    return None
+                return {
+                    "name": p.fragment or name,
+                    "type": "juicity",
+                    "server": p.hostname,
+                    "port": p.port,
+                    "password": p.username or p.password or "",
+                }
+            elif scheme == "brook":
+                p = urlparse(config)
+                if not p.hostname or not p.port:
+                    return None
+                return {
+                    "name": p.fragment or name,
+                    "type": "brook",
+                    "server": p.hostname,
+                    "port": p.port,
+                    "username": p.username or "",
+                }
+            elif scheme == "shadowtls":
+                p = urlparse(config)
+                if not p.hostname or not p.port:
+                    return None
+                return {
+                    "name": p.fragment or name,
+                    "type": "shadowtls",
+                    "server": p.hostname,
+                    "port": p.port,
+                }
             else:
                 p = urlparse(config)
                 if not p.hostname or not p.port:

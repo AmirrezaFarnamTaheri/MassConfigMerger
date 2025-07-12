@@ -34,8 +34,8 @@ CHANNELS_FILE = Path("channels.txt")
 # Match full config links for supported protocols
 PROTOCOL_RE = re.compile(
     r"(?:"
-    r"vmess|vless|reality|ssr?|trojan|hy2|hysteria2?|tuic|"
-    r"shadowtls|juicity|naive|brook|wireguard|"
+    r"vmess|vless|reality|ssr?|trojan|hy2|hysteria2?|hysteria|tuic|"
+    r"naive|juicity|shadowtls|brook|wireguard|"
     r"socks5|socks4|socks|http|https|grpc|ws|wss|"
     r"tcp|kcp|quic|h2"
     r")://\S+",
@@ -98,12 +98,17 @@ def is_valid_config(link: str) -> bool:
         "hysteria",
         "hysteria2",
         "tuic",
+        "juicity",
+        "brook",
         "ss",
     }
     if scheme in host_required:
         if "@" not in rest:
             return False
         host = rest.split("@", 1)[1].split("/", 1)[0]
+        return ":" in host
+    if scheme == "shadowtls":
+        host = rest.split("@", 1)[-1].split("/", 1)[0]
         return ":" in host
     if scheme == "wireguard":
         return bool(rest)
@@ -554,6 +559,38 @@ def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
                     "username": p.username or "",
                     "password": p.password or "",
                     "tls": True,
+                }
+            elif scheme == "juicity":
+                p = urlparse(config)
+                if not p.hostname or not p.port:
+                    return None
+                return {
+                    "name": p.fragment or name,
+                    "type": "juicity",
+                    "server": p.hostname,
+                    "port": p.port,
+                    "password": p.username or p.password or "",
+                }
+            elif scheme == "brook":
+                p = urlparse(config)
+                if not p.hostname or not p.port:
+                    return None
+                return {
+                    "name": p.fragment or name,
+                    "type": "brook",
+                    "server": p.hostname,
+                    "port": p.port,
+                    "username": p.username or "",
+                }
+            elif scheme == "shadowtls":
+                p = urlparse(config)
+                if not p.hostname or not p.port:
+                    return None
+                return {
+                    "name": p.fragment or name,
+                    "type": "shadowtls",
+                    "server": p.hostname,
+                    "port": p.port,
                 }
             else:
                 p = urlparse(config)

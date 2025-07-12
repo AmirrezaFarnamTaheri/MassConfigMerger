@@ -11,6 +11,9 @@ def test_aggregator_clash_proxy(tmp_path):
     configs = [
         "reality://uuid@host:443?flow=xtls-rprx-vision",
         "naive://user:pass@host:443",
+        "shadowtls://host:8443",
+        "brook://user@host:8080",
+        "juicity://pass@host:5555",
     ]
     aggregator_tool.output_files(configs, tmp_path, cfg)
     data = yaml.safe_load((tmp_path / "clash.yaml").read_text())
@@ -19,3 +22,6 @@ def test_aggregator_clash_proxy(tmp_path):
     assert reality["tls"] is True
     naive = next(p for p in data["proxies"] if p["type"] == "http")
     assert naive["tls"] is True
+    assert any(p["type"] == "shadowtls" for p in data["proxies"])
+    assert any(p["type"] == "brook" for p in data["proxies"])
+    assert any(p["type"] == "juicity" for p in data["proxies"])
