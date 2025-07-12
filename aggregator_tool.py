@@ -33,7 +33,12 @@ CHANNELS_FILE = Path("channels.txt")
 
 # Match full config links for supported protocols
 PROTOCOL_RE = re.compile(
-    r"(?:vmess|vless|trojan|ssr?|hysteria2?|tuic|reality|naive|hy2|wireguard)://\S+",
+    r"(?:"
+    r"vmess|vless|reality|ssr?|trojan|hy2|hysteria2?|tuic|"
+    r"shadowtls|juicity|naive|brook|wireguard|"
+    r"socks5|socks4|socks|http|https|grpc|ws|wss|"
+    r"tcp|kcp|quic|h2"
+    r")://\S+",
     re.IGNORECASE,
 )
 BASE64_RE = re.compile(r"^[A-Za-z0-9+/=]+$")
