@@ -14,12 +14,37 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
 ### ⚡ Quick Start
 
-1. Install **Python 3.8+** and clone this repository.
-2. Run `pip install -r requirements.txt` in the project folder to install all dependencies **before running any script**.
-   *For country lookups, also install the optional `geoip2` package and download the free MaxMind database.*
-3. Execute `python vpn_merger.py` and wait for the `output` directory.
-4. *(Optional)* pass extra flags like `--max-ping 200`, `--include-country US,CA` or `--concurrent-limit 10` to suit your connection.
-5. Import the `output/vpn_subscription_base64.txt` link (unless `--no-base64` was used) into your VPN app or load `vpn_singbox.json` in clients like sing-box.
+1. **Install Python 3.8 or newer**
+   - On **Windows**, download it from [python.org](https://www.python.org/downloads/) and check *Add Python to PATH* during setup.
+   - On **macOS/Linux**, use your package manager (e.g. `sudo apt install python3`).
+
+2. **Clone this repository and enter the folder**
+
+   ```bash
+   git clone https://github.com/AmirrezaFarnamTaheri/MassConfigMerger.git
+   cd MassConfigMerger
+   ```
+
+3. **Install the required packages**
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+   *For country filtering, also install the optional `geoip2` package and download the free GeoLite2 database from MaxMind.*
+
+4. **Run the merger**
+
+   ```bash
+   python vpn_merger.py
+   ```
+
+   Wait for the `output/` directory to appear.
+
+5. **Import your subscription**
+   - Use the link in `output/vpn_subscription_base64.txt` (unless `--no-base64` was used) or load `vpn_singbox.json` in clients like sing-box.
+
+6. *(Optional)* pass extra flags like `--max-ping 200`, `--include-country US,CA` or `--concurrent-limit 10` to suit your connection.
 
 
 ## 🏁 Zero-to-Hero Walkthrough
@@ -51,18 +76,19 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
 ```mermaid
 graph TD
-    A[Sources.txt & Channels.txt] --> B[aggregator_tool.py]
-    B --> C{Deduplication}
+    A[Source lists] --> B[aggregator_tool.py]
+    B --> C[Deduplicate links]
     C --> D[vpn_merger.py]
-    D --> E{Testing & Sorting}
+    D --> E[Test & sort]
     E --> F[vpn_retester.py]
-    F --> G[(Output Files)]
+    F --> G[(Output files)]
 ```
-The diagram above shows the complete data flow:
-1. **Sources** listed in `sources.txt` and `channels.txt` feed into `aggregator_tool.py` where links are scraped and deduplicated.
-2. The unique links are passed to `vpn_merger.py`, which checks each configuration for availability and sorts the working ones by speed.
-3. The optional `vpn_retester.py` step can re-test previously found configurations for reliability.
-4. Finally all cleaned and sorted files are written to the `output/` folder in several formats.
+The pipeline works as follows:
+1. `aggregator_tool.py` collects subscription URLs from `sources.txt` and `channels.txt`.
+2. Duplicate links are removed so each configuration is processed only once.
+3. `vpn_merger.py` downloads every config, tests connectivity and orders the servers by speed.
+4. `vpn_retester.py` can optionally re-check a previous run for up-to-date latency.
+5. All cleaned and sorted files are written to the `output/` folder, ready to import into your VPN client.
 
 
 ### 🐳 Docker
@@ -726,6 +752,9 @@ Ensure you ran the script in this repository and watch for errors. Results are s
 
 ### Telegram authentication errors
 Verify your `telegram_api_id`, `telegram_api_hash` and bot token. Incorrect credentials or using a restricted account will prevent the aggregator from accessing Telegram.
+
+### GeoIP lookup errors
+Install the `geoip2` package and download the free GeoLite2 database from MaxMind. Pass `--geoip-db /path/to/GeoLite2-Country.mmdb` to enable country filtering.
 
 
 ## Testing
