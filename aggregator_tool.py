@@ -25,6 +25,7 @@ import aiohttp
 from aiohttp import ClientSession, ClientTimeout
 from telethon import TelegramClient, events, errors  # type: ignore
 from telethon.tl.custom.message import Message  # type: ignore
+import vpn_merger
 
 from constants import SOURCES_FILE
 
@@ -776,6 +777,11 @@ def main() -> None:
     parser.add_argument("--no-base64", action="store_true", help="skip merged_base64.txt")
     parser.add_argument("--no-singbox", action="store_true", help="skip merged_singbox.json")
     parser.add_argument("--no-clash", action="store_true", help="skip clash.yaml")
+    parser.add_argument(
+        "--with-merger",
+        action="store_true",
+        help="run vpn_merger on the generated files after aggregation",
+    )
     args = parser.parse_args()
 
     cfg = Config.load(Path(args.config))
@@ -828,7 +834,7 @@ def main() -> None:
         )
     else:
 
-        out_dir, _ = asyncio.run(
+        out_dir, files = asyncio.run(
             run_pipeline(
                 cfg,
                 protocols,
@@ -840,6 +846,10 @@ def main() -> None:
             )
         )
         print(f"Aggregation complete. Files written to {out_dir.resolve()}")
+
+        if args.with_merger:
+            for path in files:
+                vpn_merger.detect_and_run(path)
 
 
 
