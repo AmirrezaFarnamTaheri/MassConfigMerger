@@ -44,7 +44,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union, cast
 
 from constants import SOURCES_FILE
-from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse, parse_qsl
 from clash_utils import config_to_clash_proxy
 
 try:
@@ -341,8 +341,11 @@ class EnhancedConfigProcessor:
             if identifier:
                 key = f"{identifier}@{key}"
         else:
-            normalized = re.sub(r'#.*$', '', config).strip()
-            key = normalized
+            parsed = urlparse(config)
+            query_pairs = parse_qsl(parsed.query, keep_blank_values=True)
+            sorted_query = urlencode(sorted(query_pairs), doseq=True)
+            normalized = urlunparse(parsed._replace(query=sorted_query, fragment=""))
+            key = normalized.strip()
         return hashlib.sha256(key.encode()).hexdigest()[:16]
     
     async def test_connection(self, host: str, port: int) -> Optional[float]:
