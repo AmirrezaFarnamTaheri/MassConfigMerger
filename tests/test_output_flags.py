@@ -127,3 +127,29 @@ def test_cli_with_merger(monkeypatch, tmp_path):
     aggregator_tool.main()
 
     assert called == [files[0]]
+
+
+def test_cli_protocols_case_insensitive(monkeypatch, tmp_path):
+    cfg_path = tmp_path / "cfg.json"
+    cfg_path.write_text(json.dumps({"output_dir": str(tmp_path / "o"), "log_dir": str(tmp_path / "l")}))
+
+    recorded = {}
+
+    async def fake_run_pipeline(_cfg, protocols, *_a, **_k):
+        recorded["protocols"] = protocols
+        return tmp_path / "o", []
+
+    monkeypatch.setattr(aggregator_tool, "run_pipeline", fake_run_pipeline)
+    monkeypatch.setattr(aggregator_tool, "setup_logging", lambda *_: None)
+    monkeypatch.setattr(aggregator_tool, "_get_script_dir", lambda: tmp_path)
+    monkeypatch.setattr(sys, "argv", [
+        "aggregator_tool.py",
+        "--config",
+        str(cfg_path),
+        "--protocols",
+        "VmEsS,TROJAN",
+    ])
+
+    aggregator_tool.main()
+
+    assert recorded["protocols"] == ["vmess", "trojan"]
