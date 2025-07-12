@@ -4,8 +4,7 @@ import os
 import sys
 import types
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from vpn_merger import (
+from massconfigmerger.vpn_merger import (
     EnhancedConfigProcessor,
     ConfigResult,
     UltimateVPNMerger,
