@@ -464,6 +464,21 @@ def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
                 if q.get("security"):
                     proxy["tls"] = True
                 return proxy
+            elif scheme == "reality":
+                p = urlparse(config)
+                q = parse_qs(p.query)
+                proxy = {
+                    "name": p.fragment or name,
+                    "type": "vless",
+                    "server": p.hostname or "",
+                    "port": p.port or 0,
+                    "uuid": p.username or "",
+                    "encryption": q.get("encryption", ["none"])[0],
+                    "tls": True,
+                }
+                if q.get("flow"):
+                    proxy["flow"] = q.get("flow")[0]
+                return proxy
             elif scheme == "trojan":
                 p = urlparse(config)
                 q = parse_qs(p.query)
@@ -501,6 +516,18 @@ def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
                     "port": int(port),
                     "cipher": method,
                     "password": password,
+                }
+            elif scheme == "naive":
+                p = urlparse(config)
+                if not p.hostname or not p.port:
+                    return None
+                return {
+                    "name": p.fragment or name,
+                    "type": "http",
+                    "server": p.hostname,
+                    "port": p.port,
+                    "username": p.username or "",
+                    "password": p.password or "",
                 }
             else:
                 p = urlparse(config)

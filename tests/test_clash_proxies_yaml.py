@@ -30,10 +30,35 @@ def test_clash_proxies_yaml(tmp_path, monkeypatch):
         is_reachable=True,
         source_url="s",
     )
-    stats = merger._analyze_results([res1, res2], [])
-    asyncio.run(merger._generate_comprehensive_outputs([res1, res2], stats, 0.0))
+    res3 = ConfigResult(
+        config="naive://user:pass@host:8080",
+        protocol="Naive",
+        host="host",
+        port=8080,
+        ping_time=0.3,
+        is_reachable=True,
+        source_url="s",
+    )
+    res4 = ConfigResult(
+        config="reality://uuid@host:443?flow=xtls-rprx-vision",
+        protocol="Reality",
+        host="host",
+        port=443,
+        ping_time=0.4,
+        is_reachable=True,
+        source_url="s",
+    )
+    results = [res1, res2, res3, res4]
+    stats = merger._analyze_results(results, [])
+    asyncio.run(merger._generate_comprehensive_outputs(results, stats, 0.0))
     path = tmp_path / "vpn_clash_proxies.yaml"
     assert path.exists()
     data = yaml.safe_load(path.read_text())
     assert "proxies" in data
-    assert len(data["proxies"]) == 2
+    assert len(data["proxies"]) == 4
+    naive = next(p for p in data["proxies"] if p["type"] == "http")
+    assert naive["username"] == "user"
+    assert naive["password"] == "pass"
+    reality = next(p for p in data["proxies"] if p.get("flow"))
+    assert reality["type"] == "vless"
+    assert reality["tls"] is True
