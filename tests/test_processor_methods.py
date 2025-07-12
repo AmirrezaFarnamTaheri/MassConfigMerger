@@ -29,6 +29,13 @@ def make_trojan(passwd="pw", host="example.com", port=443, note=None):
     return link
 
 
+def make_trojan_userpass(user="user", passwd="pw", host="example.com", port=443, note=None):
+    link = f"trojan://{user}:{passwd}@{host}:{port}"
+    if note:
+        link += f"#{note}"
+    return link
+
+
 def make_shadowsocks(password="pw", host="example.com", port=443, note=None, method="aes-128-gcm"):
     payload = f"{method}:{password}@{host}:{port}"
     b64 = base64.b64encode(payload.encode()).decode().strip("=")
@@ -56,6 +63,13 @@ def test_create_semantic_hash_trojan_password_difference():
     proc = EnhancedConfigProcessor()
     link1 = make_trojan(passwd="one")
     link2 = make_trojan(passwd="two")
+    assert proc.create_semantic_hash(link1) != proc.create_semantic_hash(link2)
+
+
+def test_create_semantic_hash_trojan_userinfo_difference():
+    proc = EnhancedConfigProcessor()
+    link1 = make_trojan_userpass(user="user", passwd="one")
+    link2 = make_trojan_userpass(user="user", passwd="two")
     assert proc.create_semantic_hash(link1) != proc.create_semantic_hash(link2)
 
 
@@ -103,6 +117,21 @@ def test_deduplicate_config_results_password_difference(monkeypatch):
 
     link1 = make_trojan(passwd="a")
     link2 = make_trojan(passwd="b")
+    r1 = ConfigResult(config=link1, protocol="Trojan")
+    r2 = ConfigResult(config=link2, protocol="Trojan")
+    unique = merger._deduplicate_config_results([r1, r2])
+    assert len(unique) == 2
+    assert set(r.config for r in unique) == {link1, link2}
+
+
+def test_deduplicate_config_results_userinfo_password(monkeypatch):
+    merger = UltimateVPNMerger()
+    monkeypatch.setattr(CONFIG, "tls_fragment", None)
+    monkeypatch.setattr(CONFIG, "include_protocols", None)
+    monkeypatch.setattr(CONFIG, "exclude_protocols", None)
+
+    link1 = make_trojan_userpass(passwd="a")
+    link2 = make_trojan_userpass(passwd="b")
     r1 = ConfigResult(config=link1, protocol="Trojan")
     r2 = ConfigResult(config=link2, protocol="Trojan")
     unique = merger._deduplicate_config_results([r1, r2])
