@@ -43,6 +43,25 @@ docker build -t vpn-merger .
 docker run --rm vpn-merger
 ```
 
+### Docker Compose / Local Scheduling
+
+Use **docker compose** to build the image and mount the `output/` directory so
+results persist locally. This makes it easy to schedule periodic runs with
+`cron` or any other task scheduler:
+
+```yaml
+version: '3'
+services:
+  vpn-merger:
+    build: .
+    image: vpn-merger
+    volumes:
+      - ./output:/app/output
+```
+
+Run the merger once with `docker compose up`. For automation you can call
+`docker compose run --rm vpn-merger` from a cron job or other scheduler.
+
 ## ✨ Key Features & Use Cases
 
 | Feature | Description | Typical Use Case |

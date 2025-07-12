@@ -1,0 +1,7 @@
+version: '3'
+services:
+  vpn-merger:
+    build: .
+    image: vpn-merger
+    volumes:
+      - ./output:/app/output
