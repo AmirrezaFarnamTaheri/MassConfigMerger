@@ -230,3 +230,24 @@ def test_country_filters(monkeypatch):
     monkeypatch.setattr(CONFIG, "exclude_countries", {"FR"})
     unique = merger._deduplicate_config_results([r1, r2])
     assert {u.config for u in unique} == {"a"}
+
+
+def test_country_filters_no_geoip(monkeypatch):
+    """Configs should not be filtered when GeoIP info is missing."""
+    merger = UltimateVPNMerger()
+    monkeypatch.setattr(CONFIG, "tls_fragment", None)
+    monkeypatch.setattr(CONFIG, "include_protocols", None)
+    monkeypatch.setattr(CONFIG, "exclude_protocols", None)
+
+    r1 = ConfigResult(config="a", protocol="VMess", country=None)
+    r2 = ConfigResult(config="b", protocol="VMess", country=None)
+
+    monkeypatch.setattr(CONFIG, "include_countries", {"US"})
+    monkeypatch.setattr(CONFIG, "exclude_countries", None)
+    unique = merger._deduplicate_config_results([r1, r2])
+    assert {u.config for u in unique} == {"a", "b"}
+
+    monkeypatch.setattr(CONFIG, "include_countries", None)
+    monkeypatch.setattr(CONFIG, "exclude_countries", {"CN"})
+    unique = merger._deduplicate_config_results([r1, r2])
+    assert {u.config for u in unique} == {"a", "b"}

@@ -44,7 +44,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 5. **Import your subscription**
    - Use the link in `output/vpn_subscription_base64.txt` (unless `--no-base64` was used) or load `vpn_singbox.json` in clients like sing-box.
 
-6. *(Optional)* pass extra flags like `--max-ping 200`, `--include-country US,CA` or `--concurrent-limit 10` to suit your connection.
+6. *(Optional)* pass extra flags like `--max-ping 200`, `--geoip-db GeoLite2-Country.mmdb --include-country US,CA` or `--concurrent-limit 10` to suit your connection.
 
 
 ## 🏁 Zero-to-Hero Walkthrough
@@ -191,7 +191,7 @@ environment variable in `docker-compose.yml` to change how often it runs.
 
 **Country Filtering**
 
-> Use `--include-country` or `--exclude-country` with a GeoIP database to limit servers to specific countries.
+> Use `--include-country` or `--exclude-country` together with `--geoip-db` to limit servers to specific countries.
 
 **Resume from File**
 
@@ -562,7 +562,7 @@ Run `python vpn_merger.py --help` to see all options. Important flags include:
   * `--smux N` - set smux stream count for protocols that support it (default `4`).
   * `--geoip-db PATH` - enable country lookup using a GeoLite2 database file.
   * `--include-country LIST` - comma-separated ISO codes to keep when `--geoip-db` is set.
-  * `--exclude-country LIST` - ISO codes to drop using the same lookup.
+  * `--exclude-country LIST` - ISO codes to drop when `--geoip-db` is set.
 
 TLS fragments help obscure the real Server Name Indication (SNI) of each
 connection by splitting the handshake into pieces. This makes it harder for

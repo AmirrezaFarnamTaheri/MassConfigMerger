@@ -866,12 +866,12 @@ class UltimateVPNMerger:
                 continue
             if CONFIG.exclude_protocols and result.protocol.upper() in CONFIG.exclude_protocols:
                 continue
-            if CONFIG.include_countries and (
-                not result.country or result.country.upper() not in CONFIG.include_countries
-            ):
-                continue
-            if CONFIG.exclude_countries and result.country and result.country.upper() in CONFIG.exclude_countries:
-                continue
+            if CONFIG.include_countries and result.country:
+                if result.country.upper() not in CONFIG.include_countries:
+                    continue
+            if CONFIG.exclude_countries and result.country:
+                if result.country.upper() in CONFIG.exclude_countries:
+                    continue
             if EXCLUDE_REGEXES and any(r.search(text) for r in EXCLUDE_REGEXES):
                 continue
             config_hash = self.processor.create_semantic_hash(result.config)
@@ -1423,10 +1423,18 @@ def main():
                         help="Do not save simple Clash proxy list")
     parser.add_argument("--geoip-db", type=str, default=None,
                         help="Path to GeoLite2 Country database for GeoIP lookup")
-    parser.add_argument("--include-country", type=str, default=None,
-                        help="Comma-separated ISO codes to include (requires GeoIP)")
-    parser.add_argument("--exclude-country", type=str, default=None,
-                        help="Comma-separated ISO codes to exclude")
+    parser.add_argument(
+        "--include-country",
+        type=str,
+        default=None,
+        help="Comma-separated ISO codes to include when GeoIP is enabled",
+    )
+    parser.add_argument(
+        "--exclude-country",
+        type=str,
+        default=None,
+        help="Comma-separated ISO codes to exclude when GeoIP is enabled",
+    )
     args, unknown = parser.parse_known_args()
     if unknown:
         logging.warning("Ignoring unknown arguments: %s", unknown)
