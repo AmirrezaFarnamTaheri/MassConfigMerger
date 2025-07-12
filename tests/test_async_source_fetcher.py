@@ -56,28 +56,22 @@ async def test_fetch_source_timeout(aiohttp_client, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_fetcher_lock_serializes_requests(aiohttp_client):
-    concurrency = 0
-    max_conc = 0
-
+async def test_seen_hash_lock_prevents_duplicates(aiohttp_client):
     async def handler(request):
-        nonlocal concurrency, max_conc
-        concurrency += 1
-        max_conc = max(max_conc, concurrency)
-        await asyncio.sleep(0.05)
-        concurrency -= 1
         return web.Response(text="vmess://abcdef0123456789abc")
 
     app = web.Application()
     app.router.add_get("/", handler)
     client = await aiohttp_client(app)
 
-    fetcher = AsyncSourceFetcher(EnhancedConfigProcessor(), set())
+    seen = set()
+    fetcher = AsyncSourceFetcher(EnhancedConfigProcessor(), seen)
     fetcher.session = client.session
 
-    await asyncio.gather(
+    r1, r2 = await asyncio.gather(
         fetcher.fetch_source(client.make_url("/")),
         fetcher.fetch_source(client.make_url("/")),
     )
 
-    assert max_conc == 1
+    total = len(r1[1]) + len(r2[1])
+    assert total == 1
