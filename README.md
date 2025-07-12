@@ -145,6 +145,7 @@ environment variable in `docker-compose.yml` to change how often it runs.
 | **Connectivity Testing** | Optional TCP checks measure real latency. | Prioritize servers that actually respond. |
 | **Smart Sorting** | Orders the final list by reachability and speed. | Quickly pick the best server in your VPN client. |
 | **Batch Saving** | Periodically saves intermediate results with `--batch-size` (default `100`). | Useful on unreliable connections. |
+| **Graceful Interrupt** | Hit `Ctrl+C` to stop early and write any collected configs. | Safe exit without losing progress. |
 | **Protocol Filtering** | Use `--include-protocols` or `--exclude-protocols` to filter by protocol (defaults to the Hiddify list). | Keep only the protocols your client supports. |
 | **Country Filtering** | Use `--include-country` or `--exclude-country` with a GeoIP database to select specific regions. | Limit servers to preferred countries. |
 | **TLS Fragment / Top N** | Use `--tls-fragment` or `--top-n` to trim the output. | Obscure SNI or keep only the fastest N entries. |
@@ -669,6 +670,8 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
    `write_base64`, `write_singbox` and `write_clash` options—overridable with the
    flags above—the files `merged_base64.txt`, `merged_singbox.json` and
    `clash.yaml` may also be created.
+   Press `Ctrl+C` to interrupt early. Any collected configs will be flushed to
+   disk before the program exits.
 5. To enable the bot mode run (you can also pass `--hours` to control how much
    channel history is scanned):
    ```bash
