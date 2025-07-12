@@ -23,8 +23,8 @@ import yaml
 
 import aiohttp
 from aiohttp import ClientSession, ClientTimeout
-from telethon import TelegramClient, events, errors
-from telethon.tl.custom.message import Message
+from telethon import TelegramClient, events, errors  # type: ignore
+from telethon.tl.custom.message import Message  # type: ignore
 
 from constants import SOURCES_FILE
 
@@ -498,9 +498,10 @@ def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
                         "alterId": int(q.get("aid", [0])[0]),
                         "cipher": q.get("type", ["auto"])[0],
                     }
-                    if q.get("security"):
-                        proxy["tls"] = True
-                    return proxy
+                security = q.get("security")
+                if security:
+                    proxy["tls"] = True
+                return proxy
             elif scheme == "vless":
                 p = urlparse(config)
                 q = parse_qs(p.query)
@@ -512,7 +513,8 @@ def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
                     "uuid": p.username or "",
                     "encryption": q.get("encryption", ["none"])[0],
                 }
-                if q.get("security"):
+                security = q.get("security")
+                if security:
                     proxy["tls"] = True
                 return proxy
             elif scheme == "reality":
@@ -527,8 +529,9 @@ def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
                     "encryption": q.get("encryption", ["none"])[0],
                     "tls": True,
                 }
-                if q.get("flow"):
-                    proxy["flow"] = q.get("flow")[0]
+                flow = q.get("flow")
+                if flow:
+                    proxy["flow"] = flow[0]
                 return proxy
             elif scheme == "trojan":
                 p = urlparse(config)
@@ -540,9 +543,11 @@ def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
                     "port": p.port or 0,
                     "password": p.username or p.password or "",
                 }
-                if q.get("sni"):
-                    proxy["sni"] = q.get("sni")[0]
-                if q.get("security"):
+                sni = q.get("sni")
+                if sni:
+                    proxy["sni"] = sni[0]
+                security = q.get("security")
+                if security:
                     proxy["tls"] = True
                 return proxy
             elif scheme in ("ss", "shadowsocks"):
@@ -558,8 +563,8 @@ def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
                     decoded = base64.b64decode(padded).decode()
                     before_at, host_port = decoded.split("@")
                     method, password = before_at.split(":")
-                    server, port = host_port.split(":")
-                    port = int(port)
+                    server, port_str = host_port.split(":")
+                    port = int(port_str)
                 return {
                     "name": p.fragment or name,
                     "type": "ss",
