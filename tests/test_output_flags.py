@@ -94,3 +94,36 @@ def test_cli_no_prune(monkeypatch, tmp_path):
     aggregator_tool.main()
 
     assert recorded.get("prune") is False
+
+
+def test_cli_with_merger(monkeypatch, tmp_path):
+    cfg_path = tmp_path / "c.json"
+    cfg_path.write_text(json.dumps({"output_dir": str(tmp_path / "o"), "log_dir": str(tmp_path / "l")}))
+
+    files = [tmp_path / "o" / "merged.txt", tmp_path / "o" / "merged_base64.txt"]
+
+    async def fake_run_pipeline(*_a, **_k):
+        for f in files:
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text("data")
+        return tmp_path / "o", files
+
+    called = []
+
+    def fake_detect_and_run(path):
+        called.append(Path(path))
+
+    monkeypatch.setattr(aggregator_tool, "run_pipeline", fake_run_pipeline)
+    monkeypatch.setattr(aggregator_tool, "setup_logging", lambda *_: None)
+    monkeypatch.setattr(aggregator_tool, "_get_script_dir", lambda: tmp_path)
+    monkeypatch.setattr(aggregator_tool.vpn_merger, "detect_and_run", fake_detect_and_run)
+    monkeypatch.setattr(sys, "argv", [
+        "aggregator_tool.py",
+        "--config",
+        str(cfg_path),
+        "--with-merger",
+    ])
+
+    aggregator_tool.main()
+
+    assert called == files
