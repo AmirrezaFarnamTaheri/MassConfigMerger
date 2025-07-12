@@ -8,7 +8,9 @@ import binascii
 import csv
 from pathlib import Path
 from typing import List, Tuple, Optional
+import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 from vpn_merger import EnhancedConfigProcessor, CONFIG
 
 

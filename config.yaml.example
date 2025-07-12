@@ -1,0 +1,112 @@
+# Example configuration for MassConfigMerger
+# All options can also be overridden using environment variables
+# with the same name in upper case.
+
+telegram_api_id: 123456
+telegram_api_hash: YOUR_HASH
+telegram_bot_token: BOT_TOKEN
+allowed_user_ids:
+  - 11111111
+
+# Protocols to keep when aggregating
+protocols:
+  - vmess
+  - vless
+  - trojan
+  - ss
+  - ssr
+  - hysteria
+  - hysteria2
+  - tuic
+  - reality
+  - naive
+  - hy2
+  - wireguard
+
+exclude_patterns: []
+output_dir: output
+log_dir: logs
+request_timeout: 10
+max_concurrent: 20
+write_base64: true
+write_singbox: true
+write_clash: true
+
+# VPN merger specific settings
+headers:
+  User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+  Accept-Language: "en-US,en;q=0.5"
+  Connection: keep-alive
+  Cache-Control: no-cache
+connect_timeout: 3.0
+max_retries: 3
+concurrent_limit: 50
+max_configs_per_source: 75000
+valid_prefixes:
+  - vmess://
+  - vless://
+  - reality://
+  - ss://
+  - ssr://
+  - trojan://
+  - hy2://
+  - hysteria://
+  - hysteria2://
+  - tuic://
+  - shadowtls://
+  - wireguard://
+  - socks://
+  - socks4://
+  - socks5://
+  - http://
+  - https://
+  - grpc://
+  - ws://
+  - wss://
+  - tcp://
+  - kcp://
+  - quic://
+  - h2://
+enable_url_testing: true
+enable_sorting: true
+test_timeout: 5.0
+batch_size: 1000
+threshold: 0
+top_n: 0
+tls_fragment: null
+include_protocols:
+  - PROXY
+  - SHADOWSOCKS
+  - SHADOWSOCKSR
+  - TROJAN
+  - CLASH
+  - V2RAY
+  - REALITY
+  - VMESS
+  - XRAY
+  - WIREGUARD
+  - ECH
+  - VLESS
+  - HYSTERIA
+  - TUIC
+  - SING-BOX
+  - SINGBOX
+  - SHADOWTLS
+  - CLASHMETA
+  - HYSTERIA2
+exclude_protocols:
+  - OTHER
+resume_file: null
+max_ping_ms: 1000
+log_file: null
+cumulative_batches: false
+strict_batch: true
+shuffle_sources: false
+write_csv: true
+write_clash_proxies: true
+mux_concurrency: 8
+smux_streams: 4
+geoip_db: null
+include_countries: null
+exclude_countries: null
