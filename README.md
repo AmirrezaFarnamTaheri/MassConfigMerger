@@ -3,7 +3,7 @@
 [![CI](https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/actions/workflows/ci.yml/badge.svg)](https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/actions/workflows/ci.yml)
 [](https://opensource.org/licenses/MIT)
 
-Welcome to the VPN Subscription Merger! This project provides a powerful Python script that automatically fetches VPN configurations from over 470 public sources, tests their connectivity, and merges them into a single, performance-sorted subscription link for use in your favorite VPN client. It can even save incremental batches while running so you always have up-to-date results.
+Welcome to the VPN Subscription Merger! This project provides a powerful Python script that automatically fetches VPN configurations from the over 470 public sources listed in `sources.txt`, tests their connectivity, and merges them into a single, performance-sorted subscription link for use in your favorite VPN client. It can even save incremental batches while running so you always have up-to-date results.
 
 This guide is designed for **everyone**, from absolute beginners with no coding experience to advanced users who want full automation.
 
@@ -83,7 +83,7 @@ environment variable in `docker-compose.yml` to change how often it runs.
 
 | Feature | Description | Typical Use Case |
 | ------- | ----------- | ---------------- |
-| **Huge Source List** | Over 470 public subscription sources are built in. | Get a massive selection of servers with a single command. |
+| **Huge Source List** | `sources.txt` includes over 470 public subscription sources. | Get a massive selection of servers with a single command. |
 | **Availability Testing** | Checks each source before downloading. | Skip dead links and save time. |
 | **Connectivity Testing** | Optional TCP checks measure real latency. | Prioritize servers that actually respond. |
 | **Smart Sorting** | Orders the final list by reachability and speed. | Quickly pick the best server in your VPN client. |
@@ -109,7 +109,7 @@ environment variable in `docker-compose.yml` to change how often it runs.
 
 **Huge Source List**
 
-> Built-in links cover hundreds of GitHub projects, Telegram channels and personal blogs. Instead of hunting for URLs yourself, you get a curated list that is updated regularly. Perfect when you need a one-click way to access lots of servers.
+> The `sources.txt` file covers hundreds of GitHub projects, Telegram channels and personal blogs. Instead of hunting for URLs yourself, you get a curated list that is updated regularly. Perfect when you need a one-click way to access lots of servers.
 
 **Availability Testing**
 
@@ -170,8 +170,8 @@ environment variable in `docker-compose.yml` to change how often it runs.
 
 The script automates a simple but powerful process to create the best possible subscription link from public sources:
 
-1.  **📰 Gathers Sources**: It starts with a massive, built-in list of over 470 links where VPN configurations are publicly shared.
-2.  **✅ Tests Source Availability**: It quickly checks each of the 470+ links to see which ones are currently online and accessible.
+1.  **📰 Gathers Sources**: It reads `sources.txt`, which contains over 470 public links where VPN configurations are shared.
+2.  **✅ Tests Source Availability**: It quickly checks each of these links to see which ones are currently online and accessible.
 3.  **📥 Fetches All Configs**: It visits every active link and downloads all the individual VPN server configurations (`VLESS://`, `VMess://`, etc.).
 4.  **⚡ Tests Server Performance**: This is the key step. It attempts a direct connection to each individual server to measure its real-world connection speed (latency/ping). Servers that are offline or too slow are discarded.
 5.  **🧹 Cleans and Sorts**: Finally, it removes any duplicate servers and sorts the remaining, working servers from **fastest to slowest**.
@@ -490,6 +490,7 @@ Run `python vpn_merger.py --help` to see all options. Important flags include:
   * `--exclude-protocols LIST` - protocols to drop. By default `OTHER` is excluded; pass an empty string to keep everything.
   * `--exclude-pattern REGEX` - skip configs matching this regular expression (repeatable).
   * `--resume FILE` - load a previous output file before fetching new sources.
+  * `--sources FILE` - read subscription URLs from a custom file (default `sources.txt`).
   * `--output-dir DIR` - specify where output files are stored.
   * `--test-timeout SEC` - adjust connection test timeout.
   * `--cumulative-batches` - make each batch cumulative instead of standalone.
@@ -511,12 +512,11 @@ them to `0` to disable if compatibility issues occur.
 
 #### **Adding Your Own Sources**
 
-If you have your own subscription links you'd like to merge, you can add them to the script:
+If you have your own subscription links you'd like to merge, edit `sources.txt`:
 
-1.  Open the `vpn_merger.py` file in a text editor.
-2.  Find the `UnifiedSources` class.
-3.  Add your links to the `SOURCES` list.
-4.  Save the file and run the script. If you are using the GitHub Actions method, commit the change, and the workflow will use your updated list.
+1.  Open the `sources.txt` file in a text editor.
+2.  Add one URL per line (blank lines are ignored).
+3.  Save the file and run the script. If you are using the GitHub Actions method, commit the change so the workflow uses your updated list.
 
 #### **Retesting an Existing Output**
 
