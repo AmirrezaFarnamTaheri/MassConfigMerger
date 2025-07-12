@@ -26,6 +26,7 @@ Expected Output: 800k-1.2M+ tested and sorted configs
 
 import asyncio
 import base64
+import binascii
 import csv
 import hashlib
 import json
@@ -254,8 +255,8 @@ class EnhancedConfigProcessor:
                     host = data.get("add") or data.get("host")
                     port = data.get("port")
                     return host, int(port) if port else None
-                except Exception:
-                    pass
+                except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+                    logging.debug("extract_host_port vmess failed: %s", exc)
 
             if config.startswith("ssr://"):
                 try:
@@ -268,8 +269,8 @@ class EnhancedConfigProcessor:
                         return None, None
                     host, port = parts[0], parts[1]
                     return host or None, int(port)
-                except Exception:
-                    pass
+                except (binascii.Error, UnicodeDecodeError, ValueError) as exc:
+                    logging.debug("extract_host_port ssr failed: %s", exc)
             
             # Parse URI-style configs
             parsed = urlparse(config)
@@ -281,8 +282,8 @@ class EnhancedConfigProcessor:
             if match:
                 return match.group(1), int(match.group(2))
                 
-        except Exception:
-            pass
+        except (ValueError, UnicodeError, binascii.Error) as exc:
+            logging.debug("extract_host_port failed: %s", exc)
         return None, None
     
     def create_semantic_hash(self, config: str) -> str:
@@ -303,8 +304,8 @@ class EnhancedConfigProcessor:
                     decoded = base64.b64decode(padded).decode("utf-8", "ignore")
                     data = json.loads(decoded)
                     identifier = data.get("id") or data.get("uuid") or data.get("user")
-            except Exception:
-                pass
+            except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+                logging.debug("semantic_hash vmess failed: %s", exc)
         elif scheme == "trojan":
             try:
                 parsed = urlparse(config)
@@ -317,8 +318,8 @@ class EnhancedConfigProcessor:
                             identifier = parsed.password
                 else:
                     identifier = None
-            except Exception:
-                pass
+            except ValueError as exc:
+                logging.debug("semantic_hash trojan failed: %s", exc)
         elif scheme in ("ss", "shadowsocks"):
             try:
                 parsed = urlparse(config)
@@ -331,8 +332,8 @@ class EnhancedConfigProcessor:
                     before_at = decoded.split("@", 1)[0]
                     method, password = before_at.split(":", 1)
                     identifier = password
-            except Exception:
-                pass
+            except (binascii.Error, UnicodeDecodeError, ValueError) as exc:
+                logging.debug("semantic_hash ss failed: %s", exc)
 
         if host and port:
             key = f"{host}:{port}"
@@ -355,7 +356,8 @@ class EnhancedConfigProcessor:
                 if self.resolver is None:
                     try:
                         self.resolver = AsyncResolver()
-                    except Exception:
+                    except aiodns.error.DNSError as exc:
+                        logging.debug("AsyncResolver init failed: %s", exc)
                         self.resolver = None
                 if self.resolver is not None:
                     try:
@@ -364,7 +366,8 @@ class EnhancedConfigProcessor:
                             if result:
                                 self.dns_cache[host] = result[0]["host"]
                         target = self.dns_cache.get(host, host)
-                    except Exception:
+                    except aiodns.error.DNSError as exc:
+                        logging.debug("DNS resolve failed: %s", exc)
                         target = host
 
             _, writer = await asyncio.wait_for(
@@ -374,7 +377,8 @@ class EnhancedConfigProcessor:
             writer.close()
             await writer.wait_closed()
             return time.time() - start
-        except Exception:
+        except (OSError, asyncio.TimeoutError) as exc:
+            logging.debug("Connection test failed: %s", exc)
             return None
 
     def lookup_country(self, host: str) -> Optional[str]:
@@ -383,12 +387,13 @@ class EnhancedConfigProcessor:
             return None
         try:
             from geoip2.database import Reader
-        except Exception:
+        except ImportError:
             return None
         if self._geoip_reader is None:
             try:
                 self._geoip_reader = Reader(CONFIG.geoip_db)
-            except Exception:
+            except OSError as exc:
+                logging.debug("GeoIP reader init failed: %s", exc)
                 self._geoip_reader = None
                 return None
         try:
@@ -397,7 +402,8 @@ class EnhancedConfigProcessor:
                 ip = socket.gethostbyname(host)
             resp = self._geoip_reader.country(ip)
             return resp.country.iso_code
-        except Exception:
+        except (OSError, socket.gaierror) as exc:
+            logging.debug("GeoIP lookup failed: %s", exc)
             return None
 
     def categorize_protocol(self, config: str) -> str:
@@ -441,7 +447,8 @@ class EnhancedConfigProcessor:
                 params["smux"] = [str(CONFIG.smux_streams)]
             new_query = urlencode(params, doseq=True)
             return urlunparse(parsed._replace(query=new_query))
-        except Exception:
+        except ValueError as exc:
+            logging.debug("apply_tuning failed: %s", exc)
             return config
 
 # ============================================================================
@@ -474,7 +481,8 @@ class AsyncSourceFetcher:
                     ) as get_resp:
                         return get_resp.status in (200, 206)
                 return False
-        except Exception:
+        except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+            logging.debug("availability check failed for %s: %s", url, exc)
             return False
         
     async def fetch_source(self, url: str) -> Tuple[str, List[ConfigResult]]:
@@ -498,8 +506,8 @@ class AsyncSourceFetcher:
                             decoded = base64.b64decode(content).decode("utf-8", "ignore")
                             if decoded.count("://") > content.count("://"):
                                 content = decoded
-                    except Exception:  # noqa: E722
-                        pass
+                    except (binascii.Error, UnicodeDecodeError) as exc:  # noqa: E722
+                        logging.debug("Base64 decode failed: %s", exc)
                     
                     # Extract and process configs
                     lines = [line.strip() for line in content.splitlines() if line.strip()]
@@ -545,7 +553,8 @@ class AsyncSourceFetcher:
                     
                     return url, config_results
                     
-            except Exception:
+            except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+                logging.debug("fetch_source error on %s: %s", url, exc)
                 if attempt < CONFIG.max_retries - 1:
                     # Use a capped and jittered delay to reduce tail latency
                     await asyncio.sleep(min(3, 1.5 + random.random()))
@@ -581,15 +590,15 @@ class UltimateVPNMerger:
         """Load previously saved configs from a raw or base64 file."""
         try:
             text = Path(path).read_text(encoding="utf-8").strip()
-        except Exception as e:
+        except OSError as e:
             print(f"⚠️  Failed to read resume file: {e}")
             return []
 
         if text and '://' not in text.splitlines()[0]:
             try:
                 text = base64.b64decode(text).decode("utf-8")
-            except Exception:
-                pass
+            except (binascii.Error, UnicodeDecodeError) as exc:
+                logging.debug("resume base64 decode failed: %s", exc)
 
         results = []
         for line in text.splitlines():
@@ -1162,7 +1171,8 @@ class UltimateVPNMerger:
                     if data.get("tls") or data.get("security"):
                         proxy["tls"] = True
                     return proxy
-                except Exception:
+                except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+                    logging.debug("Fallback Clash parse for vmess: %s", exc)
                     p = urlparse(config)
                     q = parse_qs(p.query)
                     proxy = {
@@ -1264,7 +1274,8 @@ class UltimateVPNMerger:
                         "server": server,
                         "port": int(port),
                     }
-                except Exception:
+                except (binascii.Error, UnicodeDecodeError, ValueError) as exc:
+                    logging.debug("SSRs parse failed: %s", exc)
                     return None
             elif scheme == "naive":
                 p = urlparse(config)
@@ -1290,7 +1301,8 @@ class UltimateVPNMerger:
                     "server": p.hostname,
                     "port": p.port,
                 }
-        except Exception:
+        except (ValueError, binascii.Error, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            logging.debug("_config_to_clash_proxy failed: %s", exc)
             return None
 
     def _results_to_clash_yaml(self, results: List[ConfigResult]) -> str:
@@ -1352,7 +1364,7 @@ async def main_async(sources_file: Optional[Union[str, Path]] = None):
         await merger.run()
     except KeyboardInterrupt:
         print("\n⚠️  Process interrupted by user")
-    except Exception as e:
+    except (OSError, aiohttp.ClientError, ValueError, RuntimeError) as e:
         print(f"\n❌ Error: {e}")
         import traceback
         traceback.print_exc()
@@ -1546,7 +1558,7 @@ def main():
 
     try:
         return detect_and_run(sources_file)
-    except Exception as e:
+    except (OSError, aiohttp.ClientError, RuntimeError, ValueError) as e:
         print(f"❌ Error: {e}")
         print("\n📋 Alternative execution methods:")
         print("   • For Jupyter: await run_in_jupyter()")
