@@ -36,6 +36,19 @@ def config_to_clash_proxy(
                 }
                 if data.get("tls") or data.get("security"):
                     proxy["tls"] = True
+                net = data.get("net") or data.get("type")
+                if net in ("ws", "grpc"):
+                    proxy["network"] = net
+                if data.get("host"):
+                    proxy["host"] = data.get("host")
+                if data.get("path"):
+                    proxy["path"] = data.get("path")
+                if data.get("sni"):
+                    proxy["sni"] = data.get("sni")
+                if data.get("fp"):
+                    proxy["fp"] = data.get("fp")
+                if data.get("flow"):
+                    proxy["flow"] = data.get("flow")
                 return proxy
             except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
                 logging.debug("Fallback Clash parse for vmess: %s", exc)
@@ -53,6 +66,12 @@ def config_to_clash_proxy(
                 }
                 if security:
                     proxy["tls"] = True
+                net = q.get("type") or q.get("mode")
+                if net:
+                    proxy["network"] = net[0]
+                for key in ("host", "path", "sni", "fp", "flow"):
+                    if key in q:
+                        proxy[key] = q[key][0]
                 return proxy
         elif scheme == "vless":
             p = urlparse(config)
@@ -68,6 +87,12 @@ def config_to_clash_proxy(
             }
             if security:
                 proxy["tls"] = True
+            net = q.get("type") or q.get("mode")
+            if net:
+                proxy["network"] = net[0]
+            for key in ("host", "path", "sni", "fp", "flow"):
+                if key in q:
+                    proxy[key] = q[key][0]
             return proxy
         elif scheme == "reality":
             p = urlparse(config)
@@ -87,6 +112,12 @@ def config_to_clash_proxy(
             flows = q.get("flow")
             if flows:
                 proxy["flow"] = flows[0]
+            net = q.get("type") or q.get("mode")
+            if net:
+                proxy["network"] = net[0]
+            for key in ("host", "path"):
+                if key in q:
+                    proxy[key] = q[key][0]
             return proxy
         elif scheme == "trojan":
             p = urlparse(config)
@@ -177,6 +208,13 @@ def config_to_clash_proxy(
                         ).decode()
                     except (binascii.Error, UnicodeDecodeError):
                         proxy["name"] = q["remarks"][0]
+                if "group" in q:
+                    try:
+                        proxy["group"] = base64.urlsafe_b64decode(
+                            q["group"][0] + "=" * (-len(q["group"][0]) % 4)
+                        ).decode()
+                    except (binascii.Error, UnicodeDecodeError):
+                        proxy["group"] = q["group"][0]
                 return proxy
             except (binascii.Error, UnicodeDecodeError, ValueError) as exc:
                 logging.debug("SSRs parse failed: %s", exc)
