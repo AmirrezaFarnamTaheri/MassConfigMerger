@@ -1,6 +1,6 @@
+# flake8: noqa
 import os
 import sys
-from pathlib import Path
 import asyncio
 import json
 

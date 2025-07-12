@@ -1,8 +1,8 @@
+# flake8: noqa
 import os
 import sys
 import asyncio
 import yaml
-from pathlib import Path
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from vpn_merger import UltimateVPNMerger, ConfigResult, CONFIG

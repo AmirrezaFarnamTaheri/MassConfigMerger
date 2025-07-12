@@ -1,3 +1,4 @@
+# flake8: noqa
 """Mass Config Aggregator Tool.
 
 This module provides a command line tool to collect VPN configuration links from

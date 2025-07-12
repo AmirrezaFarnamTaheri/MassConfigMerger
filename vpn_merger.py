@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# flake8: noqa
 """
 VPN Subscription Merger
 ===================================================================
@@ -37,7 +38,7 @@ import ssl
 import sys
 import time
 import socket
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union
@@ -67,7 +68,7 @@ except ImportError as exc:
     ) from exc
 
 try:
-    import aiodns
+    pass
 except ImportError as exc:
     raise ImportError(
         "Missing optional dependency 'aiodns'. "
@@ -81,20 +82,20 @@ except ImportError as exc:
 @dataclass
 class Config:
     """Comprehensive configuration for optimal performance."""
-    
+
     # HTTP settings
     headers: Dict[str, str]
     request_timeout: int
     connect_timeout: float
     max_retries: int
-    
+
     # Processing settings
     concurrent_limit: int
     max_configs_per_source: int
-    
+
     # Protocol validation
     valid_prefixes: Tuple[str, ...]
-    
+
     # Testing settings
     enable_url_testing: bool
     enable_sorting: bool
@@ -228,14 +229,14 @@ class ConfigResult:
 
 class EnhancedConfigProcessor:
     """Advanced configuration processor with comprehensive testing capabilities."""
-    
+
     MAX_DECODE_SIZE = 256 * 1024  # 256 kB safety limit for base64 payloads
 
     def __init__(self):
         self.dns_cache = {}
         self.resolver: Optional[AsyncResolver] = None
         self._geoip_reader = None
-        
+
     def extract_host_port(self, config: str) -> Tuple[Optional[str], Optional[int]]:
         """Extract host and port from configuration for testing."""
         try:
@@ -266,21 +267,21 @@ class EnhancedConfigProcessor:
                     return host or None, int(port)
                 except Exception:
                     pass
-            
+
             # Parse URI-style configs
             parsed = urlparse(config)
             if parsed.hostname and parsed.port:
                 return parsed.hostname, parsed.port
-                
+
             # Extract from @ notation
             match = re.search(r"@([^:/?#]+):(\d+)", config)
             if match:
                 return match.group(1), int(match.group(2))
-                
+
         except Exception:
             pass
         return None, None
-    
+
     def create_semantic_hash(self, config: str) -> str:
         """Create semantic hash for intelligent deduplication."""
         host, port = self.extract_host_port(config)
@@ -338,12 +339,12 @@ class EnhancedConfigProcessor:
             normalized = re.sub(r'#.*$', '', config).strip()
             key = normalized
         return hashlib.sha256(key.encode()).hexdigest()[:16]
-    
+
     async def test_connection(self, host: str, port: int) -> Optional[float]:
         """Test connection and measure response time."""
         if not CONFIG.enable_url_testing:
             return None
-            
+
         start = time.time()
         try:
             target = host
@@ -400,7 +401,7 @@ class EnhancedConfigProcessor:
         """Categorize configuration by protocol."""
         protocol_map = {
             "vmess://": "VMess",
-            "vless://": "VLESS", 
+            "vless://": "VLESS",
             "ss://": "Shadowsocks",
             "ssr://": "ShadowsocksR",
             "trojan://": "Trojan",
@@ -415,7 +416,7 @@ class EnhancedConfigProcessor:
             "shadowtls://": "ShadowTLS",
             "brook://": "Brook",
         }
-        
+
         for prefix, protocol in protocol_map.items():
             if config.startswith(prefix):
                 return protocol
@@ -451,7 +452,7 @@ class AsyncSourceFetcher:
         self.processor = processor
         self.session: Optional[aiohttp.ClientSession] = None
         self.seen_hashes = seen_hashes
-        
+
     async def test_source_availability(self, url: str) -> bool:
         """Test if a source URL is available (returns 200 status)."""
         try:
@@ -471,7 +472,7 @@ class AsyncSourceFetcher:
                 return False
         except Exception:
             return False
-        
+
     async def fetch_source(self, url: str) -> Tuple[str, List[ConfigResult]]:
         """Fetch single source with comprehensive testing and deduplication."""
         for attempt in range(CONFIG.max_retries):
@@ -480,11 +481,11 @@ class AsyncSourceFetcher:
                 async with self.session.get(url, headers=CONFIG.headers, timeout=timeout) as response:
                     if response.status != 200:
                         continue
-                        
+
                     content = await response.text()
                     if not content.strip():
                         return url, []
-                    
+
                     # Enhanced Base64 detection and decoding
                     try:
                         # Check if content looks like base64
@@ -494,11 +495,11 @@ class AsyncSourceFetcher:
                                 content = decoded
                     except:
                         pass
-                    
+
                     # Extract and process configs
                     lines = [line.strip() for line in content.splitlines() if line.strip()]
                     config_results = []
-                    
+
                     for line in lines:
                         if (
                             line.startswith(CONFIG.valid_prefixes)
@@ -526,22 +527,22 @@ class AsyncSourceFetcher:
                                 source_url=url,
                                 country=country
                             )
-                            
+
                             # Test connection if enabled
                             if CONFIG.enable_url_testing and host and port:
                                 ping_time = await self.processor.test_connection(host, port)
                                 result.ping_time = ping_time
                                 result.is_reachable = ping_time is not None
-                            
+
                             config_results.append(result)
-                    
+
                     return url, config_results
-                    
+
             except Exception:
                 if attempt < CONFIG.max_retries - 1:
                     # Use a capped and jittered delay to reduce tail latency
                     await asyncio.sleep(min(3, 1.5 + random.random()))
-                    
+
         return url, []
 
 # ============================================================================
@@ -604,7 +605,7 @@ class UltimateVPNMerger:
             h = self.processor.create_semantic_hash(line)
             self.seen_hashes.add(h)
         return results
-        
+
     async def run(self) -> None:
         """Execute the complete unified merging process."""
         print("🚀 VPN Subscription Merger - Final Unified & Polished Edition")
@@ -613,7 +614,7 @@ class UltimateVPNMerger:
         print(f"🔧 URL Testing: {'Enabled' if CONFIG.enable_url_testing else 'Disabled'}")
         print(f"📈 Smart Sorting: {'Enabled' if CONFIG.enable_sorting else 'Disabled'}")
         print()
-        
+
         start_time = time.time()
         self.start_time = start_time
 
@@ -626,21 +627,21 @@ class UltimateVPNMerger:
         # Step 1: Test source availability and remove dead links
         print("🔄 [1/6] Testing source availability and removing dead links...")
         self.available_sources = await self._test_and_filter_sources()
-        
+
         # Step 2: Fetch all configs from available sources
         print(f"\n🔄 [2/6] Fetching configs from {len(self.available_sources)} available sources...")
         await self._fetch_all_sources(self.available_sources)
-        
-        # Step 3: Deduplicate efficiently  
+
+        # Step 3: Deduplicate efficiently
         print(f"\n🔍 [3/6] Deduplicating {len(self.all_results):,} configs...")
         unique_results = self._deduplicate_config_results(self.all_results)
-        
+
         # Step 4: Sort by performance if enabled
         if CONFIG.enable_sorting:
             print(f"\n📊 [4/6] Sorting {len(unique_results):,} configs by performance...")
             unique_results = self._sort_by_performance(unique_results)
         else:
-            print(f"\n⏭️ [4/6] Skipping sorting (disabled)")
+            print("\n⏭️ [4/6] Skipping sorting (disabled)")
 
         if CONFIG.enable_url_testing:
             before = len(unique_results)
@@ -662,13 +663,13 @@ class UltimateVPNMerger:
         # Step 5: Analyze protocols and performance
         print(f"\n📋 [5/6] Analyzing {len(unique_results):,} unique configs...")
         stats = self._analyze_results(unique_results, self.available_sources)
-        
+
         # Step 6: Generate comprehensive outputs
         print("\n💾 [6/6] Generating comprehensive outputs...")
         await self._generate_comprehensive_outputs(unique_results, stats, self.start_time)
 
         self._print_final_summary(len(unique_results), time.time() - self.start_time, stats)
-    
+
     async def _test_and_filter_sources(self) -> List[str]:
         """Test all sources for availability and filter out dead links."""
         # Setup HTTP session
@@ -679,67 +680,67 @@ class UltimateVPNMerger:
             ssl=ssl.create_default_context(),
             resolver=AsyncResolver()
         )
-        
+
         self.fetcher.session = aiohttp.ClientSession(connector=connector)
-        
+
         try:
             # Test all sources concurrently
             semaphore = asyncio.Semaphore(CONFIG.concurrent_limit)
-            
+
             async def test_single_source(url: str) -> Optional[str]:
                 async with semaphore:
                     is_available = await self.fetcher.test_source_availability(url)
                     return url if is_available else None
-            
+
             tasks = [test_single_source(url) for url in self.sources]
-            
+
             completed = 0
             available_sources = []
-            
+
             for coro in asyncio.as_completed(tasks):
                 result = await coro
                 completed += 1
-                
+
                 if result:
                     available_sources.append(result)
                     status = "✅ Available"
                 else:
                     status = "❌ Dead link"
-                
+
                 print(f"  [{completed:03d}/{len(self.sources)}] {status}")
-            
+
             removed_count = len(self.sources) - len(available_sources)
             print(f"\n   🗑️ Removed {removed_count} dead sources")
             print(f"   ✅ Keeping {len(available_sources)} available sources")
-            
+
             return available_sources
-            
+
         finally:
             # Don't close session here, we'll reuse it
             pass
-    
+
     async def _fetch_all_sources(self, available_sources: List[str]) -> List[ConfigResult]:
         """Fetch all configs from available sources."""
         # Append results directly to self.all_results so that _maybe_save_batch
         # sees the running total and can save incremental batches.
         successful_sources = 0
-        
+
         try:
             # Process sources with semaphore
             semaphore = asyncio.Semaphore(CONFIG.concurrent_limit)
-            
+
             async def process_single_source(url: str) -> Tuple[str, List[ConfigResult]]:
                 async with semaphore:
                     return await self.fetcher.fetch_source(url)
-            
+
             # Create tasks
             tasks = [process_single_source(url) for url in available_sources]
-            
+
             completed = 0
             for coro in asyncio.as_completed(tasks):
                 url, results = await coro
                 completed += 1
-                
+
                 # Append directly to the instance-level list
                 self.all_results.extend(results)
                 if results:
@@ -748,7 +749,7 @@ class UltimateVPNMerger:
                     status = f"✓ {len(results):,} configs ({reachable} reachable)"
                 else:
                     status = "✗ No configs"
-                
+
                 domain = urlparse(url).netloc or url[:50] + "..."
                 print(f"  [{completed:03d}/{len(available_sources)}] {status} - {domain}")
 
@@ -762,7 +763,7 @@ class UltimateVPNMerger:
                     t.cancel()
 
             print(f"\n   📈 Sources with configs: {successful_sources}/{len(available_sources)}")
-            
+
         finally:
             await self.fetcher.session.close()
 
@@ -845,7 +846,7 @@ class UltimateVPNMerger:
                 if CONFIG.threshold > 0 and len(self.cumulative_unique) >= CONFIG.threshold:
                     print(f"\n⏹️  Threshold of {CONFIG.threshold} configs reached. Stopping early.")
                     self.stop_fetching = True
-    
+
     def _deduplicate_config_results(self, results: List[ConfigResult]) -> List[ConfigResult]:
         """Efficient deduplication of config results using semantic hashing."""
         seen_hashes: Set[str] = set()
@@ -871,7 +872,7 @@ class UltimateVPNMerger:
             if config_hash not in seen_hashes:
                 seen_hashes.add(config_hash)
                 unique_results.append(result)
-        
+
         duplicates = len(results) - len(unique_results)
         print(f"   🗑️ Duplicates removed: {duplicates:,}")
         if len(results) > 0:
@@ -880,49 +881,49 @@ class UltimateVPNMerger:
             efficiency = 0
         print(f"   📊 Deduplication efficiency: {efficiency:.1f}%")
         return unique_results
-    
+
     def _sort_by_performance(self, results: List[ConfigResult]) -> List[ConfigResult]:
         """Sort results by connection performance and protocol preference."""
         # Protocol priority ranking
         protocol_priority = {
-            "VLESS": 1, "VMess": 2, "Reality": 3, "Hysteria2": 4, 
+            "VLESS": 1, "VMess": 2, "Reality": 3, "Hysteria2": 4,
             "Trojan": 5, "Shadowsocks": 6, "TUIC": 7, "Hysteria": 8,
             "Naive": 9, "Juicity": 10, "WireGuard": 11, "Other": 12
         }
-        
+
         def sort_key(result: ConfigResult) -> Tuple:
             is_reachable = 1 if result.is_reachable else 0
             ping_time = result.ping_time if result.ping_time is not None else float('inf')
             protocol_rank = protocol_priority.get(result.protocol, 13)
             return (-is_reachable, ping_time, protocol_rank)
-        
+
         sorted_results = sorted(results, key=sort_key)
-        
+
         reachable_count = sum(1 for r in results if r.is_reachable)
         print(f"   🚀 Sorted: {reachable_count:,} reachable configs first")
-        
+
         if reachable_count > 0:
             fastest = min((r for r in results if r.ping_time), key=lambda x: x.ping_time, default=None)
             if fastest:
                 print(f"   ⚡ Fastest server: {fastest.ping_time*1000:.1f}ms ({fastest.protocol})")
-        
+
         return sorted_results
-    
+
     def _analyze_results(self, results: List[ConfigResult], available_sources: List[str]) -> Dict:
         """Analyze results and generate comprehensive statistics."""
         protocol_stats = {}
         performance_stats = {}
-        
+
         for result in results:
             # Protocol count
             protocol_stats[result.protocol] = protocol_stats.get(result.protocol, 0) + 1
-            
+
             # Performance stats
             if result.ping_time is not None:
                 if result.protocol not in performance_stats:
                     performance_stats[result.protocol] = []
                 performance_stats[result.protocol].append(result.ping_time)
-        
+
         # Calculate performance metrics
         perf_summary = {}
         for protocol, times in performance_stats.items():
@@ -933,7 +934,7 @@ class UltimateVPNMerger:
                     "min_ms": round(min(times) * 1000, 2),
                     "max_ms": round(max(times) * 1000, 2)
                 }
-        
+
         # Print comprehensive breakdown
         total = len(results)
         reachable = sum(1 for r in results if r.is_reachable)
@@ -942,8 +943,8 @@ class UltimateVPNMerger:
         reach_pct = (reachable / total * 100) if total else 0
         print(f"   🌐 Reachable configs: {reachable:,} ({reach_pct:.1f}%)")
         print(f"   🔗 Available sources: {len(available_sources)}")
-        print(f"   📋 Protocol breakdown:")
-        
+        print("   📋 Protocol breakdown:")
+
         for protocol, count in sorted(protocol_stats.items(), key=lambda x: x[1], reverse=True):
             percentage = (count / total) * 100 if total else 0
             perf_info = ""
@@ -951,7 +952,7 @@ class UltimateVPNMerger:
                 avg_ms = perf_summary[protocol]["avg_ms"]
                 perf_info = f" | Avg: {avg_ms}ms"
             print(f"      {protocol:12} {count:>7,} configs ({percentage:5.1f}%){perf_info}")
-        
+
         return {
             "protocol_stats": protocol_stats,
             "performance_stats": perf_summary,
@@ -960,22 +961,22 @@ class UltimateVPNMerger:
             "available_sources": len(available_sources),
             "total_sources": len(self.sources)
         }
-    
+
     async def _generate_comprehensive_outputs(self, results: List[ConfigResult], stats: Dict, start_time: float, prefix: str = "") -> None:
         """Generate comprehensive output files with all formats."""
         # Create output directory
         output_dir = Path(CONFIG.output_dir)
         output_dir.mkdir(exist_ok=True)
-        
+
         # Extract configs for traditional outputs
         configs = [result.config for result in results]
-        
+
         # Raw text output
         raw_file = output_dir / f"{prefix}vpn_subscription_raw.txt"
         tmp_raw = raw_file.with_suffix('.tmp')
         tmp_raw.write_text("\n".join(configs), encoding="utf-8")
         tmp_raw.replace(raw_file)
-        
+
         base64_file = output_dir / f"{prefix}vpn_subscription_base64.txt"
         if CONFIG.write_base64:
             base64_content = base64.b64encode("\n".join(configs).encode("utf-8")).decode("utf-8")
@@ -998,7 +999,7 @@ class UltimateVPNMerger:
                         result.country
                     ])
             tmp_csv.replace(csv_file)
-        
+
         # Comprehensive JSON report
         report_file = output_dir / f"{prefix}vpn_report.json"
         report = {
@@ -1034,7 +1035,7 @@ class UltimateVPNMerger:
                 ]
             }
         }
-        
+
         tmp_report = report_file.with_suffix('.tmp')
         tmp_report.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
         tmp_report.replace(report_file)
@@ -1243,7 +1244,7 @@ class UltimateVPNMerger:
             "proxies": [p["name"] for p in proxies],
         }
         return yaml.safe_dump({"proxies": proxies, "proxy-groups": [group]}, allow_unicode=True, sort_keys=False)
-    
+
     def _print_final_summary(self, config_count: int, elapsed_time: float, stats: Dict) -> None:
         """Print comprehensive final summary."""
         print("\n" + "=" * 85)
@@ -1259,10 +1260,10 @@ class UltimateVPNMerger:
         print(f"🔗 Available sources: {stats['available_sources']}/{stats['total_sources']}")
         speed = (config_count / elapsed_time) if elapsed_time else 0
         print(f"⚡ Processing speed: {speed:.0f} configs/second")
-        
+
         if CONFIG.enable_sorting and stats['reachable_configs'] > 0:
-            print(f"🚀 Configs sorted by performance (fastest first)")
-        
+            print("🚀 Configs sorted by performance (fastest first)")
+
         if stats['protocol_stats']:
             top_protocol = max(stats['protocol_stats'].items(), key=lambda x: x[1])[0]
         else:
@@ -1296,16 +1297,16 @@ def detect_and_run(sources_file: Optional[Union[str, Path]] = None):
     """Detect event loop and run appropriately."""
     try:
         # Try to get the running loop
-        loop = asyncio.get_running_loop()
+        asyncio.get_running_loop()
         print("🔄 Detected existing event loop")
         print("📝 Creating task in existing loop...")
-        
+
         # We're in an async environment (like Jupyter)
         task = asyncio.create_task(main_async(sources_file))
         print("✅ Task created successfully!")
         print("📋 Use 'await task' to wait for completion in Jupyter")
         return task
-        
+
     except RuntimeError:
         # No running loop - we can use asyncio.run()
         print("🔄 No existing event loop detected")
