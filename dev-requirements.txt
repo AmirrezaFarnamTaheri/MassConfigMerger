@@ -8,3 +8,4 @@ telethon
 pytest
 PyYAML
 geoip2
+types-PyYAML
