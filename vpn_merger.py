@@ -467,6 +467,7 @@ class AsyncSourceFetcher:
         self.session: Optional[aiohttp.ClientSession] = None
         self.seen_hashes = seen_hashes
         self._lock = asyncio.Lock()
+        self._hash_lock = asyncio.Lock()
         
     async def test_source_availability(self, url: str) -> bool:
         """Test if a source URL is available (returns 200 status)."""
@@ -530,9 +531,10 @@ class AsyncSourceFetcher:
                             ]
                         ):
                             config_hash = self.processor.create_semantic_hash(line)
-                            if config_hash in self.seen_hashes:
-                                continue
-                            self.seen_hashes.add(config_hash)
+                            async with self._hash_lock:
+                                if config_hash in self.seen_hashes:
+                                    continue
+                                self.seen_hashes.add(config_hash)
 
                             line = self.processor.apply_tuning(line)
 
@@ -591,6 +593,7 @@ class UltimateVPNMerger:
         self.cumulative_unique: List[ConfigResult] = []
         self.last_processed_index = 0
         self.last_saved_count = 0
+        self._file_lock = asyncio.Lock()
 
     def _load_existing_results(self, path: str) -> List[ConfigResult]:
         """Load previously saved configs from a raw or base64 file."""
@@ -1029,45 +1032,46 @@ class UltimateVPNMerger:
         prefix: str = "",
     ) -> None:
         """Generate comprehensive output files with all formats."""
-        # Create output directory
-        output_dir = Path(CONFIG.output_dir)
-        output_dir.mkdir(exist_ok=True)
+        async with self._file_lock:
+            # Create output directory
+            output_dir = Path(CONFIG.output_dir)
+            output_dir.mkdir(exist_ok=True)
         
         # Extract configs for traditional outputs
-        configs = [result.config for result in results]
+            configs = [result.config for result in results]
         
         # Raw text output
-        raw_file = output_dir / f"{prefix}vpn_subscription_raw.txt"
-        tmp_raw = raw_file.with_suffix('.tmp')
-        tmp_raw.write_text("\n".join(configs), encoding="utf-8")
-        tmp_raw.replace(raw_file)
+            raw_file = output_dir / f"{prefix}vpn_subscription_raw.txt"
+            tmp_raw = raw_file.with_suffix('.tmp')
+            tmp_raw.write_text("\n".join(configs), encoding="utf-8")
+            tmp_raw.replace(raw_file)
         
-        base64_file = output_dir / f"{prefix}vpn_subscription_base64.txt"
-        if CONFIG.write_base64:
-            base64_content = base64.b64encode("\n".join(configs).encode("utf-8")).decode("utf-8")
-            tmp_base64 = base64_file.with_suffix('.tmp')
-            tmp_base64.write_text(base64_content, encoding="utf-8")
-            tmp_base64.replace(base64_file)
+            base64_file = output_dir / f"{prefix}vpn_subscription_base64.txt"
+            if CONFIG.write_base64:
+                base64_content = base64.b64encode("\n".join(configs).encode("utf-8")).decode("utf-8")
+                tmp_base64 = base64_file.with_suffix('.tmp')
+                tmp_base64.write_text(base64_content, encoding="utf-8")
+                tmp_base64.replace(base64_file)
 
         # Enhanced CSV with comprehensive performance data
-        csv_file = output_dir / f"{prefix}vpn_detailed.csv"
-        if CONFIG.write_csv:
-            tmp_csv = csv_file.with_suffix('.tmp')
-            with open(tmp_csv, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                writer.writerow(['Config', 'Protocol', 'Host', 'Port', 'Ping_MS', 'Reachable', 'Source', 'Country'])
-                for result in results:
-                    ping_ms = round(result.ping_time * 1000, 2) if result.ping_time else None
-                    writer.writerow([
-                        result.config, result.protocol, result.host, result.port,
-                        ping_ms, result.is_reachable, result.source_url,
-                        result.country
-                    ])
-            tmp_csv.replace(csv_file)
+            csv_file = output_dir / f"{prefix}vpn_detailed.csv"
+            if CONFIG.write_csv:
+                tmp_csv = csv_file.with_suffix('.tmp')
+                with open(tmp_csv, 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(['Config', 'Protocol', 'Host', 'Port', 'Ping_MS', 'Reachable', 'Source', 'Country'])
+                    for result in results:
+                        ping_ms = round(result.ping_time * 1000, 2) if result.ping_time else None
+                        writer.writerow([
+                            result.config, result.protocol, result.host, result.port,
+                            ping_ms, result.is_reachable, result.source_url,
+                            result.country
+                        ])
+                tmp_csv.replace(csv_file)
         
         # Comprehensive JSON report
-        report_file = output_dir / f"{prefix}vpn_report.json"
-        report = {
+            report_file = output_dir / f"{prefix}vpn_report.json"
+            report = {
             "generation_info": {
                 "timestamp_utc": datetime.now(timezone.utc).isoformat(),
                 "processing_time_seconds": round(time.time() - start_time, 2),
@@ -1105,48 +1109,48 @@ class UltimateVPNMerger:
             }
         }
         
-        tmp_report = report_file.with_suffix('.tmp')
-        tmp_report.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
-        tmp_report.replace(report_file)
+            tmp_report = report_file.with_suffix('.tmp')
+            tmp_report.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+            tmp_report.replace(report_file)
 
         # Simple outbounds JSON
-        outbounds = []
-        for idx, r in enumerate(results):
-            tag = re.sub(r"[^A-Za-z0-9_-]+", "-", f"{r.protocol}-{idx}")
-            ob = {
-                "type": r.protocol.lower(),
-                "tag": tag,
-                "server": r.host or "",
-                "server_port": r.port,
-                "raw": r.config
-            }
-            if r.country:
-                ob["country"] = r.country
-            outbounds.append(ob)
-
-        singbox_file = output_dir / f"{prefix}vpn_singbox.json"
-        tmp_singbox = singbox_file.with_suffix('.tmp')
-        tmp_singbox.write_text(json.dumps({"outbounds": outbounds}, indent=2, ensure_ascii=False), encoding="utf-8")
-        tmp_singbox.replace(singbox_file)
-
-        if CONFIG.write_clash:
-            clash_yaml = self._results_to_clash_yaml(results)
-            clash_file = output_dir / f"{prefix}clash.yaml"
-            tmp_clash = clash_file.with_suffix('.tmp')
-            tmp_clash.write_text(clash_yaml, encoding="utf-8")
-            tmp_clash.replace(clash_file)
-
-        if CONFIG.write_clash_proxies:
-            proxies = []
+            outbounds = []
             for idx, r in enumerate(results):
-                proxy = config_to_clash_proxy(r.config, idx, r.protocol)
-                if proxy:
-                    proxies.append(proxy)
-            proxy_yaml = yaml.safe_dump({"proxies": proxies}, allow_unicode=True, sort_keys=False) if proxies else ""
-            proxies_file = output_dir / f"{prefix}vpn_clash_proxies.yaml"
-            tmp_proxies = proxies_file.with_suffix('.tmp')
-            tmp_proxies.write_text(proxy_yaml, encoding="utf-8")
-            tmp_proxies.replace(proxies_file)
+                tag = re.sub(r"[^A-Za-z0-9_-]+", "-", f"{r.protocol}-{idx}")
+                ob = {
+                    "type": r.protocol.lower(),
+                    "tag": tag,
+                    "server": r.host or "",
+                    "server_port": r.port,
+                    "raw": r.config
+                }
+                if r.country:
+                    ob["country"] = r.country
+                outbounds.append(ob)
+
+            singbox_file = output_dir / f"{prefix}vpn_singbox.json"
+            tmp_singbox = singbox_file.with_suffix('.tmp')
+            tmp_singbox.write_text(json.dumps({"outbounds": outbounds}, indent=2, ensure_ascii=False), encoding="utf-8")
+            tmp_singbox.replace(singbox_file)
+
+            if CONFIG.write_clash:
+                clash_yaml = self._results_to_clash_yaml(results)
+                clash_file = output_dir / f"{prefix}clash.yaml"
+                tmp_clash = clash_file.with_suffix('.tmp')
+                tmp_clash.write_text(clash_yaml, encoding="utf-8")
+                tmp_clash.replace(clash_file)
+
+            if CONFIG.write_clash_proxies:
+                proxies = []
+                for idx, r in enumerate(results):
+                    proxy = config_to_clash_proxy(r.config, idx, r.protocol)
+                    if proxy:
+                        proxies.append(proxy)
+                proxy_yaml = yaml.safe_dump({"proxies": proxies}, allow_unicode=True, sort_keys=False) if proxies else ""
+                proxies_file = output_dir / f"{prefix}vpn_clash_proxies.yaml"
+                tmp_proxies = proxies_file.with_suffix('.tmp')
+                tmp_proxies.write_text(proxy_yaml, encoding="utf-8")
+                tmp_proxies.replace(proxies_file)
 
 
     def _results_to_clash_yaml(self, results: List[ConfigResult]) -> str:
