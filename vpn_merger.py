@@ -463,6 +463,7 @@ class AsyncSourceFetcher:
         self.processor = processor
         self.session: Optional[aiohttp.ClientSession] = None
         self.seen_hashes = seen_hashes
+        self._hash_lock = asyncio.Lock()
         
     async def test_source_availability(self, url: str) -> bool:
         """Test if a source URL is available (returns 200 status)."""
@@ -524,9 +525,10 @@ class AsyncSourceFetcher:
                             ]
                         ):
                             config_hash = self.processor.create_semantic_hash(line)
-                            if config_hash in self.seen_hashes:
-                                continue
-                            self.seen_hashes.add(config_hash)
+                            async with self._hash_lock:
+                                if config_hash in self.seen_hashes:
+                                    continue
+                                self.seen_hashes.add(config_hash)
 
                             line = self.processor.apply_tuning(line)
 
