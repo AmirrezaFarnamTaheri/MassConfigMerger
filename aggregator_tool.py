@@ -46,6 +46,9 @@ PROTOCOL_RE = re.compile(
 BASE64_RE = re.compile(r"^[A-Za-z0-9+/=]+$")
 HTTP_RE = re.compile(r"https?://\S+", re.IGNORECASE)
 
+# Safety limit for base64 decoding to avoid huge payloads
+MAX_DECODE_SIZE = 256 * 1024  # 256 kB
+
 
 def _get_script_dir() -> Path:
     """Return a safe base directory for writing output."""
@@ -233,6 +236,13 @@ def parse_configs_from_text(text: str) -> Set[str]:
             configs.update(matches)
             continue
         if BASE64_RE.match(line):
+            if len(line) > MAX_DECODE_SIZE:
+                logging.debug(
+                    "Skipping oversized base64 line (%d > %d)",
+                    len(line),
+                    MAX_DECODE_SIZE,
+                )
+                continue
             try:
                 decoded = base64.b64decode(line).decode()
                 configs.update(PROTOCOL_RE.findall(decoded))
