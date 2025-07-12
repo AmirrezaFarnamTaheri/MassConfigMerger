@@ -45,6 +45,12 @@ def make_shadowsocks(password="pw", host="example.com", port=443, note=None, met
     return link
 
 
+def make_shadowsocksr(host="example.com", port=443):
+    raw = f"{host}:{port}:origin:plain:password/"
+    b64 = base64.urlsafe_b64encode(raw.encode()).decode().strip("=")
+    return f"ssr://{b64}"
+
+
 def test_create_semantic_hash_consistent_with_fragment():
     proc = EnhancedConfigProcessor()
     link1 = make_trojan(note=None)
@@ -78,6 +84,14 @@ def test_create_semantic_hash_shadowsocks_password_difference():
     link1 = make_shadowsocks(password="one")
     link2 = make_shadowsocks(password="two")
     assert proc.create_semantic_hash(link1) != proc.create_semantic_hash(link2)
+
+
+def test_extract_host_port_ssr():
+    proc = EnhancedConfigProcessor()
+    link = make_shadowsocksr(host="h.example", port=1234)
+    host, port = proc.extract_host_port(link)
+    assert host == "h.example"
+    assert port == 1234
 
 
 def test_sort_by_performance():

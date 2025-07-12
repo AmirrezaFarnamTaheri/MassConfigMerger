@@ -246,6 +246,20 @@ class EnhancedConfigProcessor:
                     return host, int(port) if port else None
                 except Exception:
                     pass
+
+            if config.startswith("ssr://"):
+                try:
+                    after = config.split("://", 1)[1].split("#", 1)[0]
+                    padded = after + "=" * (-len(after) % 4)
+                    decoded = base64.urlsafe_b64decode(padded).decode()
+                    host_part = decoded.split("/", 1)[0]
+                    parts = host_part.split(":")
+                    if len(parts) < 2:
+                        return None, None
+                    host, port = parts[0], parts[1]
+                    return host or None, int(port)
+                except Exception:
+                    pass
             
             # Parse URI-style configs
             parsed = urlparse(config)
@@ -1158,6 +1172,23 @@ class UltimateVPNMerger:
                     "cipher": method,
                     "password": password,
                 }
+            elif scheme in ("ssr", "shadowsocksr"):
+                base = config.split("://", 1)[1].split("#", 1)[0]
+                try:
+                    padded = base + "=" * (-len(base) % 4)
+                    decoded = base64.urlsafe_b64decode(padded).decode()
+                    host_part = decoded.split("/", 1)[0]
+                    if ":" not in host_part:
+                        return None
+                    server, port = host_part.split(":", 1)
+                    return {
+                        "name": name,
+                        "type": "ssr",
+                        "server": server,
+                        "port": int(port),
+                    }
+                except Exception:
+                    return None
             elif scheme == "naive":
                 p = urlparse(config)
                 if not p.hostname or not p.port:
