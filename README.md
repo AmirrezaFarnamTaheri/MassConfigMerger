@@ -22,6 +22,31 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 5. Import the `output/vpn_subscription_base64.txt` link (unless `--no-base64` was used) into your VPN app or load `vpn_singbox.json` in clients like sing-box.
 
 
+## 🏁 Zero-to-Hero Walkthrough
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/AmirrezaFarnamTaheri/MassConfigMerger.git
+   cd MassConfigMerger
+   ```
+2. **Install the requirements:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. **Run `aggregator_tool.py`** to grab fresh configuration links:
+   ```bash
+   python aggregator_tool.py --hours 12
+   ```
+4. **Run `vpn_merger.py`** to test and merge all configs:
+   ```bash
+   python vpn_merger.py
+   ```
+5. **Retest existing results** anytime with `vpn_retester.py`:
+   ```bash
+   python vpn_retester.py
+   ```
+6. Import the files in `output/` into your VPN client or share the base64 link.
+
 ## Data Pipeline Overview
 
 ```mermaid
@@ -33,6 +58,11 @@ graph TD
     E --> F[vpn_retester.py]
     F --> G[(Output Files)]
 ```
+The diagram above shows the complete data flow:
+1. **Sources** listed in `sources.txt` and `channels.txt` feed into `aggregator_tool.py` where links are scraped and deduplicated.
+2. The unique links are passed to `vpn_merger.py`, which checks each configuration for availability and sorts the working ones by speed.
+3. The optional `vpn_retester.py` step can re-test previously found configurations for reliability.
+4. Finally all cleaned and sorted files are written to the `output/` folder in several formats.
 
 
 ### 🐳 Docker
@@ -588,13 +618,11 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
    ```bash
    pip install -r requirements.txt
    ```
-2. *(Only for Telegram scraping or bot mode)* Obtain a Telegram **API ID** and
-   **API Hash** from <https://my.telegram.org>.  Create your own `config.json`
-   (you can copy `config.json.example`) and add them along with your bot token
-   and the Telegram user IDs allowed to interact with the bot.  Alternatively
-   set the environment variables `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`,
-   `TELEGRAM_BOT_TOKEN` and `ALLOWED_USER_IDS`.  These variables override any
-   values in your `config.json`.  The example file shows all available options.
+2. *(Only for Telegram scraping or bot mode)* Obtain a Telegram **API ID** and **API Hash**:
+   - Visit [my.telegram.org](https://my.telegram.org) and log in with your phone number.
+   - Click **API development tools**, fill out the form and click **Create**.
+   - Telegram will reveal your `api_id` and `api_hash`. Add them to `config.json` along with your bot token and allowed user IDs, or set them via the `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEGRAM_BOT_TOKEN` and `ALLOWED_USER_IDS` environment variables.
+
 3. Edit `sources.txt` and `channels.txt` to include any extra subscription URLs
    or channel names you wish to scrape. **Each line of `sources.txt` should
    contain exactly one valid URL with no extra text or spaces.** Each line of
@@ -688,6 +716,17 @@ finishes.
   respect Telegram's Terms of Service along with your local laws.
 - All events are logged to the directory specified in `log_dir` so you can audit
   what was fetched and from where.
+## FAQ
+
+### Why does the script take so long?
+The merger checks hundreds of servers. Reduce the number of sources or use a smaller `--concurrent-limit`. Skipping tests with `--no-url-test` can also speed up runs.
+
+### There is no output directory
+Ensure you ran the script in this repository and watch for errors. Results are saved in the `output/` folder or the location given by `--output-dir`.
+
+### Telegram authentication errors
+Verify your `telegram_api_id`, `telegram_api_hash` and bot token. Incorrect credentials or using a restricted account will prevent the aggregator from accessing Telegram.
+
 
 ## Testing
 
