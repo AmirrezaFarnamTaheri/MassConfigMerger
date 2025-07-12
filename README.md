@@ -491,6 +491,7 @@ Run `python vpn_merger.py --help` to see all options. Important flags include:
   * `--exclude-pattern REGEX` - skip configs matching this regular expression (repeatable).
   * `--resume FILE` - load a previous output file before fetching new sources.
   * `--output-dir DIR` - specify where output files are stored.
+  * `--request-timeout SEC` - set HTTP request timeout.
   * `--test-timeout SEC` - adjust connection test timeout.
   * `--cumulative-batches` - make each batch cumulative instead of standalone.
   * `--no-strict-batch` - don't split strictly by `--batch-size`, just trigger when exceeded.
@@ -632,6 +633,7 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
   "output_dir": "output",
   "log_dir": "logs",
   "max_concurrent": 20,
+  "fetch_timeout": 10,
   "write_base64": true,
   "write_singbox": true,
   "write_clash": true
@@ -648,6 +650,7 @@ Optional fields use these defaults when omitted:
 - `output_dir` – `output`
 - `log_dir` – `logs`
 - `max_concurrent` – `20`
+- `fetch_timeout` – `10`
 - `write_base64` – `true`
 - `write_singbox` – `true`
 - `write_clash` – `true`
@@ -657,14 +660,15 @@ Optional fields use these defaults when omitted:
 - **output_dir** – where merged files are created.
 - **log_dir** – daily log files are written here.
 - **max_concurrent** – maximum simultaneous HTTP requests for validating and fetching sources (override with `--concurrent-limit`).
+- **fetch_timeout** – HTTP request timeout in seconds (override with `--timeout`).
 - **write_base64** – create `merged_base64.txt` when `true`.
 - **write_singbox** – create `merged_singbox.json` when `true`.
 - **write_clash** – create `clash.yaml` when `true`.
 
 The command line options `--config`, `--sources`, `--channels`, `--output-dir`,
-`--concurrent-limit`, `--hours`, `--no-base64`, `--no-singbox` and `--no-clash`
-let you override file locations or disable specific outputs when running the
-tool.
+`--concurrent-limit`, `--timeout`, `--hours`, `--no-base64`, `--no-singbox` and
+`--no-clash` let you override file locations or disable specific outputs when
+running the tool.
 
 ### Important Notes
 

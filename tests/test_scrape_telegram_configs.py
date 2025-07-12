@@ -34,7 +34,7 @@ class DummyClient:
         pass
 
 
-async def fake_fetch_text(session, url):
+async def fake_fetch_text(session, url, timeout):
     if "sub.example" in url:
         return "vmess://from_url"
     return None

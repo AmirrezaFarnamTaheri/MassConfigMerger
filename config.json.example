@@ -12,5 +12,6 @@
   "exclude_patterns": [],
   "output_dir": "output",
   "log_dir": "logs",
-  "max_concurrent": 20
+  "max_concurrent": 20,
+  "fetch_timeout": 10
 }

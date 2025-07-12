@@ -23,6 +23,7 @@ def test_load_defaults(tmp_path):
     assert loaded.protocols == []
     assert loaded.exclude_patterns == []
     assert loaded.max_concurrent == 20
+    assert loaded.fetch_timeout == 10
 
 
 def test_load_invalid_json(tmp_path):

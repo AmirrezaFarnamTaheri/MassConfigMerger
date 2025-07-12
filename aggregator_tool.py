@@ -108,6 +108,7 @@ class Config:
     output_dir: str = "output"
     log_dir: str = "logs"
     max_concurrent: int = 20
+    fetch_timeout: int = 10
     write_base64: bool = True
     write_singbox: bool = True
     write_clash: bool = True
@@ -166,6 +167,7 @@ class Config:
             "output_dir": "output",
             "log_dir": "logs",
             "max_concurrent": 20,
+            "fetch_timeout": 10,
             "write_base64": True,
             "write_singbox": True,
             "write_clash": True,
@@ -190,11 +192,11 @@ class Config:
 
 
 
-async def fetch_text(session: ClientSession, url: str) -> str | None:
+async def fetch_text(session: ClientSession, url: str, timeout: int) -> str | None:
     """Fetch text content from a URL with retries."""
     for _ in range(3):
         try:
-            async with session.get(url, timeout=ClientTimeout(total=10)) as resp:
+            async with session.get(url, timeout=ClientTimeout(total=timeout)) as resp:
                 if resp.status == 200:
                     return await resp.text()
         except Exception:
@@ -220,7 +222,11 @@ def parse_configs_from_text(text: str) -> Set[str]:
     return configs
 
 
-async def check_and_update_sources(path: Path, concurrent_limit: int = 20) -> List[str]:
+async def check_and_update_sources(
+    path: Path,
+    concurrent_limit: int = 20,
+    timeout: int = 10,
+) -> List[str]:
     """Validate and deduplicate sources list concurrently."""
     if not path.exists():
         logging.warning("sources file not found: %s", path)
@@ -235,7 +241,7 @@ async def check_and_update_sources(path: Path, concurrent_limit: int = 20) -> Li
 
     async def check(url: str) -> str | None:
         async with semaphore:
-            text = await fetch_text(session, url)
+            text = await fetch_text(session, url, timeout)
         if not text:
             logging.info("Removing dead source: %s", url)
             return None
@@ -260,7 +266,9 @@ async def check_and_update_sources(path: Path, concurrent_limit: int = 20) -> Li
 
 
 async def fetch_and_parse_configs(
-    sources: Iterable[str], max_concurrent: int = 20
+    sources: Iterable[str],
+    max_concurrent: int = 20,
+    timeout: int = 10,
 ) -> Set[str]:
     """Fetch configs from sources respecting concurrency limits."""
     configs: Set[str] = set()
@@ -269,7 +277,7 @@ async def fetch_and_parse_configs(
 
     async def fetch_one(session: ClientSession, url: str) -> Set[str]:
         async with semaphore:
-            text = await fetch_text(session, url)
+            text = await fetch_text(session, url, timeout)
         if not text:
             logging.warning("Failed to fetch %s", url)
             return set()
@@ -316,7 +324,7 @@ async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Con
                                 text = msg.message
                                 configs.update(parse_configs_from_text(text))
                                 for sub in extract_subscription_urls(text):
-                                    text2 = await fetch_text(session, sub)
+                                    text2 = await fetch_text(session, sub, cfg.fetch_timeout)
                                     if text2:
                                         configs.update(parse_configs_from_text(text2))
                         success = True
@@ -585,8 +593,16 @@ async def run_pipeline(
 ) -> Tuple[Path, List[Path]]:
     """Full aggregation pipeline.
     Returns output directory and list of created files."""
-    sources = await check_and_update_sources(sources_file, cfg.max_concurrent)
-    configs = await fetch_and_parse_configs(sources, cfg.max_concurrent)
+    sources = await check_and_update_sources(
+        sources_file,
+        cfg.max_concurrent,
+        cfg.fetch_timeout,
+    )
+    configs = await fetch_and_parse_configs(
+        sources,
+        cfg.max_concurrent,
+        cfg.fetch_timeout,
+    )
     configs |= await scrape_telegram_configs(channels_file, last_hours, cfg)
 
     final = deduplicate_and_filter(configs, cfg, protocols)
@@ -692,6 +708,11 @@ def main() -> None:
         help="maximum simultaneous HTTP requests",
     )
     parser.add_argument(
+        "--timeout",
+        type=int,
+        help="HTTP request timeout in seconds",
+    )
+    parser.add_argument(
         "--max-concurrent",
         type=int,
         help=argparse.SUPPRESS,
@@ -708,6 +729,8 @@ def main() -> None:
         cfg.max_concurrent = args.concurrent_limit
     elif args.max_concurrent is not None:
         cfg.max_concurrent = args.max_concurrent
+    if args.timeout is not None:
+        cfg.fetch_timeout = args.timeout
 
     if args.no_base64:
         cfg.write_base64 = False

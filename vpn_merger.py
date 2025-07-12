@@ -1042,7 +1042,7 @@ class AsyncSourceFetcher:
     async def test_source_availability(self, url: str) -> bool:
         """Test if a source URL is available (returns 200 status)."""
         try:
-            timeout = aiohttp.ClientTimeout(total=10)
+            timeout = aiohttp.ClientTimeout(total=CONFIG.request_timeout)
             async with self.session.head(url, timeout=timeout, allow_redirects=True) as response:
                 status = response.status
                 if status == 200:
@@ -1945,6 +1945,8 @@ def main():
                         help="Disable performance-based sorting")
     parser.add_argument("--concurrent-limit", type=int, default=CONFIG.concurrent_limit,
                         help="Number of concurrent requests")
+    parser.add_argument("--request-timeout", type=int, default=CONFIG.request_timeout,
+                        help="HTTP request timeout in seconds")
     parser.add_argument("--max-retries", type=int, default=CONFIG.max_retries,
                         help="Retry attempts when fetching sources")
     parser.add_argument("--max-ping", type=int, default=0,
@@ -2002,6 +2004,7 @@ def main():
     CONFIG.output_dir = str(resolved_output)
     CONFIG.test_timeout = max(0.1, args.test_timeout)
     CONFIG.concurrent_limit = max(1, args.concurrent_limit)
+    CONFIG.request_timeout = max(1, args.request_timeout)
     CONFIG.max_retries = max(1, args.max_retries)
     CONFIG.max_ping_ms = args.max_ping if args.max_ping > 0 else None
     CONFIG.log_file = args.log_file
