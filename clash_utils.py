@@ -72,7 +72,6 @@ def config_to_clash_proxy(
         elif scheme == "reality":
             p = urlparse(config)
             q = parse_qs(p.query)
-            security = q.get("security")
             proxy = {
                 "name": p.fragment or name,
                 "type": "vless",
@@ -82,6 +81,9 @@ def config_to_clash_proxy(
                 "encryption": q.get("encryption", ["none"])[0],
                 "tls": True,
             }
+            for key in ("sni", "fp", "pbk", "sid"):
+                if key in q:
+                    proxy[key] = q[key][0]
             flows = q.get("flow")
             if flows:
                 proxy["flow"] = flows[0]
@@ -132,18 +134,50 @@ def config_to_clash_proxy(
             try:
                 padded = base + "=" * (-len(base) % 4)
                 decoded = base64.urlsafe_b64decode(padded).decode()
-                host_part = decoded.split("/", 1)[0]
-                if ":" not in host_part:
+                main, _, tail = decoded.partition("/")
+                parts = main.split(":")
+                if len(parts) < 6:
                     return None
-                server_str, port_str = host_part.split(":", 1)
-                server = server_str
-                port = int(port_str)
-                return {
+                server, port, proto, method, obfs, pwd_enc = parts[:6]
+                try:
+                    password = base64.urlsafe_b64decode(
+                        pwd_enc + "=" * (-len(pwd_enc) % 4)
+                    ).decode()
+                except (binascii.Error, UnicodeDecodeError):
+                    password = pwd_enc
+                q = parse_qs(tail[1:]) if tail.startswith("?") else {}
+                proxy = {
                     "name": name,
                     "type": "ssr",
                     "server": server,
                     "port": int(port),
+                    "cipher": method,
+                    "password": password,
+                    "protocol": proto,
+                    "obfs": obfs,
                 }
+                if "obfsparam" in q:
+                    try:
+                        proxy["obfs-param"] = base64.urlsafe_b64decode(
+                            q["obfsparam"][0] + "=" * (-len(q["obfsparam"][0]) % 4)
+                        ).decode()
+                    except (binascii.Error, UnicodeDecodeError):
+                        proxy["obfs-param"] = q["obfsparam"][0]
+                if "protoparam" in q:
+                    try:
+                        proxy["protocol-param"] = base64.urlsafe_b64decode(
+                            q["protoparam"][0] + "=" * (-len(q["protoparam"][0]) % 4)
+                        ).decode()
+                    except (binascii.Error, UnicodeDecodeError):
+                        proxy["protocol-param"] = q["protoparam"][0]
+                if "remarks" in q:
+                    try:
+                        proxy["name"] = base64.urlsafe_b64decode(
+                            q["remarks"][0] + "=" * (-len(q["remarks"][0]) % 4)
+                        ).decode()
+                    except (binascii.Error, UnicodeDecodeError):
+                        proxy["name"] = q["remarks"][0]
+                return proxy
             except (binascii.Error, UnicodeDecodeError, ValueError) as exc:
                 logging.debug("SSRs parse failed: %s", exc)
                 return None
@@ -160,6 +194,53 @@ def config_to_clash_proxy(
                 "password": p.password or "",
                 "tls": True,
             }
+        elif scheme in ("hy2", "hysteria2", "hysteria"):
+            p = urlparse(config)
+            if not p.hostname or not p.port:
+                return None
+            q = parse_qs(p.query)
+            proxy = {
+                "name": p.fragment or name,
+                "type": "hysteria2" if scheme in ("hy2", "hysteria2") else "hysteria",
+                "server": p.hostname,
+                "port": p.port,
+            }
+            if p.username and not p.password:
+                proxy["password"] = p.username
+            if p.password:
+                proxy["password"] = p.password
+            for key in (
+                "auth",
+                "password",
+                "peer",
+                "sni",
+                "insecure",
+                "alpn",
+                "obfs",
+                "obfs-password",
+            ):
+                if key in q and key not in proxy:
+                    proxy[key.replace("-", "_")] = q[key][0]
+            return proxy
+        elif scheme == "tuic":
+            p = urlparse(config)
+            if not p.hostname or not p.port:
+                return None
+            q = parse_qs(p.query)
+            proxy = {
+                "name": p.fragment or name,
+                "type": "tuic",
+                "server": p.hostname,
+                "port": p.port,
+            }
+            if p.username:
+                proxy["uuid"] = p.username
+            if p.password:
+                proxy["password"] = p.password
+            for key in ("alpn", "congestion-control", "udp-relay-mode"):
+                if key in q:
+                    proxy[key] = q[key][0]
+            return proxy
         else:
             p = urlparse(config)
             if not p.hostname or not p.port:
