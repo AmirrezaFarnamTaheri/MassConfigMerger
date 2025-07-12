@@ -4,11 +4,11 @@
 VPN Subscription Merger
 ===================================================================
 
-The definitive VPN subscription merger combining 450+ sources with comprehensive
+The definitive VPN subscription merger combining hundreds of sources from `sources.txt` with comprehensive
 testing, smart sorting, and automatic dead link removal.
 
 Features:
-• Complete source collection (450+ Iranian + International repositories)
+• Reads from `sources.txt` (over 450 curated repositories)
 • Real-time URL availability testing and dead link removal
 • Server reachability testing with response time measurement
 • Smart sorting by connection speed and protocol preference
@@ -185,665 +185,28 @@ EXCLUDE_REGEXES: List[re.Pattern] = []
 # ============================================================================
 
 class UnifiedSources:
-    """Complete unified collection of all VPN subscription sources."""
-    
-    # Iranian Priority Sources (High Quality, Frequently Updated)
-    # Iranian Priority Sources (High Quality, Frequently Updated)
-    IRANIAN_PRIORITY = [
-        # barry-far comprehensive collection (all variants)
+    """Load VPN subscription sources from an external file."""
+
+    DEFAULT_FILE = Path("sources.txt")
+    FALLBACK_SOURCES = [
         "https://raw.githubusercontent.com/barry-far/V2ray-config/main/Sub1.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-config/main/Sub2.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-config/main/Sub3.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-config/main/Sub4.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-config/main/Sub5.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-config/main/Sub6.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-config/main/Sub7.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-config/main/Sub8.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Sub1.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Sub2.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Sub3.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Sub4.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Sub5.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Sub6.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Sub7.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Sub8.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Sub9.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Sub10.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Configs/refs/heads/main/All_Configs_Sub.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Splitted-By-Protocol/vless.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Splitted-By-Protocol/vmess.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Splitted-By-Protocol/trojan.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Splitted-By-Protocol/shadowsocks.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Splitted-By-Protocol/reality.txt",
-        
-        # Rayan-Config ecosystem (Iranian-focused)
-        "https://Rayan-Config.github.io/NG",
-        "https://Rayan-Config.github.io/NB",
-        "https://Rayan-Config.github.io/all",
-        "https://raw.githubusercontent.com/Rayan-Config/C-Sub/refs/heads/main/configs/proxy.txt",
-        "https://raw.githubusercontent.com/Rayan-Config/C-Sub/refs/heads/main/configs/singbox_configs.json",
-        "https://raw.githubusercontent.com/Rayan-Config/C-Sub/refs/heads/main/configs/all",
-
-        # MhdiTaheri V2rayCollector (comprehensive)
-        "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/refs/heads/main/sub/mix",
-        "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/refs/heads/main/sub/vless",
-        "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/refs/heads/main/sub/vmess",
-        "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/refs/heads/main/sub/trojan",
-        "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/refs/heads/main/sub/shadowsocks",
-        "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/refs/heads/main/sub/reality",
-        "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/refs/heads/main/sub/tuic",
-        "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/refs/heads/main/sub/hysteria",
-        "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/refs/heads/main/sub/hysteria2",
-        
-        # soroushmirzaei telegram-configs-collector (complete)
-        "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/vless",
-        "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/vmess",
-        "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/trojan",
-        "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/shadowsocks",
-        "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/reality",
-        "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/hysteria",
-        "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/hysteria2",
-        "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/tuic",
-        "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/juicity",
-        "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/naive",
-        "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/splitted/mixed",
-        "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/collected/all",
-        
-        # IranianCypherpunks Xray
-        "https://raw.githubusercontent.com/IranianCypherpunks/Xray/main/Sub",
-        
-        # Syavar V2ray-Configs
-        "https://raw.githubusercontent.com/Syavar/V2ray-Configs/main/OK_google.com.txt",
-        
-        # ndsphonemy proxy-sub collection
-        "https://raw.githubusercontent.com/ndsphonemy/proxy-sub/main/default.txt",
-        "https://raw.githubusercontent.com/ndsphonemy/proxy-sub/main/speed.txt",
-        "https://raw.githubusercontent.com/ndsphonemy/proxy-sub/main/my.txt",
-        
-        # Special Iranian services
-        "https://channel-freevpnhomes-subscription.shampoosirsehat.homes",
-        "https://gutsy-fibers.000webhostapp.com/sni.php?country=de;nl;fr;lt;lv;ee;se;no",
-        "https://gutsy-fibers.000webhostapp.com/sni.php?country=us;ca;jp;sg;hk",
-        
-        # MrMohebi xray-proxy-grabber-telegram
-        "https://raw.githubusercontent.com/MrMohebi/xray-proxy-grabber-telegram/master/collected-proxies/row-url/all.txt",
-        "https://raw.githubusercontent.com/MrMohebi/xray-proxy-grabber-telegram/master/collected-proxies/row-url/actives.txt",
-        "https://raw.githubusercontent.com/MrMohebi/xray-proxy-grabber-telegram/master/collected-proxies/row-url/vless.txt",
-        "https://raw.githubusercontent.com/MrMohebi/xray-proxy-grabber-telegram/master/collected-proxies/row-url/vmess.txt",
-        "https://raw.githubusercontent.com/MrMohebi/xray-proxy-grabber-telegram/master/collected-proxies/row-url/reality.txt",
-        
-        # coldwater operator-specific (Iranian ISPs)
-        "https://raw.githubusercontent.com/coldwater-10/Vpnclashfa/main/raw/mci.txt",
-        "https://raw.githubusercontent.com/coldwater-10/Vpnclashfa/main/raw/irc.txt",
-        "https://raw.githubusercontent.com/coldwater-10/Vpnclashfa/main/raw/mkb.txt",
-        "https://raw.githubusercontent.com/coldwater-10/V2Hub1/main/Split/Base64/shadowsocks",
-        "https://raw.githubusercontent.com/coldwater-10/V2Hub1/main/Split/Base64/trojan",
-        "https://raw.githubusercontent.com/coldwater-10/V2Hub1/main/Split/Base64/vless",
-        "https://raw.githubusercontent.com/coldwater-10/V2Hub1/main/Split/Base64/vmess",
-        "https://raw.githubusercontent.com/coldwater-10/V2Hub1/main/Split/Base64/reality",
-        "https://raw.githubusercontent.com/coldwater-10/V2ray-Configs/main/Splitted-By-Protocol/hysteria2.txt",
-        "https://raw.githubusercontent.com/coldwater-10/V2ray-Configs/main/Splitted-By-Protocol/reality.txt",
-        
-        # youfoundamin Iranian splits
-        "https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/ss_iran.txt",
-        "https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/vless_iran.txt",
-        "https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/vmess_iran.txt",
-        "https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/trojan_iran.txt",
-        "https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/mixed_iran.txt",
-        "https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/reality_iran.txt",
-        "https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/hysteria2_iran.txt",
-        
-        # Additional Iranian projects
-        "https://raw.githubusercontent.com/amirparsaxs/-BegzarVPN/refs/heads/main/Begzar_sub_text",
-        "https://raw.githubusercontent.com/amirparsaxs/V2rayy/refs/heads/main/Sub.text555",
-        "https://raw.githubusercontent.com/amirparsaxs/V2rayy/refs/heads/main/All_Configs.txt",
-        "https://raw.githubusercontent.com/Mosifree/-FREE2CONFIG/refs/heads/main/Warp2",
-        "https://raw.githubusercontent.com/Mosifree/-FREE2CONFIG/refs/heads/main/T,H",
-        "https://shz.al/~@FREE2CONFIG_T,H",
-        "https://raw.githubusercontent.com/amirmohammad-mohammad-88/Sub-Reality-Azadi-config/Config/Azadi-Reality-Different",
-        "https://raw.githubusercontent.com/amirmohammad-mohammad-88/Sub-Reality-Azadi-config/Config/Azadi-Reality-Different-Base64",
-        "https://raw.githubusercontent.com/NiREvil/vless/main/warp.json",
-        "https://raw.githubusercontent.com/AB-84-AB/Free-Shadowsocks/refs/heads/main/Telegram-id-AB_841",
-        "https://raw.githubusercontent.com/DiDiten/HiN-VPN/main/subscription/hiddify/mix",
-        "https://raw.githubusercontent.com/liketolivefree/kobabi/main/singbox.json",
-        "https://raw.githubusercontent.com/Mohammadgb0078/IRV2ray/main/vmess.txt",
-        "https://raw.githubusercontent.com/Mohammadgb0078/IRV2ray/main/vless.txt",
-        "https://raw.githubusercontent.com/Mohammadgb0078/IRV2ray/main/reality.txt",
-        "https://raw.githubusercontent.com/MrPooyaX/SansorchiFucker/main/data.txt",
-        "https://raw.githubusercontent.com/MrPooyaX/VpnsFucking/main/Shenzo.txt",
-        "https://raw.githubusercontent.com/MrPooyaX/Vpns/main/V2ray",
-        "https://raw.githubusercontent.com/MrPooyaX/Vpns/main/All_Configs_base64_Sub.txt",
-        "https://raw.githubusercontent.com/MrPooyaX/Sansorchi/main/proxi.txt",
-        "https://raw.githubusercontent.com/MrPooyaX/Sansorchi/main/sub",
-    ]
-    
-    # International High-Quality Sources
-    INTERNATIONAL_MAJOR = [
-        # yebekhe TelegramV2rayCollector (most comprehensive)
-        "https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/sub/mix",
-        "https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/sub/vless",
-        "https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/sub/vmess",
-        "https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/sub/trojan",
-        "https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/sub/shadowsocks",
-        "https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/sub/reality",
-        "https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/sub/hysteria2",
-        "https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/sub/tuic",
-        "https://raw.githubusercontent.com/yebekhe/V2Hub/main/merged",
-        "https://raw.githubusercontent.com/yebekhe/V2Hub/main/split/vless",
-        "https://raw.githubusercontent.com/yebekhe/V2Hub/main/split/vmess",
-        "https://raw.githubusercontent.com/yebekhe/V2Hub/main/split/reality",
-        
-        # taheri79/V2rayCollector (comprehensive)
-        "https://raw.githubusercontent.com/taheri79/V2rayCollector/main/sub/normal/mix",
-        "https://raw.githubusercontent.com/taheri79/V2rayCollector/main/sub/base64/mix",
-        "https://raw.githubusercontent.com/taheri79/V2rayCollector/main/sub/normal/vless",
-        "https://raw.githubusercontent.com/taheri79/V2rayCollector/main/sub/normal/vmess",
-        "https://raw.githubusercontent.com/taheri79/V2rayCollector/main/sub/normal/trojan",
-        "https://raw.githubusercontent.com/taheri79/V2rayCollector/main/sub/normal/shadowsocks",
-        "https://raw.githubusercontent.com/taheri79/V2rayCollector/main/sub/normal/reality",
-        
-        # Mahdi0024 ProxyCollector (tested configs)
-        "https://raw.githubusercontent.com/Mahdi0024/ProxyCollector/main/subscriptions/mix",
-        "https://raw.githubusercontent.com/Mahdi0024/ProxyCollector/main/subscriptions/vmess",
-        "https://raw.githubusercontent.com/Mahdi0024/ProxyCollector/main/subscriptions/vless",
-        "https://raw.githubusercontent.com/Mahdi0024/ProxyCollector/main/subscriptions/shadowsocks",
-        "https://raw.githubusercontent.com/Mahdi0024/ProxyCollector/main/subscriptions/trojan",
-        "https://raw.githubusercontent.com/Mahdi0024/ProxyCollector/main/subscriptions/hysteria2",
-        "https://raw.githubusercontent.com/Mahdi0024/ProxyCollector/main/subscriptions/tuic",
-        "https://raw.githubusercontent.com/Mahdi0024/ProxyCollector/main/subscriptions/reality",
-        
-        # V2RayRoot collection
-        "https://raw.githubusercontent.com/V2RayRoot/V2RayConfig/main/Config/vless.txt",
-        "https://raw.githubusercontent.com/V2RayRoot/V2RayConfig/main/Config/vmess.txt",
-        "https://raw.githubusercontent.com/V2RayRoot/V2RayConfig/main/Config/shadowsocks.txt",
-        "https://raw.githubusercontent.com/V2RayRoot/V2RayConfig/main/Config/trojan.txt",
-        "https://raw.githubusercontent.com/V2RayRoot/V2RayConfig/main/Config/reality.txt",
-        "https://raw.githubusercontent.com/V2RayRoot/V2RayConfig/main/Config/mix.txt",
-        
-        # Epodonios v2ray-configs (comprehensive mega-repo)
-        "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt",
-        "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_base64_Sub.txt",
-        "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Splitted-By-Protocol/vless.txt",
-        "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Splitted-By-Protocol/vmess.txt",
-        "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Splitted-By-Protocol/trojan.txt",
-        "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Splitted-By-Protocol/ss.txt",
-        "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Splitted-By-Protocol/ssr.txt",
-        "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Configs_TLS.txt",
-        # All Epodonios Config Lists (1-20)
-        *[f"https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Config%20list{i}.txt" for i in range(1, 21)],
-        # Epodonios Sub splits (1-15)
-        *[f"https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub{i}.txt" for i in range(1, 16)],
-        
-        # MatinGhanbari v2ray-configs (comprehensive)
-        "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/v2ray/all_sub.txt",
-        "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/v2ray/super-sub.txt",
-        "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/filtered/subs/vmess.txt",
-        "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/filtered/subs/vless.txt",
-        "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/filtered/subs/trojan.txt",
-        "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/filtered/subs/shadowsocks.txt",
-        "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/filtered/subs/reality.txt",
-        # MatinGhanbari splits (1-50)
-        *[f"https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/v2ray/subs/sub{i}.txt" for i in range(1, 51)],
-        
-        # mahdibland Aggregators
-        "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt",
-        "https://raw.githubusercontent.com/mahdibland/ShadowsocksAggregator/master/sub/sub_merge.txt",
+        "https://raw.githubusercontent.com/ssrsub/ssr/master/v2ray",
         "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/splitted/vmess.txt",
-        "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/splitted/vless.txt",
-        "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/splitted/trojan.txt",
-        "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/splitted/shadowsocks.txt",
-        "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/splitted/reality.txt",
     ]
-    
-    # Additional High-Volume Sources
-    COMPREHENSIVE_BATCH = [
-        # sevcator 5ubscrpt10n (500k+ configs)
-        "https://raw.githubusercontent.com/sevcator/5ubscrpt10n/main/full/5ubscrpt10n.txt",
-        "https://raw.githubusercontent.com/sevcator/5ubscrpt10n/main/full/5ubscrpt10n-b64.txt",
-        "https://raw.githubusercontent.com/sevcator/5ubscrpt10n/main/protocols/vl.txt",
-        "https://raw.githubusercontent.com/sevcator/5ubscrpt10n/main/protocols/vm.txt",
-        "https://raw.githubusercontent.com/sevcator/5ubscrpt10n/main/protocols/tr.txt",
-        "https://raw.githubusercontent.com/sevcator/5ubscrpt10n/main/protocols/ss.txt",
-        "https://raw.githubusercontent.com/sevcator/5ubscrpt10n/main/protocols/hy2.txt",
-        "https://raw.githubusercontent.com/sevcator/5ubscrpt10n/main/protocols/tuic.txt",
-        "https://raw.githubusercontent.com/sevcator/5ubscrpt10n/main/protocols/reality.txt",
-        # sevcator mini splits (1-20)
-        *[f"https://raw.githubusercontent.com/sevcator/5ubscrpt10n/main/mini/m1n1-5ub-{i}.txt" for i in range(1, 21)],
-        
-        # zengfr free-vpn-subscribe
-        "https://raw.githubusercontent.com/zengfr/free-vpn-subscribe/main/vpn_sub_.txt",
-        "https://raw.githubusercontent.com/zengfr/free-vpn-subscribe/main/vpn_sub_raw_.txt",
-        "https://raw.githubusercontent.com/zengfr/free-vpn-subscribe/main/vpn_sub_shadowsocks.txt",
-        "https://raw.githubusercontent.com/zengfr/free-vpn-subscribe/main/vpn_sub_trojan.txt",
-        "https://raw.githubusercontent.com/zengfr/free-vpn-subscribe/main/vpn_sub_vmess.txt",
-        "https://raw.githubusercontent.com/zengfr/free-vpn-subscribe/main/vpn_sub_vless.txt",
-        "https://raw.githubusercontent.com/zengfr/free-vpn-subscribe/main/vpn_sub_hysteria2.txt",
-        
-        # Premium service subscriptions
-        "https://dyzk.020318.xyz/?token=d24404a213fc4dd681536826c509e0a1&flag=clash",
-        "https://yy.filmtoday.top/api/v1/client/subscribe?token=390eb972a4070dd91ad8cb8a11e9aff8",
-        "https://xship.top/v1/subscribe?starlink=lK-IH1mWfDG6xJ1yTB6JIGuL",
-        "https://guang-cloud.com/api/v1/client/subscribe?token=ba9c2b246fffcbaa801c2d19a4718e3f",
-        "https://gogo.kkhhddnn.cn/api/v1/client/subscribe?token=8ba1e286d4c5f831fde9b2cfa1917913",
-        "https://qishuijc.top/api/v1/client/subscribe?token=391afb46752d77774f9848f1b0e30b14",
-        "http://103.35.189.118:7001/s/68a95aaf8a22330847c0507d28147292",
-        
-        # Chinese community sources
-        "https://raw.githubusercontent.com/zhangkaiitugithub/passcro/main/speednodes.yaml",
-        "https://raw.githubusercontent.com/go4sharing/sub/main/sub.yaml",
-        "https://gist.github.com/go4sharing/9cd241e781444d0924227c4171ccc02b/raw/d077791e5da3aa2ba3769009c65fbd499ff97c32/gistfile1.txt",
-        
-        # US dynamic servers
-        "https://us6-dy.818185.xyz/eQxS4iey4zg/0cda5f7e-cc55-4ff2-8ad8-268b9b99dd01/#TG-freevpnatm",
-        "https://us7-dy.890603.xyz/QOpk6x3mQBKV8fXCAuTIvNVjuHP/4d04b30c-ef7b-4a07-8f9e-f581ec171f8a/#TG-freevpnatm",
-        "https://us8-dy.890601.xyz/R408J0PrBiWrmKFVLWL2wb8/3465a008-d9a0-40a2-bc63-232fca123efb/#TG-freevpnatm-分享",
-        "https://us9-06.iran2030.ggff.net/dxJ41KGH07f/61ade0f2-e259-4608-8ecb-f12326fde120/#TG-freevpnatm",
-        "https://us10-dy1.iran2030.ggff.net/OXKTQG1N88qvUea2C/576c81b6-4976-4fe3-b1a9-05a9c302e98e/#TG-freevpnatm",
-        
-        # SubCrawlers
-        *[f"https://raw.githubusercontent.com/{owner}/SubCrawler/main/sub/share/all" for owner in 
-          ("personqianduixue", "gtang8", "zzz6839", "zjfb", "QQnight")],
-        "https://raw.githubusercontent.com/Leon406/SubCrawler/main/sub/share/all3",
-        "https://raw.githubusercontent.com/Leon406/SubCrawler/main/sub/share/all4",
-        "https://raw.githubusercontent.com/Leon406/SubCrawler/main/sub/share/v2",
-        
-        # mermeroo comprehensive collection
-        *[f"https://raw.githubusercontent.com/mermeroo/free-v2ray-collector/main/main/{p}" for p in 
-          ("mix", "reality", "shadowsocks", "trojan", "vless", "vmess")],
-        *[f"https://raw.githubusercontent.com/mermeroo/V2RAY-FREE/raw/main/Base64/Sub{i}_base64.txt" for i in range(2, 6)],
-        "https://raw.githubusercontent.com/mermeroo/V2RAY-FREE/raw/main/All_Configs_base64_Sub.txt",
-        "https://raw.githubusercontent.com/mermeroo/Loon/main/node%202",
-        "https://raw.githubusercontent.com/mermeroo/Clash-V2ray/main/v2ray",
-        "https://raw.githubusercontent.com/mermeroo/QX/refs/heads/main/Nodes",
-        "https://raw.githubusercontent.com/mermeroo/Loon/refs/heads/main/all.nodes.txt",
-        "https://raw.githubusercontent.com/mermeroo/QuantumultX/refs/heads/main/Trojan.nodes",
-        "https://raw.githubusercontent.com/mermeroo/telegram-configs-collector/raw/main/protocols/tuic",
-        "https://raw.githubusercontent.com/mermeroo/telegram-configs-collector/raw/main/protocols/hysteria",
-        "https://raw.githubusercontent.com/mermeroo/telegram-configs-collector/raw/main/protocols/juicity",
-        
-        # Individual collectors (comprehensive)
-        "https://raw.githubusercontent.com/LonUp/NodeList/main/V2RAY/Latest_base64.txt",
-        "https://raw.githubusercontent.com/theGreatPeter/v2rayNodes/main/nodes.txt",
-        "https://raw.githubusercontent.com/GreenFishStudio/GreenFish/master/Subscription/GreenFishYYDS",
-        "https://raw.githubusercontent.com/Creativveb/v2configs/main/updated",
-        "https://raw.githubusercontent.com/Flik6/getNode/main/v2ray.txt",
-        "https://raw.githubusercontent.com/aiboboxx/v2rayfree/main/v2",
-        "https://raw.githubusercontent.com/Jason05211211/Freerocket/main/freessr",
-        "https://raw.githubusercontent.com/AzadNetCH/Clash/refs/heads/main/AzadNet_iOS.txt",
-        "https://raw.githubusercontent.com/Barabama/FreeNodes/master/nodes/merged.txt",
-        "https://raw.githubusercontent.com/ermaozi01/free_clash_vpn/main/subscribe/v2ray.txt",
-        "https://raw.githubusercontent.com/hans-thomas/v2ray-subscription/refs/heads/master/servers.txt",
-        "https://raw.githubusercontent.com/vorz1k/v2box/main/subscription-links.txt",
-        "https://raw.githubusercontent.com/Shaik360/v2ray-configs/main/subscription.txt",
-        "https://raw.githubusercontent.com/245237866/v2rayn/main/everydaynode",
-        
-        # API endpoints
-        "https://api.yebekhe.link/shervin/",
-        
-        # Additional quality sources
-        "https://raw.githubusercontent.com/awesome-vpn/awesome-vpn/master/all",
-        "https://raw.githubusercontent.com/awesome-vpn/awesome-vpn/master/ss",
-        "https://raw.githubusercontent.com/awesome-vpn/awesome-vpn/master/ssr",
-        "https://raw.githubusercontent.com/vpei/free-node-1/main/o/proxies.txt",
-        # vpei free-node splits (0-9)
-        *[f"https://raw.githubusercontent.com/vpei/free-node-1/refs/heads/main/res/nod-{i}.txt" for i in range(10)],
-        
-        # Huibq comprehensive
-        *[f"https://raw.githubusercontent.com/Huibq/TrojanLinks/master/links/{f}" for f in 
-          ("ss_with_plugin", "ss", "ssr", "vless", "vmess", "trojan", "temporary", "reality", "hysteria2")],
-        
-        # lagzian/SS-Collector (comprehensive collection)
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/ss.txt",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/vmess.txt",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/vless.txt",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/reality.txt",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/mix.txt",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/hysteria.txt",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/hysteria2.txt",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/tuic.txt",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/trojan.txt",
-        # Country-specific from lagzian
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/countries/us.txt",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/countries/uk.txt",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/countries/de.txt",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/countries/ca.txt",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/countries/fr.txt",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/countries/jp.txt",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/countries/sg.txt",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/countries/hk.txt",
-        # Speed-tested collections
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/trinity/fast.txt",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/trinity/medium.txt",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/trinity/slow.txt",
-        
-        # Cloudflare-based solutions
-        "https://raw.githubusercontent.com/cmliu/edgetunnel/main/sub.txt",
-        "https://raw.githubusercontent.com/6Kmfi6HP/EDtunnel/main/sub.txt",
-        "https://raw.githubusercontent.com/yonggekkk/Cloudflare_vless_trojan/main/sub.txt",
-        "https://raw.githubusercontent.com/cmliu/edgetunnel/main/CF-Workers-SUB.txt",
-        "https://raw.githubusercontent.com/6Kmfi6HP/EDtunnel/main/CF-Workers-SUB.txt",
-        
-        # Additional comprehensive sources
-        "https://raw.githubusercontent.com/peasoft/NoMoreWalls/refs/heads/master/list.txt",
-        "https://raw.githubusercontent.com/peasoft/NoMoreWalls/refs/heads/master/list_raw.txt",
-        "https://raw.githubusercontent.com/peasoft/NoMoreWalls/refs/heads/master/list_base64.txt",
-        "https://raw.githubusercontent.com/w1770946466/Auto_proxy/main/Long_term_subscription_num",
-        "https://raw.githubusercontent.com/w1770946466/Auto_proxy/main/Long_term_subscription2",
-        "https://raw.githubusercontent.com/w1770946466/Auto_proxy/main/Long_term_subscription3",
-        "https://raw.githubusercontent.com/w1770946466/Auto_proxy/main/sub",
-        "https://raw.githubusercontent.com/Kwinshadow/TelegramV2rayCollector/main/sublinks/b64mix.txt",
-        "https://raw.githubusercontent.com/Kwinshadow/TelegramV2rayCollector/main/sublinks/vless.txt",
-        "https://raw.githubusercontent.com/Kwinshadow/TelegramV2rayCollector/main/sublinks/vmess.txt",
-        "https://sub.xn--4gqvd492adjr.com/s/43c2bb6d01f3cea4c85a25eefde7944a",
-        "https://raw.githubusercontent.com/mheidari98/.proxy/main/all",
-        "https://raw.githubusercontent.com/mheidari98/.proxy/refs/heads/main/trojan",
-        "https://raw.githubusercontent.com/SamanValipour1/My-v2ray-configs/main/MySub.txt",
-        "https://raw.githubusercontent.com/budamu/clashconfig/main/v2ray.txt",
-        "https://raw.githubusercontent.com/budamu/clashconfig/main/v2ray2.txt",
-        "https://raw.githubusercontent.com/YasserDivaR/pr0xy/main/ShadowSocks2021.txt",
-        "https://raw.githubusercontent.com/shabane/kamaji/master/hub/b64/ss.txt",
-        "https://raw.githubusercontent.com/shabane/kamaji/master/hub/b64/vmess.txt",
-        "https://raw.githubusercontent.com/shabane/kamaji/master/hub/b64/vless.txt",
-        "https://raw.githubusercontent.com/shabane/kamaji/master/hub/b64/trojan.txt",
-        "https://raw.githubusercontent.com/shabane/kamaji/master/hub/b64/merged.txt",
-        "https://raw.githubusercontent.com/vxiaov/free_proxy_ss/main/v2ray/v2raysub",
-        "https://raw.githubusercontent.com/vxiaov/free_proxy_ss/main/ssr/ssrsub",
-        "https://raw.githubusercontent.com/vxiaov/free_proxy_ss/main/ss/sssub",
-        "https://raw.githubusercontent.com/vxiaov/free_proxies/refs/heads/main/links.txt",
-        "https://raw.githubusercontent.com/gitbigg/permalink/main/subscribe",
-        "https://raw.githubusercontent.com/Pawdroid/Free-servers/main/sub",
-        "https://raw.githubusercontent.com/ripaojiedian/freenode/main/sub",
-        "https://raw.githubusercontent.com/freefq/free/master/v2",
-        "https://raw.githubusercontent.com/learnhard-cn/free_proxy_ss/main/free",
-        "https://raw.githubusercontent.com/learnhard-cn/free_proxy_ss/main/v2ray/v2rays.txt",
-        "https://raw.githubusercontent.com/learnhard-cn/free_proxy_ss/main/ss/sssub",
-        "https://raw.githubusercontent.com/learnhard-cn/free_proxy_ss/main/ssr/ssrsub",
-        "https://raw.githubusercontent.com/V2RAYCONFIGSPOOL/V2RAY_SUB/main/V2RAY_SUB.txt",
-        "https://raw.githubusercontent.com/ALIILAPRO/v2rayNG-Config/main/server.txt",
-        "https://raw.githubusercontent.com/ALIILAPRO/v2rayNG-Config/main/sub.txt",
-        "https://raw.githubusercontent.com/snakem982/proxypool/main/nodelist.txt",
-        "https://raw.githubusercontent.com/anaer/Sub/main/clash.yaml",
-        "https://raw.githubusercontent.com/anaer/Sub/main/v2ray.txt",
-        "https://raw.githubusercontent.com/lmc999/Region-configs/main/sub-all-v2ray.txt",
-        "https://raw.githubusercontent.com/ossgo/Sub/main/sub",
-        "https://raw.githubusercontent.com/sashalsk/V2Ray/main/V2Ray-list-text",
-        "https://raw.githubusercontent.com/abshare/abshare.github.io/main/all.txt",
-        "https://raw.githubusercontent.com/fanqiangfeee/free-v2ray-vpn/main/v2ray",
-        "https://raw.githubusercontent.com/free112/V2Ray-free-nodes/main/V2Ray-list-text.txt",
-        "https://raw.githubusercontent.com/im-web/sub/main/vless",
-        "https://raw.githubusercontent.com/Jajaj-dev/sub/main/v2ray",
-        "https://raw.githubusercontent.com/mjrulesamrat/v2ray-configs/main/AllConfigs.txt",
-        "https://raw.githubusercontent.com/movft/movft/main/config/config.txt",
-        "https://raw.githubusercontent.com/open-source-links/v2ray-list/main/list.txt",
-        "https://raw.githubusercontent.com/Ptechgithub/configs/main/sub.txt",
-        "https://raw.githubusercontent.com/sun956/V2ray-Subscription-Update/main/v2ray.txt",
-        "https://raw.githubusercontent.com/tbbatbb/Proxy/master/dist/v2ray.config.txt",
-        "https://raw.githubusercontent.com/wonderfulgo/subscription-script/main/v2/config",
-        "https://raw.githubusercontent.com/xiaomadashu/v2ray/master/config.txt",
-        "https://raw.githubusercontent.com/XrayR-project/XrayR-release/master/config/subscribe.txt",
-        "https://raw.githubusercontent.com/ZDCloud/Sub/main/All",
-        "https://raw.githubusercontent.com/zipkocc/SagerNet-Configs/main/sub.txt",
-        
-        # BitBucket sources
-        "https://bitbucket.org/huwo1/proxy_nodes/raw/f31ca9ec67b84071515729ff45b011b6b09c10f2/ss.md",
-        "https://bitbucket.org/huwo1/proxy_nodes/raw/f31ca9ec67b84071515729ff45b011b6b09c10f2/vmess.md",
-        "https://bitbucket.org/huwo1/proxy_nodes/raw/f31ca9ec67b84071515729ff45b011b6b09c10f2/proxy.md",
-        "https://bitbucket.org/huwo1/proxy_nodes/raw/f31ca9ec67b84071515729ff45b011b6b09c10f2/trojan.md",
-        
-        # Additional collections
-        "https://raw.githubusercontent.com/luxl-1379/merge/77247d23def72b25226dfa741614e9b07a569c72/sub/sub_merge_base64.txt",
-        "https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/python/hy2",
-        "https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/python/hysteria2",
-        "https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/python/hysteria",
-        "https://raw.githubusercontent.com/webdao/v2ray/refs/heads/master/nodes.txt",
-        "https://raw.githubusercontent.com/webdao/v2ray/refs/heads/master/nodes2.txt",
-        "https://raw.githubusercontent.com/webdao/v2ray/refs/heads/master/nodes3.txt",
-        
-        # Hiddify & Sing-Box related
-        "https://raw.githubusercontent.com/hiddify/Hiddify-Server/main/release/hiddify-next-config.json",
-        "https://raw.githubusercontent.com/hiddify/awesome-freedom/main/configs.txt",
 
-        # Missings
-        "https://raw.githubusercontent.com/AliDev-ir/FreeVPN/main/pcvpn",
-        "https://raw.githubusercontent.com/AliDev-ir/FreeVPN/main/vpn",
-        "https://raw.githubusercontent.com/M-Mashreghi/Free-V2ray-Collector/main/Files/shuffle/Sub1_shuffled.conf",
-        "https://raw.githubusercontent.com/M-Mashreghi/Free-V2ray-Collector/main/Files/shuffle/Sub2_shuffled.conf",
-        "https://raw.githubusercontent.com/M-Mashreghi/Free-V2ray-Collector/main/Files/shuffle/Sub3_shuffled.conf",
-        "https://raw.githubusercontent.com/M-Mashreghi/Free-V2ray-Collector/main/Files/shuffle/Sub4_shuffled.conf",
-        "https://raw.githubusercontent.com/M-Mashreghi/Free-V2ray-Collector/main/Files/shuffle/Sub5_shuffled.conf",
-        "https://raw.githubusercontent.com/M-Mashreghi/Free-V2ray-Collector/main/Files/shuffle/Sub6_shuffled.conf",
-        "https://raw.githubusercontent.com/M-Mashreghi/Free-V2ray-Collector/main/Files/shuffle/Sub7_shuffled.conf",
-        "https://raw.githubusercontent.com/M-Mashreghi/Free-V2ray-Collector/main/Files/shuffle/Sub8_shuffled.conf",
-        "https://raw.githubusercontent.com/M-Mashreghi/Free-V2ray-Collector/main/Files/shuffle/Sub9_shuffled.conf",
-        "https://raw.githubusercontent.com/M-Mashreghi/Free-V2ray-Collector/main/Files/shuffle/Sub10_shuffled.conf",
-        "https://raw.githubusercontent.com/M-Mashreghi/Free-V2ray-Collector/main/Files/shuffle/Sub11_shuffled.conf",
-        "https://raw.githubusercontent.com/M-Mashreghi/Free-V2ray-Collector/main/Files/shuffle/Sub12_shuffled.conf",
-        "https://p6.punchline.ir:2096/sub/v2raybluecrystal2tb",
-        "https://p6.punchline.ir:2096/sub/v2raybluecrystal5TBFR",
-        "https://p7.punchline.ir:2096/v2raybluecrystal/turkey5tb",
-        "https://p7.punchline.ir:2096/v2raybluecrystal/turkey4tera",
-        "https://proud-fire-1775.mahmmod2025.workers.dev/sub/e0e345e3-e2ce-4778-81ff-67b4a8feddd8#BPB-Normal",
-        "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Config%20list3.txt",
-        "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Config%20list10.txt",
-        "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Config%20list15.txt",
-        "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Config%20list16.txt",
-        "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Config%20list17.txt",
-        "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Config%20list18.txt",
-        "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Config%20list19.txt",
-        "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Config%20list20.txt",
-        "https://raw.githubusercontent.com/taheri79/V2rayCollector/main/sub/normal/mix",
-        "https://raw.githubusercontent.com/taheri79/V2rayCollector/main/sub/base64/mix",
-        "https://raw.githubusercontent.com/taheri79/V2rayCollector/main/sub/normal/vless",
-        "https://raw.githubusercontent.com/taheri79/V2rayCollector/main/sub/normal/vmess",
-        "https://raw.githubusercontent.com/taheri79/V2rayCollector/main/sub/normal/trojan",
-        "https://raw.githubusercontent.com/taheri79/V2rayCollector/main/sub/normal/shadowsocks",
-        "https://raw.githubusercontent.com/taheri79/V2rayCollector/main/sub/normal/reality",
-        "https://raw.githubusercontent.com/anaer/Sub/main/clash.yaml",
-        "https://raw.githubusercontent.com/anaer/Sub/main/v2ray.txt",
-        "https://raw.githubusercontent.com/lmc999/Region-configs/main/sub-all-v2ray.txt",
-        "https://raw.githubusercontent.com/ossgo/Sub/main/sub",
-        "https://raw.githubusercontent.com/hagezi/mirror/main/v2ray.txt",
-        "https://raw.githubusercontent.com/abshare/abshare.github.io/main/all.txt",
-        "https://raw.githubusercontent.com/fanqiangfeee/free-v2ray-vpn/main/v2ray",
-        "https://raw.githubusercontent.com/free112/V2Ray-free-nodes/main/V2Ray-list-text.txt",
-        "https://raw.githubusercontent.com/im-web/sub/main/vless",
-        "https://raw.githubusercontent.com/Jajaj-dev/sub/main/v2ray",
-        "https://raw.githubusercontent.com/mjrulesamrat/v2ray-configs/main/AllConfigs.txt",
-        "https://raw.githubusercontent.com/movft/movft/main/config/config.txt",
-        "https://raw.githubusercontent.com/open-source-links/v2ray-list/main/list.txt",
-        "https://raw.githubusercontent.com/Ptechgithub/configs/main/sub.txt",
-        "https://raw.githubusercontent.com/sun956/V2ray-Subscription-Update/main/v2ray.txt",
-        "https://raw.githubusercontent.com/tbbatbb/Proxy/master/dist/v2ray.config.txt",
-        "https://raw.githubusercontent.com/wonderfulgo/subscription-script/main/v2/config",
-        "https://raw.githubusercontent.com/xiaomadashu/v2ray/master/config.txt",
-        "https://raw.githubusercontent.com/XrayR-project/XrayR-release/master/config/subscribe.txt",
-        "https://raw.githubusercontent.com/ZDCloud/Sub/main/All",
-        "https://raw.githubusercontent.com/zipkocc/SagerNet-Configs/main/sub.txt",
-
-            # Large public text / YAML feeds
-    "https://raw.githubusercontent.com/roosterkid/openproxylist/main/V2RAY.txt",
-    "https://raw.githubusercontent.com/roosterkid/openproxylist/main/V2RAY_RAW.txt",
-    "https://raw.githubusercontent.com/Misaka-blog/chromego_merge/main/sub/merged_proxies_new.yaml",
-    "https://raw.githubusercontent.com/MrMohebi/xray-proxy-grabber-telegram/master/collected-proxies/clash-meta/all.yaml",
-    "https://raw.githubusercontent.com/NiceVPN123/NiceVPN/main/Clash.yaml",
-    "https://raw.githubusercontent.com/PangTouY00/Auto_proxy/main/Long_term_subscription_num",
-    "https://raw.githubusercontent.com/Vauth/node/main/Main",
-    "https://raw.githubusercontent.com/aiboboxx/clashfree/main/clash.yml",
-    "https://raw.githubusercontent.com/chengaopan/AutoMergePublicNodes/master/list.yml",
-    "https://raw.githubusercontent.com/lagzian/SS-Collector/main/mix_clash.yaml",
-    "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge_yaml.yml",
-    "https://raw.githubusercontent.com/mheidari98/.proxy/main/all",
-    "https://raw.githubusercontent.com/peasoft/NoMoreWalls/master/list.yml",
-    "https://raw.githubusercontent.com/ronghuaxueleng/get_v2/main/pub/combine.yaml",
-    "https://raw.githubusercontent.com/dongchengjie/airport/main/subs/merged/tested_within.yaml",
-    "https://raw.githubusercontent.com/abbasdvd3/clash/main/vless/x",
-
-    # du5/free repo – dated snapshots
-    "https://raw.githubusercontent.com/du5/free/master/file/0407/clash.yaml",
-    "https://raw.githubusercontent.com/du5/free/master/file/0407/clash2.yaml",
-    "https://raw.githubusercontent.com/du5/free/master/file/0307/clash.yaml",
-    "https://raw.githubusercontent.com/du5/free/master/file/0312/clash.yaml",
-    "https://raw.githubusercontent.com/du5/free/master/file/0905/quan.conf",
-    "https://git.ddns.tokyo/du5/free/master/file/0615/v2ray.json",
-    "https://git.ddns.tokyo/du5/free/master/file/0503/clash.yaml",
-
-    # Token-based API endpoints
-    "http://www.paoche.ooo/api/v1/client/subscribe?token=4d2a30058958302ee685266f2340ea6c",
-    "http://110.72.100.27:55/api/v1/client/subscribe?token=b5c6af703a58cf950498c03e7a42a0f2",
-    "https://v2.fit/modules/servers/V2raySocks/osubscribe.php?sid=7063&token=lKJwbO2onxIr",
-    "http://www.sksla.pro/api/v1/client/subscribe?token=99c3fa86424539bd3bd34a893bc6dee8",
-    "https://fly.lo-lita.ru/api/v1/client/subscribe?token=94be7fa3d65791197dd10c6a0b757571",
-
-    # Short-link & web-hosted feeds
-    "https://mijishu.xyz/link/EqVV5nouWjbB59Ln?sub=3&extend=1",
-    "https://hjysub1.com/link/cgQ2jYaeQx9LBxsh?sub=3&extend=1",
-    "https://suda.sub.koicloud.pw/link/K9vz0uFPe9ULfdqX?sub=3",
-    "https://suda.sub.koicloud.pw/link/JgULLCNkImsJ6Ibh?sub=3",
-    "https://extrm.info/link/uirPjznB7esOezjr?sub=1",
-    "https://sbnmsl.co/link/2cpTGUGJtHBXUK7d?sub=3",
-    "https://pptp.cloud/sub/cXHG9wqUpQbhHr7d.html",
-    "https://www.haidaobot.xyz/link/QwdUmWolPN0LkThW?mu=2",
-    "https://dingyue.suying666.info/link/o7j43Aykx8CWBehE?sub=1",
-    "https://vvsub.xyz/api/al/19786-xDX1SCq61Ymi",
-    "https://rss-node.com/link/vqOaWFJRfbYxpAhY?mu=1",
-    "https://tm2w.live/link/EqICUlKXmn1EJwaw?sub=3",
-    "https://www.suncloud.fun/link/Su683BQEyUdxtyuY?mu=1&extend=1",
-    "https://www.suncloud.fun/link/ja3OIcMTrky6VhN6?mu=1&extend=1",
-    "https://sub88.xyz/link/egy4oyqok9aavpcy?sub=3",
-    "https://sub88.xyz/link/lkY8Jt5Q3SHlffra?mu=2",
-    "https://bujidao302.com/link/IJ6wKEt96Otboilb?mu=2",
-    "https://rss.getfree.win/link/w9ted9eZq1zbC3gx?sub=1",
-    "https://rss.cnrss.xyz/link/Rcr8h8fvZIWE001U?mu=2",
-    "https://s.sublank.xyz/subscribe/66056/0yzuMVawjpr/ssr/",
-    "https://12o.ooo/link/JLisT80gOhRkiFnX?sub=1",
-
-    # Netlify & Git-hosted plain-text dumps
-    "https://neurotoxinw.coding.net/p/qifei/d/qifei/git/raw/master/README.md",
-    "https://qiaomenzhuanfx.netlify.com/",
-    "https://youlianboshi.netlify.com/",
-    "https://iwxf.netlify.app/",
-    "http://qe83xk711.sabkt.gdipper.com/freev2ray.txt",
-    "http://qe83xk711.sabkt.gdipper.com/freess.txt",
-    "http://103.72.166.89/v2ray.php",
-
-    # GitHub raw text feeds (misc.)
-    "https://raw.githubusercontent.com/Pcrab/Dotfiles/912c1104b3f8121f72f7ee11590f52bc9c44dde7/.config/electron-ssr/gui-config.json",
-    "https://raw.githubusercontent.com/ssrsub/ssr/master/v2ray",
-    "https://raw.githubusercontent.com/ssrsub/ssr/master/ss-sub",
-    "https://raw.githubusercontent.com/ssrsub/ssr/master/ssrsub",
-    "https://raw.githubusercontent.com/satrom/V2SSR/master/V2RAY/Sub.txt",
-    "https://raw.githubusercontent.com/satrom/V2SSR/master/SSR/Day.txt",
-    "https://raw.githubusercontent.com/satrom/V2SSR/master/SSR/Sub.txt",
-    "https://raw.githubusercontent.com/hotsymbol/vpnsetting/master/v2rayopen",
-    "https://raw.githubusercontent.com/ntkernel/lantern/master/vmess_base64.txt",
-    "https://raw.githubusercontent.com/pojiezhiyuanjun/freev2/master/20200808.txt",
-    "https://raw.githubusercontent.com/du5/free/master/file/0905/quan.conf",
-    "https://raw.githubusercontent.com/du5/free/master/file/0909/Clash.yaml",
-    "https://raw.githubusercontent.com/du5/free/master/file/0906/surge.conf",
-    "https://raw.githubusercontent.com/du5/free/master/file/0906/ss.json",
-    "https://raw.githubusercontent.com/ssrsub/ssr/master/ssrsub",
-    "https://raw.githubusercontent.com/RaymondHarris971/ssrsub/master/9a075bdee5.txt",
-    "https://raw.githubusercontent.com/voken100g/AutoSSR/master/recent",
-    "https://raw.githubusercontent.com/cdp2020/v2ray/master/README.md",
-
-    # Misc tiny short-links (still valid subscription payloads)
-    "https://bit.ly/2D5fWhX",
-
-        # --- big auto-updated GitHub feeds ---
-    "https://raw.githubusercontent.com/ebrasha/free-v2ray-public-list/refs/heads/main/V2Ray-Config-By-EbraSha.txt",
-    "https://raw.githubusercontent.com/ebrasha/free-v2ray-public-list/refs/heads/main/V2Ray-Config-By-EbraSha-All-Type.txt",
-    "https://raw.githubusercontent.com/SnapdragonLee/SystemProxy/master/dist/clash_config.yaml",
-    "https://raw.githubusercontent.com/SnapdragonLee/SystemProxy/master/dist/clash_config_extra.yaml",
-    "https://raw.githubusercontent.com/SnapdragonLee/SystemProxy/master/dist/clash_config_extra_US.yaml",
-    "https://raw.githubusercontent.com/mfuu/v2ray/master/clash.yaml",
-    "https://raw.githubusercontent.com/mfuu/v2ray/master/v2ray",
-    "https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/clash.yml",
-    "https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/vmess.txt",
-    "https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/vless.txt",
-    "https://raw.githubusercontent.com/V2RaySSR/Tools/master/clash.yaml",
-    "https://raw.githubusercontent.com/du5/free/master/file/0312/clash.yaml",
-    "https://raw.githubusercontent.com/du5/free/master/file/0312/clash2.yaml",
-    "https://raw.githubusercontent.com/du5/free/master/file/0312/quan.conf",
-    "https://raw.githubusercontent.com/Ptechgithub/configs/main/clash12.yaml",
-    "https://raw.githubusercontent.com/SunBK201/MySCR/master/clash/SunBK201_conf.yaml",
-    "https://raw.githubusercontent.com/AzadNetCH/Clash/main/AzadNet.txt",
-    "https://raw.githubusercontent.com/AzadNetCH/Clash/main/AzadNet.json",
-    "https://raw.githubusercontent.com/AzadNetCH/Clash/main/AzadNet_hy.txt",
-    "https://raw.githubusercontent.com/AzadNetCH/Clash/main/AzadNet_iOS.txt",
-    "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_list.json",
-    "https://raw.githubusercontent.com/mahdibland/ShadowsocksAggregator/master/Eternity.yml",
-    # --- NiREvil warp / WG / hiddify mixes ---
-    "https://raw.githubusercontent.com/NiREvil/vless/refs/heads/main/warp.json",
-    "https://raw.githubusercontent.com/NiREvil/vless/refs/heads/main/sub/v2rayng-wg.txt",
-    "https://raw.githubusercontent.com/NiREvil/vless/refs/heads/main/sub/nekobox-wg.txt",
-    "https://raw.githubusercontent.com/NiREvil/vless/refs/heads/main/sub/husi-wg.txt",
-    "https://raw.githubusercontent.com/NiREvil/vless/refs/heads/main/sub/exclave-wg.txt",
-    "https://raw.githubusercontent.com/NiREvil/vless/refs/heads/main/hiddify/Windscribe%20on%20H2",
-    "https://raw.githubusercontent.com/NiREvil/vless/refs/heads/main/hiddify/WarpOnWarp.json",
-    "https://raw.githubusercontent.com/NiREvil/vless/main/Cloudflare-IPs.json",
-    "https://raw.githubusercontent.com/NiREvil/vless/refs/heads/main/sub/clash-meta-wg.yml",
-    "https://raw.githubusercontent.com/10ium/MihomoSaz/main/Sublist/NiREvil_SSTime.yaml",
-    # --- public Clash / YAML feeds ---
-    "https://nodefree.org/dy/2024/07/20240725.yaml",
-    "https://cdn.jsdelivr.net/gh/vxiaov/free_proxies@main/clash/clash.provider.yaml",
-    "https://freenode.openrunner.net/uploads/20240617-clash.yaml",
-    "https://tt.vg/freeclash",
-    "https://github.com/zu1k/proxypool/releases/download/latest/subscription.txt",
-    # --- token-style v2board / Hiddify endpoints ---
-    "https://qingyun.zybs.eu.org/api/v1/client/subscribe?token=9cd4a1826b992055a8e87a3f6594ba94",
-    "https://api.xyurl.site/api/v1/client/subscribe?token=fed4ab7c582c2a41a08a858f91644430",
-    "https://xqsub.e54.site/api/v1/client/subscribe?token=d1fd4dcc61491a02f566f6a45c56ccab&types=vless",
-    "https://ch.owokkvsxks.store/api/v1/client/subscribe?token=ad180e3b9514176a8cb26bf2962d5f1e",
-    "https://api.xqc.best/api/v1/client/subscribe?token=fb08adc269ff5522ba953933f6a9e9b6",
-    "https://csadata4g.me/api/v1/client/subscribe?token=04a09188b487e088f7ab9773f617dd1a",
-    "https://sub.lingche.icu/api/v1/client/subscribe?token=48e95450735e7d06d61b56f9bdb349fc",
-    "https://cloud.targoo.live/api/v1/client/subscribe?token=1d0a9f1ee09199aac2ac946a1f7d2a0a",
-    "https://www.992266.xyz/api/v1/client/subscribe?token=ab825616355b0973e4cdfb659665965f",
-    "https://v2y.xyz/api/v1/client/subscribe?token=2533ce3df935ebaf4143fcc3df068ebd",
-    "http://xn--nlua550ns4y.com/api/v1/client/subscribe?token=f83cdcc48766976526ab2451380b8dd0",
-    "http://davgp416ip6zl8pfrusvvag.zhuyingsu.today/api/v1/client/subscribe?token=b9df9a624e3fdb1e72b10ea81cc9d437",
-    "https://pqjc.site/api/v1/client/subscribe?token=0d41f5bd237d1ab92b907e1e7d5e5cb3&flag=meta",
-    "http://113.31.116.212:13800/api/v1/client/subscribe?token=b5d84c66256755e551704d05600ada67",
-    "http://1.1598888.xyz/api/v1/client/subscribe?token=e2c8421cd8543cd904f255fbef4490cd",
-    "http://nuxyun.v2rayflash.top/api/v1/client/subscribe?token=531e0be2dbbfc393dfac550abee6ce57",
-    "https://13.112.134.19:13800/api/v1/client/subscribe?token=ce41d51e5664e57b9470f9061c1f61c0",
-    "https://tc.ztcloud.xyz/api/v1/client/subscribe?token=26cec3bda11795769be5d18126c4b354",
-    "https://cloud.targoo.live/api/v1/client/subscribe?token=9f56998ea1b1c5e3c3a857e3ac274edf",
-    "https://xqsub.minictx.top/api/v1/client/subscribe?token=ef279b9e8696510c45b1f21f1653e2c9",
-    "https://chan.aztv.asia/api/v1/client/subscribe?token=264d99c3ad7b418f9e7eab1f0d2862c7",
-    "https://freeyuan.maimaihuo.com/api/v1/client/subscribe?token=e61032f58d4b00db023be1347f7f6911",
-    "https://api.wlins.org/api/v1/client/subscribe?token=fd8e56ea45a735e5d2fba98f3e97c7b6",
-    "https://v2sub.purelife.org/api/v1/client/subscribe?token=4ff1f9623ea62a005102b1701f2fd56a",
-    "https://free.jinan.cloud/api/v1/client/subscribe?token=6b9e32193f128651ed4cbf6cb0f3c3f0",
-    # --- generic link-style subs (Clash=1) ---
-    "https://sub.idsvip.com/link/abcd1234?clash=1",
-    "https://sub.nerdz.pro/link/xyz987?clash=1",
-    # --- misc raw / WG / JSON feeds ---
-    "https://raw.githubusercontent.com/4n0nymou3/ss-config-updater/refs/heads/main/configs.txt",
-    "https://raw.githubusercontent.com/darknessm427/WoW/refs/heads/main/subwarp/warp",
-    "https://raw.githubusercontent.com/arshiacomplus/WoW-fix/main/Xray-WoW.json",
-    "https://raw.githubusercontent.com/ndsphonemy/proxy-sub/refs/heads/main/mobile.txt",
-    "https://raw.githubusercontent.com/ndsphonemy/proxy-sub/refs/heads/main/wg.txt",
-    "https://raw.githubusercontent.com/10ium/ScrapeAndCategorize/refs/heads/main/output_configs/WireGuard.txt",
-    "https://raw.githubusercontent.com/Alanbobs999/TopFreeProxies/master/proxies.txt",
-    # --- spare token endpoints to round it out ---
-    "https://okcloud.cc/api/v1/client/subscribe?token=7b2a9e8f0c373725f9c3d6bd6d1fbe43",
-    "https://sub.tangcloud.xyz/api/v1/client/subscribe?token=a3d1c180cf35e5ad9d1fba2d4c5e4bf2",
-    "https://vfree.xyz/api/v1/client/subscribe?token=96b51236cddc2df523d9e83a9d457f23",
-    "https://free.tailsub.com/api/v1/client/subscribe?token=35b677cab1d1e8349a3e45dc367cbdfa",
-    "https://raw.githubusercontent.com/ermaozi/ClashRforWindows/main/sub/2025-07-01.yml",
-
-    ]
-    
     @classmethod
-    def get_all_sources(cls) -> List[str]:
-        """Get all unique sources in priority order with deduplication."""
-        all_sources = cls.IRANIAN_PRIORITY + cls.INTERNATIONAL_MAJOR + cls.COMPREHENSIVE_BATCH
-        return list(dict.fromkeys(all_sources))  # Remove duplicates while preserving order
+    def load(cls, path: Optional[Union[str, Path]] = None) -> List[str]:
+        file_path = Path(path) if path else cls.DEFAULT_FILE
+        if file_path.exists():
+            with file_path.open() as f:
+                return [line.strip() for line in f if line.strip()]
+        logging.warning("sources file not found: %s; using fallback list", file_path)
+        return cls.FALLBACK_SOURCES
 
-# ============================================================================
-# ENHANCED CONFIG PROCESSING
-# ============================================================================
+    @classmethod
+    def get_all_sources(cls, path: Optional[Union[str, Path]] = None) -> List[str]:
+        """Return list of sources from file or fallback."""
+        return cls.load(path)
 
 @dataclass
 class ConfigResult:
@@ -1137,9 +500,9 @@ class AsyncSourceFetcher:
 
 class UltimateVPNMerger:
     """VPN merger with unified functionality and comprehensive testing."""
-    
-    def __init__(self):
-        self.sources = UnifiedSources.get_all_sources()
+
+    def __init__(self, sources_file: Optional[Union[str, Path]] = None):
+        self.sources = UnifiedSources.get_all_sources(sources_file)
         if CONFIG.shuffle_sources:
             random.shuffle(self.sources)
         self.processor = EnhancedConfigProcessor()
@@ -1196,10 +559,7 @@ class UltimateVPNMerger:
         """Execute the complete unified merging process."""
         print("🚀 VPN Subscription Merger - Final Unified & Polished Edition")
         print("=" * 85)
-        print(f"📊 Total unified sources: {len(self.sources)}")
-        print(f"🇮🇷 Iranian priority: {len(UnifiedSources.IRANIAN_PRIORITY)}")
-        print(f"🌍 International major: {len(UnifiedSources.INTERNATIONAL_MAJOR)}")
-        print(f"📦 Comprehensive batch: {len(UnifiedSources.COMPREHENSIVE_BATCH)}")
+        print(f"📊 Total sources: {len(self.sources)}")
         print(f"🔧 URL Testing: {'Enabled' if CONFIG.enable_url_testing else 'Disabled'}")
         print(f"📈 Smart Sorting: {'Enabled' if CONFIG.enable_sorting else 'Disabled'}")
         print()
@@ -1595,10 +955,7 @@ class UltimateVPNMerger:
             },
             "statistics": stats,
             "source_categories": {
-                "iranian_priority": len(UnifiedSources.IRANIAN_PRIORITY),
-                "international_major": len(UnifiedSources.INTERNATIONAL_MAJOR),
-                "comprehensive_batch": len(UnifiedSources.COMPREHENSIVE_BATCH),
-                "total_unique_sources": len(self.sources),
+                "total_unique_sources": len(self.sources)
             },
             "output_files": {
                 "raw": str(raw_file),
@@ -1822,10 +1179,10 @@ class UltimateVPNMerger:
 # EVENT LOOP DETECTION AND MAIN EXECUTION
 # ============================================================================
 
-async def main_async():
+async def main_async(sources_file: Optional[Union[str, Path]] = None):
     """Main async function."""
     try:
-        merger = UltimateVPNMerger()
+        merger = UltimateVPNMerger(sources_file)
         await merger.run()
     except KeyboardInterrupt:
         print("\n⚠️  Process interrupted by user")
@@ -1834,7 +1191,7 @@ async def main_async():
         import traceback
         traceback.print_exc()
 
-def detect_and_run():
+def detect_and_run(sources_file: Optional[Union[str, Path]] = None):
     """Detect event loop and run appropriately."""
     try:
         # Try to get the running loop
@@ -1843,7 +1200,7 @@ def detect_and_run():
         print("📝 Creating task in existing loop...")
         
         # We're in an async environment (like Jupyter)
-        task = asyncio.create_task(main_async())
+        task = asyncio.create_task(main_async(sources_file))
         print("✅ Task created successfully!")
         print("📋 Use 'await task' to wait for completion in Jupyter")
         return task
@@ -1852,13 +1209,13 @@ def detect_and_run():
         # No running loop - we can use asyncio.run()
         print("🔄 No existing event loop detected")
         print("📝 Using asyncio.run()...")
-        return asyncio.run(main_async())
+        return asyncio.run(main_async(sources_file))
 
 # Alternative for Jupyter/async environments
-async def run_in_jupyter():
+async def run_in_jupyter(sources_file: Optional[Union[str, Path]] = None):
     """Direct execution for Jupyter notebooks and async environments."""
     print("🔄 Running in Jupyter/async environment")
-    await main_async()
+    await main_async(sources_file)
 
 def _get_script_dir() -> Path:
     """
@@ -1881,6 +1238,11 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="VPN Merger")
+    parser.add_argument(
+        "--sources",
+        default=str(UnifiedSources.DEFAULT_FILE),
+        help="Path to sources.txt",
+    )
     parser.add_argument(
         "--batch-size",
         type=int,
@@ -1946,6 +1308,8 @@ def main():
     if unknown:
         logging.warning("Ignoring unknown arguments: %s", unknown)
 
+    sources_file = args.sources
+
     CONFIG.batch_size = max(0, args.batch_size)
     CONFIG.threshold = max(0, args.threshold)
     CONFIG.top_n = max(0, args.top_n)
@@ -1999,7 +1363,7 @@ def main():
     print("🔧 VPN Merger - Checking environment...")
 
     try:
-        return detect_and_run()
+        return detect_and_run(sources_file)
     except Exception as e:
         print(f"❌ Error: {e}")
         print("\n📋 Alternative execution methods:")
@@ -2023,7 +1387,7 @@ if __name__ == "__main__":
    • With event loop errors: task = detect_and_run(); await task
 
 🎯 Unified Features:
-   • 450+ sources (Iranian priority + International + Comprehensive)
+   • Sources loaded from `sources.txt` (over 450 links)
    • Dead link detection and automatic removal
    • Real-time server reachability testing with response time measurement
    • Smart sorting by connection speed and protocol preference
