@@ -43,3 +43,18 @@ def test_ssr_base64_format():
     b64 = base64.urlsafe_b64encode(raw.encode()).decode().strip("=")
     link = f"ssr://{b64}"
     assert is_valid_config(link)
+
+
+def test_shadowtls_requires_host_port():
+    assert is_valid_config("shadowtls://user@example.com:443")
+    assert not is_valid_config("shadowtls://user@example.com")
+
+
+def test_juicity_requires_host_port():
+    assert is_valid_config("juicity://token@example.com:443")
+    assert not is_valid_config("juicity://token@example.com")
+
+
+def test_brook_requires_host_port():
+    assert is_valid_config("brook://example.com:443")
+    assert not is_valid_config("brook://example.com")

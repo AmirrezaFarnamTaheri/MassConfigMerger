@@ -32,10 +32,12 @@ SOURCES_FILE = Path("sources.txt")
 CHANNELS_FILE = Path("channels.txt")
 
 # Match full config links for supported protocols
+# Additional schemes are kept roughly in the same order as ``vpn_merger`` to
+# ensure feature parity between the two modules.
 PROTOCOL_RE = re.compile(
     r"(?:"
-    r"vmess|vless|reality|ssr?|trojan|hy2|hysteria2?|tuic|"
-    r"shadowtls|juicity|naive|brook|wireguard|"
+    r"vmess|vless|reality|ssr?|trojan|hy2|hysteria2?|hysteria|tuic|"
+    r"shadowtls|brook|juicity|naive|wireguard|"
     r"socks5|socks4|socks|http|https|grpc|ws|wss|"
     r"tcp|kcp|quic|h2"
     r")://\S+",
@@ -94,12 +96,16 @@ def is_valid_config(link: str) -> bool:
         "hysteria",
         "hysteria2",
         "tuic",
+        "juicity",
         "ss",
     }
     if scheme in host_required:
         if "@" not in rest:
             return False
         host = rest.split("@", 1)[1].split("/", 1)[0]
+        return ":" in host
+    if scheme in {"shadowtls", "brook"}:
+        host = rest.split("@", 1)[-1].split("/", 1)[0]
         return ":" in host
     if scheme == "wireguard":
         return bool(rest)
