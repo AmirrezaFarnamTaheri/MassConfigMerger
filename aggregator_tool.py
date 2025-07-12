@@ -76,9 +76,8 @@ def is_valid_config(link: str) -> bool:
             return False
 
     # ShadowsocksR links are base64 encoded after the scheme
-    if link.lower().startswith("ssr://"):
-        encoded = link[6:]
-        encoded = re.split(r"[?#]", encoded, 1)[0]
+    if scheme == "ssr":
+        encoded = rest
         padded = encoded + "=" * (-len(encoded) % 4)
         try:
             decoded = base64.urlsafe_b64decode(padded).decode()

@@ -50,3 +50,10 @@ def test_ssr_with_fragment():
     b64 = base64.urlsafe_b64encode(raw.encode()).decode().strip("=")
     link = f"ssr://{b64}#note"
     assert is_valid_config(link)
+
+
+def test_ssr_basic_valid():
+    raw = "myhost.com:1234:origin:plain:pwd/"
+    b64 = base64.urlsafe_b64encode(raw.encode()).decode().strip("=")
+    link = f"ssr://{b64}"
+    assert is_valid_config(link)
