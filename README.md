@@ -63,6 +63,22 @@ docker compose --profile aggregator up -d
 Adjust `MERGE_INTERVAL` and `AGGREGATE_INTERVAL` in `docker-compose.yml` to
 change how frequently each script runs.
 
+### Docker Compose / Local Scheduling
+
+Use the included `docker-compose.yml` if you want the merger to run
+automatically on your own machine. It builds the Docker image and repeatedly
+executes `vpn_merger.py`, storing results in the `output/` directory that is
+mounted to your host.
+
+Start it with:
+
+```bash
+docker compose up -d
+```
+
+The container runs the script once a day by default. Set the `MERGE_INTERVAL`
+environment variable in `docker-compose.yml` to change how often it runs.
+
 ## ✨ Key Features & Use Cases
 
 | Feature | Description | Typical Use Case |
