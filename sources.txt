@@ -620,3 +620,4 @@ https://sub.tangcloud.xyz/api/v1/client/subscribe?token=a3d1c180cf35e5ad9d1fba2d
 https://vfree.xyz/api/v1/client/subscribe?token=96b51236cddc2df523d9e83a9d457f23
 https://free.tailsub.com/api/v1/client/subscribe?token=35b677cab1d1e8349a3e45dc367cbdfa
 https://raw.githubusercontent.com/ermaozi/ClashRforWindows/main/sub/2025-07-01.yml
+https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/v2ray.txt
