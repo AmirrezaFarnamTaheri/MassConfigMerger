@@ -126,7 +126,7 @@ def test_cli_with_merger(monkeypatch, tmp_path):
 
     aggregator_tool.main()
 
-    assert called == [files[0]]
+    assert called == [tmp_path / "o"]
 
 
 def test_cli_protocols_case_insensitive(monkeypatch, tmp_path):
