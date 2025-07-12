@@ -4,6 +4,7 @@
 [](https://opensource.org/licenses/MIT)
 
 Welcome to the VPN Subscription Merger! This project provides a powerful Python script that automatically fetches VPN configurations from the over 470 public sources listed in `sources.txt`, tests their connectivity, and merges them into a single, performance-sorted subscription link for use in your favorite VPN client. It can even save incremental batches while running so you always have up-to-date results.
+Both `aggregator_tool.py` and `vpn_merger.py` read from this same `sources.txt` file, so updating the list once applies to all tools.
 
 This guide is designed for **everyone**, from absolute beginners with no coding experience to advanced users who want full automation.
 
@@ -83,7 +84,7 @@ environment variable in `docker-compose.yml` to change how often it runs.
 
 | Feature | Description | Typical Use Case |
 | ------- | ----------- | ---------------- |
-| **Huge Source List** | `sources.txt` includes over 470 public subscription sources. | Get a massive selection of servers with a single command. |
+| **Huge Source List** | `sources.txt` includes over 470 public subscription sources and is shared by all tools. | Get a massive selection of servers with a single command. |
 | **Availability Testing** | Checks each source before downloading. | Skip dead links and save time. |
 | **Connectivity Testing** | Optional TCP checks measure real latency. | Prioritize servers that actually respond. |
 | **Smart Sorting** | Orders the final list by reachability and speed. | Quickly pick the best server in your VPN client. |

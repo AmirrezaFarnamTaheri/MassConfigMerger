@@ -41,6 +41,8 @@ from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union
+
+from constants import SOURCES_FILE
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 try:
@@ -187,7 +189,7 @@ EXCLUDE_REGEXES: List[re.Pattern] = []
 class UnifiedSources:
     """Load VPN subscription sources from an external file."""
 
-    DEFAULT_FILE = Path("sources.txt")
+    DEFAULT_FILE = SOURCES_FILE
     FALLBACK_SOURCES = [
         "https://raw.githubusercontent.com/barry-far/V2ray-config/main/Sub1.txt",
         "https://raw.githubusercontent.com/ssrsub/ssr/master/v2ray",
