@@ -40,7 +40,7 @@ import socket
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Set, Tuple, Union, cast
 
 from constants import SOURCES_FILE
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
@@ -454,6 +454,7 @@ class AsyncSourceFetcher:
         
     async def test_source_availability(self, url: str) -> bool:
         """Test if a source URL is available (returns 200 status)."""
+        assert self.session is not None
         try:
             timeout = aiohttp.ClientTimeout(total=10)
             async with self.session.head(url, timeout=timeout, allow_redirects=True) as response:
@@ -474,6 +475,7 @@ class AsyncSourceFetcher:
         
     async def fetch_source(self, url: str) -> Tuple[str, List[ConfigResult]]:
         """Fetch single source with comprehensive testing and deduplication."""
+        assert self.session is not None
         for attempt in range(CONFIG.max_retries):
             try:
                 timeout = aiohttp.ClientTimeout(total=CONFIG.request_timeout)
@@ -497,7 +499,7 @@ class AsyncSourceFetcher:
                     
                     # Extract and process configs
                     lines = [line.strip() for line in content.splitlines() if line.strip()]
-                    config_results = []
+                    config_results: List[ConfigResult] = []
                     
                     for line in lines:
                         if (
@@ -733,7 +735,7 @@ class UltimateVPNMerger:
                     return await self.fetcher.fetch_source(url)
             
             # Create tasks
-            tasks = [process_single_source(url) for url in available_sources]
+            tasks = [asyncio.create_task(process_single_source(url)) for url in available_sources]
             
             completed = 0
             for coro in asyncio.as_completed(tasks):
@@ -764,7 +766,8 @@ class UltimateVPNMerger:
             print(f"\n   📈 Sources with configs: {successful_sources}/{len(available_sources)}")
             
         finally:
-            await self.fetcher.session.close()
+            if self.fetcher.session is not None:
+                await self.fetcher.session.close()
 
         # Return the accumulated list for backward compatibility
         return self.all_results
@@ -902,16 +905,22 @@ class UltimateVPNMerger:
         print(f"   🚀 Sorted: {reachable_count:,} reachable configs first")
         
         if reachable_count > 0:
-            fastest = min((r for r in results if r.ping_time), key=lambda x: x.ping_time, default=None)
-            if fastest:
-                print(f"   ⚡ Fastest server: {fastest.ping_time*1000:.1f}ms ({fastest.protocol})")
+            fastest = min(
+                (r for r in results if r.ping_time is not None),
+                key=lambda x: cast(float, x.ping_time),
+                default=None,
+            )
+            if fastest and fastest.ping_time is not None:
+                print(
+                    f"   ⚡ Fastest server: {fastest.ping_time * 1000:.1f}ms ({fastest.protocol})"
+                )
         
         return sorted_results
     
     def _analyze_results(self, results: List[ConfigResult], available_sources: List[str]) -> Dict:
         """Analyze results and generate comprehensive statistics."""
-        protocol_stats = {}
-        performance_stats = {}
+        protocol_stats: Dict[str, int] = {}
+        performance_stats: Dict[str, List[float]] = {}
         
         for result in results:
             # Protocol count
@@ -1143,8 +1152,9 @@ class UltimateVPNMerger:
                     "encryption": q.get("encryption", ["none"])[0],
                     "tls": True,
                 }
-                if q.get("flow"):
-                    proxy["flow"] = q.get("flow")[0]
+                flows = q.get("flow")
+                if flows:
+                    proxy["flow"] = flows[0]
                 return proxy
             elif scheme == "trojan":
                 p = urlparse(config)
@@ -1156,8 +1166,9 @@ class UltimateVPNMerger:
                     "port": p.port or 0,
                     "password": p.username or p.password or "",
                 }
-                if q.get("sni"):
-                    proxy["sni"] = q.get("sni")[0]
+                sni_vals = q.get("sni")
+                if sni_vals:
+                    proxy["sni"] = sni_vals[0]
                 if q.get("security"):
                     proxy["tls"] = True
                 return proxy
@@ -1174,8 +1185,9 @@ class UltimateVPNMerger:
                     decoded = base64.b64decode(padded).decode()
                     before_at, host_port = decoded.split("@")
                     method, password = before_at.split(":")
-                    server, port = host_port.split(":")
-                    port = int(port)
+                    server_str, port_str = host_port.split(":")
+                    server = server_str
+                    port = int(port_str)
                 return {
                     "name": p.fragment or name,
                     "type": "ss",
@@ -1192,7 +1204,9 @@ class UltimateVPNMerger:
                     host_part = decoded.split("/", 1)[0]
                     if ":" not in host_part:
                         return None
-                    server, port = host_part.split(":", 1)
+                    server_str, port_str = host_part.split(":", 1)
+                    server = server_str
+                    port = int(port_str)
                     return {
                         "name": name,
                         "type": "ssr",
