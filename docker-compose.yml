@@ -5,7 +5,6 @@ services:
     image: vpn-merger
     volumes:
       - ./output:/app/output
-      - ./logs:/app/logs
     command: >
       sh -c "while true; do \
                 python vpn_merger.py && echo 'Waiting for next run'; \
@@ -13,17 +12,3 @@ services:
              done"
     environment:
       - MERGE_INTERVAL=86400
-
-  aggregator:
-    image: vpn-merger
-    profiles: ['aggregator']
-    volumes:
-      - ./output:/app/output
-      - ./logs:/app/logs
-    command: >
-      sh -c "while true; do \
-                python aggregator_tool.py && echo 'Waiting for next run'; \
-                sleep ${AGGREGATE_INTERVAL:-86400}; \
-             done"
-    environment:
-      - AGGREGATE_INTERVAL=86400
