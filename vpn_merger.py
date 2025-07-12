@@ -1139,6 +1139,7 @@ class UltimateVPNMerger:
                     "port": p.port,
                     "username": p.username or "",
                     "password": p.password or "",
+                    "tls": True,
                 }
             else:
                 p = urlparse(config)

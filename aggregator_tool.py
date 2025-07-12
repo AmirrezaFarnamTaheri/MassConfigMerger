@@ -549,6 +549,7 @@ def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
                     "port": p.port,
                     "username": p.username or "",
                     "password": p.password or "",
+                    "tls": True,
                 }
             else:
                 p = urlparse(config)

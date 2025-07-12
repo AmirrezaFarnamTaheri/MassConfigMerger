@@ -59,6 +59,7 @@ def test_clash_proxies_yaml(tmp_path, monkeypatch):
     naive = next(p for p in data["proxies"] if p["type"] == "http")
     assert naive["username"] == "user"
     assert naive["password"] == "pass"
+    assert naive["tls"] is True
     reality = next(p for p in data["proxies"] if p.get("flow"))
     assert reality["type"] == "vless"
     assert reality["tls"] is True
