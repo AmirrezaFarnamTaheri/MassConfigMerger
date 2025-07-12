@@ -37,7 +37,7 @@ import ssl
 import sys
 import time
 import socket
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union, cast
@@ -67,7 +67,7 @@ except ImportError as exc:
     ) from exc
 
 try:
-    import aiodns
+    import aiodns  # noqa: F401
 except ImportError as exc:
     raise ImportError(
         "Missing optional dependency 'aiodns'. "
@@ -494,7 +494,7 @@ class AsyncSourceFetcher:
                             decoded = base64.b64decode(content).decode("utf-8", "ignore")
                             if decoded.count("://") > content.count("://"):
                                 content = decoded
-                    except:
+                    except Exception:  # noqa: E722
                         pass
                     
                     # Extract and process configs
@@ -642,7 +642,7 @@ class UltimateVPNMerger:
             print(f"\n📊 [4/6] Sorting {len(unique_results):,} configs by performance...")
             unique_results = self._sort_by_performance(unique_results)
         else:
-            print(f"\n⏭️ [4/6] Skipping sorting (disabled)")
+            print("\n⏭️ [4/6] Skipping sorting (disabled)")
 
         if CONFIG.enable_url_testing:
             before = len(unique_results)
@@ -955,7 +955,7 @@ class UltimateVPNMerger:
         reach_pct = (reachable / total * 100) if total else 0
         print(f"   🌐 Reachable configs: {reachable:,} ({reach_pct:.1f}%)")
         print(f"   🔗 Available sources: {len(available_sources)}")
-        print(f"   📋 Protocol breakdown:")
+        print("   📋 Protocol breakdown:")
         
         for protocol, count in sorted(protocol_stats.items(), key=lambda x: x[1], reverse=True):
             percentage = (count / total) * 100 if total else 0
@@ -1279,7 +1279,7 @@ class UltimateVPNMerger:
         print(f"⚡ Processing speed: {speed:.0f} configs/second")
         
         if CONFIG.enable_sorting and stats['reachable_configs'] > 0:
-            print(f"🚀 Configs sorted by performance (fastest first)")
+            print("🚀 Configs sorted by performance (fastest first)")
         
         if stats['protocol_stats']:
             top_protocol = max(stats['protocol_stats'].items(), key=lambda x: x[1])[0]
@@ -1314,7 +1314,7 @@ def detect_and_run(sources_file: Optional[Union[str, Path]] = None):
     """Detect event loop and run appropriately."""
     try:
         # Try to get the running loop
-        loop = asyncio.get_running_loop()
+        asyncio.get_running_loop()
         print("🔄 Detected existing event loop")
         print("📝 Creating task in existing loop...")
         

@@ -16,6 +16,12 @@ jobs:
           cache: 'pip'
           cache-dependency-path: requirements.txt
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          pip install flake8 mypy types-PyYAML
       - name: Run tests
         run: pytest -q
+      - name: Run flake8
+        run: flake8 .
+      - name: Run mypy
+        run: mypy .

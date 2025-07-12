@@ -39,7 +39,7 @@ def load_configs(path: Path) -> List[str]:
             text = base64.b64decode(text).decode("utf-8")
         except Exception as e:
             raise ValueError("Failed to decode base64 input") from e
-    return [l.strip() for l in text.splitlines() if l.strip()]
+    return [line.strip() for line in text.splitlines() if line.strip()]
 
 
 def filter_configs(configs: List[str]) -> List[str]:

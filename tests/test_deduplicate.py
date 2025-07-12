@@ -52,4 +52,3 @@ def test_empty_protocol_list_accepts_all():
     )
     result = aggregator_tool.deduplicate_and_filter({vmess, trojan}, cfg)
     assert set(result) == {vmess, trojan}
-
