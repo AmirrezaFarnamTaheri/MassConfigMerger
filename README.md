@@ -505,8 +505,8 @@ Run `python vpn_merger.py --help` to see all options. Important flags include:
   * `--mux N` - set connection multiplexing level (default `8`, `0` to disable).
   * `--smux N` - set smux stream count for protocols that support it (default `4`).
   * `--geoip-db PATH` - enable country lookup using a GeoLite2 database file.
-  * `--include-country LIST` - comma-separated ISO codes to include (e.g. `US,CA`).
-  * `--exclude-country LIST` - ISO codes to drop.
+  * `--include-country LIST` - comma-separated ISO codes to keep when `--geoip-db` is set.
+  * `--exclude-country LIST` - ISO codes to drop using the same lookup.
 
 TLS fragments help obscure the real Server Name Indication (SNI) of each
 connection by splitting the handshake into pieces. This makes it harder for
