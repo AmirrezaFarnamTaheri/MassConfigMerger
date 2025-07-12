@@ -129,7 +129,11 @@ class Config:
 
 CONFIG = Config(
     headers={
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/125.0.0.0 Safari/537.36"
+        ),
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.5",
         "Connection": "keep-alive",
@@ -502,11 +506,13 @@ class AsyncSourceFetcher:
                     config_results: List[ConfigResult] = []
                     
                     for line in lines:
-                        if (
-                            line.startswith(CONFIG.valid_prefixes)
-                            and len(line) > 20
-                            and len(line) < 2000
-                            and len(config_results) < CONFIG.max_configs_per_source
+                        if all(
+                            [
+                                line.startswith(CONFIG.valid_prefixes),
+                                len(line) > 20,
+                                len(line) < 2000,
+                                len(config_results) < CONFIG.max_configs_per_source,
+                            ]
                         ):
                             config_hash = self.processor.create_semantic_hash(line)
                             if config_hash in self.seen_hashes:
@@ -814,10 +820,23 @@ class UltimateVPNMerger:
                     batch_results = batch_results[:CONFIG.top_n]
 
                 stats = self._analyze_results(batch_results, self.available_sources)
-                await self._generate_comprehensive_outputs(batch_results, stats, self.start_time, prefix=f"batch_{self.batch_counter}_")
+                await self._generate_comprehensive_outputs(
+                    batch_results,
+                    stats,
+                    self.start_time,
+                    prefix=f"batch_{self.batch_counter}_",
+                )
 
-                cumulative_stats = self._analyze_results(self.cumulative_unique, self.available_sources)
-                await self._generate_comprehensive_outputs(self.cumulative_unique, cumulative_stats, self.start_time, prefix="cumulative_")
+                cumulative_stats = self._analyze_results(
+                    self.cumulative_unique,
+                    self.available_sources,
+                )
+                await self._generate_comprehensive_outputs(
+                    self.cumulative_unique,
+                    cumulative_stats,
+                    self.start_time,
+                    prefix="cumulative_",
+                )
                 if CONFIG.cumulative_batches:
                     self.last_saved_count = len(self.cumulative_unique)
 
@@ -840,10 +859,23 @@ class UltimateVPNMerger:
                     batch_results = batch_results[:CONFIG.top_n]
 
                 stats = self._analyze_results(batch_results, self.available_sources)
-                await self._generate_comprehensive_outputs(batch_results, stats, self.start_time, prefix=f"batch_{self.batch_counter}_")
+                await self._generate_comprehensive_outputs(
+                    batch_results,
+                    stats,
+                    self.start_time,
+                    prefix=f"batch_{self.batch_counter}_",
+                )
 
-                cumulative_stats = self._analyze_results(self.cumulative_unique, self.available_sources)
-                await self._generate_comprehensive_outputs(self.cumulative_unique, cumulative_stats, self.start_time, prefix="cumulative_")
+                cumulative_stats = self._analyze_results(
+                    self.cumulative_unique,
+                    self.available_sources,
+                )
+                await self._generate_comprehensive_outputs(
+                    self.cumulative_unique,
+                    cumulative_stats,
+                    self.start_time,
+                    prefix="cumulative_",
+                )
                 if CONFIG.cumulative_batches:
                     self.last_saved_count = len(self.cumulative_unique)
 
@@ -974,7 +1006,13 @@ class UltimateVPNMerger:
             "total_sources": len(self.sources)
         }
     
-    async def _generate_comprehensive_outputs(self, results: List[ConfigResult], stats: Dict, start_time: float, prefix: str = "") -> None:
+    async def _generate_comprehensive_outputs(
+        self,
+        results: List[ConfigResult],
+        stats: Dict,
+        start_time: float,
+        prefix: str = "",
+    ) -> None:
         """Generate comprehensive output files with all formats."""
         # Create output directory
         output_dir = Path(CONFIG.output_dir)
@@ -1033,7 +1071,11 @@ class UltimateVPNMerger:
                 "json_report": str(report_file),
                 "singbox": str(output_dir / f"{prefix}vpn_singbox.json"),
                 "clash": str(output_dir / f"{prefix}clash.yaml"),
-                **({"clash_proxies": str(output_dir / f"{prefix}vpn_clash_proxies.yaml")} if CONFIG.write_clash_proxies else {}),
+                **(
+                    {"clash_proxies": str(output_dir / f"{prefix}vpn_clash_proxies.yaml")}
+                    if CONFIG.write_clash_proxies
+                    else {}
+                ),
             },
             "usage_instructions": {
                 "base64_subscription": "Copy content of base64 file as subscription URL",
@@ -1091,7 +1133,12 @@ class UltimateVPNMerger:
             tmp_proxies.write_text(proxy_yaml, encoding="utf-8")
             tmp_proxies.replace(proxies_file)
 
-    def _config_to_clash_proxy(self, config: str, protocol: str, idx: int) -> Optional[Dict[str, Union[str, int, bool]]]:
+    def _config_to_clash_proxy(
+        self,
+        config: str,
+        protocol: str,
+        idx: int,
+    ) -> Optional[Dict[str, Union[str, int, bool]]]:
         """Convert a single config link to a Clash proxy dictionary."""
         try:
             scheme = protocol.lower()
@@ -1270,7 +1317,7 @@ class UltimateVPNMerger:
         print(f"📊 Final unique configs: {config_count:,}")
         print(f"🌐 Reachable configs: {stats['reachable_configs']:,}")
         if config_count:
-            success = f"{stats['reachable_configs']/config_count*100:.1f}%"
+            success = f"{stats['reachable_configs'] / config_count * 100:.1f}%"
         else:
             success = "N/A"
         print(f"📈 Success rate: {success}")

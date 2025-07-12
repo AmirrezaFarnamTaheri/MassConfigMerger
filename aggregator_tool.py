@@ -671,11 +671,13 @@ async def telegram_bot_mode(
 ) -> None:
 
     """Launch Telegram bot for on-demand updates."""
-    if not (
-        cfg.telegram_api_id
-        and cfg.telegram_api_hash
-        and cfg.telegram_bot_token
-        and cfg.allowed_user_ids
+    if not all(
+        [
+            cfg.telegram_api_id,
+            cfg.telegram_api_hash,
+            cfg.telegram_bot_token,
+            cfg.allowed_user_ids,
+        ]
     ):
         logging.info("Telegram credentials not provided; skipping bot mode")
         return
