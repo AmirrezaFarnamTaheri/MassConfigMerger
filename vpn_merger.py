@@ -279,6 +279,26 @@ class EnhancedConfigProcessor:
                     user_id = data.get("id") or data.get("uuid") or data.get("user")
             except Exception:
                 pass
+        elif config.startswith("trojan://"):
+            try:
+                parsed = urlparse(config)
+                user_part = parsed.username or parsed.password
+                if user_part:
+                    user_id = user_part
+            except Exception:
+                pass
+        elif config.startswith("ss://"):
+            try:
+                parsed = urlparse(config)
+                if parsed.username and parsed.password:
+                    user_id = f"{parsed.username}:{parsed.password}"
+                else:
+                    after = config.split("://", 1)[1].split("#", 1)[0]
+                    padded = after + "=" * (-len(after) % 4)
+                    decoded = base64.b64decode(padded).decode("utf-8", "ignore")
+                    user_id = decoded.split("@", 1)[0]
+            except Exception:
+                pass
 
         if host and port:
             key = f"{host}:{port}"

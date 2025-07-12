@@ -72,6 +72,22 @@ def test_deduplicate_config_results(monkeypatch):
     assert len(set(hashes)) == 2
 
 
+def test_trojan_password_affects_dedup(monkeypatch):
+    merger = UltimateVPNMerger()
+    monkeypatch.setattr(CONFIG, "tls_fragment", None)
+    monkeypatch.setattr(CONFIG, "include_protocols", None)
+    monkeypatch.setattr(CONFIG, "exclude_protocols", None)
+
+    link1 = make_trojan(passwd="pw1")
+    link2 = make_trojan(passwd="pw2")
+    r1 = ConfigResult(config=link1, protocol="Trojan")
+    r2 = ConfigResult(config=link2, protocol="Trojan")
+    unique = merger._deduplicate_config_results([r1, r2])
+    assert len(unique) == 2
+    hashes = [merger.processor.create_semantic_hash(r.config) for r in unique]
+    assert len(set(hashes)) == 2
+
+
 def test_print_final_summary_zero_configs(capsys):
     """Ensure summary handles empty results gracefully."""
     merger = UltimateVPNMerger()
