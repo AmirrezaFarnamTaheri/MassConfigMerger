@@ -595,7 +595,10 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
    starting with `vmess`, `vless`, `trojan`, `ss`,
    `ssr`, `hysteria`, `hysteria2`, `tuic`, `reality`, `naive`, `hy2` and
    `wireguard`.
-4. Run the tool. The `--hours` option controls how many hours of channel history
+4. Dead sources are only removed after three consecutive failures. The
+   `sources.txt` companion file `sources.fails.json` tracks these counts. Pass
+   `--no-prune` to keep the list intact regardless of failures.
+5. Run the tool. The `--hours` option controls how many hours of channel history
    are scanned (default is 24). Use `--no-base64`, `--no-singbox` or
    `--no-clash` to skip optional outputs:
    ```bash
@@ -666,7 +669,7 @@ Optional fields use these defaults when omitted:
 
 The command line options `--config`, `--sources`, `--channels`, `--output-dir`,
 `--concurrent-limit`, `--request-timeout`, `--hours`, `--no-base64`,
-`--no-singbox` and `--no-clash` let you override file locations or disable
+`--no-singbox`, `--no-clash` and `--no-prune` let you override file locations or disable
 specific outputs when running the tool.
 
 ### Important Notes

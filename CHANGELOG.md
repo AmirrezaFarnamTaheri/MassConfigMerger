@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Unit tests for configuration parsing and deduplication.
 - Improved Telegram configuration handling.
 
+## [0.5.0] - 2025-07-13
+### Added
+- Failure tracking for aggregator sources. Entries are only pruned after three consecutive failures.
+- `--no-prune` flag to disable automatic pruning.
+
 ## [0.3.0] - 2025-07-12
 ### Added
 - Continuous integration workflow on GitHub Actions.
