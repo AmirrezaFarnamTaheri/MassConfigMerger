@@ -799,7 +799,7 @@ def main() -> None:
     parser.add_argument(
         "--with-merger",
         action="store_true",
-        help="run vpn_merger on the generated output directory after aggregation",
+        help="run vpn_merger on the aggregated results using the resume feature",
     )
     args = parser.parse_args()
 
@@ -867,7 +867,8 @@ def main() -> None:
         print(f"Aggregation complete. Files written to {out_dir.resolve()}")
 
         if args.with_merger:
-            vpn_merger.detect_and_run(out_dir)
+            vpn_merger.CONFIG.resume_file = str(out_dir / "merged.txt")
+            vpn_merger.detect_and_run()
 
 
 

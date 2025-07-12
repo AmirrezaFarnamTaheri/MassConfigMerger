@@ -110,8 +110,8 @@ def test_cli_with_merger(monkeypatch, tmp_path):
 
     called = []
 
-    def fake_detect_and_run(path):
-        called.append(Path(path))
+    def fake_detect_and_run(*args):
+        called.append(args)
 
     monkeypatch.setattr(aggregator_tool, "run_pipeline", fake_run_pipeline)
     monkeypatch.setattr(aggregator_tool, "setup_logging", lambda *_: None)
@@ -126,7 +126,8 @@ def test_cli_with_merger(monkeypatch, tmp_path):
 
     aggregator_tool.main()
 
-    assert called == [tmp_path / "o"]
+    assert called == [tuple()]
+    assert aggregator_tool.vpn_merger.CONFIG.resume_file == str(tmp_path / "o" / "merged.txt")
 
 
 def test_cli_protocols_case_insensitive(monkeypatch, tmp_path):
