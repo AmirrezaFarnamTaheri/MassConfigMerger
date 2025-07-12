@@ -15,6 +15,7 @@ def config_to_clash_proxy(
 ) -> Optional[Dict[str, Union[str, int, bool]]]:
     """Convert a single config link to a Clash proxy dictionary."""
     try:
+        q = {}
         scheme = (protocol or config.split("://", 1)[0]).lower()
         name = f"{scheme}-{idx}"
         if scheme == "vmess":
@@ -40,6 +41,7 @@ def config_to_clash_proxy(
                 logging.debug("Fallback Clash parse for vmess: %s", exc)
                 p = urlparse(config)
                 q = parse_qs(p.query)
+                security = q.get("security")
                 proxy = {
                     "name": p.fragment or name,
                     "type": "vmess",
@@ -49,12 +51,13 @@ def config_to_clash_proxy(
                     "alterId": int(q.get("aid", [0])[0]),
                     "cipher": q.get("type", ["auto"])[0],
                 }
-                if q.get("security"):
+                if security:
                     proxy["tls"] = True
                 return proxy
         elif scheme == "vless":
             p = urlparse(config)
             q = parse_qs(p.query)
+            security = q.get("security")
             proxy = {
                 "name": p.fragment or name,
                 "type": "vless",
@@ -63,12 +66,13 @@ def config_to_clash_proxy(
                 "uuid": p.username or "",
                 "encryption": q.get("encryption", ["none"])[0],
             }
-            if q.get("security"):
+            if security:
                 proxy["tls"] = True
             return proxy
         elif scheme == "reality":
             p = urlparse(config)
             q = parse_qs(p.query)
+            security = q.get("security")
             proxy = {
                 "name": p.fragment or name,
                 "type": "vless",
@@ -85,6 +89,7 @@ def config_to_clash_proxy(
         elif scheme == "trojan":
             p = urlparse(config)
             q = parse_qs(p.query)
+            security = q.get("security")
             proxy = {
                 "name": p.fragment or name,
                 "type": "trojan",
@@ -95,7 +100,7 @@ def config_to_clash_proxy(
             sni_vals = q.get("sni")
             if sni_vals:
                 proxy["sni"] = sni_vals[0]
-            if q.get("security"):
+            if security:
                 proxy["tls"] = True
             return proxy
         elif scheme in ("ss", "shadowsocks"):
