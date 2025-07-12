@@ -74,6 +74,17 @@ def is_valid_config(link: str) -> bool:
             return True
         except Exception:
             return False
+    if scheme == "ssr":
+        padded = rest + "=" * (-len(rest) % 4)
+        try:
+            decoded = base64.urlsafe_b64decode(padded).decode()
+        except Exception:
+            return False
+        host_part = decoded.split("/", 1)[0]
+        if ":" not in host_part:
+            return False
+        host, port = host_part.split(":", 1)
+        return bool(host and port)
     host_required = {
         "naive",
         "hy2",
@@ -84,7 +95,6 @@ def is_valid_config(link: str) -> bool:
         "hysteria2",
         "tuic",
         "ss",
-        "ssr",
     }
     if scheme in host_required:
         if "@" not in rest:
