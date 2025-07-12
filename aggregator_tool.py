@@ -26,9 +26,9 @@ from aiohttp import ClientSession, ClientTimeout
 from telethon import TelegramClient, events, errors
 from telethon.tl.custom.message import Message
 
+from constants import SOURCES_FILE
 
 CONFIG_FILE = Path("config.json")
-SOURCES_FILE = Path("sources.txt")
 CHANNELS_FILE = Path("channels.txt")
 
 # Match full config links for supported protocols
