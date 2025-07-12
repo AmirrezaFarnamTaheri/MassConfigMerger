@@ -43,7 +43,7 @@ PROTOCOL_RE = re.compile(
     r")://\S+",
     re.IGNORECASE,
 )
-BASE64_RE = re.compile(r"^[A-Za-z0-9+/=]+$")
+BASE64_RE = re.compile(r"^[A-Za-z0-9+/=_-]+$")
 HTTP_RE = re.compile(r"https?://\S+", re.IGNORECASE)
 
 # Safety limit for base64 decoding to avoid huge payloads
@@ -250,7 +250,8 @@ def parse_configs_from_text(text: str) -> Set[str]:
                 )
                 continue
             try:
-                decoded = base64.b64decode(line).decode()
+                padded = line + "=" * (-len(line) % 4)
+                decoded = base64.urlsafe_b64decode(padded).decode()
                 configs.update(PROTOCOL_RE.findall(decoded))
             except (binascii.Error, UnicodeDecodeError) as exc:
                 logging.debug("Failed to decode base64 line: %s", exc)
