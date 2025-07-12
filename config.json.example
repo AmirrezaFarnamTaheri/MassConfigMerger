@@ -12,5 +12,6 @@
   "exclude_patterns": [],
   "output_dir": "output",
   "log_dir": "logs",
-  "max_concurrent": 20
+  "max_concurrent": 20,
+  "prune_failures": 3
 }

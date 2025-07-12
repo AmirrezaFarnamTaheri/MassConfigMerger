@@ -69,3 +69,32 @@ def test_cli_flags_override(monkeypatch, tmp_path):
     assert not cfg.write_base64
     assert not cfg.write_singbox
     assert not cfg.write_clash
+
+
+def test_cli_no_prune_flag(monkeypatch, tmp_path):
+    cfg_data = {
+        "output_dir": str(tmp_path / "out"),
+        "log_dir": str(tmp_path / "logs"),
+    }
+    cfg_path = tmp_path / "config.json"
+    cfg_path.write_text(json.dumps(cfg_data))
+
+    recorded = {}
+
+    async def fake_run_pipeline(cfg, *a, **kw):
+        recorded["prune"] = kw.get("prune")
+        return Path(cfg.output_dir), []
+
+    monkeypatch.setattr(aggregator_tool, "run_pipeline", fake_run_pipeline)
+    monkeypatch.setattr(aggregator_tool, "setup_logging", lambda *_: None)
+    monkeypatch.setattr(aggregator_tool, "_get_script_dir", lambda: tmp_path)
+    monkeypatch.setattr(sys, "argv", [
+        "aggregator_tool.py",
+        "--config",
+        str(cfg_path),
+        "--no-prune",
+    ])
+
+    aggregator_tool.main()
+
+    assert recorded["prune"] is False

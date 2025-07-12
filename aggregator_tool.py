@@ -111,6 +111,7 @@ class Config:
     write_base64: bool = True
     write_singbox: bool = True
     write_clash: bool = True
+    prune_failures: int = 3
 
     @classmethod
     def load(
@@ -169,6 +170,7 @@ class Config:
             "write_base64": True,
             "write_singbox": True,
             "write_clash": True,
+            "prune_failures": 3,
         }
         if defaults:
             merged_defaults.update(defaults)
@@ -220,8 +222,18 @@ def parse_configs_from_text(text: str) -> Set[str]:
     return configs
 
 
-async def check_and_update_sources(path: Path, concurrent_limit: int = 20) -> List[str]:
-    """Validate and deduplicate sources list concurrently."""
+async def check_and_update_sources(
+    path: Path,
+    concurrent_limit: int = 20,
+    failure_limit: int = 3,
+    prune: bool = True,
+) -> List[str]:
+    """Validate and deduplicate sources list concurrently.
+
+    ``failure_limit`` specifies how many consecutive failed runs are allowed
+    before a source is removed when ``prune`` is True.  Failure counts are
+    stored in ``path`` with a ``_failures.json`` suffix to persist across runs.
+    """
     if not path.exists():
         logging.warning("sources file not found: %s", path)
         return []
@@ -229,6 +241,16 @@ async def check_and_update_sources(path: Path, concurrent_limit: int = 20) -> Li
     with path.open() as f:
         sources = {line.strip() for line in f if line.strip()}
 
+    failure_file = path.with_name(path.stem + "_failures.json")
+    try:
+        with failure_file.open() as ff:
+            failure_counts: Dict[str, int] = json.load(ff)
+    except FileNotFoundError:
+        failure_counts = {}
+    except json.JSONDecodeError:
+        failure_counts = {}
+
+    removed: List[str] = []
     valid_sources: List[str] = []
     semaphore = asyncio.Semaphore(concurrent_limit)
     connector = aiohttp.TCPConnector(limit=concurrent_limit)
@@ -236,12 +258,17 @@ async def check_and_update_sources(path: Path, concurrent_limit: int = 20) -> Li
     async def check(url: str) -> str | None:
         async with semaphore:
             text = await fetch_text(session, url)
-        if not text:
-            logging.info("Removing dead source: %s", url)
-            return None
-        if not parse_configs_from_text(text):
-            logging.info("Removing empty source: %s", url)
-            return None
+        if not text or not parse_configs_from_text(text):
+            count = failure_counts.get(url, 0) + 1
+            failure_counts[url] = count
+            if prune and count >= failure_limit:
+                logging.info("Removing dead source: %s", url)
+                removed.append(url)
+                failure_counts.pop(url, None)
+                return None
+            logging.info("Source failed %d/%d: %s", count, failure_limit, url)
+            return url
+        failure_counts.pop(url, None)
         return url
 
     async with aiohttp.ClientSession(connector=connector) as session:
@@ -251,10 +278,18 @@ async def check_and_update_sources(path: Path, concurrent_limit: int = 20) -> Li
             if result:
                 valid_sources.append(result)
 
-
     with path.open("w") as f:
         for url in valid_sources:
             f.write(f"{url}\n")
+    if removed:
+        removed_file = path.with_name(path.stem + "_removed.txt")
+        with removed_file.open("a") as rf:
+            for url in removed:
+                rf.write(url + "\n")
+
+    with failure_file.open("w") as ff:
+        json.dump(failure_counts, ff)
+
     logging.info("Valid sources: %d", len(valid_sources))
     return valid_sources
 
@@ -582,10 +617,16 @@ async def run_pipeline(
     sources_file: Path = SOURCES_FILE,
     channels_file: Path = CHANNELS_FILE,
     last_hours: int = 24,
+    prune: bool = True,
 ) -> Tuple[Path, List[Path]]:
     """Full aggregation pipeline.
     Returns output directory and list of created files."""
-    sources = await check_and_update_sources(sources_file, cfg.max_concurrent)
+    sources = await check_and_update_sources(
+        sources_file,
+        cfg.max_concurrent,
+        cfg.prune_failures,
+        prune,
+    )
     configs = await fetch_and_parse_configs(sources, cfg.max_concurrent)
     configs |= await scrape_telegram_configs(channels_file, last_hours, cfg)
 
@@ -699,6 +740,7 @@ def main() -> None:
     parser.add_argument("--no-base64", action="store_true", help="skip merged_base64.txt")
     parser.add_argument("--no-singbox", action="store_true", help="skip merged_singbox.json")
     parser.add_argument("--no-clash", action="store_true", help="skip clash.yaml")
+    parser.add_argument("--no-prune", action="store_true", help="do not remove failing sources")
     args = parser.parse_args()
 
     cfg = Config.load(Path(args.config))
@@ -756,6 +798,7 @@ def main() -> None:
                 Path(args.sources),
                 Path(args.channels),
                 args.hours,
+                prune=not args.no_prune,
             )
         )
         print(f"Aggregation complete. Files written to {out_dir.resolve()}")
