@@ -1,5 +1,6 @@
 import os
 import sys
+import base64
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import aggregator_tool
@@ -45,3 +46,9 @@ def test_parse_oversized_line(caplog):
         result = aggregator_tool.parse_configs_from_text(big_line)
     assert result == set()
     assert "Skipping oversized base64 line" in caplog.text
+
+
+def test_urlsafe_base64_line():
+    encoded = base64.urlsafe_b64encode(b"vmess://a  >").decode()
+    result = aggregator_tool.parse_configs_from_text(encoded)
+    assert result == {"vmess://a"}
