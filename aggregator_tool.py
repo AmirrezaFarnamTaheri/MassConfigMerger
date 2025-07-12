@@ -16,7 +16,7 @@ import re
 from dataclasses import dataclass, field, fields
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Iterable, List, Set, Optional, Dict, Union, Tuple
+from typing import Iterable, List, Set, Optional, Dict, Union, Tuple, cast
 from urllib.parse import urlparse, parse_qs
 
 import yaml
@@ -677,8 +677,11 @@ async def telegram_bot_mode(
         logging.info("Telegram credentials not provided; skipping bot mode")
         return
 
-    bot = TelegramClient("bot", cfg.telegram_api_id, cfg.telegram_api_hash).start(
-        bot_token=cfg.telegram_bot_token
+    bot = cast(
+        TelegramClient,
+        TelegramClient("bot", cfg.telegram_api_id, cfg.telegram_api_hash).start(
+            bot_token=cfg.telegram_bot_token
+        ),
     )
     last_update = None
 
@@ -703,7 +706,7 @@ async def telegram_bot_mode(
         )
 
         for path in files:
-            await event.respond(file=str(path))
+            await event.respond(file=str(path))  # type: ignore[call-arg]
         last_update = datetime.utcnow()
 
     @bot.on(events.NewMessage(pattern="/status"))
