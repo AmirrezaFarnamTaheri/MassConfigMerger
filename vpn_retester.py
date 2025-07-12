@@ -4,6 +4,7 @@
 import asyncio
 import argparse
 import base64
+import binascii
 import csv
 from pathlib import Path
 from typing import List, Tuple, Optional
@@ -37,7 +38,7 @@ def load_configs(path: Path) -> List[str]:
     if text and '://' not in text.splitlines()[0]:
         try:
             text = base64.b64decode(text).decode("utf-8")
-        except Exception as e:
+        except (binascii.Error, UnicodeDecodeError) as e:
             raise ValueError("Failed to decode base64 input") from e
     return [line.strip() for line in text.splitlines() if line.strip()]
 
