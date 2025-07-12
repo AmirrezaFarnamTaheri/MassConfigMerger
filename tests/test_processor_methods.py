@@ -29,6 +29,15 @@ def make_trojan(passwd="pw", host="example.com", port=443, note=None):
     return link
 
 
+def make_shadowsocks(password="pw", host="example.com", port=443, note=None, method="aes-128-gcm"):
+    payload = f"{method}:{password}@{host}:{port}"
+    b64 = base64.b64encode(payload.encode()).decode().strip("=")
+    link = f"ss://{b64}"
+    if note:
+        link += f"#{note}"
+    return link
+
+
 def test_create_semantic_hash_consistent_with_fragment():
     proc = EnhancedConfigProcessor()
     link1 = make_trojan(note=None)
@@ -40,6 +49,20 @@ def test_create_semantic_hash_userid_difference():
     proc = EnhancedConfigProcessor()
     link1 = make_vmess("abc")
     link2 = make_vmess("def")
+    assert proc.create_semantic_hash(link1) != proc.create_semantic_hash(link2)
+
+
+def test_create_semantic_hash_trojan_password_difference():
+    proc = EnhancedConfigProcessor()
+    link1 = make_trojan(passwd="one")
+    link2 = make_trojan(passwd="two")
+    assert proc.create_semantic_hash(link1) != proc.create_semantic_hash(link2)
+
+
+def test_create_semantic_hash_shadowsocks_password_difference():
+    proc = EnhancedConfigProcessor()
+    link1 = make_shadowsocks(password="one")
+    link2 = make_shadowsocks(password="two")
     assert proc.create_semantic_hash(link1) != proc.create_semantic_hash(link2)
 
 
@@ -70,6 +93,21 @@ def test_deduplicate_config_results(monkeypatch):
     assert len(unique) == 2
     hashes = [merger.processor.create_semantic_hash(r.config) for r in unique]
     assert len(set(hashes)) == 2
+
+
+def test_deduplicate_config_results_password_difference(monkeypatch):
+    merger = UltimateVPNMerger()
+    monkeypatch.setattr(CONFIG, "tls_fragment", None)
+    monkeypatch.setattr(CONFIG, "include_protocols", None)
+    monkeypatch.setattr(CONFIG, "exclude_protocols", None)
+
+    link1 = make_trojan(passwd="a")
+    link2 = make_trojan(passwd="b")
+    r1 = ConfigResult(config=link1, protocol="Trojan")
+    r2 = ConfigResult(config=link2, protocol="Trojan")
+    unique = merger._deduplicate_config_results([r1, r2])
+    assert len(unique) == 2
+    assert set(r.config for r in unique) == {link1, link2}
 
 
 def test_print_final_summary_zero_configs(capsys):

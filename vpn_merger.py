@@ -901,26 +901,48 @@ class EnhancedConfigProcessor:
     def create_semantic_hash(self, config: str) -> str:
         """Create semantic hash for intelligent deduplication."""
         host, port = self.extract_host_port(config)
-        user_id = None
+        identifier = None
 
-        if config.startswith(("vmess://", "vless://")):
+        scheme = config.split("://", 1)[0].lower()
+
+        if scheme in ("vmess", "vless"):
             try:
                 after_scheme = config.split("://", 1)[1]
                 parsed = urlparse(config)
                 if parsed.username:
-                    user_id = parsed.username
+                    identifier = parsed.username
                 else:
                     padded = after_scheme + "=" * (-len(after_scheme) % 4)
                     decoded = base64.b64decode(padded).decode("utf-8", "ignore")
                     data = json.loads(decoded)
-                    user_id = data.get("id") or data.get("uuid") or data.get("user")
+                    identifier = data.get("id") or data.get("uuid") or data.get("user")
+            except Exception:
+                pass
+        elif scheme == "trojan":
+            try:
+                parsed = urlparse(config)
+                identifier = parsed.username or parsed.password
+            except Exception:
+                pass
+        elif scheme in ("ss", "shadowsocks"):
+            try:
+                parsed = urlparse(config)
+                if parsed.username and parsed.password:
+                    identifier = parsed.password
+                else:
+                    base = config.split("://", 1)[1].split("#", 1)[0]
+                    padded = base + "=" * (-len(base) % 4)
+                    decoded = base64.b64decode(padded).decode("utf-8", "ignore")
+                    before_at = decoded.split("@", 1)[0]
+                    method, password = before_at.split(":", 1)
+                    identifier = password
             except Exception:
                 pass
 
         if host and port:
             key = f"{host}:{port}"
-            if user_id:
-                key = f"{user_id}@{key}"
+            if identifier:
+                key = f"{identifier}@{key}"
         else:
             normalized = re.sub(r'#.*$', '', config).strip()
             key = normalized
