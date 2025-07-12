@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import binascii
 import json
 import logging
 import re
@@ -73,7 +74,8 @@ def is_valid_config(link: str) -> bool:
         try:
             json.loads(base64.b64decode(padded).decode())
             return True
-        except Exception:
+        except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            logging.warning("Invalid vmess config: %s", exc)
             return False
 
     # ShadowsocksR links are base64 encoded after the scheme
@@ -82,7 +84,8 @@ def is_valid_config(link: str) -> bool:
         padded = encoded + "=" * (-len(encoded) % 4)
         try:
             decoded = base64.urlsafe_b64decode(padded).decode()
-        except Exception:
+        except (binascii.Error, UnicodeDecodeError) as exc:
+            logging.warning("Invalid ssr config encoding: %s", exc)
             return False
         host_part = decoded.split("/", 1)[0]
         if ":" not in host_part:
@@ -215,8 +218,8 @@ async def fetch_text(
             async with session.get(url, timeout=ClientTimeout(total=timeout)) as resp:
                 if resp.status == 200:
                     return await resp.text()
-        except Exception as e:
-            logging.debug("fetch_text error on %s: %s", url, e)
+        except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+            logging.debug("fetch_text error on %s: %s", url, exc)
             await asyncio.sleep(1)
     return None
 
@@ -234,8 +237,8 @@ def parse_configs_from_text(text: str) -> Set[str]:
             try:
                 decoded = base64.b64decode(line).decode()
                 configs.update(PROTOCOL_RE.findall(decoded))
-            except Exception as e:
-                logging.debug("Failed to decode base64 line: %s", e)
+            except (binascii.Error, UnicodeDecodeError) as exc:
+                logging.debug("Failed to decode base64 line: %s", exc)
                 continue
     return configs
 
@@ -259,7 +262,8 @@ async def check_and_update_sources(
 
     try:
         failures = json.loads(failures_path.read_text())
-    except Exception:
+    except (OSError, json.JSONDecodeError) as exc:
+        logging.warning("Failed to load failures file: %s", exc)
         failures = {}
 
     with path.open() as f:
@@ -375,7 +379,7 @@ async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Con
                         try:
                             await client.disconnect()
                             await client.connect()
-                        except Exception as rexc:
+                        except (errors.RPCError, OSError) as rexc:
                             logging.warning("Reconnect failed: %s", rexc)
                             break
                 if not success:
@@ -387,11 +391,11 @@ async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Con
                     len(configs) - count_before,
                 )
         await client.disconnect()
-    except Exception as e:
+    except (errors.RPCError, OSError, aiohttp.ClientError) as e:
         logging.warning("Telegram connection failed: %s", e)
         try:
             await client.disconnect()
-        except Exception:
+        except (errors.RPCError, OSError):
             pass
         return set()
 
@@ -452,8 +456,8 @@ def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
         # Validate base64 decodes cleanly
         try:
             base64.b64decode(b64_content).decode()
-        except Exception:
-            logging.warning("Base64 validation failed")
+        except (binascii.Error, UnicodeDecodeError) as exc:
+            logging.warning("Base64 validation failed: %s", exc)
 
     if cfg.write_singbox:
         # Simple sing-box style JSON
@@ -491,7 +495,8 @@ def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
                     if data.get("tls") or data.get("security"):
                         proxy["tls"] = True
                     return proxy
-                except Exception:
+                except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+                    logging.debug("Fallback Clash parse for vmess: %s", exc)
                     p = urlparse(config)
                     q = parse_qs(p.query)
                     proxy = {
@@ -602,7 +607,8 @@ def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
                     "server": p.hostname,
                     "port": p.port,
                 }
-        except Exception:
+        except (ValueError, binascii.Error, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            logging.debug("Failed to build Clash proxy: %s", exc)
             return None
 
     proxies = []
