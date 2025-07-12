@@ -818,6 +818,8 @@ class UltimateVPNMerger:
 
                 cumulative_stats = self._analyze_results(self.cumulative_unique, self.available_sources)
                 await self._generate_comprehensive_outputs(self.cumulative_unique, cumulative_stats, self.start_time, prefix="cumulative_")
+                if CONFIG.cumulative_batches:
+                    self.last_saved_count = len(self.cumulative_unique)
 
                 if CONFIG.threshold > 0 and len(self.cumulative_unique) >= CONFIG.threshold:
                     print(f"\n⏹️  Threshold of {CONFIG.threshold} configs reached. Stopping early.")
@@ -842,6 +844,8 @@ class UltimateVPNMerger:
 
                 cumulative_stats = self._analyze_results(self.cumulative_unique, self.available_sources)
                 await self._generate_comprehensive_outputs(self.cumulative_unique, cumulative_stats, self.start_time, prefix="cumulative_")
+                if CONFIG.cumulative_batches:
+                    self.last_saved_count = len(self.cumulative_unique)
 
                 self.next_batch_threshold += CONFIG.batch_size
 
