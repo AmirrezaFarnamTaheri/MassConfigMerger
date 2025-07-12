@@ -412,6 +412,8 @@ def deduplicate_and_filter(
     # ``protocols`` overrides ``cfg.protocols`` when provided, even if empty
     if protocols is None:
         protocols = cfg.protocols
+    if protocols:
+        protocols = [p.lower() for p in protocols]
     exclude = [re.compile(p, re.IGNORECASE) for p in cfg.exclude_patterns]
     seen: Set[str] = set()
     for link in sorted(c.strip() for c in config_set):
@@ -822,7 +824,7 @@ def main() -> None:
     cfg.log_dir = str(resolved_log_dir)
 
     if args.protocols:
-        protocols = [p.strip() for p in args.protocols.split(",") if p.strip()]
+        protocols = [p.strip().lower() for p in args.protocols.split(",") if p.strip()]
     else:
         protocols = None
 
