@@ -58,6 +58,13 @@ def test_create_semantic_hash_consistent_with_fragment():
     assert proc.create_semantic_hash(link1) == proc.create_semantic_hash(link2)
 
 
+def test_create_semantic_hash_query_param_order():
+    proc = EnhancedConfigProcessor()
+    link1 = "foo://example.com/path?a=1&b=2#frag"
+    link2 = "foo://example.com/path?b=2&a=1"
+    assert proc.create_semantic_hash(link1) == proc.create_semantic_hash(link2)
+
+
 def test_create_semantic_hash_userid_difference():
     proc = EnhancedConfigProcessor()
     link1 = make_vmess("abc")
