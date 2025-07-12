@@ -124,6 +124,8 @@ class Config:
     mux_concurrency: int
     smux_streams: int
     geoip_db: Optional[str] = None
+    include_countries: Optional[Set[str]] = None
+    exclude_countries: Optional[Set[str]] = None
 
 CONFIG = Config(
     headers={
@@ -176,7 +178,9 @@ CONFIG = Config(
     write_clash_proxies=True,
     mux_concurrency=8,
     smux_streams=4,
-    geoip_db=None
+    geoip_db=None,
+    include_countries=None,
+    exclude_countries=None
 )
 
 # Compiled regular expressions from --exclude-pattern
@@ -855,6 +859,12 @@ class UltimateVPNMerger:
                 continue
             if CONFIG.exclude_protocols and result.protocol.upper() in CONFIG.exclude_protocols:
                 continue
+            if CONFIG.include_countries and (
+                not result.country or result.country.upper() not in CONFIG.include_countries
+            ):
+                continue
+            if CONFIG.exclude_countries and result.country and result.country.upper() in CONFIG.exclude_countries:
+                continue
             if EXCLUDE_REGEXES and any(r.search(text) for r in EXCLUDE_REGEXES):
                 continue
             config_hash = self.processor.create_semantic_hash(result.config)
@@ -1395,6 +1405,10 @@ def main():
                         help="Do not save simple Clash proxy list")
     parser.add_argument("--geoip-db", type=str, default=None,
                         help="Path to GeoLite2 Country database for GeoIP lookup")
+    parser.add_argument("--include-country", type=str, default=None,
+                        help="Comma-separated ISO codes to include (requires GeoIP)")
+    parser.add_argument("--exclude-country", type=str, default=None,
+                        help="Comma-separated ISO codes to exclude")
     args, unknown = parser.parse_known_args()
     if unknown:
         logging.warning("Ignoring unknown arguments: %s", unknown)
@@ -1442,6 +1456,10 @@ def main():
     CONFIG.mux_concurrency = max(0, args.mux)
     CONFIG.smux_streams = max(0, args.smux)
     CONFIG.geoip_db = args.geoip_db
+    if args.include_country:
+        CONFIG.include_countries = {c.strip().upper() for c in args.include_country.split(',') if c.strip()}
+    if args.exclude_country:
+        CONFIG.exclude_countries = {c.strip().upper() for c in args.exclude_country.split(',') if c.strip()}
     if args.no_url_test:
         CONFIG.enable_url_testing = False
     if args.no_sort:
