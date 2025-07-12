@@ -83,7 +83,7 @@ environment variable in `docker-compose.yml` to change how often it runs.
 
 | Feature | Description | Typical Use Case |
 | ------- | ----------- | ---------------- |
-| **Huge Source List** | Over 470 public subscription sources are built in. | Get a massive selection of servers with a single command. |
+| **Huge Source List** | Over 470 public subscription sources are included in `sources.txt`. | Get a massive selection of servers with a single command. |
 | **Availability Testing** | Checks each source before downloading. | Skip dead links and save time. |
 | **Connectivity Testing** | Optional TCP checks measure real latency. | Prioritize servers that actually respond. |
 | **Smart Sorting** | Orders the final list by reachability and speed. | Quickly pick the best server in your VPN client. |
@@ -109,7 +109,7 @@ environment variable in `docker-compose.yml` to change how often it runs.
 
 **Huge Source List**
 
-> Built-in links cover hundreds of GitHub projects, Telegram channels and personal blogs. Instead of hunting for URLs yourself, you get a curated list that is updated regularly. Perfect when you need a one-click way to access lots of servers.
+> The default `sources.txt` covers hundreds of GitHub projects, Telegram channels and personal blogs. Instead of hunting for URLs yourself, you get a curated list that is updated regularly. Perfect when you need a one-click way to access lots of servers.
 
 **Availability Testing**
 
@@ -511,12 +511,11 @@ them to `0` to disable if compatibility issues occur.
 
 #### **Adding Your Own Sources**
 
-If you have your own subscription links you'd like to merge, you can add them to the script:
+If you have your own subscription links you'd like to merge, simply edit `sources.txt`:
 
-1.  Open the `vpn_merger.py` file in a text editor.
-2.  Find the `UnifiedSources` class.
-3.  Add your links to the `SOURCES` list.
-4.  Save the file and run the script. If you are using the GitHub Actions method, commit the change, and the workflow will use your updated list.
+1.  Open the `sources.txt` file in a text editor.
+2.  Add your links one per line.
+3.  Run the merger normally. Use `--sources PATH` to load a different file if needed.
 
 #### **Retesting an Existing Output**
 

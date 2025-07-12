@@ -122,6 +122,7 @@ class Config:
     mux_concurrency: int
     smux_streams: int
     geoip_db: Optional[str] = None
+    sources_file: str = "sources.txt"
 
 CONFIG = Config(
     headers={
@@ -174,7 +175,8 @@ CONFIG = Config(
     write_clash_proxies=True,
     mux_concurrency=8,
     smux_streams=4,
-    geoip_db=None
+    geoip_db=None,
+    sources_file="sources.txt"
 )
 
 # Compiled regular expressions from --exclude-pattern
@@ -1139,7 +1141,15 @@ class UltimateVPNMerger:
     """VPN merger with unified functionality and comprehensive testing."""
     
     def __init__(self):
-        self.sources = UnifiedSources.get_all_sources()
+        path = Path(CONFIG.sources_file)
+        if not path.is_absolute():
+            path = _get_script_dir() / path
+        try:
+            with path.open("r", encoding="utf-8") as f:
+                self.sources = [line.strip() for line in f if line.strip()]
+        except FileNotFoundError as exc:
+            raise ValueError(f"Sources file not found: {path}") from exc
+
         if CONFIG.shuffle_sources:
             random.shuffle(self.sources)
         self.processor = EnhancedConfigProcessor()
@@ -1196,10 +1206,7 @@ class UltimateVPNMerger:
         """Execute the complete unified merging process."""
         print("🚀 VPN Subscription Merger - Final Unified & Polished Edition")
         print("=" * 85)
-        print(f"📊 Total unified sources: {len(self.sources)}")
-        print(f"🇮🇷 Iranian priority: {len(UnifiedSources.IRANIAN_PRIORITY)}")
-        print(f"🌍 International major: {len(UnifiedSources.INTERNATIONAL_MAJOR)}")
-        print(f"📦 Comprehensive batch: {len(UnifiedSources.COMPREHENSIVE_BATCH)}")
+        print(f"📊 Total sources: {len(self.sources)}")
         print(f"🔧 URL Testing: {'Enabled' if CONFIG.enable_url_testing else 'Disabled'}")
         print(f"📈 Smart Sorting: {'Enabled' if CONFIG.enable_sorting else 'Disabled'}")
         print()
@@ -1594,12 +1601,7 @@ class UltimateVPNMerger:
                 "sorting_enabled": CONFIG.enable_sorting,
             },
             "statistics": stats,
-            "source_categories": {
-                "iranian_priority": len(UnifiedSources.IRANIAN_PRIORITY),
-                "international_major": len(UnifiedSources.INTERNATIONAL_MAJOR),
-                "comprehensive_batch": len(UnifiedSources.COMPREHENSIVE_BATCH),
-                "total_unique_sources": len(self.sources),
-            },
+            "source_info": {"total_unique_sources": len(self.sources)},
             "output_files": {
                 "raw": str(raw_file),
                 **({"base64": str(base64_file)} if CONFIG.write_base64 else {}),
@@ -1969,6 +1971,8 @@ def main():
                         help="Do not save simple Clash proxy list")
     parser.add_argument("--geoip-db", type=str, default=None,
                         help="Path to GeoLite2 Country database for GeoIP lookup")
+    parser.add_argument("--sources", type=str, default=CONFIG.sources_file,
+                        help="Path to sources.txt")
     args, unknown = parser.parse_known_args()
     if unknown:
         logging.warning("Ignoring unknown arguments: %s", unknown)
@@ -2014,6 +2018,7 @@ def main():
     CONFIG.mux_concurrency = max(0, args.mux)
     CONFIG.smux_streams = max(0, args.smux)
     CONFIG.geoip_db = args.geoip_db
+    CONFIG.sources_file = args.sources
     if args.no_url_test:
         CONFIG.enable_url_testing = False
     if args.no_sort:
