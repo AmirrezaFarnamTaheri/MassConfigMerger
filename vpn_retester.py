@@ -34,10 +34,13 @@ async def retest_configs(configs: List[str]) -> List[Tuple[str, Optional[float]]
 
 
 def load_configs(path: Path) -> List[str]:
+    """Load raw or base64-encoded configuration strings from ``path``."""
+
     text = path.read_text(encoding="utf-8").strip()
     if text and '://' not in text.splitlines()[0]:
         try:
-            text = base64.b64decode(text).decode("utf-8")
+            decoded_bytes = base64.b64decode(text)
+            text = decoded_bytes.decode("utf-8")
         except (binascii.Error, UnicodeDecodeError) as e:
             raise ValueError("Failed to decode base64 input") from e
     return [line.strip() for line in text.splitlines() if line.strip()]

@@ -35,3 +35,13 @@ def test_decode_other_error(tmp_path, monkeypatch):
     with pytest.raises(RuntimeError):
         vpn_retester.load_configs(p)
 
+
+def test_load_unicode_decode_error(tmp_path):
+    """Invalid UTF-8 bytes after base64 decoding should raise ValueError."""
+    bad_bytes = b"\xff\xff"
+    data = base64.b64encode(bad_bytes).decode()
+    p = tmp_path / "bad_utf.txt"
+    p.write_text(data, encoding="utf-8")
+    with pytest.raises(ValueError):
+        vpn_retester.load_configs(p)
+
