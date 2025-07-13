@@ -105,6 +105,32 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 | `vpn_singbox.json`            | Outbound objects ready for import into sing-box/Stash.                                                   |
 | `clash.yaml`                  | Clash configuration with all proxies and a basic group. Compatible with Clash/Clash Meta.                  |
 | `vpn_clash_proxies.yaml`      | Minimal Clash YAML listing only the proxies, suitable as a provider.                                      |
+| `surge.conf` *(via `--output-surge`)* | Surge format configuration. Works with Surge iOS/macOS 5 or later.                                    |
+| `quantumultx.conf` *(via `--output-qx`)* | Quantumult X server list compatible with version 1.1.9+ on iOS.                                      |
+
+All of these files are written to the directory specified by `--output-dir`
+(defaults to `output/`) unless an absolute path is given.
+
+### Surge & Quantumult X Usage
+
+Generate client-specific output automatically:
+
+```bash
+python vpn_merger.py --output-surge surge.conf --output-qx quantumultx.conf
+```
+
+You can also call the converters directly from
+[`src/massconfigmerger/advanced_converters.py`](src/massconfigmerger/advanced_converters.py):
+
+```python
+from massconfigmerger.advanced_converters import (
+    generate_surge_conf,
+    generate_qx_conf,
+)
+
+surge_data = generate_surge_conf(proxies)
+qx_data = generate_qx_conf(proxies)
+```
 
 ### Important Notes
 
