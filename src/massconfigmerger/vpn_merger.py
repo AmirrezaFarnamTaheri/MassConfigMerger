@@ -50,6 +50,7 @@ from .clash_utils import config_to_clash_proxy, flag_emoji, build_clash_config
 
 from .config import Settings, load_config
 from .tester import NodeTester
+from .utils import PROTOCOL_RE, BASE64_RE, MAX_DECODE_SIZE, fetch_text
 
 try:
     import aiohttp
@@ -96,57 +97,7 @@ except ValueError:
 EXCLUDE_REGEXES: List[re.Pattern] = []
 
 # Regex patterns for extracting configuration links during pre-flight checks
-PROTOCOL_RE = re.compile(
-    r"(?:"
-    r"vmess|vless|reality|ssr?|trojan|hy2|hysteria2?|tuic|"
-    r"shadowtls|juicity|naive|brook|wireguard|"
-    r"socks5|socks4|socks|http|https|grpc|ws|wss|"
-    r"tcp|kcp|quic|h2"
-    r")://\S+",
-    re.IGNORECASE,
-)
-BASE64_RE = re.compile(r"^[A-Za-z0-9+/=_-]+$")
-MAX_DECODE_SIZE = 256 * 1024  # 256 kB
 
-
-async def fetch_text(
-    session: aiohttp.ClientSession,
-    url: str,
-    timeout: int = 10,
-    *,
-    retries: int = 3,
-    base_delay: float = 1.0,
-    jitter: float = 0.1,
-) -> str | None:
-    """Fetch text content with retries."""
-    parsed = urlparse(url)
-    if not parsed.scheme or not parsed.netloc:
-        logging.debug("fetch_text invalid url: %s", url)
-        return None
-
-    attempt = 0
-    while attempt < retries:
-        try:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=timeout)) as resp:
-                if resp.status == 200:
-                    return await resp.text()
-                if 400 <= resp.status < 500 and resp.status != 429:
-                    logging.debug("fetch_text non-retry status %s on %s", resp.status, url)
-                    return None
-                if not (500 <= resp.status < 600 or resp.status == 429):
-                    logging.debug(
-                        "fetch_text non-transient status %s on %s", resp.status, url
-                    )
-                    return None
-        except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
-            logging.debug("fetch_text error on %s: %s", url, exc)
-
-        attempt += 1
-        if attempt >= retries:
-            break
-        delay = base_delay * 2 ** (attempt - 1)
-        await asyncio.sleep(delay + random.uniform(0, jitter))
-    return None
 
 
 def parse_first_configs(text: str, limit: int = 5) -> List[str]:

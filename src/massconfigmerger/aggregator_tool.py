@@ -14,7 +14,6 @@ import base64
 import binascii
 import json
 import logging
-import random
 import re
 import sys
 from datetime import datetime, timedelta
@@ -26,12 +25,23 @@ from .clash_utils import config_to_clash_proxy, build_clash_config
 import yaml
 
 import aiohttp
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientSession
 from telethon import TelegramClient, events, errors  # type: ignore
 from telethon.tl.custom.message import Message  # type: ignore
 from . import vpn_merger
 
 from .constants import SOURCES_FILE
+from . import utils as _utils
+from .utils import (
+    PROTOCOL_RE,
+    BASE64_RE,
+    HTTP_RE,
+    MAX_DECODE_SIZE,
+    fetch_text,
+)
+
+# Expose utils.random so tests can patch jitter behavior
+random = _utils.random
 
 from .config import Settings, load_config
 
@@ -43,21 +53,6 @@ def _choose_proxy(cfg: Settings) -> str | None:
 CONFIG_FILE = Path("config.yaml")
 CHANNELS_FILE = Path("channels.txt")
 
-# Match full config links for supported protocols
-PROTOCOL_RE = re.compile(
-    r"(?:"
-    r"vmess|vless|reality|ssr?|trojan|hy2|hysteria2?|tuic|"
-    r"shadowtls|juicity|naive|brook|wireguard|"
-    r"socks5|socks4|socks|http|https|grpc|ws|wss|"
-    r"tcp|kcp|quic|h2"
-    r")://\S+",
-    re.IGNORECASE,
-)
-BASE64_RE = re.compile(r"^[A-Za-z0-9+/=_-]+$")
-HTTP_RE = re.compile(r"https?://\S+", re.IGNORECASE)
-
-# Safety limit for base64 decoding to avoid huge payloads
-MAX_DECODE_SIZE = 256 * 1024  # 256 kB
 
 
 def _get_script_dir() -> Path:
@@ -146,57 +141,6 @@ def is_valid_config(link: str) -> bool:
 
 
 
-
-async def fetch_text(
-    session: ClientSession,
-    url: str,
-    timeout: int = 10,
-    *,
-    retries: int = 3,
-    base_delay: float = 1.0,
-    jitter: float = 0.1,
-    proxy: str | None = None,
-) -> str | None:
-    """Fetch text content from ``url`` with retries and exponential backoff.
-
-    ``base_delay`` controls the initial wait time, while ``jitter`` is added as a
-    random component to each delay to avoid thundering herd issues.
-    """
-    parsed = urlparse(url)
-    if not parsed.scheme or not parsed.netloc:
-        logging.debug("fetch_text invalid url: %s", url)
-        return None
-
-    attempt = 0
-    use_temp = hasattr(session, "loop") and session.loop is not asyncio.get_running_loop()
-    if use_temp:
-        session = aiohttp.ClientSession(proxy=proxy) if proxy else aiohttp.ClientSession()
-    while attempt < retries:
-        try:
-            async with session.get(url, timeout=ClientTimeout(total=timeout)) as resp:
-                if resp.status == 200:
-                    return await resp.text()
-                if 400 <= resp.status < 500 and resp.status != 429:
-                    logging.debug(
-                        "fetch_text non-retry status %s on %s", resp.status, url
-                    )
-                    return None
-                if not (500 <= resp.status < 600 or resp.status == 429):
-                    logging.debug(
-                        "fetch_text non-transient status %s on %s", resp.status, url
-                    )
-                    return None
-        except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
-            logging.debug("fetch_text error on %s: %s", url, exc)
-
-        attempt += 1
-        if attempt >= retries:
-            break
-        delay = base_delay * 2 ** (attempt - 1)
-        await asyncio.sleep(delay + random.uniform(0, jitter))
-    if use_temp:
-        await session.close()
-    return None
 
 
 def parse_configs_from_text(text: str) -> Set[str]:
