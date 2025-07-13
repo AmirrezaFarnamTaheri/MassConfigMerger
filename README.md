@@ -824,7 +824,8 @@ Install the `geoip2` package and download the free GeoLite2 database from MaxMin
 
 ## Testing
 
-Run `pytest` to execute the test suite. Install dependencies first with:
+Run `pytest` to execute the test suite. Make sure to install both the runtime
+and development dependencies first:
 
 ```bash
 pip install -r requirements.txt -r dev-requirements.txt
