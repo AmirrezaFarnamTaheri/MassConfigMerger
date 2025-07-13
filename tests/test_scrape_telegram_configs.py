@@ -34,7 +34,7 @@ class DummyClient:
         pass
 
 
-async def fake_fetch_text(session, url, timeout=10):
+async def fake_fetch_text(session, url, timeout=10, *, retries=3, base_delay=1.0):
     if "sub.example" in url:
         return "vmess://from_url"
     return None
@@ -52,7 +52,9 @@ def test_scrape_telegram_configs(monkeypatch, tmp_path):
     monkeypatch.setattr(aggregator_tool, "TelegramClient", DummyClient)
     monkeypatch.setattr(aggregator_tool, "Message", DummyMessage)
     monkeypatch.setattr(aggregator_tool, "fetch_text", fake_fetch_text)
-    monkeypatch.setattr(aggregator_tool, "errors", types.SimpleNamespace(RPCError=Exception))
+    monkeypatch.setattr(
+        aggregator_tool, "errors", types.SimpleNamespace(RPCError=Exception)
+    )
 
     result = asyncio.run(aggregator_tool.scrape_telegram_configs(channels, 24, cfg))
     assert result == {"vmess://direct1", "vmess://from_url", "http://sub.example"}

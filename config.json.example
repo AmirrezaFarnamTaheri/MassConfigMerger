@@ -1,17 +1,28 @@
 # You can set TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_BOT_TOKEN and
 # ALLOWED_USER_IDS in the environment and omit them from this file.
 {
-  "telegram_api_id": 123456,
-  "telegram_api_hash": "YOUR_HASH",
-  "telegram_bot_token": "BOT_TOKEN",
-  "allowed_user_ids": [11111111],
-  "protocols": [
-    "vmess", "vless", "trojan", "ss", "ssr", "hysteria", "hysteria2",
-    "tuic", "reality", "naive", "hy2", "wireguard"
-  ],
-  "exclude_patterns": [],
-  "output_dir": "output",
-  "log_dir": "logs",
-  "request_timeout": 10,
-  "max_concurrent": 20
+    "telegram_api_id": 123456,
+    "telegram_api_hash": "YOUR_HASH",
+    "telegram_bot_token": "BOT_TOKEN",
+    "allowed_user_ids": [11111111],
+    "protocols": [
+        "vmess",
+        "vless",
+        "trojan",
+        "ss",
+        "ssr",
+        "hysteria",
+        "hysteria2",
+        "tuic",
+        "reality",
+        "naive",
+        "hy2",
+        "wireguard",
+    ],
+    "exclude_patterns": [],
+    "output_dir": "output",
+    "log_dir": "logs",
+    "request_timeout": 10,
+    "max_concurrent": 20,
+    "settings": {"retry_attempts": 3, "retry_base_delay": 1.0},
 }
