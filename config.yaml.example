@@ -107,8 +107,8 @@ strict_batch: true
 shuffle_sources: false
 write_csv: true
 write_clash_proxies: true
-write_surge: false
-write_qx: false
+surge_file: null
+qx_file: null
 mux_concurrency: 8
 smux_streams: 4
 geoip_db: null
