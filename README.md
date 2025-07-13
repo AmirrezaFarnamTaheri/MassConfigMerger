@@ -727,7 +727,7 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
   "output_dir": "output",
   "log_dir": "logs",
   "request_timeout": 10,
-  "max_concurrent": 20,
+  "concurrent_limit": 20,
   "write_base64": true,
   "write_singbox": true,
   "write_clash": true
@@ -744,7 +744,7 @@ Optional fields use these defaults when omitted:
 - `output_dir` – `output` (relative to this folder)
 - `log_dir` – `logs` (relative to this folder)
 - `request_timeout` – `10`
-- `max_concurrent` – `20`
+- `concurrent_limit` – `20`
 - `write_base64` – `true`
 - `write_singbox` – `true`
 - `write_clash` – `true`
@@ -754,7 +754,7 @@ Optional fields use these defaults when omitted:
 - **output_dir** – where merged files are created. May be any path.
 - **log_dir** – daily log files are written here. May be any path.
 - **request_timeout** – HTTP request timeout in seconds (override with `--request-timeout`).
-- **max_concurrent** – maximum simultaneous HTTP requests for validating and fetching sources (override with `--concurrent-limit`).
+- **concurrent_limit** – maximum simultaneous HTTP requests for validating and fetching sources (override with `--concurrent-limit`).
 - **write_base64** – create `merged_base64.txt` when `true`.
 - **write_singbox** – create `merged_singbox.json` when `true`.
 - **write_clash** – create `clash.yaml` when `true`.
