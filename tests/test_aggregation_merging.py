@@ -9,6 +9,7 @@ pytest_plugins = "aiohttp.pytest_plugin"
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import aggregator_tool
 from vpn_merger import UltimateVPNMerger, ConfigResult, CONFIG
+from massconfigmerger.config import Settings
 
 
 @pytest.mark.asyncio
@@ -87,3 +88,50 @@ async def test_file_lock_prevents_duplicates(tmp_path, monkeypatch):
 
     assert (tmp_path / "vpn_subscription_raw.txt").exists()
     assert not any(p.suffix == ".tmp" for p in tmp_path.iterdir())
+
+
+@pytest.mark.asyncio
+async def test_run_pipeline_prunes_bad_sources(aiohttp_client, tmp_path, monkeypatch):
+    async def good(request):
+        return web.Response(text="vless://user@host:80")
+
+    async def bad(request):
+        return web.Response(status=500)
+
+    app = web.Application()
+    app.router.add_get("/good", good)
+    app.router.add_get("/bad", bad)
+    client = await aiohttp_client(app)
+
+    src = tmp_path / "sources.txt"
+    src.write_text(f"{client.make_url('/good')}\n{client.make_url('/bad')}\n")
+    channels = tmp_path / "channels.txt"
+    channels.write_text("")
+
+    cfg = Settings(
+        output_dir=str(tmp_path / "out"),
+        log_dir=str(tmp_path / "log"),
+        write_base64=False,
+        write_singbox=False,
+        write_clash=False,
+        concurrent_limit=2,
+        request_timeout=1,
+        retry_attempts=1,
+    )
+
+    async def fake_scrape(*_a, **_k):
+        return set()
+
+    monkeypatch.setattr(aggregator_tool, "scrape_telegram_configs", fake_scrape)
+
+    out_dir, _ = await aggregator_tool.run_pipeline(
+        cfg,
+        sources_file=src,
+        channels_file=channels,
+        failure_threshold=1,
+    )
+
+    merged = out_dir / "merged.txt"
+    assert merged.exists()
+    assert "vless://user@host:80" in merged.read_text()
+    assert src.read_text().strip() == str(client.make_url("/good"))
