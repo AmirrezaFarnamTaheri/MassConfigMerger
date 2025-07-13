@@ -34,7 +34,10 @@ def test_aggregator_clash_proxy(tmp_path):
         vmess_link,
         vless_link,
         ssr_link,
-        "reality://uuid@host:443?flow=xtls-rprx-vision&sni=site.com&fp=chrome",
+        (
+            "reality://uuid@host:443?flow=xtls-rprx-vision&publicKey=pub"
+            "&short-id=123&sni=site.com&fp=chrome"
+        ),
         "naive://user:pass@host:443",
     ]
     aggregator_tool.output_files(configs, tmp_path, cfg)
@@ -44,6 +47,8 @@ def test_aggregator_clash_proxy(tmp_path):
     assert reality["tls"] is True
     assert reality["sni"] == "site.com"
     assert reality["fp"] == "chrome"
+    assert reality["reality-opts"]["public-key"] == "pub"
+    assert reality["reality-opts"]["short-id"] == "123"
 
     vmess = next(p for p in data["proxies"] if p["type"] == "vmess")
     assert vmess["network"] == "ws"
