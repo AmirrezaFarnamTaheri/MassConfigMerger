@@ -1,10 +1,20 @@
-# VPN Subscription Merger 🚀
+# Mass Config Merger 🚀
+
+Automated toolchain for collecting, testing and merging free VPN configuration
+links from hundreds of public sources.
 
 [![CI](https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/actions/workflows/ci.yml/badge.svg)](https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/actions/workflows/ci.yml)
 [](https://opensource.org/licenses/MIT)
 
-Welcome to the VPN Subscription Merger! This project provides a powerful Python script that automatically fetches VPN configurations from the over 470 public sources listed in `sources.txt`, tests their connectivity, and merges them into a single, performance-sorted subscription link for use in your favorite VPN client. It can even save incremental batches while running so you always have up-to-date results.
+Welcome to **Mass Config Merger**! This project provides a powerful Python script that automatically fetches VPN configurations from the over 470 public sources listed in `sources.txt`, tests their connectivity, and merges them into a single, performance-sorted subscription link for use in your favorite VPN client. It can even save incremental batches while running so you always have up-to-date results.
 Both `aggregator_tool.py` and `vpn_merger.py` read from this same `sources.txt` file, so updating the list once applies to all tools.
+
+```mermaid
+flowchart LR
+    S[Sources] --> A[aggregator\_tool]
+    A --> M[vpn\_merger]
+    M --> O[Output Files]
+```
 
 This guide is designed for **everyone**, from absolute beginners with no coding experience to advanced users who want full automation.
 
@@ -243,7 +253,7 @@ environment variable in `docker-compose.yml` to change how often it runs.
 
 ## 📖 Table of Contents
 
-  * [How It Works](#-how-it-works)
+  * [Deep Dive](#-deep-dive)
   * [🛡️ Important Security & Privacy Disclaimer](#️-important-security--privacy-disclaimer)
   * [🛠️ How to Get Your Subscription Link (Choose One Method)](#️-how-to-get-your-subscription-link-choose-one-method)
       * [Method 1: Fully Automated with GitHub Actions (Recommended)](#method-1-fully-automated-with-github-actions-recommended)
@@ -254,9 +264,12 @@ environment variable in `docker-compose.yml` to change how often it runs.
       * [Android](#-android)
       * [macOS & iOS (iPhone/iPad)](#-macos--ios-iphoneipad)
   * [📂 Understanding the Output Files](#-understanding-the-output-files)
+  * [Protocol Comparison](#protocol-comparison)
   * [⚙️ Advanced Usage & Troubleshooting](#️-advanced-usage--troubleshooting)
+  * [Advanced Configuration](#advanced-configuration)
+  * [FAQ](#faq)
 
-## 🧠 How It Works
+## 🔬 Deep Dive
 
 The script automates a simple but powerful process to create the best possible subscription link from public sources:
 
@@ -506,6 +519,17 @@ Some VPN clients may not recognise every item in this list, and other clients mi
 
 -----
 
+### Protocol Comparison
+
+| Protocol | Key Benefit | Typical Downside |
+| -------- | ----------- | ---------------- |
+| **VLESS** | Flexible, supports multiple transports | Requires domain + TLS |
+| **Reality** | Real HTTPS fingerprint for stealth | Needs valid certificate |
+| **Trojan** | Simple TLS tunneling | Open port may be detected |
+| **Shadowsocks** | Lightweight and fast | Weaker privacy guarantees |
+| **WireGuard** | Kernel-level performance | Minimal obfuscation |
+| **Hysteria** | QUIC based, great for high throughput | UDP may be blocked |
+
 ## 📡 Protocol Deep Dive
 
 Below is a high-level overview of how the most common protocols work along with their strengths and weaknesses.
@@ -709,7 +733,7 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
    Send `/update` in your Telegram chat with the bot to trigger a run.  The bot
    will reply with the generated files.
 
-### Configuration
+### Advanced Configuration
 
 `config.yaml` contains all runtime options (see `config.yaml.example` for a complete template).  The values `telegram_api_id`, `telegram_api_hash`, `telegram_bot_token` and `allowed_user_ids` may also be supplied through the environment variables `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEGRAM_BOT_TOKEN` and `ALLOWED_USER_IDS`.  When set, these environment variables override any values in the file:
 
