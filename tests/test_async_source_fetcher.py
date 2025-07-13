@@ -3,11 +3,8 @@ import pytest
 
 pytest_plugins = "aiohttp.pytest_plugin"
 
-from massconfigmerger.vpn_merger import (
-    AsyncSourceFetcher,
-    EnhancedConfigProcessor,
-    CONFIG,
-)
+from massconfigmerger.source_fetcher import AsyncSourceFetcher
+from massconfigmerger.result_processor import EnhancedConfigProcessor, CONFIG
 from aiohttp import web
 
 

@@ -4,10 +4,10 @@ import json
 import sys
 import types
 
-from massconfigmerger.vpn_merger import (
+from massconfigmerger.vpn_merger import UltimateVPNMerger
+from massconfigmerger.result_processor import (
     EnhancedConfigProcessor,
     ConfigResult,
-    UltimateVPNMerger,
     CONFIG,
 )
 

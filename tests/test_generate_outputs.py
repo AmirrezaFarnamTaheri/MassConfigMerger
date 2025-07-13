@@ -4,7 +4,8 @@ import csv
 import json
 import yaml
 
-from massconfigmerger.vpn_merger import UltimateVPNMerger, ConfigResult, CONFIG
+from massconfigmerger.vpn_merger import UltimateVPNMerger
+from massconfigmerger.result_processor import ConfigResult, CONFIG
 
 
 def test_generate_comprehensive_outputs(tmp_path, monkeypatch):

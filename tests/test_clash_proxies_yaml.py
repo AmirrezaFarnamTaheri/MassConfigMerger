@@ -2,7 +2,8 @@ import asyncio
 import yaml
 from pathlib import Path
 
-from massconfigmerger.vpn_merger import UltimateVPNMerger, ConfigResult, CONFIG
+from massconfigmerger.vpn_merger import UltimateVPNMerger
+from massconfigmerger.result_processor import ConfigResult, CONFIG
 
 
 def test_clash_proxies_yaml(tmp_path, monkeypatch):
