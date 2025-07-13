@@ -693,7 +693,9 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
    python aggregator_tool.py --hours 12
    ```
    The aggregated configuration links will be written to the folder specified in
-   `output_dir` (default `output/`) as `merged.txt`. Depending on the
+   `output_dir` (default `output/` in this repository) as `merged.txt`. Any
+   absolute or relative path may be used and missing directories will be
+   created. Depending on the
    `write_base64`, `write_singbox` and `write_clash` options—overridable with the
    flags above—the files `merged_base64.txt`, `merged_singbox.json` and
    `clash.yaml` may also be created.
@@ -739,8 +741,8 @@ When provided, environment variables take precedence over the file values.
 Optional fields use these defaults when omitted:
 - `protocols` – `[]`
 - `exclude_patterns` – `[]`
-- `output_dir` – `output`
-- `log_dir` – `logs`
+- `output_dir` – `output` (relative to this folder)
+- `log_dir` – `logs` (relative to this folder)
 - `request_timeout` – `10`
 - `max_concurrent` – `20`
 - `write_base64` – `true`
@@ -749,8 +751,8 @@ Optional fields use these defaults when omitted:
 
 - **protocols** – only links starting with these schemes are kept.
 - **exclude_patterns** – regular expressions to remove unwanted links.
-- **output_dir** – where merged files are created.
-- **log_dir** – daily log files are written here.
+- **output_dir** – where merged files are created. May be any path.
+- **log_dir** – daily log files are written here. May be any path.
 - **request_timeout** – HTTP request timeout in seconds (override with `--request-timeout`).
 - **max_concurrent** – maximum simultaneous HTTP requests for validating and fetching sources (override with `--concurrent-limit`).
 - **write_base64** – create `merged_base64.txt` when `true`.
@@ -771,8 +773,8 @@ that file.
   updates.
 - When scraping Telegram make sure you only access **public** channels and
   respect Telegram's Terms of Service along with your local laws.
-- All events are logged to the directory specified in `log_dir` so you can audit
-  what was fetched and from where.
+- All events are logged to the directory specified in `log_dir` (defaults to
+  `logs/` here) so you can audit what was fetched and from where.
 ## FAQ
 
 ### Why does the script take so long?

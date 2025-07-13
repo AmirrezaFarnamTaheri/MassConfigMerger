@@ -48,7 +48,6 @@ def test_cli_flags_override(monkeypatch, tmp_path):
 
     monkeypatch.setattr(aggregator_tool, "run_pipeline", fake_run_pipeline)
     monkeypatch.setattr(aggregator_tool, "setup_logging", lambda *_: None)
-    monkeypatch.setattr(aggregator_tool, "_get_script_dir", lambda: tmp_path)
     monkeypatch.setattr(sys, "argv", [
         "aggregator_tool.py",
         "--config",
@@ -83,7 +82,6 @@ def test_cli_no_prune(monkeypatch, tmp_path):
 
     monkeypatch.setattr(aggregator_tool, "run_pipeline", fake_run_pipeline)
     monkeypatch.setattr(aggregator_tool, "setup_logging", lambda *_: None)
-    monkeypatch.setattr(aggregator_tool, "_get_script_dir", lambda: tmp_path)
     monkeypatch.setattr(sys, "argv", [
         "aggregator_tool.py",
         "--config",
@@ -115,7 +113,6 @@ def test_cli_with_merger(monkeypatch, tmp_path):
 
     monkeypatch.setattr(aggregator_tool, "run_pipeline", fake_run_pipeline)
     monkeypatch.setattr(aggregator_tool, "setup_logging", lambda *_: None)
-    monkeypatch.setattr(aggregator_tool, "_get_script_dir", lambda: tmp_path)
     monkeypatch.setattr(aggregator_tool.vpn_merger, "detect_and_run", fake_detect_and_run)
     monkeypatch.setattr(sys, "argv", [
         "aggregator_tool.py",
@@ -142,7 +139,6 @@ def test_cli_protocols_case_insensitive(monkeypatch, tmp_path):
 
     monkeypatch.setattr(aggregator_tool, "run_pipeline", fake_run_pipeline)
     monkeypatch.setattr(aggregator_tool, "setup_logging", lambda *_: None)
-    monkeypatch.setattr(aggregator_tool, "_get_script_dir", lambda: tmp_path)
     monkeypatch.setattr(sys, "argv", [
         "aggregator_tool.py",
         "--config",
