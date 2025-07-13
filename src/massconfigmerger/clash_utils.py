@@ -5,7 +5,9 @@ import binascii
 import json
 import logging
 from urllib.parse import parse_qs, urlparse
-from typing import Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+
+import yaml
 
 
 def config_to_clash_proxy(
@@ -398,3 +400,35 @@ def config_to_clash_proxy(
     ) as exc:
         logging.debug("config_to_clash_proxy failed: %s", exc)
         return None
+
+
+def flag_emoji(country: Optional[str]) -> str:
+    """Return flag emoji for a 2-letter country code."""
+    if not country or len(country) != 2:
+        return "🏳"
+    offset = 127397
+    return chr(ord(country[0].upper()) + offset) + chr(ord(country[1].upper()) + offset)
+
+
+def build_clash_config(proxies: List[Dict[str, Any]]) -> str:
+    """Return a Clash YAML config with default groups and rule."""
+    if not proxies:
+        return ""
+
+    names = [p["name"] for p in proxies]
+    groups = [
+        {
+            "name": "⚡ Auto-Select",
+            "type": "url-test",
+            "proxies": names,
+            "url": "http://www.gstatic.com/generate_204",
+            "interval": 300,
+        },
+        {"name": "🔰 MANUAL", "type": "select", "proxies": names},
+    ]
+    rules = ["MATCH, ⚡ Auto-Select"]
+    return yaml.safe_dump(
+        {"proxies": proxies, "proxy-groups": groups, "rules": rules},
+        allow_unicode=True,
+        sort_keys=False,
+    )

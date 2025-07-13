@@ -45,7 +45,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 from .constants import SOURCES_FILE
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse, parse_qsl
-from .clash_utils import config_to_clash_proxy
+from .clash_utils import config_to_clash_proxy, flag_emoji, build_clash_config
 
 from .config import Settings, load_config
 from .tester import NodeTester
@@ -1180,16 +1180,18 @@ class UltimateVPNMerger:
         proxies = []
         for idx, r in enumerate(results):
             proxy = config_to_clash_proxy(r.config, idx, r.protocol)
-            if proxy:
-                proxies.append(proxy)
-        if not proxies:
-            return ""
-        group = {
-            "name": "Auto",
-            "type": "select",
-            "proxies": [p["name"] for p in proxies],
-        }
-        return yaml.safe_dump({"proxies": proxies, "proxy-groups": [group]}, allow_unicode=True, sort_keys=False)
+            if not proxy:
+                continue
+            latency = (
+                f"{int(r.ping_time * 1000)}ms" if r.ping_time is not None else "?"
+            )
+            domain = urlparse(r.source_url).hostname or "src"
+            cc = r.country or "??"
+            emoji = flag_emoji(r.country)
+            proxy["name"] = f"{emoji} {cc} - {domain} - {latency}"
+            proxies.append(proxy)
+
+        return build_clash_config(proxies)
     
     def _print_final_summary(self, config_count: int, elapsed_time: float, stats: Dict) -> None:
         """Print comprehensive final summary."""
@@ -1203,25 +1205,28 @@ class UltimateVPNMerger:
         else:
             success = "N/A"
         print(f"📈 Success rate: {success}")
-        print(f"🔗 Available sources: {stats['available_sources']}/{stats['total_sources']}")
         speed = (config_count / elapsed_time) if elapsed_time else 0
-        print(f"⚡ Processing speed: {speed:.0f} configs/second")
-        
+
+        rows = [
+            ("Total configs", f"{config_count:,}"),
+            ("Reachable", f"{stats['reachable_configs']:,}"),
+            ("Success rate", success),
+            ("Sources", f"{stats['available_sources']}/{stats['total_sources']}"),
+            ("Speed", f"{speed:.0f} cfg/s"),
+        ]
+        print("\033[95m\nSUMMARY\033[0m")
+        print("\033[94m┌────────────────────┬──────────────┐\033[0m")
+        for label, value in rows:
+            print(f"\033[94m│ {label:<18} │\033[92m {value:<12}\033[94m│\033[0m")
+        print("\033[94m└────────────────────┴──────────────┘\033[0m")
         if CONFIG.enable_sorting and stats['reachable_configs'] > 0:
             print("🚀 Configs sorted by performance (fastest first)")
-        
         if stats['protocol_stats']:
             top_protocol = max(stats['protocol_stats'].items(), key=lambda x: x[1])[0]
         else:
             top_protocol = "N/A"
         print(f"🏆 Top protocol: {top_protocol}")
         print(f"📁 Output directory: ./{CONFIG.output_dir}/")
-        print("\n🔗 Usage Instructions:")
-        print("   • Copy Base64 file content as subscription URL")
-        print("   • Use CSV file for detailed analysis and filtering")
-        print("   • All configs tested and sorted by performance")
-        print("   • Dead sources automatically removed")
-        print("=" * 85)
 
 # ============================================================================
 # EVENT LOOP DETECTION AND MAIN EXECUTION
@@ -1297,8 +1302,13 @@ def main():
         default=CONFIG.batch_size,
         help="Save intermediate output every N configs (0 disables, default 100)"
     )
-    parser.add_argument("--threshold", type=int, default=CONFIG.threshold,
-                        help="Stop processing after N unique configs (0 = unlimited)")
+    parser.add_argument(
+        "--stop-after-found",
+        type=int,
+        default=CONFIG.threshold,
+        help="Stop processing after N unique configs (0 = unlimited)",
+        dest="threshold",
+    )
     parser.add_argument("--top-n", type=int, default=CONFIG.top_n,
                         help="Keep only the N best configs after sorting (0 = all)")
     parser.add_argument("--tls-fragment", type=str, default=CONFIG.tls_fragment,

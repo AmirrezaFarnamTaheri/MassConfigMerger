@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterable, List, Set, Optional, Dict, Union, Tuple, cast
 from urllib.parse import urlparse
-from .clash_utils import config_to_clash_proxy
+from .clash_utils import config_to_clash_proxy, build_clash_config
 
 import yaml
 
@@ -491,16 +491,7 @@ def output_files(configs: List[str], out_dir: Path, cfg: Settings) -> List[Path]
             if proxy:
                 proxies.append(proxy)
         if proxies:
-            group = {
-                "name": "Proxy",
-                "type": "select",
-                "proxies": [p["name"] for p in proxies],
-            }
-            clash_yaml = yaml.safe_dump(
-                {"proxies": proxies, "proxy-groups": [group]},
-                allow_unicode=True,
-                sort_keys=False,
-            )
+            clash_yaml = build_clash_config(proxies)
             clash_file = out_dir / "clash.yaml"
             clash_file.write_text(clash_yaml)
             written.append(clash_file)
