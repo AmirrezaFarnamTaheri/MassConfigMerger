@@ -675,7 +675,7 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
 2. *(Only for Telegram scraping or bot mode)* Obtain a Telegram **API ID** and **API Hash**:
    - Visit [my.telegram.org](https://my.telegram.org) and log in with your phone number.
    - Click **API development tools**, fill out the form and click **Create**.
-   - Telegram will reveal your `api_id` and `api_hash`. Add them to `config.json` along with your bot token and allowed user IDs, or set them via the `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEGRAM_BOT_TOKEN` and `ALLOWED_USER_IDS` environment variables.
+   - Telegram will reveal your `api_id` and `api_hash`. Add them to `config.yaml` along with your bot token and allowed user IDs, or set them via the `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEGRAM_BOT_TOKEN` and `ALLOWED_USER_IDS` environment variables.
 
 3. Edit `sources.txt` and `channels.txt` to include any extra subscription URLs
    or channel names you wish to scrape. **Each line of `sources.txt` should
@@ -711,31 +711,42 @@ It also outputs a `clash.yaml` file that works in both Clash and Clash Meta.
 
 ### Configuration
 
-`config.json` contains all runtime options (see `config.json.example` for a complete template).  The values `telegram_api_id`, `telegram_api_hash`, `telegram_bot_token` and `allowed_user_ids` may also be supplied through the environment variables `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEGRAM_BOT_TOKEN` and `ALLOWED_USER_IDS`.  When set, these environment variables override any values in the file:
+`config.yaml` contains all runtime options (see `config.yaml.example` for a complete template).  The values `telegram_api_id`, `telegram_api_hash`, `telegram_bot_token` and `allowed_user_ids` may also be supplied through the environment variables `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEGRAM_BOT_TOKEN` and `ALLOWED_USER_IDS`.  When set, these environment variables override any values in the file:
 
-```json
-{
-  "telegram_api_id": 123456,
-  "telegram_api_hash": "YOUR_HASH",
-  "telegram_bot_token": "BOT_TOKEN",
-  "allowed_user_ids": [11111111],
-  "protocols": [
-    "vmess", "vless", "trojan", "ss", "ssr", "hysteria", "hysteria2",
-    "tuic", "reality", "naive", "hy2", "wireguard"
-  ],
-  "exclude_patterns": [],
-  "output_dir": "output",
-  "log_dir": "logs",
-  "request_timeout": 10,
-  "max_concurrent": 20,
-  "write_base64": true,
-  "write_singbox": true,
-  "write_clash": true
-}
+```yaml
+telegram_api_id: 123456
+telegram_api_hash: YOUR_HASH
+telegram_bot_token: BOT_TOKEN
+allowed_user_ids:
+  - 11111111
+
+# Aggregator options
+protocols:
+  - vmess
+  - vless
+  - trojan
+  - ss
+  - ssr
+  - hysteria
+  - hysteria2
+  - tuic
+  - reality
+  - naive
+  - hy2
+  - wireguard
+exclude_patterns: []
+output_dir: output
+log_dir: logs
+request_timeout: 10  # HTTP request timeout in seconds
+concurrent_limit: 20
+retry_attempts: 3
+retry_base_delay: 1.0
+write_base64: true
+write_singbox: true
+write_clash: true
 ```
 
-`config.json` must be a single JSON object. Only the fields shown above are
-recognized—any unknown keys will cause an error. Telegram credentials are
+`config.yaml` uses YAML syntax. Only the fields shown above are recognized; unknown keys will cause an error.
 optional unless you plan to scrape Telegram channels or run the bot mode.
 When provided, environment variables take precedence over the file values.
 Optional fields use these defaults when omitted:
@@ -744,7 +755,7 @@ Optional fields use these defaults when omitted:
 - `output_dir` – `output` (relative to this folder)
 - `log_dir` – `logs` (relative to this folder)
 - `request_timeout` – `10`
-- `max_concurrent` – `20`
+- `concurrent_limit` – `20`
 - `write_base64` – `true`
 - `write_singbox` – `true`
 - `write_clash` – `true`
@@ -754,7 +765,7 @@ Optional fields use these defaults when omitted:
 - **output_dir** – where merged files are created. May be any path.
 - **log_dir** – daily log files are written here. May be any path.
 - **request_timeout** – HTTP request timeout in seconds (override with `--request-timeout`).
-- **max_concurrent** – maximum simultaneous HTTP requests for validating and fetching sources (override with `--concurrent-limit`).
+- **concurrent_limit** – maximum simultaneous HTTP requests for validating and fetching sources (override with `--concurrent-limit`).
 - **write_base64** – create `merged_base64.txt` when `true`.
 - **write_singbox** – create `merged_singbox.json` when `true`.
 - **write_clash** – create `clash.yaml` when `true`.
