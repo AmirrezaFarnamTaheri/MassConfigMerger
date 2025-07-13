@@ -145,10 +145,30 @@ class EnhancedConfigProcessor:
         self._geoip_reader = None
 
     def _normalize_url(self, config: str) -> str:
-        """Return URL with sorted query params and no fragment."""
+        """Return canonical URL with sorted query params and no fragment."""
         parsed = urlparse(config)
+
+        # Canonicalize query parameters
         query_pairs = parse_qsl(parsed.query, keep_blank_values=True)
         sorted_query = urlencode(sorted(query_pairs), doseq=True)
+
+        scheme = parsed.scheme.lower()
+
+        # Canonicalize base64 payloads used by vmess/vless links so that key
+        # ordering in the JSON does not affect the final hash.
+        if scheme in {"vmess", "vless"}:
+            payload = parsed.netloc or parsed.path.lstrip("/")
+            if payload:
+                try:
+                    padded = payload + "=" * (-len(payload) % 4)
+                    decoded = base64.b64decode(padded).decode("utf-8", "ignore")
+                    data = json.loads(decoded)
+                    canonical_json = json.dumps(data, sort_keys=True)
+                    payload = base64.b64encode(canonical_json.encode()).decode().rstrip("=")
+                    parsed = parsed._replace(netloc=payload, path="")
+                except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError):
+                    pass
+
         return urlunparse(parsed._replace(query=sorted_query, fragment=""))
         
     def extract_host_port(self, config: str) -> Tuple[Optional[str], Optional[int]]:
