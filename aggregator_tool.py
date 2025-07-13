@@ -715,19 +715,12 @@ def main() -> None:
     if args.no_clash:
         cfg.write_clash = False
 
-    allowed_base = _get_script_dir()
     resolved_output = Path(cfg.output_dir).expanduser().resolve()
-    try:
-        resolved_output.relative_to(allowed_base)
-    except ValueError:
-        parser.error(f"--output-dir must be within {allowed_base}")
+    resolved_output.mkdir(parents=True, exist_ok=True)
     cfg.output_dir = str(resolved_output)
 
     resolved_log_dir = Path(cfg.log_dir).expanduser().resolve()
-    try:
-        resolved_log_dir.relative_to(allowed_base)
-    except ValueError:
-        parser.error(f"log_dir must be within {allowed_base}")
+    resolved_log_dir.mkdir(parents=True, exist_ok=True)
     cfg.log_dir = str(resolved_log_dir)
 
     if args.protocols:

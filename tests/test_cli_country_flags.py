@@ -13,7 +13,6 @@ def test_cli_country_flags(monkeypatch, tmp_path):
         return None
 
     monkeypatch.setattr(vpn_merger, "detect_and_run", fake_detect_and_run)
-    monkeypatch.setattr(vpn_merger, "_get_script_dir", lambda: tmp_path)
     monkeypatch.setattr(CONFIG, "include_countries", None)
     monkeypatch.setattr(CONFIG, "exclude_countries", None)
     monkeypatch.setattr(sys, "argv", [

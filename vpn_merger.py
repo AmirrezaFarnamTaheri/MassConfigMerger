@@ -1277,13 +1277,9 @@ def main():
     global EXCLUDE_REGEXES
     EXCLUDE_REGEXES = [re.compile(p) for p in CONFIG.exclude_patterns]
     CONFIG.resume_file = args.resume
-    # Resolve and validate output directory to prevent path traversal
-    allowed_base = _get_script_dir()
+    # Resolve and create output directory if needed
     resolved_output = Path(args.output_dir).expanduser().resolve()
-    try:
-        resolved_output.relative_to(allowed_base)
-    except ValueError:
-        parser.error(f"--output-dir must be within {allowed_base}")
+    resolved_output.mkdir(parents=True, exist_ok=True)
     CONFIG.output_dir = str(resolved_output)
     CONFIG.test_timeout = max(0.1, args.test_timeout)
     CONFIG.concurrent_limit = max(1, args.concurrent_limit)
