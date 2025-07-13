@@ -75,3 +75,28 @@ async def test_seen_hash_lock_prevents_duplicates(aiohttp_client):
 
     total = len(r1[1]) + len(r2[1])
     assert total == 1
+
+
+@pytest.mark.asyncio
+async def test_shared_lock_across_instances(aiohttp_client):
+    async def handler(request):
+        return web.Response(text="vmess://abcdef0123456789abc")
+
+    app = web.Application()
+    app.router.add_get("/", handler)
+    client = await aiohttp_client(app)
+
+    seen = set()
+    lock = asyncio.Lock()
+    f1 = AsyncSourceFetcher(EnhancedConfigProcessor(), seen, lock)
+    f2 = AsyncSourceFetcher(EnhancedConfigProcessor(), seen, lock)
+    f1.session = client.session
+    f2.session = client.session
+
+    r1, r2 = await asyncio.gather(
+        f1.fetch_source(client.make_url("/")),
+        f2.fetch_source(client.make_url("/")),
+    )
+
+    total = len(r1[1]) + len(r2[1])
+    assert total == 1
