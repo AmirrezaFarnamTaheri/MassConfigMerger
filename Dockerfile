@@ -1,6 +1,9 @@
 FROM python:3.11-slim
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
+
+# Install package and its dependencies using pyproject.toml
+COPY pyproject.toml ./
+COPY . ./
+RUN pip install --no-cache-dir .
+
 ENTRYPOINT ["python", "vpn_merger.py"]
