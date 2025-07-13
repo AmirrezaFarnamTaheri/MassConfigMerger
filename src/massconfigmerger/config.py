@@ -83,8 +83,8 @@ class Settings(BaseSettings):
     enable_url_testing: bool = True
     enable_sorting: bool = True
     test_timeout: float = 5.0
-    batch_size: int = 1000
-    threshold: int = 0
+    save_every: int = 1000
+    stop_after_found: int = 0
     top_n: int = 0
     tls_fragment: Optional[str] = None
     include_protocols: Optional[Set[str]] = {

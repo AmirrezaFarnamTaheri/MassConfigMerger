@@ -75,8 +75,8 @@ valid_prefixes:
 enable_url_testing: true
 enable_sorting: true
 test_timeout: 5.0
-batch_size: 1000
-threshold: 0
+save_every: 1000
+stop_after_found: 0
 top_n: 0
 tls_fragment: null
 include_protocols:

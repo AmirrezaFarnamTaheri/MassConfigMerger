@@ -4,7 +4,7 @@ from massconfigmerger.vpn_merger import UltimateVPNMerger, ConfigResult, CONFIG
 
 
 def test_maybe_save_batch_strict_cumulative(monkeypatch, tmp_path):
-    monkeypatch.setattr(CONFIG, "batch_size", 1)
+    monkeypatch.setattr(CONFIG, "save_every", 1)
     monkeypatch.setattr(CONFIG, "strict_batch", True)
     monkeypatch.setattr(CONFIG, "cumulative_batches", True)
     monkeypatch.setattr(CONFIG, "enable_sorting", False)
