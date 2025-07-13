@@ -272,22 +272,31 @@ async def fetch_text(
         return None
 
     delay = base_delay
-    for attempt in range(retries):
+    attempt = 0
+    while attempt < retries:
         try:
             async with session.get(url, timeout=ClientTimeout(total=timeout)) as resp:
                 if resp.status == 200:
                     return await resp.text()
-                if 400 <= resp.status < 500 and resp.status != 429:
+                if 400 <= resp.status < 500:
                     logging.debug(
                         "fetch_text non-retry status %s on %s", resp.status, url
                     )
                     return None
+                if resp.status not in (500, 503):
+                    logging.debug(
+                        "fetch_text non-transient status %s on %s", resp.status, url
+                    )
+                    return None
         except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
             logging.debug("fetch_text error on %s: %s", url, exc)
-        if attempt < retries - 1:
-            jitter = random.random() * delay
-            await asyncio.sleep(delay + jitter)
-            delay *= 2
+
+        attempt += 1
+        if attempt >= retries:
+            break
+        jitter = random.random() * delay
+        await asyncio.sleep(delay + jitter)
+        delay *= 2
     return None
 
 
