@@ -681,9 +681,11 @@ class UltimateVPNMerger:
 
         if CONFIG.enable_url_testing:
             print("\n🔎 Running pre-flight connectivity check...")
-            ok = await self._preflight_connectivity_check()
+            ok = await self._preflight_connectivity_check(10)
             if not ok:
-                sys.stderr.write("❌ Critical Error: All initial connectivity tests failed...\n")
+                sys.stderr.write(
+                    "❌ Critical Error: All initial connectivity tests failed. Please check your internet connection and firewall, then try again.\n"
+                )
                 sys.exit(1)
 
         # Step 2: Fetch all configs from available sources

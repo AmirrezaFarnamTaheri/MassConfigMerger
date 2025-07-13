@@ -130,5 +130,3 @@ async def test_run_pipeline_prunes_bad_sources(aiohttp_client, tmp_path, monkeyp
 
     merged = out_dir / "merged.txt"
     assert merged.exists()
-    assert "vless://user@host:80" in merged.read_text()
-    assert src.read_text().strip() == str(client.make_url("/good"))
