@@ -32,3 +32,26 @@ def test_vmess_parse_fallback():
     assert proxy["server"] == "host"
     assert proxy["port"] == 443
     assert proxy["tls"] is True
+
+
+def test_vmess_parse_options():
+    data = {
+        "add": "ex.com",
+        "port": "443",
+        "id": "uuid",
+        "net": "ws",
+        "path": "/ws",
+        "host": "ex.com",
+        "sni": "ex.com",
+        "alpn": "h2",
+        "flow": "xtls-rprx-origin",
+        "tls": "tls",
+    }
+    link = "vmess://" + base64.b64encode(json.dumps(data).encode()).decode()
+    proxy = config_to_clash_proxy(link, 0)
+    assert proxy["network"] == "ws"
+    assert proxy["path"] == "/ws"
+    assert proxy["host"] == "ex.com"
+    assert proxy["sni"] == "ex.com"
+    assert proxy["alpn"] == "h2"
+    assert proxy["flow"] == "xtls-rprx-origin"

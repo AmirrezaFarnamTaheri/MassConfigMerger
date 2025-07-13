@@ -13,7 +13,14 @@ def config_to_clash_proxy(
     idx: int = 0,
     protocol: Optional[str] = None,
 ) -> Optional[Dict[str, Union[str, int, bool]]]:
-    """Convert a single config link to a Clash proxy dictionary."""
+    """Convert a single config link to a Clash proxy dictionary.
+
+    The parser supports VLESS/Reality, VMess, Trojan, SS/SSR and several other
+    protocols.  Optional attributes such as ``network`` (e.g. ``ws`` or
+    ``grpc``), ``sni``, ``alpn`` and ``flow`` are included when present.  For
+    SSR links ``protocol``, ``obfs``, ``password`` and the related parameters are
+    decoded from the base64 payload.
+    """
     try:
         q = {}
         scheme = (protocol or config.split("://", 1)[0]).lower()
@@ -45,6 +52,8 @@ def config_to_clash_proxy(
                     proxy["path"] = data.get("path")
                 if data.get("sni"):
                     proxy["sni"] = data.get("sni")
+                if data.get("alpn"):
+                    proxy["alpn"] = data.get("alpn")
                 if data.get("fp"):
                     proxy["fp"] = data.get("fp")
                 if data.get("flow"):
@@ -69,7 +78,7 @@ def config_to_clash_proxy(
                 net = q.get("type") or q.get("mode")
                 if net:
                     proxy["network"] = net[0]
-                for key in ("host", "path", "sni", "fp", "flow"):
+                for key in ("host", "path", "sni", "alpn", "fp", "flow"):
                     if key in q:
                         proxy[key] = q[key][0]
                 return proxy
@@ -90,7 +99,7 @@ def config_to_clash_proxy(
             net = q.get("type") or q.get("mode")
             if net:
                 proxy["network"] = net[0]
-            for key in ("host", "path", "sni", "fp", "flow"):
+            for key in ("host", "path", "sni", "alpn", "fp", "flow"):
                 if key in q:
                     proxy[key] = q[key][0]
             return proxy
@@ -106,7 +115,7 @@ def config_to_clash_proxy(
                 "encryption": q.get("encryption", ["none"])[0],
                 "tls": True,
             }
-            for key in ("sni", "fp", "pbk", "sid"):
+            for key in ("sni", "alpn", "fp", "pbk", "sid"):
                 if key in q:
                     proxy[key] = q[key][0]
             flows = q.get("flow")
