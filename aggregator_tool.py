@@ -152,26 +152,30 @@ async def fetch_text(
     *,
     retries: int = 3,
     base_delay: float = 1.0,
+    jitter: float = 0.1,
 ) -> str | None:
-    """Fetch text content from ``url`` with retries and exponential backoff."""
+    """Fetch text content from ``url`` with retries and exponential backoff.
+
+    ``base_delay`` controls the initial wait time, while ``jitter`` is added as a
+    random component to each delay to avoid thundering herd issues.
+    """
     parsed = urlparse(url)
     if not parsed.scheme or not parsed.netloc:
         logging.debug("fetch_text invalid url: %s", url)
         return None
 
-    delay = base_delay
     attempt = 0
     while attempt < retries:
         try:
             async with session.get(url, timeout=ClientTimeout(total=timeout)) as resp:
                 if resp.status == 200:
                     return await resp.text()
-                if 400 <= resp.status < 500:
+                if 400 <= resp.status < 500 and resp.status != 429:
                     logging.debug(
                         "fetch_text non-retry status %s on %s", resp.status, url
                     )
                     return None
-                if resp.status not in (500, 503):
+                if not (500 <= resp.status < 600 or resp.status == 429):
                     logging.debug(
                         "fetch_text non-transient status %s on %s", resp.status, url
                     )
@@ -182,9 +186,8 @@ async def fetch_text(
         attempt += 1
         if attempt >= retries:
             break
-        jitter = random.random() * delay
-        await asyncio.sleep(delay + jitter)
-        delay *= 2
+        delay = base_delay * 2 ** (attempt - 1)
+        await asyncio.sleep(delay + random.uniform(0, jitter))
     return None
 
 
