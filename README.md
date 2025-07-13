@@ -119,9 +119,9 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 ### Docker Compose Automation
 
 The included `docker-compose.yml` automates running the scripts. `vpn_merger`
-loops every `$MERGE_INTERVAL` seconds (default `86400`). Enable the optional
+loops every `MERGE_INTERVAL` seconds (default `86400`). Enable the optional
 `aggregator` profile to fetch new links on a schedule. It runs
-`aggregator_tool.py --with-merger` every `$AGGREGATE_INTERVAL` seconds
+`aggregator_tool.py --with-merger` every `AGGREGATE_INTERVAL` seconds
 (default `43200`). The `retester` profile repeatedly runs
 `vpn_retester.py` in the same way.
 
@@ -136,6 +136,12 @@ Add profiles as needed, for example:
 ```bash
 docker compose --profile aggregator --profile retester up -d
 ```
+
+Key environment variables used by the compose file:
+
+- `MERGE_INTERVAL` – seconds between each run of `vpn_merger` (default `86400`)
+- `AGGREGATE_INTERVAL` – seconds between aggregator runs when the `aggregator` profile is enabled (default `43200`)
+
 ## FAQ
 
 ### Why does the script take so long?
