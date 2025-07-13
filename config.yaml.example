@@ -8,6 +8,7 @@ telegram_api_hash: YOUR_HASH
 telegram_bot_token: BOT_TOKEN
 allowed_user_ids:
   - 11111111
+session_path: user.session
 
 # Aggregator options
 protocols:

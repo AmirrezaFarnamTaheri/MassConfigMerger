@@ -23,6 +23,7 @@ def test_load_defaults(tmp_path):
     assert loaded.concurrent_limit == 20
     assert loaded.retry_attempts == 3
     assert loaded.retry_base_delay == 1.0
+    assert loaded.session_path == "user.session"
 
 
 def test_load_invalid_json(tmp_path):
@@ -162,6 +163,7 @@ def test_env_override_generic_fields(tmp_path, monkeypatch):
     monkeypatch.setenv("WRITE_CLASH", "false")
     monkeypatch.setenv("PROTOCOLS", '["ss","ssr"]')
     monkeypatch.setenv("HEADERS", '{"X":"1"}')
+    monkeypatch.setenv("SESSION_PATH", "foo.session")
 
     loaded = load_config(p)
 
@@ -171,3 +173,4 @@ def test_env_override_generic_fields(tmp_path, monkeypatch):
     assert loaded.write_clash is False
     assert loaded.protocols == ["ss", "ssr"]
     assert loaded.headers == {"X": "1"}
+    assert loaded.session_path == "foo.session"
