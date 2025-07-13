@@ -41,7 +41,7 @@ import socket
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast, Callable, Awaitable
 
 from .constants import SOURCES_FILE
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse, parse_qsl
@@ -392,24 +392,35 @@ class EnhancedConfigProcessor:
 class AsyncSourceFetcher:
     """Async source fetcher with comprehensive testing and availability checking."""
 
-    def __init__(self, processor: EnhancedConfigProcessor, seen_hashes: Set[str],
-                 hash_lock: Optional[asyncio.Lock] = None):
+    def __init__(
+        self,
+        processor: EnhancedConfigProcessor,
+        seen_hashes: Set[str],
+        hash_lock: Optional[asyncio.Lock] = None,
+        history_callback: Optional[Callable[[str, bool], Awaitable[None]]] = None,
+    ):
         self.processor = processor
         self.session: Optional[aiohttp.ClientSession] = None
         self.seen_hashes = seen_hashes
         self.hash_lock = hash_lock or asyncio.Lock()
+        self.history_callback = history_callback
         
     async def test_source_availability(self, url: str) -> bool:
         """Test if a source URL is available (returns 200 status)."""
-        assert self.session is not None
+        session = self.session
+        if session is None or getattr(session, "loop", None) is not asyncio.get_running_loop():
+            session = aiohttp.ClientSession()
+            close_temp = True
+        else:
+            close_temp = False
         try:
             timeout = aiohttp.ClientTimeout(total=10)
-            async with self.session.head(url, timeout=timeout, allow_redirects=True) as response:
+            async with session.head(url, timeout=timeout, allow_redirects=True) as response:
                 status = response.status
                 if status == 200:
                     return True
                 if 400 <= status < 500:
-                    async with self.session.get(
+                    async with session.get(
                         url,
                         headers={**CONFIG.headers, 'Range': 'bytes=0-0'},
                         timeout=timeout,
@@ -420,14 +431,20 @@ class AsyncSourceFetcher:
         except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
             logging.debug("availability check failed for %s: %s", url, exc)
             return False
+        finally:
+            if close_temp:
+                await session.close()
         
     async def fetch_source(self, url: str) -> Tuple[str, List[ConfigResult]]:
         """Fetch single source with comprehensive testing and deduplication."""
-        assert self.session is not None
+        session = self.session
+        use_temp = session is None or getattr(session, "loop", None) is not asyncio.get_running_loop()
+        if use_temp:
+            session = aiohttp.ClientSession()
         for attempt in range(CONFIG.max_retries):
             try:
                 timeout = aiohttp.ClientTimeout(total=CONFIG.request_timeout)
-                async with self.session.get(url, headers=CONFIG.headers, timeout=timeout) as response:
+                async with session.get(url, headers=CONFIG.headers, timeout=timeout) as response:
                     if response.status != 200:
                         continue
 
@@ -485,6 +502,8 @@ class AsyncSourceFetcher:
                                 ping_time = await self.processor.test_connection(host, port)
                                 result.ping_time = ping_time
                                 result.is_reachable = ping_time is not None
+                                if self.history_callback:
+                                    await self.history_callback(config_hash, result.is_reachable)
                             
                             config_results.append(result)
                     
@@ -495,6 +514,8 @@ class AsyncSourceFetcher:
                 if attempt < CONFIG.max_retries - 1:
                     # Use a capped and jittered delay to reduce tail latency
                     await asyncio.sleep(min(3, 1.5 + random.random()))
+        if use_temp:
+            await session.close()
         return url, []
 
 # ============================================================================
@@ -515,6 +536,7 @@ class UltimateVPNMerger:
             self.processor,
             self.seen_hashes,
             self.seen_hashes_lock,
+            self._update_history,
         )
         self.batch_counter = 0
         self.next_batch_threshold = CONFIG.batch_size if CONFIG.batch_size else float('inf')
@@ -527,6 +549,28 @@ class UltimateVPNMerger:
         self.last_processed_index = 0
         self.last_saved_count = 0
         self._file_lock = asyncio.Lock()
+        self._history_lock = asyncio.Lock()
+        self.history_path = Path(CONFIG.output_dir) / CONFIG.history_file
+        self.history_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            self.proxy_history = json.loads(self.history_path.read_text())
+        except (OSError, json.JSONDecodeError):
+            self.proxy_history = {}
+
+    async def _update_history(self, config_hash: str, success: bool) -> None:
+        async with self._history_lock:
+            entry = self.proxy_history.setdefault(
+                config_hash, {"successful_checks": 0, "total_checks": 0}
+            )
+            entry["total_checks"] += 1
+            if success:
+                entry["successful_checks"] += 1
+
+    async def _save_proxy_history(self) -> None:
+        async with self._file_lock:
+            tmp = self.history_path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(self.proxy_history, indent=2))
+            tmp.replace(self.history_path)
 
     async def _load_existing_results(self, path: str) -> List[ConfigResult]:
         """Load previously saved configs from a raw or base64 file."""
@@ -628,6 +672,8 @@ class UltimateVPNMerger:
         # Step 6: Generate comprehensive outputs
         print("\n💾 [6/6] Generating comprehensive outputs...")
         await self._generate_comprehensive_outputs(unique_results, stats, self.start_time)
+
+        await self._save_proxy_history()
 
         self._print_final_summary(len(unique_results), time.time() - self.start_time, stats)
     
@@ -883,17 +929,30 @@ class UltimateVPNMerger:
             "Naive": 9, "Juicity": 10, "WireGuard": 11, "Other": 12
         }
         
-        def sort_key(result: ConfigResult) -> Tuple:
+        def sort_key_latency(result: ConfigResult) -> Tuple:
             is_reachable = 1 if result.is_reachable else 0
             ping_time = result.ping_time if result.ping_time is not None else float('inf')
             protocol_rank = protocol_priority.get(result.protocol, 13)
             return (-is_reachable, ping_time, protocol_rank)
-        
-        sorted_results = sorted(results, key=sort_key)
-        
+
+        def sort_key_reliability(result: ConfigResult) -> Tuple:
+            h = self.processor.create_semantic_hash(result.config)
+            hist = self.proxy_history.get(h, {})
+            total = hist.get("total_checks", 0)
+            success = hist.get("successful_checks", 0)
+            reliability = success / total if total else 0
+            ping_time = result.ping_time if result.ping_time is not None else float('inf')
+            protocol_rank = protocol_priority.get(result.protocol, 13)
+            return (-reliability, ping_time, protocol_rank)
+
+        key_func = sort_key_latency if CONFIG.sort_by != "reliability" else sort_key_reliability
+        sorted_results = sorted(results, key=key_func)
+
+        if CONFIG.sort_by == "reliability":
+            print("   🚀 Sorted by reliability")
         reachable_count = sum(1 for r in results if r.is_reachable)
         print(f"   🚀 Sorted: {reachable_count:,} reachable configs first")
-        
+
         if reachable_count > 0:
             fastest = min(
                 (r for r in results if r.ping_time is not None),
@@ -904,7 +963,6 @@ class UltimateVPNMerger:
                 print(
                     f"   ⚡ Fastest server: {fastest.ping_time * 1000:.1f}ms ({fastest.protocol})"
                 )
-        
         return sorted_results
     
     def _analyze_results(self, results: List[ConfigResult], available_sources: List[str]) -> Dict:
@@ -1259,6 +1317,12 @@ def main():
                         help="Disable server reachability testing")
     parser.add_argument("--no-sort", action="store_true",
                         help="Disable performance-based sorting")
+    parser.add_argument(
+        "--sort-by",
+        choices=["latency", "reliability"],
+        default=CONFIG.sort_by,
+        help="Sorting method when enabled",
+    )
     parser.add_argument("--concurrent-limit", type=int, default=CONFIG.concurrent_limit,
                         help="Number of concurrent requests")
     parser.add_argument("--max-retries", type=int, default=CONFIG.max_retries,
@@ -1354,6 +1418,7 @@ def main():
         CONFIG.enable_url_testing = False
     if args.no_sort:
         CONFIG.enable_sorting = False
+    CONFIG.sort_by = args.sort_by
 
     if CONFIG.log_file:
         logging.basicConfig(filename=CONFIG.log_file, level=logging.INFO,

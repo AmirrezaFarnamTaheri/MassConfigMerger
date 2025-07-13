@@ -122,6 +122,8 @@ class Settings(BaseSettings):
     geoip_db: Optional[str] = None
     include_countries: Optional[Set[str]] = None
     exclude_countries: Optional[Set[str]] = None
+    history_file: str = "proxy_history.json"
+    sort_by: str = "latency"
 
     model_config = SettingsConfigDict(env_prefix="", case_sensitive=False)
 

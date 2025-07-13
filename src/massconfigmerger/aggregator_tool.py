@@ -162,6 +162,9 @@ async def fetch_text(
         return None
 
     attempt = 0
+    use_temp = hasattr(session, "loop") and session.loop is not asyncio.get_running_loop()
+    if use_temp:
+        session = aiohttp.ClientSession()
     while attempt < retries:
         try:
             async with session.get(url, timeout=ClientTimeout(total=timeout)) as resp:
@@ -185,6 +188,8 @@ async def fetch_text(
             break
         delay = base_delay * 2 ** (attempt - 1)
         await asyncio.sleep(delay + random.uniform(0, jitter))
+    if use_temp:
+        await session.close()
     return None
 
 

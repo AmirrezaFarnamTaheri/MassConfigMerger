@@ -114,3 +114,5 @@ smux_streams: 4
 geoip_db: null
 include_countries: null
 exclude_countries: null
+history_file: proxy_history.json
+sort_by: latency
