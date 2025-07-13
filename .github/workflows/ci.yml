@@ -14,11 +14,12 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
-          cache-dependency-path: requirements.txt
+          cache-dependency-path: |
+            requirements.txt
+            dev-requirements.txt
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          pip install flake8 mypy types-PyYAML
+          pip install -r requirements.txt -r dev-requirements.txt
       - name: Run tests
         run: pytest -q
       - name: Run flake8

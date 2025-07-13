@@ -5,6 +5,5 @@ nest-asyncio
 
 # Optional/feature dependencies
 telethon
-pytest
 PyYAML
 geoip2
