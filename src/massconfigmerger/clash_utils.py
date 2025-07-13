@@ -27,7 +27,8 @@ def config_to_clash_proxy(
         ``fp``, ``flow``, ``serviceName`` and ``ws-headers``.
     ``vless``/``reality``
         ``encryption``, ``network``, ``host``, ``path``, ``sni``, ``alpn``,
-        ``fp``, ``flow``, ``pbk``, ``sid``, ``serviceName`` and ``ws-headers``.
+        ``fp``, ``flow``, ``pbk``, ``sid``, ``serviceName``, ``ws-headers`` and
+        ``reality-opts``.
     ``trojan``
         ``network`` (``ws``/``grpc``), ``host``, ``path``, ``sni``, ``alpn``,
         ``flow``, ``serviceName`` and ``ws-headers``.
@@ -165,9 +166,15 @@ def config_to_clash_proxy(
                 "encryption": q.get("encryption", ["none"])[0],
                 "tls": True,
             }
-            for key in ("sni", "alpn", "fp", "pbk", "sid", "serviceName"):
+            for key in ("sni", "alpn", "fp", "serviceName"):
                 if key in q:
                     proxy[key] = q[key][0]
+            pbk = q.get("pbk") or q.get("public-key") or q.get("publicKey")
+            sid = q.get("sid") or q.get("short-id") or q.get("shortId")
+            if pbk:
+                proxy["pbk"] = pbk[0]
+            if sid:
+                proxy["sid"] = sid[0]
             if "ws-headers" in q:
                 try:
                     padded = q["ws-headers"][0] + "=" * (-len(q["ws-headers"][0]) % 4)
@@ -177,6 +184,13 @@ def config_to_clash_proxy(
             flows = q.get("flow")
             if flows:
                 proxy["flow"] = flows[0]
+            reality_opts = {}
+            if pbk:
+                reality_opts["public-key"] = pbk[0]
+            if sid:
+                reality_opts["short-id"] = sid[0]
+            if reality_opts:
+                proxy["reality-opts"] = reality_opts
             net = q.get("type") or q.get("mode")
             if net:
                 proxy["network"] = net[0]
