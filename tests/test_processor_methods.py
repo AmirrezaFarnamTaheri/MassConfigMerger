@@ -149,6 +149,25 @@ def test_sort_by_performance():
     assert ordered[-1] == r4
 
 
+def test_sort_by_reliability(monkeypatch):
+    monkeypatch.setattr(CONFIG, "sort_by", "reliability")
+    merger = UltimateVPNMerger()
+    r1 = ConfigResult(config="a", protocol="VMess", ping_time=0.5, is_reachable=True)
+    r2 = ConfigResult(config="b", protocol="VMess", ping_time=0.2, is_reachable=True)
+    r3 = ConfigResult(config="c", protocol="VMess", ping_time=0.1, is_reachable=True)
+
+    h1 = merger.processor.create_semantic_hash("a")
+    h2 = merger.processor.create_semantic_hash("b")
+    merger.proxy_history = {
+        h1: {"successful_checks": 1, "total_checks": 2},
+        h2: {"successful_checks": 1, "total_checks": 5},
+    }
+
+    ordered = merger._sort_by_performance([r1, r2, r3])
+    assert ordered[0] == r1
+    assert ordered[1] == r2
+
+
 def test_deduplicate_config_results(monkeypatch):
     merger = UltimateVPNMerger()
     monkeypatch.setattr(CONFIG, "tls_fragment", None)
