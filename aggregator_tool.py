@@ -6,6 +6,7 @@ results in multiple formats.  A Telegram bot mode is also available for
 on-demand updates.  The script is intended for local, one-shot execution and can
 be scheduled with cron or Task Scheduler if desired.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -138,6 +139,14 @@ def is_valid_config(link: str) -> bool:
 
 
 @dataclass
+class Settings:
+    """HTTP retry settings."""
+
+    retry_attempts: int = 3
+    retry_base_delay: float = 1.0
+
+
+@dataclass
 class Config:
     telegram_api_id: Optional[int] = None
     telegram_api_hash: Optional[str] = None
@@ -152,11 +161,10 @@ class Config:
     write_base64: bool = True
     write_singbox: bool = True
     write_clash: bool = True
+    settings: Settings = field(default_factory=Settings)
 
     @classmethod
-    def load(
-        cls, path: Path, defaults: dict | None = None
-    ) -> "Config":
+    def load(cls, path: Path, defaults: dict | None = None) -> "Config":
         """Load configuration from ``path`` applying optional defaults."""
         try:
             with path.open("r") as f:
@@ -171,6 +179,7 @@ class Config:
 
         # Pull telegram credentials from environment and override when set
         import os
+
         env_values = {
             "telegram_api_id": os.getenv("TELEGRAM_API_ID"),
             "telegram_api_hash": os.getenv("TELEGRAM_API_HASH"),
@@ -217,11 +226,23 @@ class Config:
             "write_base64": True,
             "write_singbox": True,
             "write_clash": True,
+            "settings": {},
         }
         if defaults:
             merged_defaults.update(defaults)
         for key, value in merged_defaults.items():
             data.setdefault(key, value)
+
+        settings_data = data.get("settings", {})
+        if not isinstance(settings_data, dict):
+            raise ValueError("settings must be an object")
+        settings_defaults = {
+            "retry_attempts": Settings.retry_attempts,
+            "retry_base_delay": Settings.retry_base_delay,
+        }
+        for k, v in settings_defaults.items():
+            settings_data.setdefault(k, v)
+        data["settings"] = Settings(**settings_data)
 
         known_fields = {f.name for f in fields(cls)}
         unknown = [k for k in data if k not in known_fields]
@@ -236,32 +257,36 @@ class Config:
             raise ValueError(msg) from exc
 
 
-
 async def fetch_text(
-    session: ClientSession, url: str, timeout: int = 10
+    session: ClientSession,
+    url: str,
+    timeout: int = 10,
+    *,
+    retries: int = Settings.retry_attempts,
+    base_delay: float = Settings.retry_base_delay,
 ) -> str | None:
-    """Fetch text content from ``url`` with retries and backoff."""
+    """Fetch text content from ``url`` with retries and exponential backoff."""
     parsed = urlparse(url)
     if not parsed.scheme or not parsed.netloc:
         logging.debug("fetch_text invalid url: %s", url)
         return None
 
-    delay = 1.0
-    for attempt in range(3):
+    delay = base_delay
+    for attempt in range(retries):
         try:
             async with session.get(url, timeout=ClientTimeout(total=timeout)) as resp:
                 if resp.status == 200:
                     return await resp.text()
-                if resp.status == 404:
-                    return None
                 if 400 <= resp.status < 500 and resp.status != 429:
-                    logging.debug("fetch_text non-retry status %s on %s", resp.status, url)
+                    logging.debug(
+                        "fetch_text non-retry status %s on %s", resp.status, url
+                    )
                     return None
         except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
             logging.debug("fetch_text error on %s: %s", url, exc)
-
-        if attempt < 2:
-            await asyncio.sleep(delay + random.random())
+        if attempt < retries - 1:
+            jitter = random.random() * delay
+            await asyncio.sleep(delay + jitter)
             delay *= 2
     return None
 
@@ -297,6 +322,9 @@ async def check_and_update_sources(
     path: Path,
     concurrent_limit: int = 20,
     request_timeout: int = 10,
+    *,
+    retries: int = Settings.retry_attempts,
+    base_delay: float = Settings.retry_base_delay,
     failures_path: Path | None = None,
     max_failures: int = 3,
     prune: bool = True,
@@ -326,7 +354,13 @@ async def check_and_update_sources(
 
     async def check(url: str) -> tuple[str, bool]:
         async with semaphore:
-            text = await fetch_text(session, url, request_timeout)
+            text = await fetch_text(
+                session,
+                url,
+                request_timeout,
+                retries=retries,
+                base_delay=base_delay,
+            )
         if not text or not parse_configs_from_text(text):
             return url, False
         return url, True
@@ -363,7 +397,12 @@ async def check_and_update_sources(
 
 
 async def fetch_and_parse_configs(
-    sources: Iterable[str], max_concurrent: int = 20, request_timeout: int = 10
+    sources: Iterable[str],
+    max_concurrent: int = 20,
+    request_timeout: int = 10,
+    *,
+    retries: int = Settings.retry_attempts,
+    base_delay: float = Settings.retry_base_delay,
 ) -> Set[str]:
     """Fetch configs from sources respecting concurrency limits."""
     configs: Set[str] = set()
@@ -372,7 +411,13 @@ async def fetch_and_parse_configs(
 
     async def fetch_one(session: ClientSession, url: str) -> Set[str]:
         async with semaphore:
-            text = await fetch_text(session, url, request_timeout)
+            text = await fetch_text(
+                session,
+                url,
+                request_timeout,
+                retries=retries,
+                base_delay=base_delay,
+            )
         if not text:
             logging.warning("Failed to fetch %s", url)
             return set()
@@ -387,7 +432,9 @@ async def fetch_and_parse_configs(
     return configs
 
 
-async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Config) -> Set[str]:
+async def scrape_telegram_configs(
+    channels_path: Path, last_hours: int, cfg: Config
+) -> Set[str]:
     """Scrape telegram channels for configs."""
     if cfg.telegram_api_id is None or cfg.telegram_api_hash is None:
         logging.info("Telegram credentials not provided; skipping Telegram scrape")
@@ -398,8 +445,13 @@ async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Con
     prefix = "https://t.me/"
     with channels_path.open() as f:
         channels = [
-            line.strip()[len(prefix):] if line.strip().startswith(prefix) else line.strip()
-            for line in f if line.strip()
+            (
+                line.strip()[len(prefix) :]
+                if line.strip().startswith(prefix)
+                else line.strip()
+            )
+            for line in f
+            if line.strip()
         ]
 
     if not channels:
@@ -418,12 +470,20 @@ async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Con
                 success = False
                 for _ in range(2):
                     try:
-                        async for msg in client.iter_messages(channel, offset_date=since):
+                        async for msg in client.iter_messages(
+                            channel, offset_date=since
+                        ):
                             if isinstance(msg, Message) and msg.message:
                                 text = msg.message
                                 configs.update(parse_configs_from_text(text))
                                 for sub in extract_subscription_urls(text):
-                                    text2 = await fetch_text(session, sub, cfg.request_timeout)
+                                    text2 = await fetch_text(
+                                        session,
+                                        sub,
+                                        cfg.request_timeout,
+                                        retries=cfg.settings.retry_attempts,
+                                        base_delay=cfg.settings.retry_base_delay,
+                                    )
                                     if text2:
                                         configs.update(parse_configs_from_text(text2))
                         success = True
@@ -525,7 +585,6 @@ def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
         )
         written.append(merged_singbox)
 
-
     proxies = []
     if cfg.write_clash:
         for idx, link in enumerate(configs):
@@ -533,7 +592,11 @@ def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
             if proxy:
                 proxies.append(proxy)
         if proxies:
-            group = {"name": "Proxy", "type": "select", "proxies": [p["name"] for p in proxies]}
+            group = {
+                "name": "Proxy",
+                "type": "select",
+                "proxies": [p["name"] for p in proxies],
+            }
             clash_yaml = yaml.safe_dump(
                 {"proxies": proxies, "proxy-groups": [group]},
                 allow_unicode=True,
@@ -574,13 +637,21 @@ async def run_pipeline(
             sources_file,
             cfg.max_concurrent,
             cfg.request_timeout,
+            retries=cfg.settings.retry_attempts,
+            base_delay=cfg.settings.retry_base_delay,
             failures_path=sources_file.with_suffix(".failures.json"),
             max_failures=failure_threshold,
             prune=prune,
-            disabled_path=sources_file.with_name("sources_disabled.txt") if prune else None,
+            disabled_path=(
+                sources_file.with_name("sources_disabled.txt") if prune else None
+            ),
         )
         configs = await fetch_and_parse_configs(
-            sources, cfg.max_concurrent, cfg.request_timeout
+            sources,
+            cfg.max_concurrent,
+            cfg.request_timeout,
+            retries=cfg.settings.retry_attempts,
+            base_delay=cfg.settings.retry_base_delay,
         )
         configs |= await scrape_telegram_configs(channels_file, last_hours, cfg)
     except KeyboardInterrupt:
@@ -597,7 +668,6 @@ async def telegram_bot_mode(
     channels_file: Path = CHANNELS_FILE,
     last_hours: int = 24,
 ) -> None:
-
     """Launch Telegram bot for on-demand updates."""
     if not all(
         [
@@ -677,9 +747,15 @@ def main() -> None:
     )
     parser.add_argument("--bot", action="store_true", help="run in telegram bot mode")
     parser.add_argument("--protocols", help="comma separated protocols to keep")
-    parser.add_argument("--config", default=str(CONFIG_FILE), help="path to config.json")
-    parser.add_argument("--sources", default=str(SOURCES_FILE), help="path to sources.txt")
-    parser.add_argument("--channels", default=str(CHANNELS_FILE), help="path to channels.txt")
+    parser.add_argument(
+        "--config", default=str(CONFIG_FILE), help="path to config.json"
+    )
+    parser.add_argument(
+        "--sources", default=str(SOURCES_FILE), help="path to sources.txt"
+    )
+    parser.add_argument(
+        "--channels", default=str(CHANNELS_FILE), help="path to channels.txt"
+    )
     parser.add_argument(
         "--hours",
         type=int,
@@ -708,9 +784,15 @@ def main() -> None:
         default=3,
         help="consecutive failures before pruning a source",
     )
-    parser.add_argument("--no-prune", action="store_true", help="do not remove failing sources")
-    parser.add_argument("--no-base64", action="store_true", help="skip merged_base64.txt")
-    parser.add_argument("--no-singbox", action="store_true", help="skip merged_singbox.json")
+    parser.add_argument(
+        "--no-prune", action="store_true", help="do not remove failing sources"
+    )
+    parser.add_argument(
+        "--no-base64", action="store_true", help="skip merged_base64.txt"
+    )
+    parser.add_argument(
+        "--no-singbox", action="store_true", help="skip merged_singbox.json"
+    )
     parser.add_argument("--no-clash", action="store_true", help="skip clash.yaml")
     parser.add_argument(
         "--with-merger",
@@ -785,7 +867,6 @@ def main() -> None:
         if args.with_merger:
             vpn_merger.CONFIG.resume_file = str(out_dir / "merged.txt")
             vpn_merger.detect_and_run()
-
 
 
 if __name__ == "__main__":
