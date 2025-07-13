@@ -9,6 +9,8 @@ import csv
 from pathlib import Path
 from typing import List, Tuple, Optional
 
+from tqdm.asyncio import tqdm_asyncio
+
 from .vpn_merger import EnhancedConfigProcessor, CONFIG
 
 
@@ -30,7 +32,7 @@ async def retest_configs(configs: List[str]) -> List[Tuple[str, Optional[float]]
             return await _test_config(proc, cfg)
 
     tasks = [asyncio.create_task(worker(c)) for c in configs]
-    return await asyncio.gather(*tasks)
+    return await tqdm_asyncio.gather(*tasks, total=len(tasks), desc="Testing")
 
 
 def load_configs(path: Path) -> List[str]:

@@ -9,3 +9,5 @@ PyYAML
 geoip2
 pydantic
 pydantic-settings
+tqdm
+colorama

@@ -186,7 +186,7 @@ environment variable in `docker-compose.yml` to change how often it runs.
 | **Logging to File** | Save all output to a file with `--log-file`. | Useful for headless servers or debugging. |
 | **Standalone or Cumulative Batches** | Use `--cumulative-batches` to keep growing files, otherwise each batch only contains new configs. | Flexible automation for heavy runs. |
 | **Strict Split** | Batches are strictly capped at `--batch-size` by default. Add `--no-strict-batch` to simply trigger on size. | Control how incremental files are produced. |
-| **Shuffle Sources** | `--shuffle-sources` randomizes the source order. | Helpful when using `--threshold` to avoid bias. |
+| **Shuffle Sources** | `--shuffle-sources` randomizes the source order. | Helpful when using `--stop-after-found` to avoid bias. |
 | **Sing-box JSON Output** | Every batch also produces `vpn_singbox.json`. | Import directly into modern clients like sing-box/Stash. |
 | **Clash YAML Output** | Generate `clash.yaml` (or `batch_*clash.yaml`) for Clash/Clash Meta users. | Works with any client supporting Clash configs. |
 | **Hiddify Optimised** | Default protocols match the Hiddify client. | Other clients may reject some entries. |
@@ -571,7 +571,7 @@ During long runs, files prefixed with `cumulative_` mirror the latest results an
 Run `python vpn_merger.py --help` to see all options. Important flags include:
 
   * `--batch-size N` - save intermediate files every `N` configs (default `100`, `0` to disable).
-  * `--threshold N` - stop once `N` unique configs are collected.
+  * `--stop-after-found N` - stop once `N` unique configs are collected.
   * `--no-url-test` - skip reachability testing for faster execution.
   * `--no-sort` - keep configs in the order retrieved without sorting.
   * `--top-n N` - keep only the best `N` configs after sorting.
