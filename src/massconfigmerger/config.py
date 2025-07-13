@@ -1,5 +1,12 @@
 from __future__ import annotations
 
+"""Configuration helpers used throughout the project.
+
+When no path is provided, configuration is searched for in ``config.yaml``
+in the current working directory. If that file does not exist, the copy
+bundled with the package is used instead.
+"""
+
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -11,7 +18,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CONFIG_PATH = REPO_ROOT / "config.yaml"
+DEFAULT_CONFIG_PATH = Path.cwd() / "config.yaml"
+if not DEFAULT_CONFIG_PATH.exists():
+    DEFAULT_CONFIG_PATH = REPO_ROOT / "config.yaml"
 
 
 class Settings(BaseSettings):
@@ -149,7 +158,12 @@ class Settings(BaseSettings):
         return env_settings, init_settings, dotenv_settings, file_secret_settings
 
 def load_config(path: Path | None = None, *, defaults: dict | None = None) -> Settings:
-    """Load configuration from ``path`` or the repository root."""
+    """Load configuration from ``path`` or the default locations.
+
+    When ``path`` is ``None``, ``config.yaml`` is searched for in the current
+    working directory first. If the file does not exist there, the version
+    bundled with the package is used.
+    """
 
     if path is None:
         path = DEFAULT_CONFIG_PATH

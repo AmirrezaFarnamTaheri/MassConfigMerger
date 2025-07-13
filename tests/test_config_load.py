@@ -142,3 +142,22 @@ def test_allowed_ids_string_values(tmp_path):
     p.write_text(yaml.safe_dump(cfg))
     loaded = load_config(p)
     assert loaded.allowed_user_ids == [7, 8]
+
+
+def test_load_from_cwd(tmp_path, monkeypatch):
+    cfg = {"telegram_api_id": 5}
+    p = tmp_path / "config.yaml"
+    p.write_text(yaml.safe_dump(cfg))
+
+    old_cwd = Path.cwd()
+    monkeypatch.chdir(tmp_path)
+
+    import importlib
+    import massconfigmerger.config as config
+
+    importlib.reload(config)
+    loaded = config.load_config()
+    assert loaded.telegram_api_id == 5
+
+    monkeypatch.chdir(old_cwd)
+    importlib.reload(config)
