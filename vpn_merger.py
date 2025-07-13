@@ -241,6 +241,13 @@ class EnhancedConfigProcessor:
         self.dns_cache = {}
         self.resolver: Optional[AsyncResolver] = None
         self._geoip_reader = None
+
+    def _normalize_url(self, config: str) -> str:
+        """Return URL with sorted query params and no fragment."""
+        parsed = urlparse(config)
+        query_pairs = parse_qsl(parsed.query, keep_blank_values=True)
+        sorted_query = urlencode(sorted(query_pairs), doseq=True)
+        return urlunparse(parsed._replace(query=sorted_query, fragment=""))
         
     def extract_host_port(self, config: str) -> Tuple[Optional[str], Optional[int]]:
         """Extract host and port from configuration for testing."""
@@ -290,9 +297,7 @@ class EnhancedConfigProcessor:
     def create_semantic_hash(self, config: str) -> str:
         """Create semantic hash for intelligent deduplication."""
         parsed = urlparse(config)
-        query_pairs = parse_qsl(parsed.query, keep_blank_values=True)
-        sorted_query = urlencode(sorted(query_pairs), doseq=True)
-        normalized_config = urlunparse(parsed._replace(query=sorted_query, fragment=""))
+        normalized_config = self._normalize_url(config)
 
         host, port = self.extract_host_port(normalized_config)
         identifier = None
