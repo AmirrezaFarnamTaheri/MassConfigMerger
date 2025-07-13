@@ -1201,7 +1201,7 @@ class UltimateVPNMerger:
                 tmp_clash.write_text(clash_yaml, encoding="utf-8")
                 tmp_clash.replace(clash_file)
 
-            need_proxies = CONFIG.write_clash_proxies or CONFIG.write_surge or CONFIG.write_qx
+            need_proxies = CONFIG.write_clash_proxies or CONFIG.surge_file or CONFIG.qx_file
             proxies: List[Dict[str, Any]] = []
             if need_proxies:
                 for idx, r in enumerate(results):
@@ -1216,18 +1216,22 @@ class UltimateVPNMerger:
                 tmp_proxies.write_text(proxy_yaml, encoding="utf-8")
                 tmp_proxies.replace(proxies_file)
 
-            if CONFIG.write_surge:
+            if CONFIG.surge_file:
                 from .advanced_converters import generate_surge_conf
                 surge_content = generate_surge_conf(proxies)
-                surge_file = output_dir / f"{prefix}surge.conf"
+                surge_file = Path(CONFIG.surge_file)
+                if not surge_file.is_absolute():
+                    surge_file = output_dir / surge_file
                 tmp_surge = surge_file.with_suffix('.tmp')
                 tmp_surge.write_text(surge_content, encoding="utf-8")
                 tmp_surge.replace(surge_file)
 
-            if CONFIG.write_qx:
+            if CONFIG.qx_file:
                 from .advanced_converters import generate_qx_conf
                 qx_content = generate_qx_conf(proxies)
-                qx_file = output_dir / f"{prefix}qx.conf"
+                qx_file = Path(CONFIG.qx_file)
+                if not qx_file.is_absolute():
+                    qx_file = output_dir / qx_file
                 tmp_qx = qx_file.with_suffix('.tmp')
                 tmp_qx.write_text(qx_content, encoding="utf-8")
                 tmp_qx.replace(qx_file)
@@ -1424,10 +1428,20 @@ def main():
                         help="Do not save CSV report")
     parser.add_argument("--no-proxy-yaml", action="store_true",
                         help="Do not save simple Clash proxy list")
-    parser.add_argument("--output-surge", action="store_true",
-                        help="Write Surge formatted proxy list")
-    parser.add_argument("--output-qx", action="store_true",
-                        help="Write Quantumult X formatted proxy list")
+    parser.add_argument(
+        "--output-surge",
+        metavar="FILE",
+        type=str,
+        default=None,
+        help="Write Surge formatted proxy list to FILE",
+    )
+    parser.add_argument(
+        "--output-qx",
+        metavar="FILE",
+        type=str,
+        default=None,
+        help="Write Quantumult X formatted proxy list to FILE",
+    )
     parser.add_argument("--geoip-db", type=str, default=None,
                         help="Path to GeoLite2 Country database for GeoIP lookup")
     parser.add_argument(
@@ -1479,8 +1493,8 @@ def main():
     CONFIG.write_base64 = not args.no_base64
     CONFIG.write_csv = not args.no_csv
     CONFIG.write_clash_proxies = not args.no_proxy_yaml
-    CONFIG.write_surge = args.output_surge
-    CONFIG.write_qx = args.output_qx
+    CONFIG.surge_file = args.output_surge
+    CONFIG.qx_file = args.output_qx
     CONFIG.cumulative_batches = args.cumulative_batches
     CONFIG.strict_batch = not args.no_strict_batch
     CONFIG.shuffle_sources = args.shuffle_sources

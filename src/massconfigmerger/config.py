@@ -115,8 +115,8 @@ class Settings(BaseSettings):
     shuffle_sources: bool = False
     write_csv: bool = True
     write_clash_proxies: bool = True
-    write_surge: bool = False
-    write_qx: bool = False
+    surge_file: Optional[str] = None
+    qx_file: Optional[str] = None
     mux_concurrency: int = 8
     smux_streams: int = 4
     geoip_db: Optional[str] = None
