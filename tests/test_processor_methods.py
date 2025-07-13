@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import json
 import sys
@@ -235,7 +236,7 @@ def test_lookup_country(monkeypatch):
     monkeypatch.setitem(sys.modules, "geoip2", dummy_geoip2)
     monkeypatch.setitem(sys.modules, "geoip2.database", dummy_database)
 
-    assert proc.lookup_country("1.2.3.4") == "US"
+    assert asyncio.run(proc.lookup_country("1.2.3.4")) == "US"
 
 
 def test_deduplicate_semantic_equivalent(monkeypatch):

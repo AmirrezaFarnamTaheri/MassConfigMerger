@@ -312,7 +312,7 @@ class EnhancedConfigProcessor:
             logging.debug("Connection test failed: %s", exc)
             return None
 
-    def lookup_country(self, host: str) -> Optional[str]:
+    async def lookup_country(self, host: str) -> Optional[str]:
         """Return ISO country code for host if GeoIP is configured."""
         if not host or not CONFIG.geoip_db:
             return None
@@ -330,7 +330,8 @@ class EnhancedConfigProcessor:
         try:
             ip = host
             if not re.match(r"^[0-9.]+$", host):
-                ip = socket.gethostbyname(host)
+                info = await asyncio.get_running_loop().getaddrinfo(host, None)
+                ip = info[0][4][0]
             resp = self._geoip_reader.country(ip)
             return resp.country.iso_code
         except (OSError, socket.gaierror) as exc:
@@ -470,7 +471,7 @@ class AsyncSourceFetcher:
                             host, port = self.processor.extract_host_port(line)
                             protocol = self.processor.categorize_protocol(line)
 
-                            country = self.processor.lookup_country(host) if host else None
+                            country = await self.processor.lookup_country(host) if host else None
                             result = ConfigResult(
                                 config=line,
                                 protocol=protocol,
@@ -549,7 +550,7 @@ class UltimateVPNMerger:
                 continue
             protocol = self.processor.categorize_protocol(line)
             host, port = self.processor.extract_host_port(line)
-            country = self.processor.lookup_country(host) if host else None
+            country = await self.processor.lookup_country(host) if host else None
             results.append(
                 ConfigResult(
                     config=line,
