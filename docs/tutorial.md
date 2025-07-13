@@ -67,9 +67,14 @@ By default the `vpn_merger` service runs once a day. Start the optional
 ```bash
 docker compose --profile aggregator up -d
 ```
+To periodically retest existing results, start `vpn_retester` as well:
 
-Adjust `MERGE_INTERVAL` and `AGGREGATE_INTERVAL` in `docker-compose.yml` to
-change how frequently each script runs.
+```bash
+docker compose --profile retester up -d
+```
+
+Adjust `MERGE_INTERVAL` (default `86400`) and `AGGREGATE_INTERVAL` (default
+`43200`) in `docker-compose.yml` to change how frequently each script runs.
 
 ### Docker Compose / Local Scheduling
 
@@ -84,8 +89,9 @@ Start it with:
 docker compose up -d
 ```
 
-The container runs the script once a day by default. Set the `MERGE_INTERVAL`
-environment variable in `docker-compose.yml` to change how often it runs.
+The container runs the script once a day by default. Set `MERGE_INTERVAL` and
+`AGGREGATE_INTERVAL` in `docker-compose.yml` to change how often the merger and
+aggregator run.
 
 ## ✨ Key Features & Use Cases
 

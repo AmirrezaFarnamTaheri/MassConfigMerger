@@ -12,3 +12,31 @@ services:
              done"
     environment:
       - MERGE_INTERVAL=86400
+
+  aggregator:
+    profiles: ["aggregator"]
+    build: .
+    image: vpn-merger
+    volumes:
+      - ./output:/app/output
+    command: >
+      sh -c "while true; do \
+                python aggregator_tool.py --with-merger && echo 'Waiting for next aggregation'; \
+                sleep ${AGGREGATE_INTERVAL:-43200}; \
+             done"
+    environment:
+      - AGGREGATE_INTERVAL=43200
+
+  vpn_retester:
+    profiles: ["retester"]
+    build: .
+    image: vpn-merger
+    volumes:
+      - ./output:/app/output
+    command: >
+      sh -c "while true; do \
+                python vpn_retester.py && echo 'Waiting for next retest'; \
+                sleep ${RETEST_INTERVAL:-86400}; \
+             done"
+    environment:
+      - RETEST_INTERVAL=86400

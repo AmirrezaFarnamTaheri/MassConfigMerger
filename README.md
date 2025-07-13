@@ -115,6 +115,27 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
   respect Telegram's Terms of Service along with your local laws.
 - All events are logged to the directory specified in `log_dir` (defaults to
   `logs/` here) so you can audit what was fetched and from where.
+
+### Docker Compose Automation
+
+The included `docker-compose.yml` automates running the scripts. `vpn_merger`
+loops every `$MERGE_INTERVAL` seconds (default `86400`). Enable the optional
+`aggregator` profile to fetch new links on a schedule. It runs
+`aggregator_tool.py --with-merger` every `$AGGREGATE_INTERVAL` seconds
+(default `43200`). The `retester` profile repeatedly runs
+`vpn_retester.py` in the same way.
+
+Start all services with:
+
+```bash
+docker compose up -d
+```
+
+Add profiles as needed, for example:
+
+```bash
+docker compose --profile aggregator --profile retester up -d
+```
 ## FAQ
 
 ### Why does the script take so long?
