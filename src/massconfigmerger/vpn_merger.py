@@ -48,6 +48,7 @@ from urllib.parse import urlparse, parse_qs, urlencode, urlunparse, parse_qsl
 from .clash_utils import config_to_clash_proxy
 
 from .config import Settings, load_config
+from .tester import NodeTester
 
 try:
     import aiohttp
@@ -139,9 +140,7 @@ class EnhancedConfigProcessor:
     MAX_DECODE_SIZE = 256 * 1024  # 256 kB safety limit for base64 payloads
 
     def __init__(self):
-        self.dns_cache = {}
-        self.resolver: Optional[AsyncResolver] = None
-        self._geoip_reader = None
+        self.tester = NodeTester(CONFIG)
 
     def _normalize_url(self, config: str) -> str:
         """Return canonical URL with sorted query params and no fragment."""
@@ -278,67 +277,12 @@ class EnhancedConfigProcessor:
         return hashlib.sha256(key.encode()).hexdigest()[:16]
     
     async def test_connection(self, host: str, port: int) -> Optional[float]:
-        """Test connection and measure response time."""
-        if not CONFIG.enable_url_testing:
-            return None
-            
-        start = time.time()
-        try:
-            target = host
-            if 'aiodns' in sys.modules:
-                if self.resolver is None:
-                    try:
-                        self.resolver = AsyncResolver()
-                    except aiodns.error.DNSError as exc:
-                        logging.debug("AsyncResolver init failed: %s", exc)
-                        self.resolver = None
-                if self.resolver is not None:
-                    try:
-                        if host not in self.dns_cache:
-                            result = await self.resolver.resolve(host, port)
-                            if result:
-                                self.dns_cache[host] = result[0]["host"]
-                        target = self.dns_cache.get(host, host)
-                    except aiodns.error.DNSError as exc:
-                        logging.debug("DNS resolve failed: %s", exc)
-                        target = host
-
-            _, writer = await asyncio.wait_for(
-                asyncio.open_connection(target, port),
-                timeout=CONFIG.test_timeout
-            )
-            writer.close()
-            await writer.wait_closed()
-            return time.time() - start
-        except (OSError, asyncio.TimeoutError) as exc:
-            logging.debug("Connection test failed: %s", exc)
-            return None
+        """Test connection and measure response time using :class:`NodeTester`."""
+        return await self.tester.test_connection(host, port)
 
     async def lookup_country(self, host: str) -> Optional[str]:
-        """Return ISO country code for host if GeoIP is configured."""
-        if not host or not CONFIG.geoip_db:
-            return None
-        try:
-            from geoip2.database import Reader
-        except ImportError:
-            return None
-        if self._geoip_reader is None:
-            try:
-                self._geoip_reader = Reader(CONFIG.geoip_db)
-            except OSError as exc:
-                logging.debug("GeoIP reader init failed: %s", exc)
-                self._geoip_reader = None
-                return None
-        try:
-            ip = host
-            if not re.match(r"^[0-9.]+$", host):
-                info = await asyncio.get_running_loop().getaddrinfo(host, None)
-                ip = info[0][4][0]
-            resp = self._geoip_reader.country(ip)
-            return resp.country.iso_code
-        except (OSError, socket.gaierror) as exc:
-            logging.debug("GeoIP lookup failed: %s", exc)
-            return None
+        """Return ISO country code for ``host`` using :class:`NodeTester`."""
+        return await self.tester.lookup_country(host)
 
     def categorize_protocol(self, config: str) -> str:
         """Categorize configuration by protocol."""
