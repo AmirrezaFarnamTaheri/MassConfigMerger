@@ -2,7 +2,8 @@ import asyncio
 import json
 from pathlib import Path
 
-from massconfigmerger.vpn_merger import UltimateVPNMerger, CONFIG
+from massconfigmerger.vpn_merger import UltimateVPNMerger
+from massconfigmerger.result_processor import CONFIG
 
 
 def test_proxy_history_update(tmp_path, monkeypatch):

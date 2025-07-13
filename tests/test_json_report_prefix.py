@@ -2,7 +2,8 @@ import json
 import asyncio
 from pathlib import Path
 
-from massconfigmerger.vpn_merger import UltimateVPNMerger, ConfigResult, CONFIG
+from massconfigmerger.vpn_merger import UltimateVPNMerger
+from massconfigmerger.result_processor import ConfigResult, CONFIG
 
 
 def test_json_report_prefix(monkeypatch, tmp_path):

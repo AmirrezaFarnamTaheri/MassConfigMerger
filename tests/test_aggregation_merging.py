@@ -5,7 +5,8 @@ from aiohttp import web
 pytest_plugins = "aiohttp.pytest_plugin"
 
 from massconfigmerger import aggregator_tool
-from massconfigmerger.vpn_merger import UltimateVPNMerger, ConfigResult, CONFIG
+from massconfigmerger.vpn_merger import UltimateVPNMerger
+from massconfigmerger.result_processor import ConfigResult, CONFIG
 from massconfigmerger.config import Settings
 
 

@@ -1,6 +1,7 @@
 import asyncio
 
-from massconfigmerger.vpn_merger import UltimateVPNMerger, ConfigResult, CONFIG
+from massconfigmerger.vpn_merger import UltimateVPNMerger
+from massconfigmerger.result_processor import ConfigResult, CONFIG
 
 
 def test_maybe_save_batch_strict_cumulative(monkeypatch, tmp_path):
