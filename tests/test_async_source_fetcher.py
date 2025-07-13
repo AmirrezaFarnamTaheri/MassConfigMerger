@@ -124,3 +124,26 @@ async def test_fetch_source_concurrent_execution(aiohttp_client):
     elapsed = asyncio.get_event_loop().time() - start
 
     assert elapsed < 0.15
+
+
+@pytest.mark.asyncio
+async def test_source_availability_concurrent_execution(aiohttp_client):
+    async def handler(request):
+        await asyncio.sleep(0.1)
+        return web.Response(text="ok")
+
+    app = web.Application()
+    app.router.add_get("/", handler)
+    client = await aiohttp_client(app)
+
+    fetcher = AsyncSourceFetcher(EnhancedConfigProcessor(), set())
+    fetcher.session = client.session
+
+    start = asyncio.get_event_loop().time()
+    await asyncio.gather(
+        fetcher.test_source_availability(client.make_url("/")),
+        fetcher.test_source_availability(client.make_url("/")),
+    )
+    elapsed = asyncio.get_event_loop().time() - start
+
+    assert elapsed < 0.15
