@@ -42,6 +42,8 @@ def test_reality_parse_extra():
     assert proxy["flow"] == "xtls-rprx-vision"
     assert proxy["pbk"] == "pub"
     assert proxy["sid"] == "123"
+    assert proxy["reality-opts"]["public-key"] == "pub"
+    assert proxy["reality-opts"]["short-id"] == "123"
     assert proxy["sni"] == "example.com"
     assert proxy["fp"] == "chrome"
     assert proxy["name"] == "test"
