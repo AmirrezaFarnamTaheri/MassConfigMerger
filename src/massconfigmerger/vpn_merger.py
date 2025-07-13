@@ -45,6 +45,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast, Callable,
 
 from .constants import SOURCES_FILE
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse, parse_qsl
+from tqdm import tqdm
 from .clash_utils import config_to_clash_proxy, flag_emoji, build_clash_config
 
 from .config import Settings, load_config
@@ -491,8 +492,13 @@ class AsyncSourceFetcher:
                     # Extract and process configs
                     lines = [line.strip() for line in content.splitlines() if line.strip()]
                     config_results: List[ConfigResult] = []
-                    
-                    for line in lines:
+
+                    iterator = (
+                        tqdm(lines, desc="Testing", leave=False, unit="cfg")
+                        if CONFIG.enable_url_testing
+                        else lines
+                    )
+                    for line in iterator:
                         if all(
                             [
                                 line.startswith(CONFIG.valid_prefixes),
@@ -536,7 +542,10 @@ class AsyncSourceFetcher:
                                     )
                             
                             config_results.append(result)
-                    
+
+                    if iterator is not lines and hasattr(iterator, "close"):
+                        iterator.close()
+
                     return url, config_results
                     
             except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
@@ -779,6 +788,8 @@ class UltimateVPNMerger:
         tested = 0
         proc = EnhancedConfigProcessor()
 
+        progress = tqdm(total=max_tests, desc="Testing", unit="cfg", leave=False)
+
         for url in self.available_sources:
             if tested >= max_tests:
                 break
@@ -799,10 +810,14 @@ class UltimateVPNMerger:
                 if host and port:
                     ping = await proc.test_connection(host, port)
                     tested += 1
+                    progress.update(1)
                     if ping is not None:
+                        progress.close()
                         return True
                     if tested >= max_tests:
                         break
+
+        progress.close()
 
         return False
     
@@ -1379,6 +1394,7 @@ def main():
     )
     parser.add_argument(
         "--stop-after-found",
+        "--threshold",
         type=int,
         default=CONFIG.threshold,
         help="Stop processing after N unique configs (0 = unlimited)",
