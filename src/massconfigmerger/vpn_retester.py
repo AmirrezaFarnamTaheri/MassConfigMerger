@@ -12,12 +12,13 @@ from typing import List, Tuple, Optional
 from tqdm.asyncio import tqdm_asyncio
 
 from .vpn_merger import EnhancedConfigProcessor, CONFIG
+from .tester import NodeTester
 
 
-async def _test_config(proc: EnhancedConfigProcessor, cfg: str) -> Tuple[str, Optional[float]]:
+async def _test_config(proc: EnhancedConfigProcessor, tester: NodeTester, cfg: str) -> Tuple[str, Optional[float]]:
     host, port = proc.extract_host_port(cfg)
     if host and port:
-        ping = await proc.test_connection(host, port)
+        ping = await tester.test_connection(host, port)
     else:
         ping = None
     return cfg, ping
@@ -25,11 +26,12 @@ async def _test_config(proc: EnhancedConfigProcessor, cfg: str) -> Tuple[str, Op
 
 async def retest_configs(configs: List[str]) -> List[Tuple[str, Optional[float]]]:
     proc = EnhancedConfigProcessor()
+    tester = NodeTester(CONFIG)
     semaphore = asyncio.Semaphore(CONFIG.concurrent_limit)
 
     async def worker(cfg: str) -> Tuple[str, Optional[float]]:
         async with semaphore:
-            return await _test_config(proc, cfg)
+            return await _test_config(proc, tester, cfg)
 
     tasks = [asyncio.create_task(worker(c)) for c in configs]
     return await tqdm_asyncio.gather(*tasks, total=len(tasks), desc="Testing")

@@ -422,8 +422,10 @@ class AsyncSourceFetcher:
         seen_hashes: Set[str],
         hash_lock: Optional[asyncio.Lock] = None,
         history_callback: Optional[Callable[[str, bool], Awaitable[None]]] = None,
+        tester: Optional[NodeTester] = None,
     ):
         self.processor = processor
+        self.tester = tester or NodeTester(CONFIG)
         self.session: Optional[aiohttp.ClientSession] = None
         self.seen_hashes = seen_hashes
         self.hash_lock = hash_lock or asyncio.Lock()
@@ -511,7 +513,7 @@ class AsyncSourceFetcher:
                             host, port = self.processor.extract_host_port(line)
                             protocol = self.processor.categorize_protocol(line)
 
-                            country = await self.processor.lookup_country(host) if host else None
+                            country = await self.tester.lookup_country(host) if host else None
                             result = ConfigResult(
                                 config=line,
                                 protocol=protocol,
@@ -523,7 +525,7 @@ class AsyncSourceFetcher:
                             
                             # Test connection if enabled
                             if CONFIG.enable_url_testing and host and port:
-                                ping_time = await self.processor.test_connection(host, port)
+                                ping_time = await self.tester.test_connection(host, port)
                                 result.ping_time = ping_time
                                 result.is_reachable = ping_time is not None
                                 if self.history_callback:
@@ -554,6 +556,7 @@ class UltimateVPNMerger:
         if CONFIG.shuffle_sources:
             random.shuffle(self.sources)
         self.processor = EnhancedConfigProcessor()
+        self.tester = NodeTester(CONFIG)
         self.seen_hashes: Set[str] = set()
         self.seen_hashes_lock = asyncio.Lock()
         self.fetcher = AsyncSourceFetcher(
@@ -561,6 +564,7 @@ class UltimateVPNMerger:
             self.seen_hashes,
             self.seen_hashes_lock,
             self._update_history,
+            self.tester,
         )
         self.batch_counter = 0
         self.next_batch_threshold = CONFIG.batch_size if CONFIG.batch_size else float('inf')
@@ -617,7 +621,7 @@ class UltimateVPNMerger:
                 continue
             protocol = self.processor.categorize_protocol(line)
             host, port = self.processor.extract_host_port(line)
-            country = await self.processor.lookup_country(host) if host else None
+            country = await self.tester.lookup_country(host) if host else None
             results.append(
                 ConfigResult(
                     config=line,
@@ -764,7 +768,6 @@ class UltimateVPNMerger:
 
         assert self.fetcher.session is not None
         tested = 0
-        proc = EnhancedConfigProcessor()
 
         for url in self.available_sources:
             if tested >= max_tests:
@@ -782,9 +785,9 @@ class UltimateVPNMerger:
 
             configs = parse_first_configs(text, max_tests - tested)
             for cfg in configs:
-                host, port = proc.extract_host_port(cfg)
+                host, port = self.processor.extract_host_port(cfg)
                 if host and port:
-                    ping = await proc.test_connection(host, port)
+                    ping = await self.tester.test_connection(host, port)
                     tested += 1
                     if ping is not None:
                         return True
