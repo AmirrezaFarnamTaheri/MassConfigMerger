@@ -15,11 +15,30 @@ def config_to_clash_proxy(
 ) -> Optional[Dict[str, Union[str, int, bool]]]:
     """Convert a single config link to a Clash proxy dictionary.
 
-    The parser supports VLESS/Reality, VMess, Trojan, SS/SSR and several other
-    protocols.  Optional attributes such as ``network`` (e.g. ``ws`` or
-    ``grpc``), ``sni``, ``alpn`` and ``flow`` are included when present.  For
-    SSR links ``protocol``, ``obfs``, ``password`` and the related parameters are
-    decoded from the base64 payload.
+    Supported protocols include ``vmess``, ``vless``/``reality``, ``trojan``,
+    ``ss``/``ssr``, ``hysteria``/``hysteria2`` and several fallbacks such as plain
+    ``socks`` or ``http``.  Each parser attempts to extract every optional argument
+    used by real-world sharing links.
+
+    Parsed options by protocol (when available):
+
+    ``vmess``
+        ``network`` (``ws`` or ``grpc``), ``host``, ``path``, ``sni``, ``alpn``,
+        ``fp``, ``flow``, ``serviceName`` and ``ws-headers``.
+    ``vless``/``reality``
+        ``encryption``, ``network``, ``host``, ``path``, ``sni``, ``alpn``,
+        ``fp``, ``flow``, ``pbk``, ``sid``, ``serviceName`` and ``ws-headers``.
+    ``trojan``
+        ``network`` (``ws``/``grpc``), ``host``, ``path``, ``sni``, ``alpn``,
+        ``flow``, ``serviceName`` and ``ws-headers``.
+    ``ssr``
+        ``protocol``, ``obfs``, ``cipher``, ``password``, ``obfs-param``,
+        ``protocol-param``, ``remarks``, ``group``, ``udpport`` and ``uot``.
+    ``hysteria2``
+        ``auth``, ``password``, ``peer``, ``sni``, ``insecure``, ``alpn``, ``obfs``,
+        ``obfs-password``, ``upmbps`` and ``downmbps``.
+
+        Unknown or malformed links result in ``None`` instead of raising an exception.
     """
     try:
         q = {}
@@ -50,6 +69,16 @@ def config_to_clash_proxy(
                     proxy["host"] = data.get("host")
                 if data.get("path"):
                     proxy["path"] = data.get("path")
+                if data.get("ws-headers"):
+                    try:
+                        proxy["ws-headers"] = json.loads(data["ws-headers"])
+                    except (json.JSONDecodeError, TypeError):
+                        proxy["ws-headers"] = data["ws-headers"]
+                ws_opts = data.get("ws-opts")
+                if ws_opts and isinstance(ws_opts, dict) and ws_opts.get("headers"):
+                    proxy["ws-headers"] = ws_opts.get("headers")
+                if data.get("serviceName"):
+                    proxy["serviceName"] = data.get("serviceName")
                 if data.get("sni"):
                     proxy["sni"] = data.get("sni")
                 if data.get("alpn"):
@@ -59,7 +88,12 @@ def config_to_clash_proxy(
                 if data.get("flow"):
                     proxy["flow"] = data.get("flow")
                 return proxy
-            except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+            except (
+                binascii.Error,
+                UnicodeDecodeError,
+                json.JSONDecodeError,
+                ValueError,
+            ) as exc:
                 logging.debug("Fallback Clash parse for vmess: %s", exc)
                 p = urlparse(config)
                 q = parse_qs(p.query)
@@ -78,9 +112,19 @@ def config_to_clash_proxy(
                 net = q.get("type") or q.get("mode")
                 if net:
                     proxy["network"] = net[0]
-                for key in ("host", "path", "sni", "alpn", "fp", "flow"):
+                for key in ("host", "path", "sni", "alpn", "fp", "flow", "serviceName"):
                     if key in q:
                         proxy[key] = q[key][0]
+                if "ws-headers" in q:
+                    try:
+                        padded = q["ws-headers"][0] + "=" * (
+                            -len(q["ws-headers"][0]) % 4
+                        )
+                        proxy["ws-headers"] = json.loads(
+                            base64.urlsafe_b64decode(padded)
+                        )
+                    except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError):
+                        proxy["ws-headers"] = q["ws-headers"][0]
                 return proxy
         elif scheme == "vless":
             p = urlparse(config)
@@ -99,9 +143,15 @@ def config_to_clash_proxy(
             net = q.get("type") or q.get("mode")
             if net:
                 proxy["network"] = net[0]
-            for key in ("host", "path", "sni", "alpn", "fp", "flow"):
+            for key in ("host", "path", "sni", "alpn", "fp", "flow", "serviceName"):
                 if key in q:
                     proxy[key] = q[key][0]
+            if "ws-headers" in q:
+                try:
+                    padded = q["ws-headers"][0] + "=" * (-len(q["ws-headers"][0]) % 4)
+                    proxy["ws-headers"] = json.loads(base64.urlsafe_b64decode(padded))
+                except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError):
+                    proxy["ws-headers"] = q["ws-headers"][0]
             return proxy
         elif scheme == "reality":
             p = urlparse(config)
@@ -115,9 +165,15 @@ def config_to_clash_proxy(
                 "encryption": q.get("encryption", ["none"])[0],
                 "tls": True,
             }
-            for key in ("sni", "alpn", "fp", "pbk", "sid"):
+            for key in ("sni", "alpn", "fp", "pbk", "sid", "serviceName"):
                 if key in q:
                     proxy[key] = q[key][0]
+            if "ws-headers" in q:
+                try:
+                    padded = q["ws-headers"][0] + "=" * (-len(q["ws-headers"][0]) % 4)
+                    proxy["ws-headers"] = json.loads(base64.urlsafe_b64decode(padded))
+                except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError):
+                    proxy["ws-headers"] = q["ws-headers"][0]
             flows = q.get("flow")
             if flows:
                 proxy["flow"] = flows[0]
@@ -144,6 +200,18 @@ def config_to_clash_proxy(
                 proxy["sni"] = sni_vals[0]
             if security:
                 proxy["tls"] = True
+            net = q.get("type") or q.get("mode")
+            if net:
+                proxy["network"] = net[0]
+            for key in ("host", "path", "alpn", "flow", "serviceName"):
+                if key in q:
+                    proxy[key] = q[key][0]
+            if "ws-headers" in q:
+                try:
+                    padded = q["ws-headers"][0] + "=" * (-len(q["ws-headers"][0]) % 4)
+                    proxy["ws-headers"] = json.loads(base64.urlsafe_b64decode(padded))
+                except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError):
+                    proxy["ws-headers"] = q["ws-headers"][0]
             return proxy
         elif scheme in ("ss", "shadowsocks"):
             p = urlparse(config)
@@ -224,6 +292,13 @@ def config_to_clash_proxy(
                         ).decode()
                     except (binascii.Error, UnicodeDecodeError):
                         proxy["group"] = q["group"][0]
+                if "udpport" in q:
+                    try:
+                        proxy["udpport"] = int(q["udpport"][0])
+                    except ValueError:
+                        proxy["udpport"] = q["udpport"][0]
+                if "uot" in q:
+                    proxy["uot"] = q["uot"][0]
                 return proxy
             except (binascii.Error, UnicodeDecodeError, ValueError) as exc:
                 logging.debug("SSRs parse failed: %s", exc)
@@ -265,6 +340,8 @@ def config_to_clash_proxy(
                 "alpn",
                 "obfs",
                 "obfs-password",
+                "upmbps",
+                "downmbps",
             ):
                 if key in q and key not in proxy:
                     proxy[key.replace("-", "_")] = q[key][0]
@@ -299,6 +376,11 @@ def config_to_clash_proxy(
                 "server": p.hostname,
                 "port": p.port,
             }
-    except (ValueError, binascii.Error, UnicodeDecodeError, json.JSONDecodeError) as exc:
+    except (
+        ValueError,
+        binascii.Error,
+        UnicodeDecodeError,
+        json.JSONDecodeError,
+    ) as exc:
         logging.debug("config_to_clash_proxy failed: %s", exc)
         return None

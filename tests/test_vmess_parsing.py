@@ -55,3 +55,9 @@ def test_vmess_parse_options():
     assert proxy["sni"] == "ex.com"
     assert proxy["alpn"] == "h2"
     assert proxy["flow"] == "xtls-rprx-origin"
+
+
+def test_vmess_invalid_link():
+    proxy = config_to_clash_proxy("vmess://invalid", 0)
+    assert proxy["type"] == "vmess"
+    assert proxy["server"] == "invalid"
