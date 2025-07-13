@@ -13,7 +13,7 @@ def test_load_defaults(tmp_path):
         "telegram_api_id": 1,
         "telegram_api_hash": "hash",
         "telegram_bot_token": "token",
-        "allowed_user_ids": [1]
+        "allowed_user_ids": [1],
     }
     p = tmp_path / "config.json"
     p.write_text(json.dumps(cfg))
@@ -23,6 +23,8 @@ def test_load_defaults(tmp_path):
     assert loaded.protocols == []
     assert loaded.exclude_patterns == []
     assert loaded.max_concurrent == 20
+    assert loaded.settings.retry_attempts == 3
+    assert loaded.settings.retry_base_delay == 1.0
 
 
 def test_load_invalid_json(tmp_path):
@@ -60,6 +62,16 @@ def test_custom_defaults(tmp_path):
     p.write_text(json.dumps(cfg))
     loaded = Config.load(p, defaults={"output_dir": "alt"})
     assert loaded.output_dir == "alt"
+
+
+def test_settings_custom(tmp_path):
+    p = tmp_path / "cfg.json"
+    p.write_text(
+        json.dumps({"settings": {"retry_attempts": 5, "retry_base_delay": 0.5}})
+    )
+    cfg = Config.load(p)
+    assert cfg.settings.retry_attempts == 5
+    assert cfg.settings.retry_base_delay == 0.5
 
 
 def test_env_fallback(tmp_path, monkeypatch):
