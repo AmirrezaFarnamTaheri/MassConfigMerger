@@ -372,12 +372,13 @@ class EnhancedConfigProcessor:
 class AsyncSourceFetcher:
     """Async source fetcher with comprehensive testing and availability checking."""
 
-    def __init__(self, processor: EnhancedConfigProcessor, seen_hashes: Set[str]):
+    def __init__(self, processor: EnhancedConfigProcessor, seen_hashes: Set[str],
+                 hash_lock: Optional[asyncio.Lock] = None):
         self.processor = processor
         self.session: Optional[aiohttp.ClientSession] = None
         self.seen_hashes = seen_hashes
         self._lock = asyncio.Lock()
-        self._hash_lock = asyncio.Lock()
+        self.hash_lock = hash_lock or asyncio.Lock()
         
     async def test_source_availability(self, url: str) -> bool:
         """Test if a source URL is available (returns 200 status)."""
@@ -441,7 +442,7 @@ class AsyncSourceFetcher:
                             ]
                         ):
                             config_hash = self.processor.create_semantic_hash(line)
-                            async with self._hash_lock:
+                            async with self.hash_lock:
                                 if config_hash in self.seen_hashes:
                                     continue
                                 self.seen_hashes.add(config_hash)
@@ -492,7 +493,9 @@ class UltimateVPNMerger:
             random.shuffle(self.sources)
         self.processor = EnhancedConfigProcessor()
         self.seen_hashes: Set[str] = set()
-        self.fetcher = AsyncSourceFetcher(self.processor, self.seen_hashes)
+        self.seen_hashes_lock = asyncio.Lock()
+        self.fetcher = AsyncSourceFetcher(self.processor, self.seen_hashes,
+                                          self.seen_hashes_lock)
         self.batch_counter = 0
         self.next_batch_threshold = CONFIG.batch_size if CONFIG.batch_size else float('inf')
         self.start_time = 0.0
