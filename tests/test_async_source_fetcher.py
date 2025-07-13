@@ -101,3 +101,26 @@ async def test_shared_lock_across_instances(aiohttp_client):
 
     total = len(r1[1]) + len(r2[1])
     assert total == 1
+
+
+@pytest.mark.asyncio
+async def test_fetch_source_concurrent_execution(aiohttp_client):
+    async def handler(request):
+        await asyncio.sleep(0.1)
+        return web.Response(text="vmess://abcdef0123456789abc")
+
+    app = web.Application()
+    app.router.add_get("/", handler)
+    client = await aiohttp_client(app)
+
+    fetcher = AsyncSourceFetcher(EnhancedConfigProcessor(), set())
+    fetcher.session = client.session
+
+    start = asyncio.get_event_loop().time()
+    await asyncio.gather(
+        fetcher.fetch_source(client.make_url("/")),
+        fetcher.fetch_source(client.make_url("/")),
+    )
+    elapsed = asyncio.get_event_loop().time() - start
+
+    assert elapsed < 0.15
