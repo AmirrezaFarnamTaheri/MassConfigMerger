@@ -356,7 +356,9 @@ async def scrape_telegram_configs(
         return set()
 
     since = datetime.utcnow() - timedelta(hours=last_hours)
-    client = TelegramClient("user", cfg.telegram_api_id, cfg.telegram_api_hash)
+    client = TelegramClient(
+        cfg.session_path, cfg.telegram_api_id, cfg.telegram_api_hash
+    )
     configs: Set[str] = set()
 
     try:
@@ -579,9 +581,9 @@ async def telegram_bot_mode(
 
     bot = cast(
         TelegramClient,
-        TelegramClient("bot", cfg.telegram_api_id, cfg.telegram_api_hash).start(
-            bot_token=cfg.telegram_bot_token
-        ),
+        TelegramClient(
+            cfg.session_path, cfg.telegram_api_id, cfg.telegram_api_hash
+        ).start(bot_token=cfg.telegram_bot_token),
     )
     last_update = None
 

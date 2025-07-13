@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     telegram_api_hash: Optional[str] = None
     telegram_bot_token: Optional[str] = None
     allowed_user_ids: List[int] = []
+    session_path: str = "user.session"
 
     protocols: List[str] = []
     exclude_patterns: List[str] = []
