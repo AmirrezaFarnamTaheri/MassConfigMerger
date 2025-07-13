@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import os
-import re
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
+import re
+
 import yaml
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -118,7 +119,23 @@ class Settings(BaseSettings):
     include_countries: Optional[Set[str]] = None
     exclude_countries: Optional[Set[str]] = None
 
-    model_config = SettingsConfigDict(env_prefix="")
+    model_config = SettingsConfigDict(env_prefix="", case_sensitive=False, enable_decoding=False)
+
+    @classmethod
+    def _parse_allowed_ids(cls, value):
+        if isinstance(value, str):
+            try:
+                return [int(v) for v in re.split(r"[ ,]+", value.strip()) if v]
+            except ValueError as exc:
+                raise ValueError("allowed_user_ids must be a list of integers") from exc
+        if isinstance(value, int):
+            return [value]
+        return value
+
+    @field_validator("allowed_user_ids", mode="before")
+    @classmethod
+    def validate_allowed_ids(cls, value):
+        return cls._parse_allowed_ids(value)
 
     @classmethod
     def settings_customise_sources(
@@ -129,8 +146,7 @@ class Settings(BaseSettings):
         dotenv_settings,
         file_secret_settings,
     ):
-        return init_settings,
-
+        return env_settings, init_settings, dotenv_settings, file_secret_settings
 
 def load_config(path: Path | None = None, *, defaults: dict | None = None) -> Settings:
     """Load configuration from ``path`` or the repository root."""
@@ -148,37 +164,6 @@ def load_config(path: Path | None = None, *, defaults: dict | None = None) -> Se
     if defaults:
         for k, v in defaults.items():
             data.setdefault(k, v)
-
-    env = os.getenv
-    env_map = {
-        "telegram_api_id": env("TELEGRAM_API_ID"),
-        "telegram_api_hash": env("TELEGRAM_API_HASH"),
-        "telegram_bot_token": env("TELEGRAM_BOT_TOKEN"),
-        "allowed_user_ids": env("ALLOWED_USER_IDS"),
-    }
-
-    if env_map["telegram_api_id"] is not None:
-        try:
-            data["telegram_api_id"] = int(env_map["telegram_api_id"])
-        except ValueError as exc:
-            raise ValueError("TELEGRAM_API_ID must be an integer") from exc
-
-    for key in ("telegram_api_hash", "telegram_bot_token"):
-        if env_map[key] is not None:
-            data[key] = env_map[key]
-
-    if env_map["allowed_user_ids"] is not None:
-        try:
-            ids = [
-                int(i)
-                for i in re.split(r"[ ,]+", env_map["allowed_user_ids"].strip())
-                if i
-            ]
-        except ValueError as exc:
-            raise ValueError(
-                "ALLOWED_USER_IDS must be a comma separated list of integers"
-            ) from exc
-        data["allowed_user_ids"] = ids
 
     if "allowed_user_ids" in data:
         try:
