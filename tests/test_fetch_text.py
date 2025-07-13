@@ -57,3 +57,28 @@ async def test_fetch_text_non_retryable(aiohttp_client):
     text = await aggregator_tool.fetch_text(client.session, "not a url")
     assert text is None
 
+
+@pytest.mark.asyncio
+async def test_fetch_text_backoff(monkeypatch, aiohttp_client):
+    """Ensure exponential backoff between retries."""
+    delays = []
+
+    async def fake_sleep(d):
+        delays.append(d)
+
+    monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+    monkeypatch.setattr(aggregator_tool.random, "random", lambda: 0)
+
+    async def handler(request):
+        return web.Response(status=500)
+
+    app = web.Application()
+    app.router.add_get("/", handler)
+    client = await aiohttp_client(app)
+
+    text = await aggregator_tool.fetch_text(
+        client.session, str(client.make_url("/")), timeout=0.01
+    )
+
+    assert text is None
+    assert delays == [1.0, 2.0]
