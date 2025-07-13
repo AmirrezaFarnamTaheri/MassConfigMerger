@@ -92,3 +92,15 @@ class NodeTester:
             logging.debug("GeoIP lookup failed: %s", exc)
             return None
 
+    async def close(self) -> None:
+        """Close any resolver resources if initialized."""
+        if self.resolver is not None:
+            try:
+                close = getattr(self.resolver, "close", None)
+                if asyncio.iscoroutinefunction(close):
+                    await close()  # type: ignore[misc]
+                elif callable(close):
+                    close()
+            except Exception as exc:  # pragma: no cover - env specific
+                logging.debug("Resolver close failed: %s", exc)
+            self.resolver = None

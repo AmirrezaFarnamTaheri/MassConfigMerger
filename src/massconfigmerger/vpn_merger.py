@@ -276,6 +276,9 @@ class UltimateVPNMerger:
         await self._save_proxy_history()
 
         self._print_final_summary(len(unique_results), time.time() - self.start_time, stats)
+
+        # Clean up tester resources
+        await self.processor.tester.close()
     
     async def _test_and_filter_sources(self) -> List[str]:
         """Test all sources for availability and filter out dead links."""
