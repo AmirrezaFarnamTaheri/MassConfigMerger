@@ -5,6 +5,7 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import aggregator_tool
+from massconfigmerger.config import Settings
 
 
 def test_case_insensitive_deduplication():
@@ -12,7 +13,7 @@ def test_case_insensitive_deduplication():
     b64 = base64.b64encode(json.dumps(data).encode()).decode().strip("=")
     lower = f"vmess://{b64}"
     upper = f"Vmess://{b64}"
-    cfg = aggregator_tool.Config(
+    cfg = Settings(
         telegram_api_id=1,
         telegram_api_hash="h",
         telegram_bot_token="t",
@@ -26,7 +27,7 @@ def test_case_insensitive_deduplication():
 
 def test_exclude_patterns_ignore_case():
     link = "trojan://pw@foo.com:443"
-    cfg = aggregator_tool.Config(
+    cfg = Settings(
         telegram_api_id=1,
         telegram_api_hash="h",
         telegram_bot_token="t",
@@ -43,7 +44,7 @@ def test_empty_protocol_list_accepts_all():
     b64 = base64.b64encode(json.dumps(data).encode()).decode().strip("=")
     vmess = f"vmess://{b64}"
     trojan = "trojan://pw@foo.com:443"
-    cfg = aggregator_tool.Config(
+    cfg = Settings(
         telegram_api_id=1,
         telegram_api_hash="h",
         telegram_bot_token="t",
@@ -59,7 +60,7 @@ def test_protocol_filter_mixed_case_from_cfg():
     b64 = base64.b64encode(json.dumps(data).encode()).decode().strip("=")
     vmess = f"vmess://{b64}"
     trojan = "trojan://pw@foo.com:443"
-    cfg = aggregator_tool.Config(
+    cfg = Settings(
         telegram_api_id=1,
         telegram_api_hash="h",
         telegram_bot_token="t",
@@ -75,7 +76,7 @@ def test_protocol_filter_mixed_case_argument():
     b64 = base64.b64encode(json.dumps(data).encode()).decode().strip("=")
     vmess = f"vmess://{b64}"
     trojan = "trojan://pw@foo.com:443"
-    cfg = aggregator_tool.Config(
+    cfg = Settings(
         telegram_api_id=1,
         telegram_api_hash="h",
         telegram_bot_token="t",

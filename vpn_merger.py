@@ -50,7 +50,7 @@ from clash_utils import config_to_clash_proxy
 SRC_PATH = Path(__file__).resolve().parent / "src"
 if SRC_PATH.is_dir():
     sys.path.insert(0, str(SRC_PATH))
-from massconfigmerger.config import AppConfig as Config
+from massconfigmerger.config import Settings, load_config
 
 try:
     import aiohttp
@@ -87,9 +87,9 @@ except ImportError as exc:
 
 DEFAULT_CONFIG_FILE = Path(__file__).resolve().with_name("config.yaml")
 try:
-    CONFIG = Config.load(DEFAULT_CONFIG_FILE)
+    CONFIG = load_config(DEFAULT_CONFIG_FILE)
 except ValueError:
-    CONFIG = Config()
+    CONFIG = Settings()
 
 # Compiled regular expressions from --exclude-pattern
 EXCLUDE_REGEXES: List[re.Pattern] = []

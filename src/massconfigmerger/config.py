@@ -9,7 +9,11 @@ import yaml
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class AppConfig(BaseSettings):
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_CONFIG_PATH = REPO_ROOT / "config.yaml"
+
+
+class Settings(BaseSettings):
     """Application configuration loaded from YAML with env overrides."""
 
     # Telegram / aggregator settings
@@ -117,55 +121,69 @@ class AppConfig(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="")
 
     @classmethod
-    def settings_customise_sources(cls, settings_cls, init_settings, env_settings, dotenv_settings, file_secret_settings):
+    def settings_customise_sources(
+        cls,
+        settings_cls,
+        init_settings,
+        env_settings,
+        dotenv_settings,
+        file_secret_settings,
+    ):
         return init_settings,
 
-    @classmethod
-    def load(cls, path: Path, defaults: dict | None = None) -> "AppConfig":
-        """Load configuration from a YAML file applying defaults and env vars."""
+
+def load_config(path: Path | None = None, *, defaults: dict | None = None) -> Settings:
+    """Load configuration from ``path`` or the repository root."""
+
+    if path is None:
+        path = DEFAULT_CONFIG_PATH
+
+    try:
+        data = yaml.safe_load(Path(path).read_text()) or {}
+    except FileNotFoundError as exc:
+        raise ValueError(f"Config file not found: {path}") from exc
+    except yaml.YAMLError as exc:
+        raise ValueError(f"Invalid YAML in {path}: {exc}") from exc
+
+    if defaults:
+        for k, v in defaults.items():
+            data.setdefault(k, v)
+
+    env = os.getenv
+    env_map = {
+        "telegram_api_id": env("TELEGRAM_API_ID"),
+        "telegram_api_hash": env("TELEGRAM_API_HASH"),
+        "telegram_bot_token": env("TELEGRAM_BOT_TOKEN"),
+        "allowed_user_ids": env("ALLOWED_USER_IDS"),
+    }
+
+    if env_map["telegram_api_id"] is not None:
         try:
-            data = yaml.safe_load(path.read_text()) or {}
-        except FileNotFoundError as exc:
-            raise ValueError(f"Config file not found: {path}") from exc
-        except yaml.YAMLError as exc:
-            raise ValueError(f"Invalid YAML in {path}: {exc}") from exc
+            data["telegram_api_id"] = int(env_map["telegram_api_id"])
+        except ValueError as exc:
+            raise ValueError("TELEGRAM_API_ID must be an integer") from exc
 
-        if defaults:
-            for k, v in defaults.items():
-                data.setdefault(k, v)
+    for key in ("telegram_api_hash", "telegram_bot_token"):
+        if env_map[key] is not None:
+            data[key] = env_map[key]
 
-        env = os.getenv
-        env_map = {
-            "telegram_api_id": env("TELEGRAM_API_ID"),
-            "telegram_api_hash": env("TELEGRAM_API_HASH"),
-            "telegram_bot_token": env("TELEGRAM_BOT_TOKEN"),
-            "allowed_user_ids": env("ALLOWED_USER_IDS"),
-        }
-        if env_map["telegram_api_id"] is not None:
-            try:
-                data["telegram_api_id"] = int(env_map["telegram_api_id"])
-            except ValueError as exc:
-                raise ValueError("TELEGRAM_API_ID must be an integer") from exc
-        for key in ("telegram_api_hash", "telegram_bot_token"):
-            if env_map[key] is not None:
-                data[key] = env_map[key]
-        if env_map["allowed_user_ids"] is not None:
-            try:
-                ids = [
-                    int(i)
-                    for i in re.split(r"[ ,]+", env_map["allowed_user_ids"].strip())
-                    if i
-                ]
-            except ValueError as exc:
-                raise ValueError(
-                    "ALLOWED_USER_IDS must be a comma separated list of integers"
-                ) from exc
-            data["allowed_user_ids"] = ids
+    if env_map["allowed_user_ids"] is not None:
+        try:
+            ids = [
+                int(i)
+                for i in re.split(r"[ ,]+", env_map["allowed_user_ids"].strip())
+                if i
+            ]
+        except ValueError as exc:
+            raise ValueError(
+                "ALLOWED_USER_IDS must be a comma separated list of integers"
+            ) from exc
+        data["allowed_user_ids"] = ids
 
-        if "allowed_user_ids" in data:
-            try:
-                data["allowed_user_ids"] = [int(i) for i in data["allowed_user_ids"]]
-            except Exception as exc:
-                raise ValueError("allowed_user_ids must be a list of integers") from exc
+    if "allowed_user_ids" in data:
+        try:
+            data["allowed_user_ids"] = [int(i) for i in data["allowed_user_ids"]]
+        except Exception as exc:
+            raise ValueError("allowed_user_ids must be a list of integers") from exc
 
-        return cls(**data)
+    return Settings(**data)

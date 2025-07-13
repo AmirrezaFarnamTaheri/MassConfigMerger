@@ -36,7 +36,7 @@ from constants import SOURCES_FILE
 SRC_PATH = Path(__file__).resolve().parent / "src"
 if SRC_PATH.is_dir():
     sys.path.insert(0, str(SRC_PATH))
-from massconfigmerger.config import AppConfig as Config
+from massconfigmerger.config import Settings, load_config
 
 CONFIG_FILE = Path("config.yaml")
 CHANNELS_FILE = Path("channels.txt")
@@ -330,7 +330,7 @@ async def fetch_and_parse_configs(
 
 
 async def scrape_telegram_configs(
-    channels_path: Path, last_hours: int, cfg: Config
+    channels_path: Path, last_hours: int, cfg: Settings
 ) -> Set[str]:
     """Scrape telegram channels for configs."""
     if cfg.telegram_api_id is None or cfg.telegram_api_hash is None:
@@ -415,7 +415,7 @@ async def scrape_telegram_configs(
 
 
 def deduplicate_and_filter(
-    config_set: Set[str], cfg: Config, protocols: List[str] | None = None
+    config_set: Set[str], cfg: Settings, protocols: List[str] | None = None
 ) -> List[str]:
     """Apply filters and return sorted configs.
 
@@ -448,7 +448,7 @@ def deduplicate_and_filter(
     return final
 
 
-def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
+def output_files(configs: List[str], out_dir: Path, cfg: Settings) -> List[Path]:
     """Write merged files and return list of written file paths respecting cfg flags."""
     out_dir.mkdir(parents=True, exist_ok=True)
     written: List[Path] = []
@@ -515,7 +515,7 @@ def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
 
 
 async def run_pipeline(
-    cfg: Config,
+    cfg: Settings,
     protocols: List[str] | None = None,
     sources_file: Path = SOURCES_FILE,
     channels_file: Path = CHANNELS_FILE,
@@ -560,7 +560,7 @@ async def run_pipeline(
 
 
 async def telegram_bot_mode(
-    cfg: Config,
+    cfg: Settings,
     sources_file: Path = SOURCES_FILE,
     channels_file: Path = CHANNELS_FILE,
     last_hours: int = 24,
@@ -698,7 +698,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    cfg = Config.load(Path(args.config))
+    cfg = load_config(Path(args.config))
     if args.output_dir:
         cfg.output_dir = args.output_dir
     if args.concurrent_limit is not None:
