@@ -36,7 +36,7 @@ async def test_fetch_and_parse_configs_handles_errors(aiohttp_client, tmp_path):
     ]
 
     configs = await aggregator_tool.fetch_and_parse_configs(
-        urls, max_concurrent=3, request_timeout=0.05
+        urls, concurrent_limit=3, request_timeout=0.05
     )
     assert configs == {"vmess://good"}
 

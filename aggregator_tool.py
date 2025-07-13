@@ -16,7 +16,7 @@ import json
 import logging
 import random
 import re
-from dataclasses import dataclass, field, fields
+import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterable, List, Set, Optional, Dict, Union, Tuple, cast
@@ -33,7 +33,12 @@ import vpn_merger
 
 from constants import SOURCES_FILE
 
-CONFIG_FILE = Path("config.json")
+SRC_PATH = Path(__file__).resolve().parent / "src"
+if SRC_PATH.is_dir():
+    sys.path.insert(0, str(SRC_PATH))
+from massconfigmerger.config import AppConfig as Config
+
+CONFIG_FILE = Path("config.yaml")
 CHANNELS_FILE = Path("channels.txt")
 
 # Match full config links for supported protocols
@@ -138,123 +143,6 @@ def is_valid_config(link: str) -> bool:
     return bool(rest)
 
 
-@dataclass
-class Settings:
-    """HTTP retry settings."""
-
-    retry_attempts: int = 3
-    retry_base_delay: float = 1.0
-
-
-@dataclass
-class Config:
-    telegram_api_id: Optional[int] = None
-    telegram_api_hash: Optional[str] = None
-    telegram_bot_token: Optional[str] = None
-    allowed_user_ids: List[int] = field(default_factory=list)
-    protocols: List[str] = field(default_factory=list)
-    exclude_patterns: List[str] = field(default_factory=list)
-    output_dir: str = "output"
-    log_dir: str = "logs"
-    request_timeout: int = 10
-    max_concurrent: int = 20
-    write_base64: bool = True
-    write_singbox: bool = True
-    write_clash: bool = True
-    settings: Settings = field(default_factory=Settings)
-
-    @classmethod
-    def load(cls, path: Path, defaults: dict | None = None) -> "Config":
-        """Load configuration from ``path`` applying optional defaults."""
-        try:
-            with path.open("r") as f:
-                data = json.load(f)
-        except FileNotFoundError as exc:
-            raise ValueError(f"Config file not found: {path}") from exc
-        except json.JSONDecodeError as exc:
-            raise ValueError(f"Invalid JSON in {path}: {exc}") from exc
-
-        if not isinstance(data, dict):
-            raise ValueError(f"{path} must contain a JSON object")
-
-        # Pull telegram credentials from environment and override when set
-        import os
-
-        env_values = {
-            "telegram_api_id": os.getenv("TELEGRAM_API_ID"),
-            "telegram_api_hash": os.getenv("TELEGRAM_API_HASH"),
-            "telegram_bot_token": os.getenv("TELEGRAM_BOT_TOKEN"),
-            "allowed_user_ids": os.getenv("ALLOWED_USER_IDS"),
-        }
-
-        if env_values["telegram_api_id"] is not None:
-            try:
-                data["telegram_api_id"] = int(env_values["telegram_api_id"])
-            except ValueError as exc:
-                raise ValueError("TELEGRAM_API_ID must be an integer") from exc
-
-        for key in ("telegram_api_hash", "telegram_bot_token"):
-            if env_values[key] is not None:
-                data[key] = env_values[key]
-
-        if env_values["allowed_user_ids"] is not None:
-            try:
-                ids = [
-                    int(i)
-                    for i in re.split(r"[ ,]+", env_values["allowed_user_ids"].strip())
-                    if i
-                ]
-            except ValueError as exc:
-                raise ValueError(
-                    "ALLOWED_USER_IDS must be a comma separated list of integers"
-                ) from exc
-            data["allowed_user_ids"] = ids
-
-        if "allowed_user_ids" in data:
-            try:
-                data["allowed_user_ids"] = [int(i) for i in data["allowed_user_ids"]]
-            except Exception as exc:
-                raise ValueError("allowed_user_ids must be a list of integers") from exc
-
-        merged_defaults = {
-            "protocols": [],
-            "exclude_patterns": [],
-            "output_dir": "output",
-            "log_dir": "logs",
-            "request_timeout": 10,
-            "max_concurrent": 20,
-            "write_base64": True,
-            "write_singbox": True,
-            "write_clash": True,
-            "settings": {},
-        }
-        if defaults:
-            merged_defaults.update(defaults)
-        for key, value in merged_defaults.items():
-            data.setdefault(key, value)
-
-        settings_data = data.get("settings", {})
-        if not isinstance(settings_data, dict):
-            raise ValueError("settings must be an object")
-        settings_defaults = {
-            "retry_attempts": Settings.retry_attempts,
-            "retry_base_delay": Settings.retry_base_delay,
-        }
-        for k, v in settings_defaults.items():
-            settings_data.setdefault(k, v)
-        data["settings"] = Settings(**settings_data)
-
-        known_fields = {f.name for f in fields(cls)}
-        unknown = [k for k in data if k not in known_fields]
-        if unknown:
-            msg = "Invalid config.json - unknown fields: " + ", ".join(unknown)
-            raise ValueError(msg)
-
-        try:
-            return cls(**data)
-        except (KeyError, TypeError) as exc:
-            msg = f"Invalid configuration values: {exc}"
-            raise ValueError(msg) from exc
 
 
 async def fetch_text(
@@ -262,8 +150,8 @@ async def fetch_text(
     url: str,
     timeout: int = 10,
     *,
-    retries: int = Settings.retry_attempts,
-    base_delay: float = Settings.retry_base_delay,
+    retries: int = 3,
+    base_delay: float = 1.0,
 ) -> str | None:
     """Fetch text content from ``url`` with retries and exponential backoff."""
     parsed = urlparse(url)
@@ -332,8 +220,8 @@ async def check_and_update_sources(
     concurrent_limit: int = 20,
     request_timeout: int = 10,
     *,
-    retries: int = Settings.retry_attempts,
-    base_delay: float = Settings.retry_base_delay,
+    retries: int = 3,
+    base_delay: float = 1.0,
     failures_path: Path | None = None,
     max_failures: int = 3,
     prune: bool = True,
@@ -407,16 +295,16 @@ async def check_and_update_sources(
 
 async def fetch_and_parse_configs(
     sources: Iterable[str],
-    max_concurrent: int = 20,
+    concurrent_limit: int = 20,
     request_timeout: int = 10,
     *,
-    retries: int = Settings.retry_attempts,
-    base_delay: float = Settings.retry_base_delay,
+    retries: int = 3,
+    base_delay: float = 1.0,
 ) -> Set[str]:
     """Fetch configs from sources respecting concurrency limits."""
     configs: Set[str] = set()
 
-    semaphore = asyncio.Semaphore(max_concurrent)
+    semaphore = asyncio.Semaphore(concurrent_limit)
 
     async def fetch_one(session: ClientSession, url: str) -> Set[str]:
         async with semaphore:
@@ -432,7 +320,7 @@ async def fetch_and_parse_configs(
             return set()
         return parse_configs_from_text(text)
 
-    connector = aiohttp.TCPConnector(limit=max_concurrent)
+    connector = aiohttp.TCPConnector(limit=concurrent_limit)
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = [asyncio.create_task(fetch_one(session, u)) for u in sources]
         for task in asyncio.as_completed(tasks):
@@ -490,8 +378,8 @@ async def scrape_telegram_configs(
                                         session,
                                         sub,
                                         cfg.request_timeout,
-                                        retries=cfg.settings.retry_attempts,
-                                        base_delay=cfg.settings.retry_base_delay,
+                                        retries=cfg.retry_attempts,
+                                        base_delay=cfg.retry_base_delay,
                                     )
                                     if text2:
                                         configs.update(parse_configs_from_text(text2))
@@ -644,10 +532,10 @@ async def run_pipeline(
     try:
         sources = await check_and_update_sources(
             sources_file,
-            cfg.max_concurrent,
+            cfg.concurrent_limit,
             cfg.request_timeout,
-            retries=cfg.settings.retry_attempts,
-            base_delay=cfg.settings.retry_base_delay,
+            retries=cfg.retry_attempts,
+            base_delay=cfg.retry_base_delay,
             failures_path=sources_file.with_suffix(".failures.json"),
             max_failures=failure_threshold,
             prune=prune,
@@ -657,10 +545,10 @@ async def run_pipeline(
         )
         configs = await fetch_and_parse_configs(
             sources,
-            cfg.max_concurrent,
+            cfg.concurrent_limit,
             cfg.request_timeout,
-            retries=cfg.settings.retry_attempts,
-            base_delay=cfg.settings.retry_base_delay,
+            retries=cfg.retry_attempts,
+            base_delay=cfg.retry_base_delay,
         )
         configs |= await scrape_telegram_configs(channels_file, last_hours, cfg)
     except KeyboardInterrupt:
@@ -757,7 +645,7 @@ def main() -> None:
     parser.add_argument("--bot", action="store_true", help="run in telegram bot mode")
     parser.add_argument("--protocols", help="comma separated protocols to keep")
     parser.add_argument(
-        "--config", default=str(CONFIG_FILE), help="path to config.json"
+        "--config", default=str(CONFIG_FILE), help="path to config.yaml"
     )
     parser.add_argument(
         "--sources", default=str(SOURCES_FILE), help="path to sources.txt"
@@ -814,9 +702,9 @@ def main() -> None:
     if args.output_dir:
         cfg.output_dir = args.output_dir
     if args.concurrent_limit is not None:
-        cfg.max_concurrent = args.concurrent_limit
+        cfg.concurrent_limit = args.concurrent_limit
     elif args.max_concurrent is not None:
-        cfg.max_concurrent = args.max_concurrent
+        cfg.concurrent_limit = args.max_concurrent
     if args.request_timeout is not None:
         cfg.request_timeout = args.request_timeout
 
