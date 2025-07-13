@@ -73,6 +73,13 @@ def test_create_semantic_hash_query_param_order():
     assert proc.create_semantic_hash(link1) == proc.create_semantic_hash(link2)
 
 
+def test_create_semantic_hash_fragment_ignored_generic():
+    proc = EnhancedConfigProcessor()
+    link1 = "foo://example.com/path?a=1&b=2"
+    link2 = "foo://example.com/path?a=1&b=2#extra"
+    assert proc.create_semantic_hash(link1) == proc.create_semantic_hash(link2)
+
+
 def test_create_semantic_hash_vmess_key_order():
     proc = EnhancedConfigProcessor()
     d1 = {"add": "ex.com", "port": 80, "id": "abc"}
