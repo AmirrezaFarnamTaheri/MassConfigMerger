@@ -43,6 +43,25 @@ async def test_fetch_text_retryable(aiohttp_client):
 
 
 @pytest.mark.asyncio
+async def test_fetch_text_retryable_429(aiohttp_client):
+    counter = {"calls": 0}
+
+    async def handler(request):
+        counter["calls"] += 1
+        if counter["calls"] < 2:
+            return web.Response(status=429)
+        return web.Response(text="ok")
+
+    app = web.Application()
+    app.router.add_get("/", handler)
+    client = await aiohttp_client(app)
+
+    text = await aggregator_tool.fetch_text(client.session, str(client.make_url("/")))
+    assert counter["calls"] >= 2
+    assert text == "ok"
+
+
+@pytest.mark.asyncio
 async def test_fetch_text_non_retryable(aiohttp_client):
     async def handler(request):
         return web.Response(status=404)
@@ -67,7 +86,7 @@ async def test_fetch_text_backoff(monkeypatch, aiohttp_client):
         delays.append(d)
 
     monkeypatch.setattr(asyncio, "sleep", fake_sleep)
-    monkeypatch.setattr(aggregator_tool.random, "random", lambda: 0)
+    monkeypatch.setattr(aggregator_tool.random, "uniform", lambda a, b: 0)
 
     async def handler(request):
         return web.Response(status=500)
