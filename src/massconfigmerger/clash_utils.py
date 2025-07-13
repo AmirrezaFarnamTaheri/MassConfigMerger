@@ -445,17 +445,19 @@ def build_clash_config(proxies: List[Dict[str, Any]]) -> str:
         return ""
 
     names = [p["name"] for p in proxies]
+    auto_select = "⚡ Auto-Select"
+    manual = "🔰 MANUAL"
     groups = [
         {
-            "name": "⚡ Auto-Select",
+            "name": auto_select,
             "type": "url-test",
             "proxies": names,
             "url": "http://www.gstatic.com/generate_204",
             "interval": 300,
         },
-        {"name": "🔰 MANUAL", "type": "select", "proxies": names},
+        {"name": manual, "type": "select", "proxies": [auto_select, *names]},
     ]
-    rules = ["MATCH, ⚡ Auto-Select"]
+    rules = [f"MATCH,{manual}"]
     return yaml.safe_dump(
         {"proxies": proxies, "proxy-groups": groups, "rules": rules},
         allow_unicode=True,

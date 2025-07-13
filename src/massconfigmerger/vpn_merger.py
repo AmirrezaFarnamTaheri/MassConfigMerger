@@ -1148,13 +1148,21 @@ class UltimateVPNMerger:
                 tmp_csv = csv_file.with_suffix('.tmp')
                 with open(tmp_csv, 'w', newline='', encoding='utf-8') as f:
                     writer = csv.writer(f)
-                    writer.writerow(['Config', 'Protocol', 'Host', 'Port', 'Ping_MS', 'Reachable', 'Source', 'Country'])
+                    writer.writerow([
+                        'config', 'protocol', 'host', 'port',
+                        'ping_ms', 'reachable', 'source_url', 'country'
+                    ])
                     for result in results:
                         ping_ms = round(result.ping_time * 1000, 2) if result.ping_time else None
                         writer.writerow([
-                            result.config, result.protocol, result.host, result.port,
-                            ping_ms, result.is_reachable, result.source_url,
-                            result.country
+                            result.config,
+                            result.protocol,
+                            result.host,
+                            result.port,
+                            ping_ms,
+                            result.is_reachable,
+                            result.source_url,
+                            result.country,
                         ])
                 tmp_csv.replace(csv_file)
         

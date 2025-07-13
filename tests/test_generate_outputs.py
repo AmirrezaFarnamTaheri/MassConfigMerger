@@ -19,7 +19,7 @@ def test_generate_comprehensive_outputs(tmp_path, monkeypatch):
         port=80,
         ping_time=0.1,
         is_reachable=True,
-        source_url="s",
+        source_url="https://src.example",
     )
     stats = merger._analyze_results([result], [])
     asyncio.run(merger._generate_comprehensive_outputs([result], stats, 0.0))
@@ -39,12 +39,29 @@ def test_generate_comprehensive_outputs(tmp_path, monkeypatch):
 
     with csv_file.open() as f:
         rows = list(csv.reader(f))
-    assert rows[0][0] == "Config"
+    assert rows[0] == [
+        "config",
+        "protocol",
+        "host",
+        "port",
+        "ping_ms",
+        "reachable",
+        "source_url",
+        "country",
+    ]
     assert len(rows) == 2
 
     data = json.loads(json_report.read_text())
     assert data["output_files"]["json_report"] == str(json_report)
 
     assert "outbounds" in json.loads(singbox.read_text())
-    assert "proxies" in yaml.safe_load(clash.read_text())
+    clash_data = yaml.safe_load(clash.read_text())
+    assert "proxies" in clash_data
+    groups = clash_data.get("proxy-groups", [])
+    assert any(g.get("name") == "⚡ Auto-Select" and g.get("type") == "url-test" for g in groups)
+    manual = next(g for g in groups if g.get("name") == "🔰 MANUAL")
+    assert manual["proxies"][0] == "⚡ Auto-Select"
+    assert clash_data.get("rules") == ["MATCH,🔰 MANUAL"]
+    proxy_name = clash_data["proxies"][0]["name"]
+    assert proxy_name == "🏳 ?? - src.example - 100ms"
     assert "proxies" in yaml.safe_load(proxies.read_text())
