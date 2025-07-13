@@ -1,12 +1,13 @@
 import asyncio
-import os
-import sys
 import pytest
 
 pytest_plugins = "aiohttp.pytest_plugin"
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from vpn_merger import AsyncSourceFetcher, EnhancedConfigProcessor, CONFIG
+from massconfigmerger.vpn_merger import (
+    AsyncSourceFetcher,
+    EnhancedConfigProcessor,
+    CONFIG,
+)
 from aiohttp import web
 
 

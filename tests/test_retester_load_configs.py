@@ -1,11 +1,6 @@
-import os
-import sys
 import base64
 import pytest
-
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
-import vpn_retester
+from massconfigmerger import vpn_retester
 
 
 def test_load_base64(tmp_path):

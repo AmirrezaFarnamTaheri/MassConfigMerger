@@ -1,10 +1,7 @@
 import base64
 import json
-import os
-import sys
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from aggregator_tool import is_valid_config
+from massconfigmerger.aggregator_tool import is_valid_config
 
 def test_vmess_with_fragment_accepted():
     data = {"v": "2", "ps": "test"}

@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterable, List, Set, Optional, Dict, Union, Tuple, cast
 from urllib.parse import urlparse
-from clash_utils import config_to_clash_proxy
+from .clash_utils import config_to_clash_proxy
 
 import yaml
 
@@ -29,14 +29,11 @@ import aiohttp
 from aiohttp import ClientSession, ClientTimeout
 from telethon import TelegramClient, events, errors  # type: ignore
 from telethon.tl.custom.message import Message  # type: ignore
-import vpn_merger
+from . import vpn_merger
 
-from constants import SOURCES_FILE
+from .constants import SOURCES_FILE
 
-SRC_PATH = Path(__file__).resolve().parent / "src"
-if SRC_PATH.is_dir():
-    sys.path.insert(0, str(SRC_PATH))
-from massconfigmerger.config import Settings, load_config
+from .config import Settings, load_config
 
 CONFIG_FILE = Path("config.yaml")
 CHANNELS_FILE = Path("channels.txt")

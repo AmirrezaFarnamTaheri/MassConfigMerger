@@ -1,11 +1,8 @@
 import json
 import yaml
-import os
-import sys
 from pathlib import Path
 import pytest
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from massconfigmerger.config import Settings, load_config
 
 

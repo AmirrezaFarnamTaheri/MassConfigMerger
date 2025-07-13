@@ -1,8 +1,4 @@
-import os
-import sys
-
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from clash_utils import config_to_clash_proxy
+from massconfigmerger.clash_utils import config_to_clash_proxy
 
 
 def test_config_to_clash_proxy_import():

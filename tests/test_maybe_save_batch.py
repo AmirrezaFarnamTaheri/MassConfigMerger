@@ -1,9 +1,6 @@
-import os
-import sys
 import asyncio
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from vpn_merger import UltimateVPNMerger, ConfigResult, CONFIG
+from massconfigmerger.vpn_merger import UltimateVPNMerger, ConfigResult, CONFIG
 
 
 def test_maybe_save_batch_strict_cumulative(monkeypatch, tmp_path):

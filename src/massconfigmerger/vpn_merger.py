@@ -43,14 +43,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union, cast
 
-from constants import SOURCES_FILE
+from .constants import SOURCES_FILE
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse, parse_qsl
-from clash_utils import config_to_clash_proxy
+from .clash_utils import config_to_clash_proxy
 
-SRC_PATH = Path(__file__).resolve().parent / "src"
-if SRC_PATH.is_dir():
-    sys.path.insert(0, str(SRC_PATH))
-from massconfigmerger.config import Settings, load_config
+from .config import Settings, load_config
 
 try:
     import aiohttp
