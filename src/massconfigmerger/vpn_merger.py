@@ -41,7 +41,7 @@ import socket
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 from .constants import SOURCES_FILE
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse, parse_qsl
@@ -61,9 +61,11 @@ except ImportError as exc:
 # Event loop compatibility fix
 try:
     import nest_asyncio
-    nest_asyncio.apply()
-    if __name__ == "__main__":
-        print("✅ Applied nest_asyncio patch for event loop compatibility")
+    import os
+    if __name__ == "__main__" or os.environ.get("NEST_ASYNCIO") == "1":
+        nest_asyncio.apply()
+        if __name__ == "__main__":
+            print("✅ Applied nest_asyncio patch for event loop compatibility")
 except ImportError as exc:
     raise ImportError(
         "Missing optional dependency 'nest_asyncio'. "
@@ -1074,17 +1076,36 @@ class UltimateVPNMerger:
                 tmp_clash.write_text(clash_yaml, encoding="utf-8")
                 tmp_clash.replace(clash_file)
 
-            if CONFIG.write_clash_proxies:
-                proxies = []
+            need_proxies = CONFIG.write_clash_proxies or CONFIG.write_surge or CONFIG.write_qx
+            proxies: List[Dict[str, Any]] = []
+            if need_proxies:
                 for idx, r in enumerate(results):
                     proxy = config_to_clash_proxy(r.config, idx, r.protocol)
                     if proxy:
                         proxies.append(proxy)
+
+            if CONFIG.write_clash_proxies:
                 proxy_yaml = yaml.safe_dump({"proxies": proxies}, allow_unicode=True, sort_keys=False) if proxies else ""
                 proxies_file = output_dir / f"{prefix}vpn_clash_proxies.yaml"
                 tmp_proxies = proxies_file.with_suffix('.tmp')
                 tmp_proxies.write_text(proxy_yaml, encoding="utf-8")
                 tmp_proxies.replace(proxies_file)
+
+            if CONFIG.write_surge:
+                from .advanced_converters import generate_surge_conf
+                surge_content = generate_surge_conf(proxies)
+                surge_file = output_dir / f"{prefix}surge.conf"
+                tmp_surge = surge_file.with_suffix('.tmp')
+                tmp_surge.write_text(surge_content, encoding="utf-8")
+                tmp_surge.replace(surge_file)
+
+            if CONFIG.write_qx:
+                from .advanced_converters import generate_qx_conf
+                qx_content = generate_qx_conf(proxies)
+                qx_file = output_dir / f"{prefix}qx.conf"
+                tmp_qx = qx_file.with_suffix('.tmp')
+                tmp_qx.write_text(qx_content, encoding="utf-8")
+                tmp_qx.replace(qx_file)
 
 
     def _results_to_clash_yaml(self, results: List[ConfigResult]) -> str:
@@ -1262,6 +1283,10 @@ def main():
                         help="Do not save CSV report")
     parser.add_argument("--no-proxy-yaml", action="store_true",
                         help="Do not save simple Clash proxy list")
+    parser.add_argument("--output-surge", action="store_true",
+                        help="Write Surge formatted proxy list")
+    parser.add_argument("--output-qx", action="store_true",
+                        help="Write Quantumult X formatted proxy list")
     parser.add_argument("--geoip-db", type=str, default=None,
                         help="Path to GeoLite2 Country database for GeoIP lookup")
     parser.add_argument(
@@ -1313,6 +1338,8 @@ def main():
     CONFIG.write_base64 = not args.no_base64
     CONFIG.write_csv = not args.no_csv
     CONFIG.write_clash_proxies = not args.no_proxy_yaml
+    CONFIG.write_surge = args.output_surge
+    CONFIG.write_qx = args.output_qx
     CONFIG.cumulative_batches = args.cumulative_batches
     CONFIG.strict_batch = not args.no_strict_batch
     CONFIG.shuffle_sources = args.shuffle_sources
