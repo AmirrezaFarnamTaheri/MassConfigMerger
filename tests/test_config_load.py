@@ -1,4 +1,5 @@
 import json
+import yaml
 import os
 import sys
 from pathlib import Path
@@ -15,16 +16,16 @@ def test_load_defaults(tmp_path):
         "telegram_bot_token": "token",
         "allowed_user_ids": [1],
     }
-    p = tmp_path / "config.json"
-    p.write_text(json.dumps(cfg))
+    p = tmp_path / "config.yaml"
+    p.write_text(yaml.safe_dump(cfg))
     loaded = Config.load(p)
     assert loaded.output_dir == "output"
     assert loaded.log_dir == "logs"
     assert loaded.protocols == []
     assert loaded.exclude_patterns == []
-    assert loaded.max_concurrent == 20
-    assert loaded.settings.retry_attempts == 3
-    assert loaded.settings.retry_base_delay == 1.0
+    assert loaded.concurrent_limit == 20
+    assert loaded.retry_attempts == 3
+    assert loaded.retry_base_delay == 1.0
 
 
 def test_load_invalid_json(tmp_path):
@@ -58,24 +59,24 @@ def test_custom_defaults(tmp_path):
         "telegram_bot_token": "token",
         "allowed_user_ids": [1],
     }
-    p = tmp_path / "config.json"
-    p.write_text(json.dumps(cfg))
+    p = tmp_path / "config.yaml"
+    p.write_text(yaml.safe_dump(cfg))
     loaded = Config.load(p, defaults={"output_dir": "alt"})
     assert loaded.output_dir == "alt"
 
 
 def test_settings_custom(tmp_path):
-    p = tmp_path / "cfg.json"
+    p = tmp_path / "cfg.yaml"
     p.write_text(
-        json.dumps({"settings": {"retry_attempts": 5, "retry_base_delay": 0.5}})
+        yaml.safe_dump({"retry_attempts": 5, "retry_base_delay": 0.5})
     )
     cfg = Config.load(p)
-    assert cfg.settings.retry_attempts == 5
-    assert cfg.settings.retry_base_delay == 0.5
+    assert cfg.retry_attempts == 5
+    assert cfg.retry_base_delay == 0.5
 
 
 def test_env_fallback(tmp_path, monkeypatch):
-    p = tmp_path / "config.json"
+    p = tmp_path / "config.yaml"
     p.write_text("{}")
     monkeypatch.setenv("TELEGRAM_API_ID", "42")
     monkeypatch.setenv("TELEGRAM_API_HASH", "hash")
@@ -95,8 +96,8 @@ def test_env_override(tmp_path, monkeypatch):
         "telegram_bot_token": "token",
         "allowed_user_ids": [1],
     }
-    p = tmp_path / "config.json"
-    p.write_text(json.dumps(cfg))
+    p = tmp_path / "config.yaml"
+    p.write_text(yaml.safe_dump(cfg))
     monkeypatch.setenv("TELEGRAM_API_ID", "99")
     monkeypatch.setenv("TELEGRAM_API_HASH", "newhash")
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "newtoken")
@@ -112,8 +113,8 @@ def test_allowed_ids_env_fallback(tmp_path, monkeypatch):
         "telegram_api_hash": "hash",
         "telegram_bot_token": "token",
     }
-    p = tmp_path / "c.json"
-    p.write_text(json.dumps(cfg))
+    p = tmp_path / "c.yaml"
+    p.write_text(yaml.safe_dump(cfg))
     monkeypatch.setenv("ALLOWED_USER_IDS", "5,6")
     loaded = Config.load(p)
     assert loaded.allowed_user_ids == [5, 6]
@@ -126,8 +127,8 @@ def test_allowed_ids_env_override(tmp_path, monkeypatch):
         "telegram_bot_token": "token",
         "allowed_user_ids": [1],
     }
-    p = tmp_path / "c.json"
-    p.write_text(json.dumps(cfg))
+    p = tmp_path / "c.yaml"
+    p.write_text(yaml.safe_dump(cfg))
     monkeypatch.setenv("ALLOWED_USER_IDS", "2 3")
     loaded = Config.load(p)
     assert loaded.allowed_user_ids == [2, 3]
@@ -140,7 +141,7 @@ def test_allowed_ids_string_values(tmp_path):
         "telegram_bot_token": "token",
         "allowed_user_ids": ["7", "8"],
     }
-    p = tmp_path / "cfg.json"
-    p.write_text(json.dumps(cfg))
+    p = tmp_path / "cfg.yaml"
+    p.write_text(yaml.safe_dump(cfg))
     loaded = Config.load(p)
     assert loaded.allowed_user_ids == [7, 8]

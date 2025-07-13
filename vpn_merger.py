@@ -47,6 +47,11 @@ from constants import SOURCES_FILE
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse, parse_qsl
 from clash_utils import config_to_clash_proxy
 
+SRC_PATH = Path(__file__).resolve().parent / "src"
+if SRC_PATH.is_dir():
+    sys.path.insert(0, str(SRC_PATH))
+from massconfigmerger.config import AppConfig as Config
+
 try:
     import aiohttp
     from aiohttp.resolver import AsyncResolver
@@ -80,114 +85,11 @@ except ImportError as exc:
 # CONFIGURATION & SETTINGS
 # ============================================================================
 
-@dataclass
-class Config:
-    """Comprehensive configuration for optimal performance."""
-    
-    # HTTP settings
-    headers: Dict[str, str]
-    request_timeout: int
-    connect_timeout: float
-    max_retries: int
-    
-    # Processing settings
-    concurrent_limit: int
-    max_configs_per_source: int
-    
-    # Protocol validation
-    valid_prefixes: Tuple[str, ...]
-    
-    # Testing settings
-    enable_url_testing: bool
-    enable_sorting: bool
-    test_timeout: float
-
-    # Output settings
-    output_dir: str
-
-    # New features
-    batch_size: int
-    threshold: int
-    top_n: int
-    tls_fragment: Optional[str]
-    include_protocols: Optional[Set[str]]
-    exclude_protocols: Optional[Set[str]]
-    exclude_patterns: List[str]
-    resume_file: Optional[str]
-    max_ping_ms: Optional[int]
-    log_file: Optional[str]
-    cumulative_batches: bool
-    strict_batch: bool
-    shuffle_sources: bool
-    write_base64: bool
-    write_csv: bool
-    write_clash: bool
-    write_clash_proxies: bool
-    mux_concurrency: int
-    smux_streams: int
-    geoip_db: Optional[str] = None
-    include_countries: Optional[Set[str]] = None
-    exclude_countries: Optional[Set[str]] = None
-
-CONFIG = Config(
-    headers={
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/125.0.0.0 Safari/537.36"
-        ),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Connection": "keep-alive",
-        "Cache-Control": "no-cache",
-    },
-    request_timeout=30,
-    connect_timeout=3.0,
-    max_retries=3,
-    concurrent_limit=50,
-    max_configs_per_source=75000,
-    valid_prefixes=(
-        "vmess://", "vless://", "reality://",
-        "ss://", "ssr://", "trojan://",
-        "hy2://", "hysteria://", "hysteria2://",
-        "tuic://", "shadowtls://", "wireguard://",
-        "socks://", "socks4://", "socks5://",
-        "http://", "https://", "grpc://", "ws://", "wss://",
-        "tcp://", "kcp://", "quic://", "h2://",
-    ),
-    enable_url_testing=True,
-    enable_sorting=True,
-    test_timeout=5.0,
-    output_dir="output",
-    batch_size=1000,
-    threshold=0,
-    top_n=0,
-    tls_fragment=None,
-    include_protocols={
-        "PROXY", "SHADOWSOCKS", "SHADOWSOCKSR", "TROJAN",
-        "CLASH", "V2RAY", "REALITY",
-        "VMESS", "XRAY", "WIREGUARD", "ECH", "VLESS",
-        "HYSTERIA", "TUIC", "SING-BOX", "SINGBOX",
-        "SHADOWTLS", "CLASHMETA", "HYSTERIA2",
-    },
-    exclude_protocols={"OTHER"},
-    exclude_patterns=[],
-    resume_file=None,
-    max_ping_ms=1000,
-    log_file=None,
-    cumulative_batches=False,
-    strict_batch=True,
-    shuffle_sources=False,
-    write_base64=True,
-    write_csv=True,
-    write_clash=True,
-    write_clash_proxies=True,
-    mux_concurrency=8,
-    smux_streams=4,
-    geoip_db=None,
-    include_countries=None,
-    exclude_countries=None
-)
+DEFAULT_CONFIG_FILE = Path(__file__).resolve().with_name("config.yaml")
+try:
+    CONFIG = Config.load(DEFAULT_CONFIG_FILE)
+except ValueError:
+    CONFIG = Config()
 
 # Compiled regular expressions from --exclude-pattern
 EXCLUDE_REGEXES: List[re.Pattern] = []
