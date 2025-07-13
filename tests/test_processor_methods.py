@@ -159,8 +159,18 @@ def test_sort_by_reliability(monkeypatch):
     h1 = merger.processor.create_semantic_hash("a")
     h2 = merger.processor.create_semantic_hash("b")
     merger.proxy_history = {
-        h1: {"successful_checks": 1, "total_checks": 2},
-        h2: {"successful_checks": 1, "total_checks": 5},
+        h1: {
+            "successful_checks": 1,
+            "total_checks": 2,
+            "last_latency_ms": None,
+            "last_seen_online_utc": None,
+        },
+        h2: {
+            "successful_checks": 1,
+            "total_checks": 5,
+            "last_latency_ms": None,
+            "last_seen_online_utc": None,
+        },
     }
 
     ordered = merger._sort_by_performance([r1, r2, r3])
@@ -178,8 +188,18 @@ def test_sort_by_reliability_latency_tiebreak(monkeypatch):
     h2 = merger.processor.create_semantic_hash("b")
     # equal reliability -> order by latency
     merger.proxy_history = {
-        h1: {"successful_checks": 1, "total_checks": 2},
-        h2: {"successful_checks": 1, "total_checks": 2},
+        h1: {
+            "successful_checks": 1,
+            "total_checks": 2,
+            "last_latency_ms": None,
+            "last_seen_online_utc": None,
+        },
+        h2: {
+            "successful_checks": 1,
+            "total_checks": 2,
+            "last_latency_ms": None,
+            "last_seen_online_utc": None,
+        },
     }
 
     ordered = merger._sort_by_performance([r2, r1])
