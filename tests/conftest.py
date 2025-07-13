@@ -1,4 +1,4 @@
-pytest_plugins = ['aiohttp.pytest_plugin']
+pytest_plugins = ["pytest_asyncio", 'aiohttp.pytest_plugin']
 
 import asyncio
 import pytest

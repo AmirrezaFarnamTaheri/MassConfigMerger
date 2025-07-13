@@ -6,6 +6,7 @@ nest-asyncio
 # Optional/feature dependencies
 telethon
 pytest
+pytest-asyncio
 PyYAML
 geoip2
 types-PyYAML
