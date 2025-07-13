@@ -103,6 +103,26 @@ async def test_fetch_text_backoff(monkeypatch, aiohttp_client):
     assert delays == [1.0, 2.0]
 
 
+@pytest.mark.asyncio
+async def test_fetch_text_timeout(aiohttp_client):
+    async def handler(request):
+        await asyncio.sleep(0.1)
+        return web.Response(text="late")
+
+    app = web.Application()
+    app.router.add_get("/", handler)
+    client = await aiohttp_client(app)
+
+    text = await aggregator_tool.fetch_text(
+        client.session,
+        str(client.make_url("/")),
+        timeout=0.01,
+        retries=1,
+    )
+
+    assert text is None
+
+
 class DummyResponse:
     def __init__(self, status, text="ok"):
         self.status = status
