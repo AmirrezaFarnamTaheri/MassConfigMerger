@@ -589,7 +589,8 @@ class UltimateVPNMerger:
         self.last_saved_count = 0
         self._file_lock = asyncio.Lock()
         self._history_lock = asyncio.Lock()
-        self.history_path = Path(CONFIG.output_dir) / CONFIG.history_file
+        # Store proxy history in output/proxy_history.json
+        self.history_path = Path(CONFIG.output_dir) / "proxy_history.json"
         self.history_path.parent.mkdir(parents=True, exist_ok=True)
         try:
             self.proxy_history = json.loads(self.history_path.read_text())
@@ -605,12 +606,18 @@ class UltimateVPNMerger:
         async with self._history_lock:
             entry = self.proxy_history.setdefault(
                 config_hash,
-                {"successful_checks": 0, "total_checks": 0, "latency_ms": None},
+                {
+                    "last_latency_ms": None,
+                    "last_seen_online_utc": None,
+                    "successful_checks": 0,
+                    "total_checks": 0,
+                },
             )
             entry["total_checks"] += 1
             if success:
                 entry["successful_checks"] += 1
-            entry["latency_ms"] = round(latency * 1000, 3) if latency else None
+                entry["last_seen_online_utc"] = datetime.now(timezone.utc).isoformat()
+            entry["last_latency_ms"] = round(latency * 1000) if latency is not None else None
 
     async def _save_proxy_history(self) -> None:
         async with self._file_lock:
