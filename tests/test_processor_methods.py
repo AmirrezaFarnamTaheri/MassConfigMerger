@@ -9,8 +9,8 @@ from vpn_merger import (
     EnhancedConfigProcessor,
     ConfigResult,
     UltimateVPNMerger,
-    CONFIG,
 )
+from massconfigmerger.config import settings as CONFIG
 
 
 def make_vmess(id_value, host="example.com", port=443, note=None):

@@ -2,27 +2,29 @@ import os
 import sys
 import json
 from pathlib import Path
+import yaml
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import aggregator_tool
+from massconfigmerger.config import Settings
 
 
 def test_output_files_skip_base64(tmp_path):
-    cfg = aggregator_tool.Config(write_base64=False)
+    cfg = Settings(write_base64=False)
     aggregator_tool.output_files(["vmess://a"], tmp_path, cfg)
     assert (tmp_path / "merged.txt").exists()
     assert not (tmp_path / "merged_base64.txt").exists()
 
 
 def test_output_files_skip_singbox(tmp_path):
-    cfg = aggregator_tool.Config(write_singbox=False)
+    cfg = Settings(write_singbox=False)
     aggregator_tool.output_files(["vmess://a"], tmp_path, cfg)
     assert (tmp_path / "merged.txt").exists()
     assert not (tmp_path / "merged_singbox.json").exists()
 
 
 def test_output_files_skip_clash(tmp_path):
-    cfg = aggregator_tool.Config(write_clash=False)
+    cfg = Settings(write_clash=False)
     aggregator_tool.output_files(["vmess://a"], tmp_path, cfg)
     assert (tmp_path / "merged.txt").exists()
     assert not (tmp_path / "clash.yaml").exists()
@@ -36,8 +38,8 @@ def test_cli_flags_override(monkeypatch, tmp_path):
         "write_singbox": True,
         "write_clash": True,
     }
-    cfg_path = tmp_path / "config.json"
-    cfg_path.write_text(json.dumps(cfg_data))
+    cfg_path = tmp_path / "config.yaml"
+    cfg_path.write_text(yaml.safe_dump(cfg_data))
 
     recorded = {}
 
@@ -72,8 +74,8 @@ def test_cli_flags_override(monkeypatch, tmp_path):
 
 
 def test_cli_no_prune(monkeypatch, tmp_path):
-    cfg_path = tmp_path / "c.json"
-    cfg_path.write_text(json.dumps({"output_dir": str(tmp_path / "o"), "log_dir": str(tmp_path / "l")}))
+    cfg_path = tmp_path / "c.yaml"
+    cfg_path.write_text(yaml.safe_dump({"output_dir": str(tmp_path / "o"), "log_dir": str(tmp_path / "l")}))
 
     recorded = {}
 
@@ -97,8 +99,8 @@ def test_cli_no_prune(monkeypatch, tmp_path):
 
 
 def test_cli_with_merger(monkeypatch, tmp_path):
-    cfg_path = tmp_path / "c.json"
-    cfg_path.write_text(json.dumps({"output_dir": str(tmp_path / "o"), "log_dir": str(tmp_path / "l")}))
+    cfg_path = tmp_path / "c.yaml"
+    cfg_path.write_text(yaml.safe_dump({"output_dir": str(tmp_path / "o"), "log_dir": str(tmp_path / "l")}))
 
     files = [tmp_path / "o" / "merged.txt", tmp_path / "o" / "merged_base64.txt"]
 
@@ -131,8 +133,8 @@ def test_cli_with_merger(monkeypatch, tmp_path):
 
 
 def test_cli_protocols_case_insensitive(monkeypatch, tmp_path):
-    cfg_path = tmp_path / "cfg.json"
-    cfg_path.write_text(json.dumps({"output_dir": str(tmp_path / "o"), "log_dir": str(tmp_path / "l")}))
+    cfg_path = tmp_path / "cfg.yaml"
+    cfg_path.write_text(yaml.safe_dump({"output_dir": str(tmp_path / "o"), "log_dir": str(tmp_path / "l")}))
 
     recorded = {}
 
