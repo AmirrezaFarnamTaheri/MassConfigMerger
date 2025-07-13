@@ -1,4 +1,12 @@
-"""Utility converters for additional client formats."""
+"""Utility converters for additional client formats.
+
+This module contains helpers for generating configuration snippets for
+other popular VPN clients such as Surge and Quantumult X. Both
+functions accept a list of Clash-style proxy dictionaries and return a
+string ready to be written to a configuration file.
+"""
+
+__all__ = ["generate_surge_conf", "generate_qx_conf"]
 
 from typing import Any, Dict, List
 
