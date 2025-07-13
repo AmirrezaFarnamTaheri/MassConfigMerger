@@ -421,7 +421,9 @@ class AsyncSourceFetcher:
         processor: EnhancedConfigProcessor,
         seen_hashes: Set[str],
         hash_lock: Optional[asyncio.Lock] = None,
-        history_callback: Optional[Callable[[str, bool], Awaitable[None]]] = None,
+        history_callback: Optional[
+            Callable[[str, bool, Optional[float]], Awaitable[None]]
+        ] = None,
     ):
         self.processor = processor
         self.session: Optional[aiohttp.ClientSession] = None
@@ -527,7 +529,11 @@ class AsyncSourceFetcher:
                                 result.ping_time = ping_time
                                 result.is_reachable = ping_time is not None
                                 if self.history_callback:
-                                    await self.history_callback(config_hash, result.is_reachable)
+                                    await self.history_callback(
+                                        config_hash,
+                                        result.is_reachable,
+                                        ping_time,
+                                    )
                             
                             config_results.append(result)
                     
@@ -581,14 +587,21 @@ class UltimateVPNMerger:
         except (OSError, json.JSONDecodeError):
             self.proxy_history = {}
 
-    async def _update_history(self, config_hash: str, success: bool) -> None:
+    async def _update_history(
+        self,
+        config_hash: str,
+        success: bool,
+        latency: Optional[float],
+    ) -> None:
         async with self._history_lock:
             entry = self.proxy_history.setdefault(
-                config_hash, {"successful_checks": 0, "total_checks": 0}
+                config_hash,
+                {"successful_checks": 0, "total_checks": 0, "latency_ms": None},
             )
             entry["total_checks"] += 1
             if success:
                 entry["successful_checks"] += 1
+            entry["latency_ms"] = round(latency * 1000, 3) if latency else None
 
     async def _save_proxy_history(self) -> None:
         async with self._file_lock:
