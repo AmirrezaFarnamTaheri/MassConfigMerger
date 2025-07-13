@@ -803,7 +803,7 @@ Install the `geoip2` package and download the free GeoLite2 database from MaxMin
 Run `pytest` to execute the test suite. Install dependencies first with:
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt -r dev-requirements.txt
 pip install -e .  # or export PYTHONPATH=$PWD
 ```
 

@@ -7,3 +7,5 @@ nest-asyncio
 telethon
 PyYAML
 geoip2
+pydantic
+pydantic-settings

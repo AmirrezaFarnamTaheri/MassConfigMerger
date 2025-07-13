@@ -1,14 +1,6 @@
-# Core runtime dependencies
-aiohttp
-aiodns
-nest-asyncio
-
-# Optional/feature dependencies
-telethon
+# Test and development dependencies
 pytest
 pytest-asyncio
-PyYAML
-geoip2
 types-PyYAML
 types-requests
 flake8
