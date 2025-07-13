@@ -804,6 +804,7 @@ Run `pytest` to execute the test suite. Install dependencies first with:
 
 ```bash
 pip install -r requirements.txt
+pip install -e .  # or export PYTHONPATH=$PWD
 ```
 
 
