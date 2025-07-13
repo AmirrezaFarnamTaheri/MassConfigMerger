@@ -142,3 +142,32 @@ def test_allowed_ids_string_values(tmp_path):
     p.write_text(yaml.safe_dump(cfg))
     loaded = load_config(p)
     assert loaded.allowed_user_ids == [7, 8]
+
+
+def test_env_override_generic_fields(tmp_path, monkeypatch):
+    cfg = {
+        "output_dir": "a",
+        "concurrent_limit": 5,
+        "retry_base_delay": 0.1,
+        "write_clash": True,
+        "protocols": ["vmess"],
+        "headers": {"Foo": "Bar"},
+    }
+    p = tmp_path / "c.yaml"
+    p.write_text(yaml.safe_dump(cfg))
+
+    monkeypatch.setenv("OUTPUT_DIR", "env")
+    monkeypatch.setenv("CONCURRENT_LIMIT", "99")
+    monkeypatch.setenv("RETRY_BASE_DELAY", "0.5")
+    monkeypatch.setenv("WRITE_CLASH", "false")
+    monkeypatch.setenv("PROTOCOLS", '["ss","ssr"]')
+    monkeypatch.setenv("HEADERS", '{"X":"1"}')
+
+    loaded = load_config(p)
+
+    assert loaded.output_dir == "env"
+    assert loaded.concurrent_limit == 99
+    assert loaded.retry_base_delay == 0.5
+    assert loaded.write_clash is False
+    assert loaded.protocols == ["ss", "ssr"]
+    assert loaded.headers == {"X": "1"}

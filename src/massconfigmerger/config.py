@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
+import os
 import re
 
 import yaml
@@ -119,7 +120,7 @@ class Settings(BaseSettings):
     include_countries: Optional[Set[str]] = None
     exclude_countries: Optional[Set[str]] = None
 
-    model_config = SettingsConfigDict(env_prefix="", case_sensitive=False, enable_decoding=False)
+    model_config = SettingsConfigDict(env_prefix="", case_sensitive=False)
 
     @classmethod
     def _parse_allowed_ids(cls, value):
@@ -171,4 +172,25 @@ def load_config(path: Path | None = None, *, defaults: dict | None = None) -> Se
         except Exception as exc:
             raise ValueError("allowed_user_ids must be a list of integers") from exc
 
-    return Settings(**data)
+    env_raw = {
+        field: os.environ[field.upper()]
+        for field in Settings.model_fields
+        if os.getenv(field.upper()) is not None
+    }
+    if env_raw:
+        parsed = {}
+        for k, v in env_raw.items():
+            try:
+                parsed[k] = yaml.safe_load(v)
+            except Exception:
+                parsed[k] = v
+        backup = {k.upper(): os.environ[k.upper()] for k in env_raw}
+        for key in backup:
+            del os.environ[key]
+        env_parsed = Settings.model_validate(parsed)
+        data.update(env_parsed.model_dump())
+
+    result = Settings(**data)
+    if env_raw:
+        os.environ.update(backup)
+    return result
