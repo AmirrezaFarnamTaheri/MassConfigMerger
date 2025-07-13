@@ -149,6 +149,36 @@ def config_to_clash_proxy(
             for key in ("host", "path", "sni", "alpn", "fp", "flow", "serviceName"):
                 if key in q:
                     proxy[key] = q[key][0]
+            pbk = (
+                q.get("pbk")
+                or q.get("public-key")
+                or q.get("publicKey")
+                or q.get("public_key")
+                or q.get("publickey")
+            )
+            sid = (
+                q.get("sid")
+                or q.get("short-id")
+                or q.get("shortId")
+                or q.get("short_id")
+                or q.get("shortid")
+            )
+            spider = q.get("spiderX") or q.get("spider-x") or q.get("spider_x")
+            if pbk:
+                proxy["pbk"] = pbk[0]
+            if sid:
+                proxy["sid"] = sid[0]
+            if spider:
+                proxy["spiderX"] = spider[0]
+            reality_opts = {}
+            if pbk:
+                reality_opts["public-key"] = pbk[0]
+            if sid:
+                reality_opts["short-id"] = sid[0]
+            if spider:
+                reality_opts["spider-x"] = spider[0]
+            if reality_opts:
+                proxy["reality-opts"] = reality_opts
             if "ws-headers" in q:
                 try:
                     padded = q["ws-headers"][0] + "=" * (-len(q["ws-headers"][0]) % 4)
@@ -185,10 +215,13 @@ def config_to_clash_proxy(
                 or q.get("short_id")
                 or q.get("shortid")
             )
+            spider = q.get("spiderX") or q.get("spider-x") or q.get("spider_x")
             if pbk:
                 proxy["pbk"] = pbk[0]
             if sid:
                 proxy["sid"] = sid[0]
+            if spider:
+                proxy["spiderX"] = spider[0]
             if "ws-headers" in q:
                 try:
                     padded = q["ws-headers"][0] + "=" * (-len(q["ws-headers"][0]) % 4)
@@ -203,6 +236,8 @@ def config_to_clash_proxy(
                 reality_opts["public-key"] = pbk[0]
             if sid:
                 reality_opts["short-id"] = sid[0]
+            if spider:
+                reality_opts["spider-x"] = spider[0]
             if reality_opts:
                 proxy["reality-opts"] = reality_opts
             net = q.get("type") or q.get("mode")
