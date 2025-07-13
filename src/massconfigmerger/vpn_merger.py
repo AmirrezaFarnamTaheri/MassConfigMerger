@@ -578,7 +578,7 @@ class UltimateVPNMerger:
             self._update_history,
         )
         self.batch_counter = 0
-        self.next_batch_threshold = CONFIG.batch_size if CONFIG.batch_size else float('inf')
+        self.next_batch_threshold = CONFIG.save_every if CONFIG.save_every else float('inf')
         self.start_time = 0.0
         self.available_sources: List[str] = []
         self.all_results: List[ConfigResult] = []
@@ -884,7 +884,7 @@ class UltimateVPNMerger:
 
     async def _maybe_save_batch(self) -> None:
         """Save intermediate output based on batch settings."""
-        if CONFIG.batch_size <= 0:
+        if CONFIG.save_every <= 0:
             return
 
         # Process new results since last call
@@ -908,13 +908,13 @@ class UltimateVPNMerger:
                 self.cumulative_unique.append(r)
 
         if CONFIG.strict_batch:
-            while len(self.cumulative_unique) - self.last_saved_count >= CONFIG.batch_size:
+            while len(self.cumulative_unique) - self.last_saved_count >= CONFIG.save_every:
                 self.batch_counter += 1
                 if CONFIG.cumulative_batches:
                     batch_results = self.cumulative_unique[:]
                 else:
                     start = self.last_saved_count
-                    end = start + CONFIG.batch_size
+                    end = start + CONFIG.save_every
                     batch_results = self.cumulative_unique[start:end]
                     self.last_saved_count = end
 
@@ -944,8 +944,8 @@ class UltimateVPNMerger:
                 if CONFIG.cumulative_batches:
                     self.last_saved_count = len(self.cumulative_unique)
 
-                if CONFIG.threshold > 0 and len(self.cumulative_unique) >= CONFIG.threshold:
-                    print(f"\n⏹️  Threshold of {CONFIG.threshold} configs reached. Stopping early.")
+                if CONFIG.stop_after_found > 0 and len(self.cumulative_unique) >= CONFIG.stop_after_found:
+                    print(f"\n⏹️  Threshold of {CONFIG.stop_after_found} configs reached. Stopping early.")
                     self.stop_fetching = True
                     break
         else:
@@ -983,10 +983,10 @@ class UltimateVPNMerger:
                 if CONFIG.cumulative_batches:
                     self.last_saved_count = len(self.cumulative_unique)
 
-                self.next_batch_threshold += CONFIG.batch_size
+                self.next_batch_threshold += CONFIG.save_every
 
-                if CONFIG.threshold > 0 and len(self.cumulative_unique) >= CONFIG.threshold:
-                    print(f"\n⏹️  Threshold of {CONFIG.threshold} configs reached. Stopping early.")
+                if CONFIG.stop_after_found > 0 and len(self.cumulative_unique) >= CONFIG.stop_after_found:
+                    print(f"\n⏹️  Threshold of {CONFIG.stop_after_found} configs reached. Stopping early.")
                     self.stop_fetching = True
     
     def _deduplicate_config_results(self, results: List[ConfigResult]) -> List[ConfigResult]:
@@ -1480,18 +1480,20 @@ def main():
         help="Path to sources.txt",
     )
     parser.add_argument(
+        "--save-every",
         "--batch-size",
         type=int,
-        default=CONFIG.batch_size,
-        help="Save intermediate output every N configs (0 disables, default 100)"
+        default=CONFIG.save_every,
+        help="Save intermediate output every N configs (0 disables, default 100)",
+        dest="save_every",
     )
     parser.add_argument(
         "--stop-after-found",
         "--threshold",
         type=int,
-        default=CONFIG.threshold,
+        default=CONFIG.stop_after_found,
         help="Stop processing after N unique configs (0 = unlimited)",
-        dest="threshold",
+        dest="stop_after_found",
     )
     parser.add_argument("--top-n", type=int, default=CONFIG.top_n,
                         help="Keep only the N best configs after sorting (0 = all)")
@@ -1537,7 +1539,7 @@ def main():
     parser.add_argument("--cumulative-batches", action="store_true",
                         help="Save each batch as cumulative rather than standalone")
     parser.add_argument("--no-strict-batch", action="store_true",
-                        help="Use batch size only as update threshold")
+                        help="Use save-every only as update threshold")
     parser.add_argument("--shuffle-sources", action="store_true",
                         help="Process sources in random order")
     parser.add_argument("--mux", type=int, default=CONFIG.mux_concurrency,
@@ -1584,8 +1586,8 @@ def main():
 
     sources_file = args.sources
 
-    CONFIG.batch_size = max(0, args.batch_size)
-    CONFIG.threshold = max(0, args.threshold)
+    CONFIG.save_every = max(0, args.save_every)
+    CONFIG.stop_after_found = max(0, args.stop_after_found)
     CONFIG.top_n = max(0, args.top_n)
     CONFIG.tls_fragment = args.tls_fragment
     if args.include_protocols:

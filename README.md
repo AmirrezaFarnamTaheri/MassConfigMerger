@@ -181,7 +181,7 @@ environment variable in `docker-compose.yml` to change how often it runs.
 | **Availability Testing** | Checks each source before downloading. | Skip dead links and save time. |
 | **Connectivity Testing** | Optional TCP checks measure real latency. | Prioritize servers that actually respond. |
 | **Smart Sorting** | Orders the final list by reachability and speed. | Quickly pick the best server in your VPN client. |
-| **Batch Saving** | Periodically saves intermediate results with `--batch-size` (default `100`). | Useful on unreliable connections. |
+| **Batch Saving** | Periodically saves intermediate results with `--save-every` (default `100`). | Useful on unreliable connections. |
 | **Graceful Interrupt** | Hit `Ctrl+C` to stop early and write any collected configs. | Safe exit without losing progress. |
 | **Protocol Filtering** | Use `--include-protocols` or `--exclude-protocols` to filter by protocol (defaults to the Hiddify list). | Keep only the protocols your client supports. |
 | **Country Filtering** | Use `--include-country` or `--exclude-country` with a GeoIP database to select specific regions. | Limit servers to preferred countries. |
@@ -195,7 +195,7 @@ environment variable in `docker-compose.yml` to change how often it runs.
 | **Concurrent Limit / Retries** | Tweak network load with `--concurrent-limit` and `--max-retries`. | Prevent crashes on slow networks or strict hosts. |
 | **Logging to File** | Save all output to a file with `--log-file`. | Useful for headless servers or debugging. |
 | **Standalone or Cumulative Batches** | Use `--cumulative-batches` to keep growing files, otherwise each batch only contains new configs. | Flexible automation for heavy runs. |
-| **Strict Split** | Batches are strictly capped at `--batch-size` by default. Add `--no-strict-batch` to simply trigger on size. | Control how incremental files are produced. |
+| **Strict Split** | Batches are strictly capped at `--save-every` by default. Add `--no-strict-batch` to simply trigger on size. | Control how incremental files are produced. |
 | **Shuffle Sources** | `--shuffle-sources` randomizes the source order. | Helpful when using `--stop-after-found` to avoid bias. |
 | **Sing-box JSON Output** | Every batch also produces `vpn_singbox.json`. | Import directly into modern clients like sing-box/Stash. |
 | **Clash YAML Output** | Generate `clash.yaml` (or `batch_*clash.yaml`) for Clash/Clash Meta users. | Works with any client supporting Clash configs. |
@@ -221,7 +221,7 @@ environment variable in `docker-compose.yml` to change how often it runs.
 
 **Batch Saving**
 
-> With `--batch-size` (default `100`) you can periodically save progress. Useful on unstable networks; if the run stops, resume with `--resume` and only new servers will be fetched.
+> With `--save-every` (default `100`) you can periodically save progress. Useful on unstable networks; if the run stops, resume with `--resume` and only new servers will be fetched.
 
 **Protocol Filtering**
 
@@ -279,7 +279,7 @@ The script automates a simple but powerful process to create the best possible s
 4.  **⚡ Tests Server Performance**: This is the key step. It attempts a direct connection to each individual server to measure its real-world connection speed (latency/ping). Servers that are offline or too slow are discarded.
 5.  **🧹 Cleans and Sorts**: Finally, it removes any duplicate servers and sorts the remaining, working servers from **fastest to slowest**.
 6.  **📦 Generates Outputs**: It saves this final, sorted list into multiple formats, including the `base64` subscription file that you use in your app.
-7.  **📁 Optional Batch Saving**: With `--batch-size` (default `100`), the script periodically saves intermediate results while it runs.
+7.  **📁 Optional Batch Saving**: With `--save-every` (default `100`), the script periodically saves intermediate results while it runs.
 
 -----
 
@@ -594,7 +594,7 @@ During long runs, files prefixed with `cumulative_` mirror the latest results an
 
 Run `python vpn_merger.py --help` to see all options. Important flags include:
 
-  * `--batch-size N` - save intermediate files every `N` configs (default `100`, `0` to disable).
+  * `--save-every N` - save intermediate files every `N` configs (default `100`, `0` to disable).
   * `--stop-after-found N` - stop once `N` unique configs are collected.
   * `--no-url-test` - skip reachability testing for faster execution.
   * `--no-sort` - keep configs in the order retrieved without sorting.
@@ -608,7 +608,7 @@ Run `python vpn_merger.py --help` to see all options. Important flags include:
   * `--output-dir DIR` - specify where output files are stored.
   * `--test-timeout SEC` - adjust connection test timeout.
   * `--cumulative-batches` - make each batch cumulative instead of standalone.
-  * `--no-strict-batch` - don't split strictly by `--batch-size`, just trigger when exceeded.
+  * `--no-strict-batch` - don't split strictly by `--save-every`, just trigger when exceeded.
   * `--shuffle-sources` - randomize source processing order.
   * `--mux N` - set connection multiplexing level (default `8`, `0` to disable).
   * `--smux N` - set smux stream count for protocols that support it (default `4`).
