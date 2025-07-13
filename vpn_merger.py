@@ -494,8 +494,11 @@ class UltimateVPNMerger:
         self.processor = EnhancedConfigProcessor()
         self.seen_hashes: Set[str] = set()
         self.seen_hashes_lock = asyncio.Lock()
-        self.fetcher = AsyncSourceFetcher(self.processor, self.seen_hashes,
-                                          self.seen_hashes_lock)
+        self.fetcher = AsyncSourceFetcher(
+            self.processor,
+            self.seen_hashes,
+            self.seen_hashes_lock,
+        )
         self.batch_counter = 0
         self.next_batch_threshold = CONFIG.batch_size if CONFIG.batch_size else float('inf')
         self.start_time = 0.0
@@ -508,7 +511,7 @@ class UltimateVPNMerger:
         self.last_saved_count = 0
         self._file_lock = asyncio.Lock()
 
-    def _load_existing_results(self, path: str) -> List[ConfigResult]:
+    async def _load_existing_results(self, path: str) -> List[ConfigResult]:
         """Load previously saved configs from a raw or base64 file."""
         try:
             text = Path(path).read_text(encoding="utf-8").strip()
@@ -541,7 +544,8 @@ class UltimateVPNMerger:
                 )
             )
             h = self.processor.create_semantic_hash(line)
-            self.seen_hashes.add(h)
+            async with self.seen_hashes_lock:
+                self.seen_hashes.add(h)
         return results
         
     async def run(self) -> None:
@@ -558,7 +562,9 @@ class UltimateVPNMerger:
 
         if CONFIG.resume_file:
             print(f"🔄 Loading existing configs from {CONFIG.resume_file} ...")
-            self.all_results.extend(self._load_existing_results(CONFIG.resume_file))
+            self.all_results.extend(
+                await self._load_existing_results(CONFIG.resume_file)
+            )
             print(f"   ✔ Loaded {len(self.all_results)} configs from resume file")
             await self._maybe_save_batch()
 
@@ -945,7 +951,7 @@ class UltimateVPNMerger:
         prefix: str = "",
     ) -> None:
         """Generate comprehensive output files with all formats."""
-        async with self._file_lock:
+        async with self._file_lock, self.seen_hashes_lock:
             # Create output directory
             output_dir = Path(CONFIG.output_dir)
             output_dir.mkdir(exist_ok=True)
