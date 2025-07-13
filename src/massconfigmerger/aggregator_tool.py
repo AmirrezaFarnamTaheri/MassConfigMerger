@@ -35,6 +35,11 @@ from .constants import SOURCES_FILE
 
 from .config import Settings, load_config
 
+
+def _choose_proxy(cfg: Settings) -> str | None:
+    """Return SOCKS proxy if defined, otherwise HTTP proxy."""
+    return cfg.SOCKS_PROXY or cfg.HTTP_PROXY
+
 CONFIG_FILE = Path("config.yaml")
 CHANNELS_FILE = Path("channels.txt")
 
@@ -150,6 +155,7 @@ async def fetch_text(
     retries: int = 3,
     base_delay: float = 1.0,
     jitter: float = 0.1,
+    proxy: str | None = None,
 ) -> str | None:
     """Fetch text content from ``url`` with retries and exponential backoff.
 
@@ -164,7 +170,7 @@ async def fetch_text(
     attempt = 0
     use_temp = hasattr(session, "loop") and session.loop is not asyncio.get_running_loop()
     if use_temp:
-        session = aiohttp.ClientSession()
+        session = aiohttp.ClientSession(proxy=proxy) if proxy else aiohttp.ClientSession()
     while attempt < retries:
         try:
             async with session.get(url, timeout=ClientTimeout(total=timeout)) as resp:
@@ -231,6 +237,7 @@ async def check_and_update_sources(
     max_failures: int = 3,
     prune: bool = True,
     disabled_path: Path | None = None,
+    proxy: str | None = None,
 ) -> List[str]:
     """Validate and deduplicate sources list concurrently."""
     if not path.exists():
@@ -262,12 +269,17 @@ async def check_and_update_sources(
                 request_timeout,
                 retries=retries,
                 base_delay=base_delay,
+                proxy=proxy,
             )
         if not text or not parse_configs_from_text(text):
             return url, False
         return url, True
 
-    async with aiohttp.ClientSession(connector=connector) as session:
+    if proxy:
+        session_cm = aiohttp.ClientSession(connector=connector, proxy=proxy)
+    else:
+        session_cm = aiohttp.ClientSession(connector=connector)
+    async with session_cm as session:
         tasks = [asyncio.create_task(check(u)) for u in sorted(sources)]
         for task in asyncio.as_completed(tasks):
             url, ok = await task
@@ -305,6 +317,7 @@ async def fetch_and_parse_configs(
     *,
     retries: int = 3,
     base_delay: float = 1.0,
+    proxy: str | None = None,
 ) -> Set[str]:
     """Fetch configs from sources respecting concurrency limits."""
     configs: Set[str] = set()
@@ -319,6 +332,7 @@ async def fetch_and_parse_configs(
                 request_timeout,
                 retries=retries,
                 base_delay=base_delay,
+                proxy=proxy,
             )
         if not text:
             logging.warning("Failed to fetch %s", url)
@@ -326,7 +340,11 @@ async def fetch_and_parse_configs(
         return parse_configs_from_text(text)
 
     connector = aiohttp.TCPConnector(limit=concurrent_limit)
-    async with aiohttp.ClientSession(connector=connector) as session:
+    if proxy:
+        session_cm = aiohttp.ClientSession(connector=connector, proxy=proxy)
+    else:
+        session_cm = aiohttp.ClientSession(connector=connector)
+    async with session_cm as session:
         tasks = [asyncio.create_task(fetch_one(session, u)) for u in sources]
         for task in asyncio.as_completed(tasks):
             configs.update(await task)
@@ -368,7 +386,7 @@ async def scrape_telegram_configs(
 
     try:
         await client.start()
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(proxy=_choose_proxy(cfg)) as session:
             for channel in channels:
                 count_before = len(configs)
                 success = False
@@ -387,6 +405,7 @@ async def scrape_telegram_configs(
                                         cfg.request_timeout,
                                         retries=cfg.retry_attempts,
                                         base_delay=cfg.retry_base_delay,
+                                        proxy=_choose_proxy(cfg),
                                     )
                                     if text2:
                                         configs.update(parse_configs_from_text(text2))
@@ -540,6 +559,7 @@ async def run_pipeline(
             disabled_path=(
                 sources_file.with_name("sources_disabled.txt") if prune else None
             ),
+            proxy=_choose_proxy(cfg),
         )
         configs = await fetch_and_parse_configs(
             sources,
@@ -547,12 +567,15 @@ async def run_pipeline(
             cfg.request_timeout,
             retries=cfg.retry_attempts,
             base_delay=cfg.retry_base_delay,
+            proxy=_choose_proxy(cfg),
         )
+        logging.info("Fetched configs count: %d", len(configs))
         configs |= await scrape_telegram_configs(channels_file, last_hours, cfg)
     except KeyboardInterrupt:
         logging.warning("Interrupted. Writing partial results...")
     finally:
         final = deduplicate_and_filter(configs, cfg, protocols)
+        logging.info("Final configs count: %d", len(final))
         files = output_files(final, out_dir, cfg)
     return out_dir, files
 

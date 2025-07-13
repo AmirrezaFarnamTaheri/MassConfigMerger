@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     write_base64: bool = True
     write_singbox: bool = True
     write_clash: bool = True
+    HTTP_PROXY: Optional[str] = None
+    SOCKS_PROXY: Optional[str] = None
 
     # Merger settings
     headers: Dict[str, str] = {

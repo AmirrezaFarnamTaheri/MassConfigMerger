@@ -9,7 +9,7 @@ def test_check_and_update_sources(monkeypatch, tmp_path):
     path = tmp_path / "sources.txt"
     path.write_text("good\nbad\n")
 
-    async def fake_fetch_text(session, url, timeout=10, *, retries=3, base_delay=1.0):
+    async def fake_fetch_text(session, url, timeout=10, *, retries=3, base_delay=1.0, **_):
         if "good" in url:
             return "vmess://test"
         return None
@@ -31,7 +31,7 @@ def test_prune_after_threshold(monkeypatch, tmp_path):
     path = tmp_path / "sources.txt"
     path.write_text("onlybad\n")
 
-    async def fail_fetch(session, url, timeout=10, *, retries=3, base_delay=1.0):
+    async def fail_fetch(session, url, timeout=10, *, retries=3, base_delay=1.0, **_):
         return None
 
     monkeypatch.setattr(aggregator_tool, "fetch_text", fail_fetch)

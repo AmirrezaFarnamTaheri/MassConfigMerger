@@ -32,7 +32,7 @@ class DummyClient:
         pass
 
 
-async def fake_fetch_text(session, url, timeout=10, *, retries=3, base_delay=1.0):
+async def fake_fetch_text(session, url, timeout=10, *, retries=3, base_delay=1.0, **_):
     if "sub.example" in url:
         return "vmess://from_url"
     return None
