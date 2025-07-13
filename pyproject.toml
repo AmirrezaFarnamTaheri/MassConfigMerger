@@ -13,6 +13,18 @@ version = "0.1.0"
 description = "VPN subscription aggregator and merger"
 readme = "README.md"
 requires-python = ">=3.8"
+dependencies = [
+    "aiohttp",
+    "aiodns",
+    "nest-asyncio",
+    "telethon",
+    "PyYAML",
+    "geoip2",
+    "pydantic",
+    "pydantic-settings",
+    "tqdm",
+    "colorama",
+]
 
 [project.scripts]
 aggregator-tool = "massconfigmerger.aggregator_tool:main"
