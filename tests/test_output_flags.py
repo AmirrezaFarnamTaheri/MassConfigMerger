@@ -6,24 +6,25 @@ from pathlib import Path
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import aggregator_tool
+from massconfigmerger.config import Settings
 
 
 def test_output_files_skip_base64(tmp_path):
-    cfg = aggregator_tool.Config(write_base64=False)
+    cfg = Settings(write_base64=False)
     aggregator_tool.output_files(["vmess://a"], tmp_path, cfg)
     assert (tmp_path / "merged.txt").exists()
     assert not (tmp_path / "merged_base64.txt").exists()
 
 
 def test_output_files_skip_singbox(tmp_path):
-    cfg = aggregator_tool.Config(write_singbox=False)
+    cfg = Settings(write_singbox=False)
     aggregator_tool.output_files(["vmess://a"], tmp_path, cfg)
     assert (tmp_path / "merged.txt").exists()
     assert not (tmp_path / "merged_singbox.json").exists()
 
 
 def test_output_files_skip_clash(tmp_path):
-    cfg = aggregator_tool.Config(write_clash=False)
+    cfg = Settings(write_clash=False)
     aggregator_tool.output_files(["vmess://a"], tmp_path, cfg)
     assert (tmp_path / "merged.txt").exists()
     assert not (tmp_path / "clash.yaml").exists()

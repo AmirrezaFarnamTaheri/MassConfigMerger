@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from aggregator_tool import Config
+from massconfigmerger.config import Settings, load_config
 
 
 def test_load_defaults(tmp_path):
@@ -18,7 +18,7 @@ def test_load_defaults(tmp_path):
     }
     p = tmp_path / "config.yaml"
     p.write_text(yaml.safe_dump(cfg))
-    loaded = Config.load(p)
+    loaded = load_config(p)
     assert loaded.output_dir == "output"
     assert loaded.log_dir == "logs"
     assert loaded.protocols == []
@@ -32,20 +32,20 @@ def test_load_invalid_json(tmp_path):
     p = tmp_path / "bad.json"
     p.write_text("{ invalid }")
     with pytest.raises(ValueError):
-        Config.load(p)
+        load_config(p)
 
 
 def test_file_not_found(tmp_path):
     missing = tmp_path / "absent.json"
     with pytest.raises(ValueError):
-        Config.load(missing)
+        load_config(missing)
 
 
 def test_load_without_credentials(tmp_path):
     """Loading an empty config should succeed with Telegram fields unset."""
     p = tmp_path / "cfg.json"
     p.write_text("{}")
-    cfg = Config.load(p)
+    cfg = load_config(p)
     assert cfg.telegram_api_id is None
     assert cfg.telegram_api_hash is None
     assert cfg.telegram_bot_token is None
@@ -61,7 +61,7 @@ def test_custom_defaults(tmp_path):
     }
     p = tmp_path / "config.yaml"
     p.write_text(yaml.safe_dump(cfg))
-    loaded = Config.load(p, defaults={"output_dir": "alt"})
+    loaded = load_config(p, defaults={"output_dir": "alt"})
     assert loaded.output_dir == "alt"
 
 
@@ -70,7 +70,7 @@ def test_settings_custom(tmp_path):
     p.write_text(
         yaml.safe_dump({"retry_attempts": 5, "retry_base_delay": 0.5})
     )
-    cfg = Config.load(p)
+    cfg = load_config(p)
     assert cfg.retry_attempts == 5
     assert cfg.retry_base_delay == 0.5
 
@@ -82,7 +82,7 @@ def test_env_fallback(tmp_path, monkeypatch):
     monkeypatch.setenv("TELEGRAM_API_HASH", "hash")
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "token")
     monkeypatch.setenv("ALLOWED_USER_IDS", "1")
-    loaded = Config.load(p)
+    loaded = load_config(p)
     assert loaded.telegram_api_id == 42
     assert loaded.telegram_api_hash == "hash"
     assert loaded.telegram_bot_token == "token"
@@ -101,7 +101,7 @@ def test_env_override(tmp_path, monkeypatch):
     monkeypatch.setenv("TELEGRAM_API_ID", "99")
     monkeypatch.setenv("TELEGRAM_API_HASH", "newhash")
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "newtoken")
-    loaded = Config.load(p)
+    loaded = load_config(p)
     assert loaded.telegram_api_id == 99
     assert loaded.telegram_api_hash == "newhash"
     assert loaded.telegram_bot_token == "newtoken"
@@ -116,7 +116,7 @@ def test_allowed_ids_env_fallback(tmp_path, monkeypatch):
     p = tmp_path / "c.yaml"
     p.write_text(yaml.safe_dump(cfg))
     monkeypatch.setenv("ALLOWED_USER_IDS", "5,6")
-    loaded = Config.load(p)
+    loaded = load_config(p)
     assert loaded.allowed_user_ids == [5, 6]
 
 
@@ -130,7 +130,7 @@ def test_allowed_ids_env_override(tmp_path, monkeypatch):
     p = tmp_path / "c.yaml"
     p.write_text(yaml.safe_dump(cfg))
     monkeypatch.setenv("ALLOWED_USER_IDS", "2 3")
-    loaded = Config.load(p)
+    loaded = load_config(p)
     assert loaded.allowed_user_ids == [2, 3]
 
 
@@ -143,5 +143,5 @@ def test_allowed_ids_string_values(tmp_path):
     }
     p = tmp_path / "cfg.yaml"
     p.write_text(yaml.safe_dump(cfg))
-    loaded = Config.load(p)
+    loaded = load_config(p)
     assert loaded.allowed_user_ids == [7, 8]

@@ -1,4 +1,7 @@
 # Example configuration for MassConfigMerger
+# Copy to ``config.yaml`` and edit as needed.
+# Each option can also be overridden using an environment variable
+# of the same name.
 # Telegram credentials (optional)
 telegram_api_id: 123456
 telegram_api_hash: YOUR_HASH

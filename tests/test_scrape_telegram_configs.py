@@ -5,6 +5,7 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import aggregator_tool
+from massconfigmerger.config import Settings
 
 
 class DummyMessage:
@@ -43,7 +44,7 @@ async def fake_fetch_text(session, url, timeout=10, *, retries=3, base_delay=1.0
 def test_scrape_telegram_configs(monkeypatch, tmp_path):
     channels = tmp_path / "channels.txt"
     channels.write_text("chan1\n")
-    cfg = aggregator_tool.Config(
+    cfg = Settings(
         telegram_api_id=1,
         telegram_api_hash="h",
         telegram_bot_token="t",
