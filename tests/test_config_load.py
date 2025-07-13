@@ -174,3 +174,21 @@ def test_env_override_generic_fields(tmp_path, monkeypatch):
     assert loaded.protocols == ["ss", "ssr"]
     assert loaded.headers == {"X": "1"}
     assert loaded.session_path == "foo.session"
+
+
+def test_proxy_defaults(tmp_path):
+    p = tmp_path / "cfg.yaml"
+    p.write_text("{}")
+    cfg = load_config(p)
+    assert cfg.http_proxy is None
+    assert cfg.socks_proxy is None
+
+
+def test_proxy_env_override(tmp_path, monkeypatch):
+    p = tmp_path / "cfg.yaml"
+    p.write_text("{}")
+    monkeypatch.setenv("HTTP_PROXY", "http://localhost:8080")
+    monkeypatch.setenv("SOCKS_PROXY", "socks5://localhost:1080")
+    cfg = load_config(p)
+    assert cfg.http_proxy == "http://localhost:8080"
+    assert cfg.socks_proxy == "socks5://localhost:1080"

@@ -729,7 +729,11 @@ class UltimateVPNMerger:
             resolver=AsyncResolver()
         )
         
-        self.fetcher.session = aiohttp.ClientSession(connector=connector)
+        proxy = CONFIG.http_proxy or CONFIG.socks_proxy
+        self.fetcher.session = aiohttp.ClientSession(
+            connector=connector,
+            proxy=proxy,
+        )
         
         try:
             # Test all sources concurrently

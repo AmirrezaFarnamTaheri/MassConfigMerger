@@ -122,6 +122,8 @@ class Settings(BaseSettings):
     geoip_db: Optional[str] = None
     include_countries: Optional[Set[str]] = None
     exclude_countries: Optional[Set[str]] = None
+    http_proxy: Optional[str] = None
+    socks_proxy: Optional[str] = None
 
     model_config = SettingsConfigDict(env_prefix="", case_sensitive=False)
 
