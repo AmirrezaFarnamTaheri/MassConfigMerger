@@ -171,8 +171,20 @@ def config_to_clash_proxy(
             for key in ("sni", "alpn", "fp", "serviceName"):
                 if key in q:
                     proxy[key] = q[key][0]
-            pbk = q.get("pbk") or q.get("public-key") or q.get("publicKey")
-            sid = q.get("sid") or q.get("short-id") or q.get("shortId")
+            pbk = (
+                q.get("pbk")
+                or q.get("public-key")
+                or q.get("publicKey")
+                or q.get("public_key")
+                or q.get("publickey")
+            )
+            sid = (
+                q.get("sid")
+                or q.get("short-id")
+                or q.get("shortId")
+                or q.get("short_id")
+                or q.get("shortid")
+            )
             if pbk:
                 proxy["pbk"] = pbk[0]
             if sid:
@@ -343,24 +355,32 @@ def config_to_clash_proxy(
                 "server": p.hostname,
                 "port": p.port,
             }
-            if p.username and not p.password:
-                proxy["password"] = p.username
-            if p.password:
-                proxy["password"] = p.password
+            passwd = p.password or q.get("password", [None])[0]
+            if p.username and not passwd:
+                passwd = p.username
+            if passwd:
+                proxy["password"] = passwd
             for key in (
                 "auth",
-                "password",
                 "peer",
                 "sni",
                 "insecure",
                 "alpn",
                 "obfs",
                 "obfs-password",
-                "upmbps",
-                "downmbps",
             ):
-                if key in q and key not in proxy:
+                if key in q:
                     proxy[key.replace("-", "_")] = q[key][0]
+            up_keys = ["upmbps", "up", "up_mbps"]
+            down_keys = ["downmbps", "down", "down_mbps"]
+            for k in up_keys:
+                if k in q:
+                    proxy["upmbps"] = q[k][0]
+                    break
+            for k in down_keys:
+                if k in q:
+                    proxy["downmbps"] = q[k][0]
+                    break
             return proxy
         elif scheme == "tuic":
             p = urlparse(config)
@@ -373,13 +393,22 @@ def config_to_clash_proxy(
                 "server": p.hostname,
                 "port": p.port,
             }
-            if p.username:
-                proxy["uuid"] = p.username
-            if p.password:
-                proxy["password"] = p.password
-            for key in ("alpn", "congestion-control", "udp-relay-mode"):
-                if key in q:
-                    proxy[key] = q[key][0]
+            uuid = p.username or q.get("uuid", [None])[0]
+            password = p.password or q.get("password", [None])[0]
+            if uuid:
+                proxy["uuid"] = uuid
+            if password:
+                proxy["password"] = password
+            key_map = {
+                "alpn": ["alpn"],
+                "congestion-control": ["congestion-control", "congestion_control"],
+                "udp-relay-mode": ["udp-relay-mode", "udp_relay_mode"],
+            }
+            for out_key, keys in key_map.items():
+                for k in keys:
+                    if k in q:
+                        proxy[out_key] = q[k][0]
+                        break
             return proxy
         else:
             p = urlparse(config)

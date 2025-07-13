@@ -37,7 +37,10 @@ def test_clash_proxies_yaml(tmp_path, monkeypatch):
         source_url="s",
     )
     res4 = ConfigResult(
-        config="reality://uuid@host:443?flow=xtls-rprx-vision&pbk=pub&sid=123",
+        config=(
+            "reality://uuid@host:443?flow=xtls-rprx-vision&publicKey=pub"
+            "&short_id=123"
+        ),
         protocol="Reality",
         host="host",
         port=443,
@@ -47,8 +50,8 @@ def test_clash_proxies_yaml(tmp_path, monkeypatch):
     )
     res5 = ConfigResult(
         config=(
-            "tuic://uuid:pw@host:10443?alpn=h3&congestion-control=bbr"
-            "&udp-relay-mode=native"
+            "tuic://host:10443?uuid=uuid&password=pw&alpn=h3"
+            "&congestion_control=bbr&udp_relay_mode=native"
         ),
         protocol="TUIC",
         host="host",
@@ -59,8 +62,8 @@ def test_clash_proxies_yaml(tmp_path, monkeypatch):
     )
     res6 = ConfigResult(
         config=(
-            "hy2://pass@host:8443?peer=example.com&insecure=1&obfs=obfs"
-            "&obfs-password=secret"
+            "hy2://host:8443?password=pass&peer=example.com&insecure=1"
+            "&obfs=obfs&obfs-password=secret&up=5&down=10"
         ),
         protocol="Hysteria2",
         host="host",
@@ -100,6 +103,8 @@ def test_clash_proxies_yaml(tmp_path, monkeypatch):
     assert hy2["insecure"] == "1"
     assert hy2["obfs"] == "obfs"
     assert hy2["obfs_password"] == "secret"
+    assert hy2["upmbps"] == "5"
+    assert hy2["downmbps"] == "10"
 
     singbox = tmp_path / "vpn_singbox.json"
     assert singbox.exists()

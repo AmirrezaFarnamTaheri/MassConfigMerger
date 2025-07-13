@@ -49,6 +49,19 @@ def test_reality_parse_extra():
     assert proxy["name"] == "test"
 
 
+def test_reality_parse_synonyms():
+    link = (
+        "reality://id@host:443?flow=xtls-rprx-splice&publicKey=pub"
+        "&short_id=456"
+    )
+    proxy = config_to_clash_proxy(link, 0)
+    assert proxy["flow"] == "xtls-rprx-splice"
+    assert proxy["pbk"] == "pub"
+    assert proxy["sid"] == "456"
+    assert proxy["reality-opts"]["public-key"] == "pub"
+    assert proxy["reality-opts"]["short-id"] == "456"
+
+
 def test_hysteria2_parse():
     link = "hy2://pass@host:443?peer=example.com&insecure=1&upmbps=10&downmbps=20"
     proxy = config_to_clash_proxy(link, 0)
@@ -62,6 +75,14 @@ def test_hysteria2_parse():
     assert proxy["downmbps"] == "20"
 
 
+def test_hysteria2_parse_v5():
+    link = "hy2://host:443?password=pw&up=5&down=10"
+    proxy = config_to_clash_proxy(link, 0)
+    assert proxy["password"] == "pw"
+    assert proxy["upmbps"] == "5"
+    assert proxy["downmbps"] == "10"
+
+
 def test_hysteria2_invalid():
     assert config_to_clash_proxy("hy2://host", 0) is None
 
@@ -73,6 +94,18 @@ def test_tuic_parse():
     assert proxy["uuid"] == "uuid"
     assert proxy["password"] == "pw"
     assert proxy["alpn"] == "h3"
+
+
+def test_tuic_parse_v5():
+    link = (
+        "tuic://host:443?uuid=u123&password=p456&congestion_control=bbr"
+        "&udp_relay_mode=native"
+    )
+    proxy = config_to_clash_proxy(link, 0)
+    assert proxy["uuid"] == "u123"
+    assert proxy["password"] == "p456"
+    assert proxy["congestion-control"] == "bbr"
+    assert proxy["udp-relay-mode"] == "native"
 
 
 def test_vless_parse_ws_headers():
