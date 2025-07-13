@@ -32,7 +32,10 @@ async def retest_configs(configs: List[str]) -> List[Tuple[str, Optional[float]]
             return await _test_config(proc, cfg)
 
     tasks = [asyncio.create_task(worker(c)) for c in configs]
-    return await tqdm_asyncio.gather(*tasks, total=len(tasks), desc="Testing")
+    try:
+        return await tqdm_asyncio.gather(*tasks, total=len(tasks), desc="Testing")
+    finally:
+        await proc.tester.close()
 
 
 def load_configs(path: Path) -> List[str]:
