@@ -394,46 +394,43 @@ class AsyncSourceFetcher:
         self.processor = processor
         self.session: Optional[aiohttp.ClientSession] = None
         self.seen_hashes = seen_hashes
-        self._lock = asyncio.Lock()
         self.hash_lock = hash_lock or asyncio.Lock()
         
     async def test_source_availability(self, url: str) -> bool:
         """Test if a source URL is available (returns 200 status)."""
         assert self.session is not None
-        async with self._lock:
-            try:
-                timeout = aiohttp.ClientTimeout(total=10)
-                async with self.session.head(url, timeout=timeout, allow_redirects=True) as response:
-                    status = response.status
-                    if status == 200:
-                        return True
-                    if 400 <= status < 500:
-                        async with self.session.get(
-                            url,
-                            headers={**CONFIG.headers, 'Range': 'bytes=0-0'},
-                            timeout=timeout,
-                            allow_redirects=True,
-                        ) as get_resp:
-                            return get_resp.status in (200, 206)
-                    return False
-            except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
-                logging.debug("availability check failed for %s: %s", url, exc)
+        try:
+            timeout = aiohttp.ClientTimeout(total=10)
+            async with self.session.head(url, timeout=timeout, allow_redirects=True) as response:
+                status = response.status
+                if status == 200:
+                    return True
+                if 400 <= status < 500:
+                    async with self.session.get(
+                        url,
+                        headers={**CONFIG.headers, 'Range': 'bytes=0-0'},
+                        timeout=timeout,
+                        allow_redirects=True,
+                    ) as get_resp:
+                        return get_resp.status in (200, 206)
                 return False
+        except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+            logging.debug("availability check failed for %s: %s", url, exc)
+            return False
         
     async def fetch_source(self, url: str) -> Tuple[str, List[ConfigResult]]:
         """Fetch single source with comprehensive testing and deduplication."""
         assert self.session is not None
-        async with self._lock:
-            for attempt in range(CONFIG.max_retries):
-                try:
-                    timeout = aiohttp.ClientTimeout(total=CONFIG.request_timeout)
-                    async with self.session.get(url, headers=CONFIG.headers, timeout=timeout) as response:
-                        if response.status != 200:
-                            continue
+        for attempt in range(CONFIG.max_retries):
+            try:
+                timeout = aiohttp.ClientTimeout(total=CONFIG.request_timeout)
+                async with self.session.get(url, headers=CONFIG.headers, timeout=timeout) as response:
+                    if response.status != 200:
+                        continue
 
-                        content = await response.text()
-                        if not content.strip():
-                            return url, []
+                    content = await response.text()
+                    if not content.strip():
+                        return url, []
                     
                     # Enhanced Base64 detection and decoding
                     try:
@@ -490,12 +487,12 @@ class AsyncSourceFetcher:
                     
                     return url, config_results
                     
-                except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
-                    logging.debug("fetch_source error on %s: %s", url, exc)
-                    if attempt < CONFIG.max_retries - 1:
-                        # Use a capped and jittered delay to reduce tail latency
-                        await asyncio.sleep(min(3, 1.5 + random.random()))
-            return url, []
+            except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+                logging.debug("fetch_source error on %s: %s", url, exc)
+                if attempt < CONFIG.max_retries - 1:
+                    # Use a capped and jittered delay to reduce tail latency
+                    await asyncio.sleep(min(3, 1.5 + random.random()))
+        return url, []
 
 # ============================================================================
 # MAIN PROCESSOR WITH UNIFIED FUNCTIONALITY
