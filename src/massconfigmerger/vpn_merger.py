@@ -93,6 +93,86 @@ except ValueError:
 # Compiled regular expressions from --exclude-pattern
 EXCLUDE_REGEXES: List[re.Pattern] = []
 
+# Regex patterns for extracting configuration links during pre-flight checks
+PROTOCOL_RE = re.compile(
+    r"(?:"
+    r"vmess|vless|reality|ssr?|trojan|hy2|hysteria2?|tuic|"
+    r"shadowtls|juicity|naive|brook|wireguard|"
+    r"socks5|socks4|socks|http|https|grpc|ws|wss|"
+    r"tcp|kcp|quic|h2"
+    r")://\S+",
+    re.IGNORECASE,
+)
+BASE64_RE = re.compile(r"^[A-Za-z0-9+/=_-]+$")
+MAX_DECODE_SIZE = 256 * 1024  # 256 kB
+
+
+async def fetch_text(
+    session: aiohttp.ClientSession,
+    url: str,
+    timeout: int = 10,
+    *,
+    retries: int = 3,
+    base_delay: float = 1.0,
+    jitter: float = 0.1,
+) -> str | None:
+    """Fetch text content with retries."""
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        logging.debug("fetch_text invalid url: %s", url)
+        return None
+
+    attempt = 0
+    while attempt < retries:
+        try:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=timeout)) as resp:
+                if resp.status == 200:
+                    return await resp.text()
+                if 400 <= resp.status < 500 and resp.status != 429:
+                    logging.debug("fetch_text non-retry status %s on %s", resp.status, url)
+                    return None
+                if not (500 <= resp.status < 600 or resp.status == 429):
+                    logging.debug(
+                        "fetch_text non-transient status %s on %s", resp.status, url
+                    )
+                    return None
+        except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+            logging.debug("fetch_text error on %s: %s", url, exc)
+
+        attempt += 1
+        if attempt >= retries:
+            break
+        delay = base_delay * 2 ** (attempt - 1)
+        await asyncio.sleep(delay + random.uniform(0, jitter))
+    return None
+
+
+def parse_first_configs(text: str, limit: int = 5) -> List[str]:
+    """Extract up to ``limit`` configuration links from ``text``."""
+    configs: List[str] = []
+    for line in text.splitlines():
+        line = line.strip()
+        matches = PROTOCOL_RE.findall(line)
+        if matches:
+            for m in matches:
+                configs.append(m)
+                if len(configs) >= limit:
+                    return configs
+            continue
+        if BASE64_RE.match(line):
+            if len(line) > MAX_DECODE_SIZE:
+                continue
+            try:
+                padded = line + "=" * (-len(line) % 4)
+                decoded = base64.urlsafe_b64decode(padded).decode()
+                for m in PROTOCOL_RE.findall(decoded):
+                    configs.append(m)
+                    if len(configs) >= limit:
+                        return configs
+            except (binascii.Error, UnicodeDecodeError):
+                continue
+    return configs
+
 # ============================================================================
 # COMPREHENSIVE SOURCE COLLECTION (ALL UNIFIED SOURCES)
 # ============================================================================
@@ -588,7 +668,14 @@ class UltimateVPNMerger:
         # Step 1: Test source availability and remove dead links
         print("🔄 [1/6] Testing source availability and removing dead links...")
         self.available_sources = await self._test_and_filter_sources()
-        
+
+        if CONFIG.enable_url_testing:
+            print("\n🔎 Running pre-flight connectivity check...")
+            ok = await self._preflight_connectivity_check()
+            if not ok:
+                sys.stderr.write("❌ Critical Error: All initial connectivity tests failed...\n")
+                sys.exit(1)
+
         # Step 2: Fetch all configs from available sources
         print(f"\n🔄 [2/6] Fetching configs from {len(self.available_sources)} available sources...")
         await self._fetch_all_sources(self.available_sources)
@@ -679,6 +766,42 @@ class UltimateVPNMerger:
         finally:
             # Don't close session here, we'll reuse it
             pass
+
+    async def _preflight_connectivity_check(self, max_tests: int = 5) -> bool:
+        """Quickly test a handful of configs to verify connectivity."""
+        if not self.available_sources:
+            return False
+
+        assert self.fetcher.session is not None
+        tested = 0
+        proc = EnhancedConfigProcessor()
+
+        for url in self.available_sources:
+            if tested >= max_tests:
+                break
+
+            text = await fetch_text(
+                self.fetcher.session,
+                url,
+                int(CONFIG.request_timeout),
+                retries=1,
+                base_delay=0.5,
+            )
+            if not text:
+                continue
+
+            configs = parse_first_configs(text, max_tests - tested)
+            for cfg in configs:
+                host, port = proc.extract_host_port(cfg)
+                if host and port:
+                    ping = await proc.test_connection(host, port)
+                    tested += 1
+                    if ping is not None:
+                        return True
+                    if tested >= max_tests:
+                        break
+
+        return False
     
     async def _fetch_all_sources(self, available_sources: List[str]) -> List[ConfigResult]:
         """Fetch all configs from available sources."""
