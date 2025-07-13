@@ -671,11 +671,6 @@ def main() -> None:
         help="HTTP request timeout in seconds",
     )
     parser.add_argument(
-        "--max-concurrent",
-        type=int,
-        help=argparse.SUPPRESS,
-    )
-    parser.add_argument(
         "--failure-threshold",
         type=int,
         default=3,
@@ -703,8 +698,6 @@ def main() -> None:
         cfg.output_dir = args.output_dir
     if args.concurrent_limit is not None:
         cfg.concurrent_limit = args.concurrent_limit
-    elif args.max_concurrent is not None:
-        cfg.concurrent_limit = args.max_concurrent
     if args.request_timeout is not None:
         cfg.request_timeout = args.request_timeout
 

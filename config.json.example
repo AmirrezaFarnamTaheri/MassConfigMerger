@@ -23,6 +23,6 @@
     "output_dir": "output",
     "log_dir": "logs",
     "request_timeout": 10,
-    "max_concurrent": 20,
+    "concurrent_limit": 20,
     "settings": {"retry_attempts": 3, "retry_base_delay": 1.0},
 }
