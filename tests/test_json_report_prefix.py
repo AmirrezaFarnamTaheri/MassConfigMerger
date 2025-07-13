@@ -1,11 +1,8 @@
-import os
-import sys
 import json
 import asyncio
 from pathlib import Path
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from vpn_merger import UltimateVPNMerger, ConfigResult, CONFIG
+from massconfigmerger.vpn_merger import UltimateVPNMerger, ConfigResult, CONFIG
 
 
 def test_json_report_prefix(monkeypatch, tmp_path):

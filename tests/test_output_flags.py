@@ -1,11 +1,9 @@
-import os
-import sys
 import json
+import sys
 import yaml
 from pathlib import Path
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-import aggregator_tool
+from massconfigmerger import aggregator_tool
 from massconfigmerger.config import Settings
 
 

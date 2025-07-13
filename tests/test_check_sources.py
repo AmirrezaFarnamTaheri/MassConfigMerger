@@ -1,11 +1,8 @@
-import os
-import sys
 from pathlib import Path
 import asyncio
 import json
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-import aggregator_tool
+from massconfigmerger import aggregator_tool
 
 
 def test_check_and_update_sources(monkeypatch, tmp_path):

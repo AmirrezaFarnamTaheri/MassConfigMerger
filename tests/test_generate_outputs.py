@@ -2,12 +2,9 @@ import asyncio
 import base64
 import csv
 import json
-import os
-import sys
 import yaml
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from vpn_merger import UltimateVPNMerger, ConfigResult, CONFIG
+from massconfigmerger.vpn_merger import UltimateVPNMerger, ConfigResult, CONFIG
 
 
 def test_generate_comprehensive_outputs(tmp_path, monkeypatch):

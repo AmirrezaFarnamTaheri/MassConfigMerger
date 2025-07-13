@@ -1,10 +1,7 @@
-import os
-import sys
 import json
 import base64
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from clash_utils import config_to_clash_proxy
+from massconfigmerger.clash_utils import config_to_clash_proxy
 
 
 def test_vmess_parse_success():

@@ -9,7 +9,7 @@ import csv
 from pathlib import Path
 from typing import List, Tuple, Optional
 
-from vpn_merger import EnhancedConfigProcessor, CONFIG
+from .vpn_merger import EnhancedConfigProcessor, CONFIG
 
 
 async def _test_config(proc: EnhancedConfigProcessor, cfg: str) -> Tuple[str, Optional[float]]:

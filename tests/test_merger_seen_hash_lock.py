@@ -1,11 +1,8 @@
 import asyncio
-import os
-import sys
 import pytest
 from aiohttp import web
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from vpn_merger import UltimateVPNMerger
+from massconfigmerger.vpn_merger import UltimateVPNMerger
 
 pytest_plugins = "aiohttp.pytest_plugin"
 
