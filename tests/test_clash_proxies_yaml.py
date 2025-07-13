@@ -39,7 +39,7 @@ def test_clash_proxies_yaml(tmp_path, monkeypatch):
     res4 = ConfigResult(
         config=(
             "reality://uuid@host:443?flow=xtls-rprx-vision&publicKey=pub"
-            "&short_id=123"
+            "&short_id=123&spiderX=9"
         ),
         protocol="Reality",
         host="host",
@@ -89,6 +89,7 @@ def test_clash_proxies_yaml(tmp_path, monkeypatch):
     assert reality["tls"] is True
     assert reality["reality-opts"]["public-key"] == "pub"
     assert reality["reality-opts"]["short-id"] == "123"
+    assert reality["reality-opts"]["spider-x"] == "9"
 
     tuic = next(p for p in data["proxies"] if p["type"] == "tuic")
     assert tuic["uuid"] == "uuid"
@@ -112,3 +113,15 @@ def test_clash_proxies_yaml(tmp_path, monkeypatch):
     sdata = json.loads(singbox.read_text())
     types = [ob["type"] for ob in sdata.get("outbounds", [])]
     assert "tuic" in types and "hysteria2" in types
+    tuic_ob = next(ob for ob in sdata["outbounds"] if ob["type"] == "tuic")
+    assert tuic_ob["uuid"] == "uuid"
+    assert tuic_ob["password"] == "pw"
+    assert tuic_ob["alpn"] == "h3"
+    assert tuic_ob["congestion-control"] == "bbr"
+    assert tuic_ob["udp-relay-mode"] == "native"
+    hy_ob = next(ob for ob in sdata["outbounds"] if ob["type"] == "hysteria2")
+    assert hy_ob["password"] == "pass"
+    assert hy_ob["peer"] == "example.com"
+    assert hy_ob["obfs_password"] == "secret"
+    assert hy_ob["upmbps"] == "5"
+    assert hy_ob["downmbps"] == "10"

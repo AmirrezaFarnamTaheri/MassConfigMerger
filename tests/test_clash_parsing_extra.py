@@ -62,6 +62,12 @@ def test_reality_parse_synonyms():
     assert proxy["reality-opts"]["short-id"] == "456"
 
 
+def test_reality_parse_spiderx():
+    link = "reality://id@host:443?publicKey=pub&shortId=1&spiderX=2"
+    proxy = config_to_clash_proxy(link, 0)
+    assert proxy["reality-opts"]["spider-x"] == "2"
+
+
 def test_hysteria2_parse():
     link = "hy2://pass@host:443?peer=example.com&insecure=1&upmbps=10&downmbps=20"
     proxy = config_to_clash_proxy(link, 0)

@@ -1121,6 +1121,81 @@ class UltimateVPNMerger:
             "available_sources": len(available_sources),
             "total_sources": len(self.sources)
         }
+
+    def _parse_extra_params(self, link: str) -> Dict[str, Any]:
+        """Extract additional parameters for sing-box outbounds."""
+        try:
+            p = urlparse(link)
+            q = parse_qs(p.query)
+            scheme = p.scheme.lower()
+            extra: Dict[str, Any] = {}
+            if scheme in {"vless", "reality"}:
+                pbk = (
+                    q.get("pbk")
+                    or q.get("public-key")
+                    or q.get("publicKey")
+                    or q.get("public_key")
+                    or q.get("publickey")
+                )
+                sid = (
+                    q.get("sid")
+                    or q.get("short-id")
+                    or q.get("shortId")
+                    or q.get("short_id")
+                    or q.get("shortid")
+                )
+                spider = q.get("spiderX") or q.get("spider-x") or q.get("spider_x")
+                if pbk:
+                    extra["publicKey"] = pbk[0]
+                if sid:
+                    extra["shortId"] = sid[0]
+                if spider:
+                    extra["spiderX"] = spider[0]
+            elif scheme == "tuic":
+                uuid = p.username or q.get("uuid", [None])[0]
+                password = p.password or q.get("password", [None])[0]
+                if uuid:
+                    extra["uuid"] = uuid
+                if password:
+                    extra["password"] = password
+                if "alpn" in q:
+                    extra["alpn"] = q["alpn"][0]
+                cc = q.get("congestion-control") or q.get("congestion_control")
+                if cc:
+                    extra["congestion-control"] = cc[0]
+                mode = q.get("udp-relay-mode") or q.get("udp_relay_mode")
+                if mode:
+                    extra["udp-relay-mode"] = mode[0]
+            elif scheme in {"hy2", "hysteria2"}:
+                passwd = p.password or q.get("password", [None])[0]
+                if p.username and not passwd:
+                    passwd = p.username
+                if passwd:
+                    extra["password"] = passwd
+                for key in (
+                    "auth",
+                    "peer",
+                    "sni",
+                    "insecure",
+                    "alpn",
+                    "obfs",
+                    "obfs-password",
+                ):
+                    if key in q:
+                        extra[key.replace("-", "_")] = q[key][0]
+                up_keys = ["upmbps", "up", "up_mbps"]
+                down_keys = ["downmbps", "down", "down_mbps"]
+                for k in up_keys:
+                    if k in q:
+                        extra["upmbps"] = q[k][0]
+                        break
+                for k in down_keys:
+                    if k in q:
+                        extra["downmbps"] = q[k][0]
+                        break
+            return extra
+        except Exception:
+            return {}
     
     async def _generate_comprehensive_outputs(
         self,
@@ -1230,6 +1305,7 @@ class UltimateVPNMerger:
                     "server_port": r.port,
                     "raw": r.config
                 }
+                ob.update(self._parse_extra_params(r.config))
                 if r.country:
                     ob["country"] = r.country
                 outbounds.append(ob)
