@@ -10,3 +10,4 @@ PyYAML
 geoip2
 types-PyYAML
 types-requests
+pydantic

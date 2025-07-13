@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 import vpn_merger
-from vpn_merger import CONFIG
+from massconfigmerger.config import settings as CONFIG
 
 
 def test_cli_country_flags(monkeypatch, tmp_path):

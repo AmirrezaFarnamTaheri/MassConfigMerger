@@ -14,24 +14,34 @@ import binascii
 import json
 import logging
 import re
-from dataclasses import dataclass, field, fields
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterable, List, Set, Optional, Dict, Union, Tuple, cast
+import types
+import sys
 from urllib.parse import urlparse
 from clash_utils import config_to_clash_proxy
+
+sys.path.append(str(Path(__file__).resolve().parent / "src"))
 
 import yaml
 
 import aiohttp
 from aiohttp import ClientSession, ClientTimeout
-from telethon import TelegramClient, events, errors  # type: ignore
-from telethon.tl.custom.message import Message  # type: ignore
+try:
+    from telethon import TelegramClient, events, errors  # type: ignore
+    from telethon.tl.custom.message import Message  # type: ignore
+except Exception:  # pragma: no cover - optional
+    TelegramClient = None  # type: ignore
+    events = types.SimpleNamespace()  # type: ignore
+    errors = types.SimpleNamespace(RPCError=Exception)  # type: ignore
+    Message = object  # type: ignore
 import vpn_merger
+from massconfigmerger.config import Settings, load_settings, settings as CONFIG
 
 from constants import SOURCES_FILE
 
-CONFIG_FILE = Path("config.json")
+CONFIG_FILE = Path("config.yaml")
 CHANNELS_FILE = Path("channels.txt")
 
 # Match full config links for supported protocols
@@ -136,103 +146,6 @@ def is_valid_config(link: str) -> bool:
     return bool(rest)
 
 
-@dataclass
-class Config:
-    telegram_api_id: Optional[int] = None
-    telegram_api_hash: Optional[str] = None
-    telegram_bot_token: Optional[str] = None
-    allowed_user_ids: List[int] = field(default_factory=list)
-    protocols: List[str] = field(default_factory=list)
-    exclude_patterns: List[str] = field(default_factory=list)
-    output_dir: str = "output"
-    log_dir: str = "logs"
-    request_timeout: int = 10
-    max_concurrent: int = 20
-    write_base64: bool = True
-    write_singbox: bool = True
-    write_clash: bool = True
-
-    @classmethod
-    def load(
-        cls, path: Path, defaults: dict | None = None
-    ) -> "Config":
-        """Load configuration from ``path`` applying optional defaults."""
-        try:
-            with path.open("r") as f:
-                data = json.load(f)
-        except FileNotFoundError as exc:
-            raise ValueError(f"Config file not found: {path}") from exc
-        except json.JSONDecodeError as exc:
-            raise ValueError(f"Invalid JSON in {path}: {exc}") from exc
-
-        if not isinstance(data, dict):
-            raise ValueError(f"{path} must contain a JSON object")
-
-        # Pull telegram credentials from environment and override when set
-        import os
-        env_values = {
-            "telegram_api_id": os.getenv("TELEGRAM_API_ID"),
-            "telegram_api_hash": os.getenv("TELEGRAM_API_HASH"),
-            "telegram_bot_token": os.getenv("TELEGRAM_BOT_TOKEN"),
-            "allowed_user_ids": os.getenv("ALLOWED_USER_IDS"),
-        }
-
-        if env_values["telegram_api_id"] is not None:
-            try:
-                data["telegram_api_id"] = int(env_values["telegram_api_id"])
-            except ValueError as exc:
-                raise ValueError("TELEGRAM_API_ID must be an integer") from exc
-
-        for key in ("telegram_api_hash", "telegram_bot_token"):
-            if env_values[key] is not None:
-                data[key] = env_values[key]
-
-        if env_values["allowed_user_ids"] is not None:
-            try:
-                ids = [
-                    int(i)
-                    for i in re.split(r"[ ,]+", env_values["allowed_user_ids"].strip())
-                    if i
-                ]
-            except ValueError as exc:
-                raise ValueError(
-                    "ALLOWED_USER_IDS must be a comma separated list of integers"
-                ) from exc
-            data["allowed_user_ids"] = ids
-
-        if "allowed_user_ids" in data:
-            try:
-                data["allowed_user_ids"] = [int(i) for i in data["allowed_user_ids"]]
-            except Exception as exc:
-                raise ValueError("allowed_user_ids must be a list of integers") from exc
-
-        merged_defaults = {
-            "protocols": [],
-            "exclude_patterns": [],
-            "output_dir": "output",
-            "log_dir": "logs",
-            "request_timeout": 10,
-            "max_concurrent": 20,
-            "write_base64": True,
-            "write_singbox": True,
-            "write_clash": True,
-        }
-        if defaults:
-            merged_defaults.update(defaults)
-        for key, value in merged_defaults.items():
-            data.setdefault(key, value)
-
-        known_fields = {f.name for f in fields(cls)}
-        unknown = [k for k in data if k not in known_fields]
-        if unknown:
-            msg = "Invalid config.json - unknown fields: " + ", ".join(unknown)
-            raise ValueError(msg)
-
-        try:
-            return cls(**data)
-        except (KeyError, TypeError) as exc:
-            msg = f"Invalid configuration values: {exc}"
-            raise ValueError(msg) from exc
 
 
 
@@ -372,7 +285,7 @@ async def fetch_and_parse_configs(
     return configs
 
 
-async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Config) -> Set[str]:
+async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Settings) -> Set[str]:
     """Scrape telegram channels for configs."""
     if cfg.telegram_api_id is None or cfg.telegram_api_hash is None:
         logging.info("Telegram credentials not provided; skipping Telegram scrape")
@@ -443,7 +356,7 @@ async def scrape_telegram_configs(channels_path: Path, last_hours: int, cfg: Con
 
 
 def deduplicate_and_filter(
-    config_set: Set[str], cfg: Config, protocols: List[str] | None = None
+    config_set: Set[str], cfg: Settings, protocols: List[str] | None = None
 ) -> List[str]:
     """Apply filters and return sorted configs.
 
@@ -476,7 +389,7 @@ def deduplicate_and_filter(
     return final
 
 
-def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
+def output_files(configs: List[str], out_dir: Path, cfg: Settings) -> List[Path]:
     """Write merged files and return list of written file paths respecting cfg flags."""
     out_dir.mkdir(parents=True, exist_ok=True)
     written: List[Path] = []
@@ -540,7 +453,7 @@ def output_files(configs: List[str], out_dir: Path, cfg: Config) -> List[Path]:
 
 
 async def run_pipeline(
-    cfg: Config,
+    cfg: Settings,
     protocols: List[str] | None = None,
     sources_file: Path = SOURCES_FILE,
     channels_file: Path = CHANNELS_FILE,
@@ -577,7 +490,7 @@ async def run_pipeline(
 
 
 async def telegram_bot_mode(
-    cfg: Config,
+    cfg: Settings,
     sources_file: Path = SOURCES_FILE,
     channels_file: Path = CHANNELS_FILE,
     last_hours: int = 24,
@@ -662,7 +575,7 @@ def main() -> None:
     )
     parser.add_argument("--bot", action="store_true", help="run in telegram bot mode")
     parser.add_argument("--protocols", help="comma separated protocols to keep")
-    parser.add_argument("--config", default=str(CONFIG_FILE), help="path to config.json")
+    parser.add_argument("--config", default=str(CONFIG_FILE), help="path to config.yaml")
     parser.add_argument("--sources", default=str(SOURCES_FILE), help="path to sources.txt")
     parser.add_argument("--channels", default=str(CHANNELS_FILE), help="path to channels.txt")
     parser.add_argument(
@@ -704,7 +617,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    cfg = Config.load(Path(args.config))
+    cfg = load_settings(Path(args.config))
     if args.output_dir:
         cfg.output_dir = args.output_dir
     if args.concurrent_limit is not None:

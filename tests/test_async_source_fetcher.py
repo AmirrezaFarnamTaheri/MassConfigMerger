@@ -6,7 +6,8 @@ import pytest
 pytest_plugins = "aiohttp.pytest_plugin"
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from vpn_merger import AsyncSourceFetcher, EnhancedConfigProcessor, CONFIG
+from vpn_merger import AsyncSourceFetcher, EnhancedConfigProcessor
+from massconfigmerger.config import settings as CONFIG
 from aiohttp import web
 
 

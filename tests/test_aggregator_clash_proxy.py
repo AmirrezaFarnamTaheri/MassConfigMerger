@@ -4,10 +4,11 @@ import yaml
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import aggregator_tool
+from massconfigmerger.config import Settings
 
 
 def test_aggregator_clash_proxy(tmp_path):
-    cfg = aggregator_tool.Config(output_dir=str(tmp_path), write_clash=True)
+    cfg = Settings(output_dir=str(tmp_path), write_clash=True)
     configs = [
         "reality://uuid@host:443?flow=xtls-rprx-vision",
         "naive://user:pass@host:443",
