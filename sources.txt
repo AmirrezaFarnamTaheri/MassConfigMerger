@@ -451,7 +451,7 @@ https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/python/hysteria
 https://raw.githubusercontent.com/webdao/v2ray/refs/heads/master/nodes.txt
 https://raw.githubusercontent.com/webdao/v2ray/refs/heads/master/nodes2.txt
 https://raw.githubusercontent.com/webdao/v2ray/refs/heads/master/nodes3.txt
-https://raw.githubusercontent.com/hiddify/Hiddify-Server/main/release/hiddify-next-config.json
+https://raw.githubusercontent.com/hiddify/Hiddify-Server/main/release/hiddify-next-config.yaml
 https://raw.githubusercontent.com/hiddify/awesome-freedom/main/configs.txt
 https://raw.githubusercontent.com/AliDev-ir/FreeVPN/main/pcvpn
 https://raw.githubusercontent.com/AliDev-ir/FreeVPN/main/vpn
@@ -528,7 +528,7 @@ https://iwxf.netlify.app/
 http://qe83xk711.sabkt.gdipper.com/freev2ray.txt
 http://qe83xk711.sabkt.gdipper.com/freess.txt
 http://103.72.166.89/v2ray.php
-https://raw.githubusercontent.com/Pcrab/Dotfiles/912c1104b3f8121f72f7ee11590f52bc9c44dde7/.config/electron-ssr/gui-config.json
+https://raw.githubusercontent.com/Pcrab/Dotfiles/912c1104b3f8121f72f7ee11590f52bc9c44dde7/.config/electron-ssr/gui-config.yaml
 https://raw.githubusercontent.com/ssrsub/ssr/master/v2ray
 https://raw.githubusercontent.com/ssrsub/ssr/master/ss-sub
 https://raw.githubusercontent.com/ssrsub/ssr/master/ssrsub
