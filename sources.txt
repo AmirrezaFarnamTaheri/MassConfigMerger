@@ -487,6 +487,7 @@ https://raw.githubusercontent.com/MrMohebi/xray-proxy-grabber-telegram/master/co
 https://raw.githubusercontent.com/NiceVPN123/NiceVPN/main/Clash.yaml
 https://raw.githubusercontent.com/PangTouY00/Auto_proxy/main/Long_term_subscription_num
 https://raw.githubusercontent.com/Vauth/node/main/Main
+https://raw.githubusercontent.com/aiboboxx/clashfree/main/clash.yaml
 https://raw.githubusercontent.com/aiboboxx/clashfree/main/clash.yml
 https://raw.githubusercontent.com/chengaopan/AutoMergePublicNodes/master/list.yml
 https://raw.githubusercontent.com/lagzian/SS-Collector/main/mix_clash.yaml
