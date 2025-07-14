@@ -141,6 +141,22 @@ Generate client-specific output automatically:
 python vpn_merger.py --output-surge surge.conf --output-qx quantumultx.conf
 ```
 
+Once the files are generated, host them somewhere your phone can reach or copy
+them directly to the device. In Surge, open **Settings → Configuration →
+Download** and provide the URL to `surge.conf`. For Quantumult X, go to
+**Settings → Server List → Import** and select the `quantumultx.conf` file or a
+remote URL. Refer to the [Surge manual](https://manual.nssurge.com/) and the
+[Quantumult X examples](https://github.com/KOP-XIAO/QuantumultX) for details.
+
+Example of generating and serving the files locally:
+
+```bash
+python vpn_merger.py --output-surge surge.conf --output-qx quantumultx.conf
+python3 -m http.server -d output 8000
+```
+Then import `http://<your-ip>:8000/surge.conf` or
+`http://<your-ip>:8000/quantumultx.conf` in the respective app.
+
 You can also call the converters directly from
 [`src/massconfigmerger/advanced_converters.py`](src/massconfigmerger/advanced_converters.py):
 
