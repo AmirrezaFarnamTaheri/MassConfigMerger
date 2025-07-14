@@ -34,10 +34,11 @@ async def test_fetch_and_parse_configs_handles_errors(aiohttp_client, tmp_path):
         str(client.make_url("/slow")),
     ]
 
-    configs = await aggregator_tool.fetch_and_parse_configs(
+    configs, success = await aggregator_tool.fetch_and_parse_configs(
         urls, concurrent_limit=3, request_timeout=0.05
     )
     assert configs == {"vmess://good"}
+    assert success == 1
 
     path = tmp_path / "sources.txt"
     path.write_text("\n".join(urls))

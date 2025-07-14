@@ -34,6 +34,7 @@ from . import vpn_merger
 from .constants import SOURCES_FILE
 
 from .config import Settings, load_config
+from tqdm import tqdm
 
 
 def _choose_proxy(cfg: Settings) -> str | None:
@@ -281,15 +282,22 @@ async def check_and_update_sources(
         session_cm = aiohttp.ClientSession(connector=connector)
     async with session_cm as session:
         tasks = [asyncio.create_task(check(u)) for u in sorted(sources)]
-        for task in asyncio.as_completed(tasks):
-            url, ok = await task
-            if ok:
-                failures.pop(url, None)
-                valid_sources.append(url)
-            else:
-                failures[url] = failures.get(url, 0) + 1
-                if prune and failures[url] >= max_failures:
-                    removed.append(url)
+        with tqdm(
+            total=len(tasks),
+            desc="Validating",
+            unit="src",
+            disable=not sys.stderr.isatty(),
+        ) as pbar:
+            for task in asyncio.as_completed(tasks):
+                url, ok = await task
+                pbar.update(1)
+                if ok:
+                    failures.pop(url, None)
+                    valid_sources.append(url)
+                else:
+                    failures[url] = failures.get(url, 0) + 1
+                    if prune and failures[url] >= max_failures:
+                        removed.append(url)
 
     remaining = [u for u in sorted(sources) if u not in removed]
     with path.open("w") as f:
@@ -306,7 +314,7 @@ async def check_and_update_sources(
 
     failures_path.write_text(json.dumps(failures, indent=2))
 
-    logging.info("Valid sources: %d", len(valid_sources))
+    logging.info("Valid sources: %d/%d", len(valid_sources), len(sources))
     return valid_sources
 
 
@@ -318,9 +326,10 @@ async def fetch_and_parse_configs(
     retries: int = 3,
     base_delay: float = 1.0,
     proxy: str | None = None,
-) -> Set[str]:
+) -> Tuple[Set[str], int]:
     """Fetch configs from sources respecting concurrency limits."""
     configs: Set[str] = set()
+    success_count = 0
 
     semaphore = asyncio.Semaphore(concurrent_limit)
 
@@ -344,12 +353,30 @@ async def fetch_and_parse_configs(
         session_cm = aiohttp.ClientSession(connector=connector, proxy=proxy)
     else:
         session_cm = aiohttp.ClientSession(connector=connector)
+    source_list = list(sources)
     async with session_cm as session:
-        tasks = [asyncio.create_task(fetch_one(session, u)) for u in sources]
-        for task in asyncio.as_completed(tasks):
-            configs.update(await task)
+        tasks = [asyncio.create_task(fetch_one(session, u)) for u in source_list]
+        with tqdm(
+            total=len(tasks),
+            desc="Downloading",
+            unit="src",
+            disable=not sys.stderr.isatty(),
+        ) as pbar:
+            for task in asyncio.as_completed(tasks):
+                result = await task
+                if result:
+                    success_count += 1
+                configs.update(result)
+                pbar.update(1)
 
-    return configs
+    logging.info(
+        "Processed %d/%d sources, %d yielded configs",
+        len(source_list),
+        len(source_list),
+        success_count,
+    )
+
+    return configs, success_count
 
 
 async def scrape_telegram_configs(
@@ -546,6 +573,7 @@ async def run_pipeline(
 
     out_dir = Path(cfg.output_dir)
     configs: Set[str] = set()
+    active_sources = 0
     try:
         sources = await check_and_update_sources(
             sources_file,
@@ -561,7 +589,7 @@ async def run_pipeline(
             ),
             proxy=_choose_proxy(cfg),
         )
-        configs = await fetch_and_parse_configs(
+        configs, active_sources = await fetch_and_parse_configs(
             sources,
             cfg.concurrent_limit,
             cfg.request_timeout,
@@ -569,13 +597,23 @@ async def run_pipeline(
             base_delay=cfg.retry_base_delay,
             proxy=_choose_proxy(cfg),
         )
-        logging.info("Fetched configs count: %d", len(configs))
+        logging.info(
+            "Fetched %d configs from %d/%d sources",
+            len(configs),
+            active_sources,
+            len(sources),
+        )
         configs |= await scrape_telegram_configs(channels_file, last_hours, cfg)
     except KeyboardInterrupt:
         logging.warning("Interrupted. Writing partial results...")
     finally:
         final = deduplicate_and_filter(configs, cfg, protocols)
-        logging.info("Final configs count: %d", len(final))
+        logging.info(
+            "Final configs count: %d (from %d/%d sources)",
+            len(final),
+            active_sources,
+            len(sources),
+        )
         files = output_files(final, out_dir, cfg)
     return out_dir, files
 
