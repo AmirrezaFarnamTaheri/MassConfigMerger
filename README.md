@@ -24,69 +24,45 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
 ### ⚡ Quick Start
 
-1. **Install Python 3.8 or newer**
-   - On **Windows** download it from [python.org](https://www.python.org/downloads/) and tick *Add Python to PATH* during setup.
-   - On **macOS/Linux** use your package manager, e.g. `sudo apt install python3`.
-
-2. **Clone the repository**
+1. **Clone the repository and install requirements**
 
    ```bash
    git clone https://github.com/AmirrezaFarnamTaheri/MassConfigMerger.git
    cd MassConfigMerger
-   ```
-
-3. **Install the requirements**
-
-   ```bash
    pip install -r requirements.txt
    ```
 
-   *Install `geoip2` as well if you plan to filter by country and download the free GeoLite2 database from MaxMind.*
-
-4. **Gather configuration links**
+2. **(Optional) collect fresh links**
 
    ```bash
    python aggregator_tool.py --hours 12
    ```
 
-   This creates `output/merged.txt` and a log file under `logs/` named by the current date.
-
-5. **Merge and sort the results**
+3. **Merge and sort results**
 
    ```bash
    python vpn_merger.py
    ```
 
-   Use `--resume output/merged.txt` to continue a previous run without re-downloading.
+4. **Import the output**
+   - Use the link in `output/vpn_subscription_base64.txt` or load `vpn_singbox.json`.
 
-6. **All in one step**
+See [docs/tutorial.md](docs/tutorial.md) for a step-by-step walkthrough.
 
-   ```bash
-   python aggregator_tool.py --with-merger
-   ```
+### 🔰 Basic Usage
 
-   The merger automatically runs on the freshly aggregated results using the
-   resume feature.
+- `python aggregator_tool.py --hours 12` – gather configuration links.
+- `python vpn_merger.py` – test and merge sources.
+- `python vpn_retester.py output/vpn_subscription_raw.txt` – re-check an existing list.
 
-7. **Country filters**
-
-   ```bash
-   python vpn_merger.py --geoip-db GeoLite2-Country.mmdb --include-country US,CA
-   ```
-
-   Combine `--include-country` or `--exclude-country` with `--geoip-db` to select preferred regions.
-
-8. **Check the logs**
-
-   Every run writes detailed output to `logs/YYYY-MM-DD.log`. Review these files with `less` or `tail -f` to monitor progress and diagnose issues.
-
-9. **Import your subscription**
-   - Use the link in `output/vpn_subscription_base64.txt` (unless `--no-base64` was used) or load `vpn_singbox.json` in clients like sing-box.
+For protocol details see [docs/protocol-deep-dive.md](docs/protocol-deep-dive.md).
+Additional help is available in [docs/advanced-troubleshooting.md](docs/advanced-troubleshooting.md).
 
 
 ## 📖 Table of Contents
 
 - [Quick Start](#-quick-start)
+- [Basic Usage](#-basic-usage)
 - [Full Tutorial](docs/tutorial.md)
 - [Protocol Deep Dive](docs/protocol-deep-dive.md)
 - [Advanced Troubleshooting](docs/advanced-troubleshooting.md)
