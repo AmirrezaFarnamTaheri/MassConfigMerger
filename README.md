@@ -168,6 +168,25 @@ Key environment variables used by the compose file:
 - `MERGE_INTERVAL` – seconds between each run of `vpn_merger` (default `86400`)
 - `AGGREGATE_INTERVAL` – seconds between aggregator runs when the `aggregator` profile is enabled (default `43200`)
 
+### Proxy Configuration
+
+If your network requires using an HTTP or SOCKS proxy, you can provide the
+settings in two ways:
+
+1. **Environment variables** – export `HTTP_PROXY` or `SOCKS_PROXY` before
+   running the scripts:
+
+   ```bash
+   export HTTP_PROXY=http://127.0.0.1:8080
+   # or
+   export SOCKS_PROXY=socks5://127.0.0.1:1080
+   ```
+
+2. **Configuration file** – copy `config.yaml.example` to `config.yaml` and fill
+   in the placeholder `HTTP_PROXY:` or `SOCKS_PROXY:` lines. These options work
+   the same as the environment variables and are useful when running behind a
+   firewall.
+
 ## FAQ
 
 ### Why does the script take so long?
