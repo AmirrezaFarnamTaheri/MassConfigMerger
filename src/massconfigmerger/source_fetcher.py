@@ -136,16 +136,31 @@ class AsyncSourceFetcher:
         ] = None,
     ):
         self.processor = processor
-        self.session: Optional[aiohttp.ClientSession] = None
+        self._session: Optional[aiohttp.ClientSession] = None
+        self._session_loop: Optional[asyncio.AbstractEventLoop] = None
         self.seen_hashes = seen_hashes
         self.hash_lock = hash_lock or asyncio.Lock()
         self.history_callback = history_callback
 
+    @property
+    def session(self) -> Optional[aiohttp.ClientSession]:
+        return self._session
+
+    @session.setter
+    def session(self, value: Optional[aiohttp.ClientSession]) -> None:
+        self._session = value
+        if value is not None:
+            self._session_loop = getattr(value, "_loop", None) or getattr(value, "loop", None)
+        else:
+            self._session_loop = None
+
     async def test_source_availability(self, url: str) -> bool:
         """Test if a source URL is available (returns 200 status)."""
         session = self.session
-        if session is None or getattr(session, "loop", None) is not asyncio.get_running_loop():
+        session_loop = self._session_loop
+        if session is None or session_loop is not asyncio.get_running_loop():
             session = aiohttp.ClientSession()
+            session_loop = asyncio.get_running_loop()
             close_temp = True
         else:
             close_temp = False
@@ -174,9 +189,11 @@ class AsyncSourceFetcher:
     async def fetch_source(self, url: str) -> Tuple[str, List[ConfigResult]]:
         """Fetch single source with comprehensive testing and deduplication."""
         session = self.session
-        use_temp = session is None or getattr(session, "loop", None) is not asyncio.get_running_loop()
+        session_loop = self._session_loop
+        use_temp = session is None or session_loop is not asyncio.get_running_loop()
         if use_temp:
             session = aiohttp.ClientSession()
+            session_loop = asyncio.get_running_loop()
         for attempt in range(CONFIG.max_retries):
             try:
                 timeout = aiohttp.ClientTimeout(total=CONFIG.request_timeout)

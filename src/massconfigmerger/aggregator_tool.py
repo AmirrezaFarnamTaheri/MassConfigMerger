@@ -156,6 +156,7 @@ async def fetch_text(
     base_delay: float = 1.0,
     jitter: float = 0.1,
     proxy: str | None = None,
+    session_loop: asyncio.AbstractEventLoop | None = None,
 ) -> str | None:
     """Fetch text content from ``url`` with retries and exponential backoff.
 
@@ -168,9 +169,14 @@ async def fetch_text(
         return None
 
     attempt = 0
-    use_temp = hasattr(session, "loop") and session.loop is not asyncio.get_running_loop()
+    if session_loop is None:
+        session_loop = getattr(session, "_loop", None)
+        if session_loop is None:
+            session_loop = getattr(session, "loop", None)
+    use_temp = session_loop is not None and session_loop is not asyncio.get_running_loop()
     if use_temp:
         session = aiohttp.ClientSession(proxy=proxy) if proxy else aiohttp.ClientSession()
+        session_loop = asyncio.get_running_loop()
     while attempt < retries:
         try:
             async with session.get(url, timeout=ClientTimeout(total=timeout)) as resp:
@@ -270,6 +276,7 @@ async def check_and_update_sources(
                 retries=retries,
                 base_delay=base_delay,
                 proxy=proxy,
+                session_loop=session_loop,
             )
         if not text or not parse_configs_from_text(text):
             return url, False
@@ -280,6 +287,7 @@ async def check_and_update_sources(
     else:
         session_cm = aiohttp.ClientSession(connector=connector)
     async with session_cm as session:
+        session_loop = asyncio.get_running_loop()
         tasks = [asyncio.create_task(check(u)) for u in sorted(sources)]
         for task in asyncio.as_completed(tasks):
             url, ok = await task
@@ -333,6 +341,7 @@ async def fetch_and_parse_configs(
                 retries=retries,
                 base_delay=base_delay,
                 proxy=proxy,
+                session_loop=session_loop,
             )
         if not text:
             logging.warning("Failed to fetch %s", url)
@@ -345,6 +354,7 @@ async def fetch_and_parse_configs(
     else:
         session_cm = aiohttp.ClientSession(connector=connector)
     async with session_cm as session:
+        session_loop = asyncio.get_running_loop()
         tasks = [asyncio.create_task(fetch_one(session, u)) for u in sources]
         for task in asyncio.as_completed(tasks):
             configs.update(await task)
@@ -387,6 +397,7 @@ async def scrape_telegram_configs(
     try:
         await client.start()
         async with aiohttp.ClientSession(proxy=_choose_proxy(cfg)) as session:
+            session_loop = asyncio.get_running_loop()
             for channel in channels:
                 count_before = len(configs)
                 success = False
@@ -406,6 +417,7 @@ async def scrape_telegram_configs(
                                         retries=cfg.retry_attempts,
                                         base_delay=cfg.retry_base_delay,
                                         proxy=_choose_proxy(cfg),
+                                        session_loop=session_loop,
                                     )
                                     if text2:
                                         configs.update(parse_configs_from_text(text2))
