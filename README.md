@@ -113,6 +113,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 - [Protocol Deep Dive](docs/protocol-deep-dive.md)
 - [Advanced Troubleshooting](docs/advanced-troubleshooting.md)
 - [📂 Understanding the Output Files](#-understanding-the-output-files)
+- [Advanced Features](#advanced-features)
 - [FAQ](#faq)
 
 
@@ -220,10 +221,23 @@ settings in two ways:
    export SOCKS_PROXY=socks5://127.0.0.1:1080
    ```
 
+
 2. **Configuration file** – copy `config.yaml.example` to `config.yaml` and fill
    in the placeholder `HTTP_PROXY:` or `SOCKS_PROXY:` lines. These options work
    the same as the environment variables and are useful when running behind a
    firewall.
+
+## Advanced Features
+
+### Sorting by Reliability
+
+Use `--sort-by reliability` to rank servers by past success rates recorded in
+`proxy_history.json`. The file location is set by the `history_file` option in
+`config.yaml`.
+
+```bash
+vpn-merger --sort-by reliability
+```
 
 ## FAQ
 
