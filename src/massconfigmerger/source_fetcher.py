@@ -140,6 +140,7 @@ class AsyncSourceFetcher:
         self.seen_hashes = seen_hashes
         self.hash_lock = hash_lock or asyncio.Lock()
         self.history_callback = history_callback
+        self.progress: Optional[tqdm] = None
 
     async def test_source_availability(self, url: str) -> bool:
         """Test if a source URL is available (returns 200 status)."""
@@ -262,6 +263,8 @@ class AsyncSourceFetcher:
                                     )
 
                             config_results.append(result)
+                            if self.progress is not None:
+                                self.progress.update(1)
 
                     if iterator is not lines and hasattr(iterator, "close"):
                         iterator.close()

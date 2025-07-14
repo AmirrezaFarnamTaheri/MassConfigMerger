@@ -376,11 +376,13 @@ class UltimateVPNMerger:
         # Append results directly to self.all_results so that _maybe_save_batch
         # sees the running total and can save incremental batches.
         successful_sources = 0
-        
+        progress = tqdm(total=0, desc="Testing", unit="cfg", leave=False)
+        self.fetcher.progress = progress
+
         try:
             # Process sources with semaphore
             semaphore = asyncio.Semaphore(CONFIG.concurrent_limit)
-            
+
             async def process_single_source(url: str) -> Tuple[str, List[ConfigResult]]:
                 async with semaphore:
                     return await self.fetcher.fetch_source(url)
@@ -392,7 +394,10 @@ class UltimateVPNMerger:
             for coro in asyncio.as_completed(tasks):
                 url, results = await coro
                 completed += 1
-                
+                if results:
+                    progress.total += len(results)
+                    progress.refresh()
+
                 # Append directly to the instance-level list
                 self.all_results.extend(results)
                 if results:
@@ -415,8 +420,10 @@ class UltimateVPNMerger:
                     t.cancel()
 
             print(f"\n   📈 Sources with configs: {successful_sources}/{len(available_sources)}")
-            
+
         finally:
+            self.fetcher.progress = None
+            progress.close()
             if self.fetcher.session is not None:
                 await self.fetcher.session.close()
 
