@@ -8,18 +8,27 @@
 2. **Install the requirements:**
    ```bash
    pip install -r requirements.txt
+   # optional: install the package for CLI commands
+   pip install -e .
    ```
+   Installing from PyPI works too (`pip install massconfigmerger`) and provides the `aggregator-tool`, `vpn-merger` and `vpn-retester` commands.
 3. **Run `aggregator_tool.py`** to grab fresh configuration links:
    ```bash
    python aggregator_tool.py --hours 12
+   # or
+   aggregator-tool --hours 12
    ```
 4. **Run `vpn_merger.py`** to test and merge all configs:
    ```bash
    python vpn_merger.py
+   # or
+   vpn-merger
    ```
 5. **Retest existing results** anytime with `vpn_retester.py`:
    ```bash
    python vpn_retester.py
+   # or
+   vpn-retester
    ```
 6. Import the files in `output/` into your VPN client or share the base64 link.
 

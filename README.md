@@ -7,7 +7,7 @@ links from hundreds of public sources.
 [](https://opensource.org/licenses/MIT)
 
 Welcome to **Mass Config Merger**! This project provides a powerful Python script that automatically fetches VPN configurations from the over 470 public sources listed in `sources.txt`, tests their connectivity, and merges them into a single, performance-sorted subscription link for use in your favorite VPN client. It can even save incremental batches while running so you always have up-to-date results.
-Both `aggregator_tool.py` and `vpn_merger.py` read from this same `sources.txt` file, so updating the list once applies to all tools.
+Both `aggregator_tool.py` and `vpn_merger.py` read from this same `sources.txt` file, so updating the list once applies to all tools. After installing the package with `pip install -e .` (or `pip install massconfigmerger` from PyPI) you can invoke them as `aggregator-tool`, `vpn-merger` and `vpn-retester`.
 
 ```mermaid
 flowchart LR
@@ -32,7 +32,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 > writing the final files. Adjust this list to match what your VPN client
 > supports or to exclude protocols you don't trust.
 
-**Important**: Install the dependencies with `pip install -r requirements.txt` before running **any** of the Python scripts.
+**Important**: Install the dependencies with `pip install -r requirements.txt` before running **any** of the Python scripts. You can also run `pip install -e .` (or install from PyPI) to register the `aggregator-tool`, `vpn-merger` and `vpn-retester` commands.
 
 ### ⚡ Quick Start
 
@@ -51,6 +51,8 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
    ```bash
    pip install -r requirements.txt
+   # optional: install the package so the CLI tools are on your PATH
+   pip install -e .
    ```
 
    *Install `geoip2` as well if you plan to filter by country and download the free GeoLite2 database from MaxMind.*
@@ -59,6 +61,8 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
    ```bash
    python aggregator_tool.py --hours 12
+   # or
+   aggregator-tool --hours 12
    ```
 
    This creates `output/merged.txt` and a log file under `logs/` named by the current date.
@@ -67,6 +71,8 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
    ```bash
    python vpn_merger.py
+   # or
+   vpn-merger
    ```
 
    Use `--resume output/merged.txt` to continue a previous run without re-downloading.
@@ -75,6 +81,8 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
    ```bash
    python aggregator_tool.py --with-merger
+   # or
+   aggregator-tool --with-merger
    ```
 
    The merger automatically runs on the freshly aggregated results using the
@@ -84,6 +92,8 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
    ```bash
    python vpn_merger.py --geoip-db GeoLite2-Country.mmdb --include-country US,CA
+   # or
+   vpn-merger --geoip-db GeoLite2-Country.mmdb --include-country US,CA
    ```
 
    Combine `--include-country` or `--exclude-country` with `--geoip-db` to select preferred regions.
