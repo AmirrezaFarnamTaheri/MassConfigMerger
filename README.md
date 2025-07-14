@@ -256,12 +256,13 @@ Install the `geoip2` package and download the free GeoLite2 database from MaxMin
 
 ## Testing
 
-Run `pytest` to execute the test suite. Make sure to install both the runtime
-and development dependencies first:
+Run `pytest` to execute the test suite. The package must be installed in
+editable mode after installing the runtime and development dependencies:
 
 ```bash
 pip install -r requirements.txt -r dev-requirements.txt
-pip install -e .  # or export PYTHONPATH=$PWD
+pip install -e .
+pytest
 ```
 
 
