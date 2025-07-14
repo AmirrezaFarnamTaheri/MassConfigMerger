@@ -20,6 +20,18 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
 > **Note**: The default protocol list is optimised for the Hiddify client. Other VPN apps may require adjusting `--include-protocols`.
 
+> **How protocols are filtered**
+>
+> The `protocols` list in the **Aggregator options** section of
+> [`config.yaml.example`](config.yaml.example) controls which types of links are
+> collected from each source. Reduce this list if you only want certain
+> protocols to speed up scraping.
+>
+> Later the merger applies its own `include_protocols` list (see the **Merger
+> options** in `config.yaml.example`) to drop any unwanted protocols before
+> writing the final files. Adjust this list to match what your VPN client
+> supports or to exclude protocols you don't trust.
+
 **Important**: Install the dependencies with `pip install -r requirements.txt` before running **any** of the Python scripts.
 
 ### ⚡ Quick Start
