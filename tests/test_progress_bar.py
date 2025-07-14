@@ -4,6 +4,7 @@ import pytest
 
 from massconfigmerger.vpn_merger import UltimateVPNMerger
 from massconfigmerger.result_processor import ConfigResult
+from massconfigmerger import aggregator_tool
 
 
 class DummyTqdm:
@@ -55,4 +56,29 @@ async def test_fetch_all_sources_updates_progress(monkeypatch):
 
     bar = bars[0]
     assert bar.n == 4
+    assert bar.closed
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_parse_configs_progress(monkeypatch):
+    bars = []
+
+    def fake_tqdm(*args, **kwargs):
+        bar = DummyTqdm(*args, **kwargs)
+        bars.append(bar)
+        return bar
+
+    monkeypatch.setattr("massconfigmerger.aggregator_tool.tqdm", fake_tqdm)
+
+    async def fake_fetch_text(*_a, **_k):
+        return "vmess://cfg"
+
+    monkeypatch.setattr("massconfigmerger.aggregator_tool.fetch_text", fake_fetch_text)
+
+    configs = await aggregator_tool.fetch_and_parse_configs(["u1", "u2"])
+
+    assert configs == {"vmess://cfg"}
+    bar = bars[0]
+    assert bar.n == 2
+    assert bar.total == 2
     assert bar.closed

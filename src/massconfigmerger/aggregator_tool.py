@@ -27,6 +27,7 @@ import yaml
 
 import aiohttp
 from aiohttp import ClientSession, ClientTimeout
+from tqdm import tqdm
 from telethon import TelegramClient, events, errors  # type: ignore
 from telethon.tl.custom.message import Message  # type: ignore
 from . import vpn_merger
@@ -323,8 +324,10 @@ async def fetch_and_parse_configs(
     base_delay: float = 1.0,
     proxy: str | None = None,
 ) -> Set[str]:
-    """Fetch configs from sources respecting concurrency limits."""
+    """Fetch configs from sources respecting concurrency limits with progress."""
     configs: Set[str] = set()
+
+    source_list = list(sources)
 
     semaphore = asyncio.Semaphore(concurrent_limit)
 
@@ -348,10 +351,16 @@ async def fetch_and_parse_configs(
         session_cm = aiohttp.ClientSession(connector=connector, proxy=proxy)
     else:
         session_cm = aiohttp.ClientSession(connector=connector)
-    async with session_cm as session:
-        tasks = [asyncio.create_task(fetch_one(session, u)) for u in sources]
-        for task in asyncio.as_completed(tasks):
-            configs.update(await task)
+
+    progress = tqdm(total=len(source_list), desc="Sources", unit="src", leave=False)
+    try:
+        async with session_cm as session:
+            tasks = [asyncio.create_task(fetch_one(session, u)) for u in source_list]
+            for task in asyncio.as_completed(tasks):
+                configs.update(await task)
+                progress.update(1)
+    finally:
+        progress.close()
 
     return configs
 
