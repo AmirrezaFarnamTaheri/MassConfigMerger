@@ -168,7 +168,12 @@ async def fetch_text(
         return None
 
     attempt = 0
-    use_temp = hasattr(session, "loop") and session.loop is not asyncio.get_running_loop()
+    if hasattr(session, "get_loop"):
+        use_temp = session.get_loop() is not asyncio.get_running_loop()
+    elif hasattr(session, "loop"):
+        use_temp = session.loop is not asyncio.get_running_loop()
+    else:
+        use_temp = False
     if use_temp:
         session = aiohttp.ClientSession(proxy=proxy) if proxy else aiohttp.ClientSession()
     while attempt < retries:
