@@ -42,6 +42,12 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast, Callable,
 from urllib.parse import urlparse, parse_qs
 from tqdm import tqdm
 
+try:
+    import colorama
+    colorama.just_fix_windows_console()
+except Exception:
+    pass
+
 from .source_fetcher import (
     fetch_text,
     parse_first_configs,
