@@ -23,7 +23,6 @@ dependencies = [
     "pydantic",
     "pydantic-settings",
     "tqdm",
-    "colorama",
 ]
 
 [project.scripts]
