@@ -283,8 +283,10 @@ pytest
 
 See [CHANGELOG.md](CHANGELOG.md) for a summary of new features and updates.
 If you encounter problems or have improvements, please open an issue or submit a pull request on [GitHub](https://github.com/AmirrezaFarnamTaheri/MassConfigMerger).
-Contributors can install the development tools with:
+For detailed contribution guidelines see [CONTRIBUTING.md](CONTRIBUTING.md).
+Install the development tools with:
 
 ```bash
 pip install -e .[dev]
+pre-commit install
 ```
