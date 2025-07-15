@@ -53,6 +53,8 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
    pip install -r requirements.txt
    # optional: install the package so the CLI tools are on your PATH
    pip install -e .
+   # for development (tests, linters)
+   pip install -e .[dev]
    ```
 
    *Install `geoip2` as well if you plan to filter by country and download the free GeoLite2 database from MaxMind.*
@@ -269,11 +271,10 @@ Install the `geoip2` package and download the free GeoLite2 database from MaxMin
 
 Run `pytest` to execute the test suite. **The package must be installed in
 editable mode**, otherwise imports like `massconfigmerger` will fail. Install
-the runtime and development dependencies first and then install the package:
+the runtime and development dependencies using the `dev` extras:
 
 ```bash
-pip install -r requirements.txt -r dev-requirements.txt
-pip install -e .
+pip install -e .[dev]
 pytest
 ```
 
@@ -282,4 +283,8 @@ pytest
 
 See [CHANGELOG.md](CHANGELOG.md) for a summary of new features and updates.
 If you encounter problems or have improvements, please open an issue or submit a pull request on [GitHub](https://github.com/AmirrezaFarnamTaheri/MassConfigMerger).
-Contributors can also install packages from `dev-requirements.txt`.
+Contributors can install the development tools with:
+
+```bash
+pip install -e .[dev]
+```

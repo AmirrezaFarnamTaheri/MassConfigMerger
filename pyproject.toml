@@ -31,5 +31,15 @@ aggregator-tool = "massconfigmerger.aggregator_tool:main"
 vpn-merger = "massconfigmerger.vpn_merger:main"
 vpn-retester = "massconfigmerger.vpn_retester:main"
 
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "types-PyYAML",
+    "types-requests",
+    "flake8",
+    "mypy",
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
