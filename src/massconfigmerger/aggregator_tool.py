@@ -23,6 +23,9 @@ from typing import Iterable, List, Set, Optional, Dict, Union, Tuple, cast
 from urllib.parse import urlparse
 from .clash_utils import config_to_clash_proxy, build_clash_config
 
+import io
+from contextlib import redirect_stdout
+
 import yaml
 
 import aiohttp
@@ -796,7 +799,11 @@ def main() -> None:
 
         if args.with_merger:
             vpn_merger.CONFIG.resume_file = str(out_dir / "merged.txt")
-            vpn_merger.detect_and_run()
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                vpn_merger.detect_and_run()
+            print("\n===== VPN Merger Summary =====")
+            print(buf.getvalue().strip())
 
 
 if __name__ == "__main__":
