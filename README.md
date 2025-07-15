@@ -290,3 +290,19 @@ Install the development tools with:
 pip install -e .[dev]
 pre-commit install
 ```
+
+## Releasing a new version
+
+1. Update the `version` field in `pyproject.toml`.
+2. Add a corresponding entry at the top of `CHANGELOG.md` describing the update.
+3. Commit your changes and create a git tag that matches the version:
+
+```bash
+git commit -am "Release vX.Y.Z"
+git tag -a vX.Y.Z -m "vX.Y.Z"
+git push && git push --tags
+```
+
+Pushing the tag triggers the `release` workflow which runs the tests, builds the
+package, uploads it to PyPI using the `PYPI_API_TOKEN` secret and publishes a
+GitHub release containing the generated files.
