@@ -874,18 +874,6 @@ async def run_in_jupyter(sources_file: Optional[Union[str, Path]] = None):
     print("🔄 Running in Jupyter/async environment")
     await main_async(sources_file)
 
-def _get_script_dir() -> Path:
-    """
-    Return a safe base directory for writing output.
-    • In a regular script run, that’s the directory the script lives in.
-    • In interactive/Jupyter runs, fall back to the current working dir.
-    """
-    try:
-        return Path(__file__).resolve().parent        # normal execution
-    except NameError:
-        return Path.cwd()                             # Jupyter / interactive
-
-
 def main():
     """Main entry point with event loop detection."""
     if sys.version_info < (3, 8):
