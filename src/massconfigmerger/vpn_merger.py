@@ -403,6 +403,11 @@ class UltimateVPNMerger:
                 if results:
                     progress.total += len(results)
                     progress.refresh()
+                    progress.set_postfix(
+                        processed=progress.n,
+                        remaining=progress.total - progress.n,
+                        refresh=False,
+                    )
 
                 # Append directly to the instance-level list
                 self.all_results.extend(results)
@@ -604,7 +609,20 @@ class UltimateVPNMerger:
             return (-reliability, ping_time, protocol_rank)
 
         key_func = sort_key_latency if CONFIG.sort_by != "reliability" else sort_key_reliability
-        sorted_results = sorted(results, key=key_func)
+
+        progress = tqdm(total=len(results), desc="Testing", unit="cfg", leave=False)
+        keyed = []
+        for r in results:
+            keyed.append((key_func(r), r))
+            progress.update(1)
+            progress.set_postfix(
+                processed=progress.n,
+                remaining=progress.total - progress.n,
+                refresh=False,
+            )
+        progress.close()
+
+        sorted_results = [r for _, r in sorted(keyed, key=lambda x: x[0])]
 
         if CONFIG.sort_by == "reliability":
             print("   🚀 Sorted by reliability")

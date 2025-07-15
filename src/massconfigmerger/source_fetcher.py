@@ -265,6 +265,11 @@ class AsyncSourceFetcher:
                             config_results.append(result)
                             if self.progress is not None:
                                 self.progress.update(1)
+                                self.progress.set_postfix(
+                                    processed=self.progress.n,
+                                    remaining=self.progress.total - self.progress.n,
+                                    refresh=False,
+                                )
 
                     if iterator is not lines and hasattr(iterator, "close"):
                         iterator.close()
