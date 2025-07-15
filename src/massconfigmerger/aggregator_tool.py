@@ -30,7 +30,7 @@ import yaml
 
 import aiohttp
 from aiohttp import ClientSession, ClientTimeout
-from . import get_client_loop
+from .source_fetcher import fetch_text
 from tqdm import tqdm
 from telethon import TelegramClient, events, errors  # type: ignore
 from telethon.tl.custom.message import Message  # type: ignore
@@ -140,59 +140,6 @@ def is_valid_config(link: str) -> bool:
     return bool(rest)
 
 
-
-
-async def fetch_text(
-    session: ClientSession,
-    url: str,
-    timeout: int = 10,
-    *,
-    retries: int = 3,
-    base_delay: float = 1.0,
-    jitter: float = 0.1,
-    proxy: str | None = None,
-) -> str | None:
-    """Fetch text content from ``url`` with retries and exponential backoff.
-
-    ``base_delay`` controls the initial wait time, while ``jitter`` is added as a
-    random component to each delay to avoid thundering herd issues.
-    """
-    parsed = urlparse(url)
-    if not parsed.scheme or not parsed.netloc:
-        logging.debug("fetch_text invalid url: %s", url)
-        return None
-
-    attempt = 0
-    session_loop = get_client_loop(session)
-    use_temp = session_loop is not None and session_loop is not asyncio.get_running_loop()
-    if use_temp:
-        session = aiohttp.ClientSession(proxy=proxy) if proxy else aiohttp.ClientSession()
-    while attempt < retries:
-        try:
-            async with session.get(url, timeout=ClientTimeout(total=timeout)) as resp:
-                if resp.status == 200:
-                    return await resp.text()
-                if 400 <= resp.status < 500 and resp.status != 429:
-                    logging.debug(
-                        "fetch_text non-retry status %s on %s", resp.status, url
-                    )
-                    return None
-                if not (500 <= resp.status < 600 or resp.status == 429):
-                    logging.debug(
-                        "fetch_text non-transient status %s on %s", resp.status, url
-                    )
-                    return None
-        except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
-            logging.debug("fetch_text error on %s: %s", url, exc)
-
-        attempt += 1
-        if attempt >= retries:
-            break
-        delay = base_delay * 2 ** (attempt - 1)
-        await asyncio.sleep(delay + random.uniform(0, jitter))
-    if use_temp:
-        await session.close()
-    return None
 
 
 def parse_configs_from_text(text: str) -> Set[str]:

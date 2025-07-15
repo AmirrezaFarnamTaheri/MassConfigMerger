@@ -40,14 +40,23 @@ async def fetch_text(
     retries: int = 3,
     base_delay: float = 1.0,
     jitter: float = 0.1,
+    proxy: str | None = None,
 ) -> str | None:
-    """Fetch text content with retries."""
+    """Fetch text content from ``url`` with retries and exponential backoff.
+
+    ``base_delay`` controls the initial wait time, while ``jitter`` is added as a
+    random component to each delay to avoid thundering herd issues.
+    """
     parsed = urlparse(url)
     if not parsed.scheme or not parsed.netloc:
         logging.debug("fetch_text invalid url: %s", url)
         return None
 
     attempt = 0
+    session_loop = get_client_loop(session)
+    use_temp = session_loop is not None and session_loop is not asyncio.get_running_loop()
+    if use_temp:
+        session = aiohttp.ClientSession(proxy=proxy) if proxy else aiohttp.ClientSession()
     while attempt < retries:
         try:
             async with session.get(url, timeout=aiohttp.ClientTimeout(total=timeout)) as resp:
@@ -69,6 +78,8 @@ async def fetch_text(
             break
         delay = base_delay * 2 ** (attempt - 1)
         await asyncio.sleep(delay + random.uniform(0, jitter))
+    if use_temp:
+        await session.close()
     return None
 
 
