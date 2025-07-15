@@ -89,7 +89,7 @@ def is_valid_config(link: str) -> bool:
     if scheme == "vmess":
         padded = rest + "=" * (-len(rest) % 4)
         try:
-            json.loads(base64.b64decode(padded).decode())
+            json.loads(base64.b64decode(padded, validate=True).decode())
             return True
         except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError) as exc:
             logging.warning("Invalid vmess config: %s", exc)
