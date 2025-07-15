@@ -38,6 +38,7 @@ dev = [
     "types-requests",
     "flake8",
     "mypy",
+    "pre-commit",
 ]
 
 [tool.setuptools.packages.find]
