@@ -242,6 +242,14 @@ Use `--sort-by reliability` to rank servers by past success rates recorded in
 vpn-merger --sort-by reliability
 ```
 
+### Handling Failing Sources
+
+Each time a URL in `sources.txt` cannot be fetched, its failure count is stored
+in `.failures.json` beside the list. When a source reaches the threshold number
+of consecutive failures (3 by default) it is removed from `sources.txt` and
+recorded in `sources_disabled.txt`. Advanced users can change the limit with
+`--failure-threshold` or disable pruning entirely with `--no-prune`.
+
 ## FAQ
 
 ### Why does the script take so long?
