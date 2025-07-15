@@ -107,6 +107,9 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 9. **Import your subscription**
    - Use the link in `output/vpn_subscription_base64.txt` (unless `--no-base64` was used) or load `vpn_singbox.json` in clients like sing-box.
 
+> **Need more options?** Run `vpn-merger --help-extra` or see
+> [docs/tutorial.md](docs/tutorial.md) for the full walkthrough.
+
 
 ## 📖 Table of Contents
 
