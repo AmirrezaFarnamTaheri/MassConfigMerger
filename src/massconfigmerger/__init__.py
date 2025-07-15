@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import asyncio
 import aiohttp
 
 
-if not hasattr(aiohttp.ClientSession, "get_loop"):
-    def _get_loop(self: aiohttp.ClientSession):
-        return self.loop
-
-    aiohttp.ClientSession.get_loop = _get_loop  # type: ignore[attr-defined]
+def get_client_loop(session: aiohttp.ClientSession) -> asyncio.AbstractEventLoop | None:
+    """Return the event loop used by ``session`` if it can be determined."""
+    get_loop = getattr(session, "get_loop", None)
+    if callable(get_loop):
+        try:
+            return get_loop()
+        except RuntimeError:
+            return None
+    return getattr(session, "_loop", None)
 

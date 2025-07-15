@@ -16,6 +16,7 @@ from tqdm import tqdm
 
 from .constants import SOURCES_FILE
 from .result_processor import CONFIG, EnhancedConfigProcessor, ConfigResult
+from . import get_client_loop
 
 # Regex patterns for extracting configuration links during pre-flight checks
 PROTOCOL_RE = re.compile(
@@ -145,15 +146,8 @@ class AsyncSourceFetcher:
     async def test_source_availability(self, url: str) -> bool:
         """Test if a source URL is available (returns 200 status)."""
         session = self.session
-        if session is None:
-            loop_check = None
-        elif hasattr(session, "get_loop"):
-            loop_check = session.get_loop()
-        elif hasattr(session, "loop"):
-            loop_check = session.loop
-        else:
-            loop_check = asyncio.get_running_loop()
-        if session is None or loop_check is not asyncio.get_running_loop():
+        session_loop = get_client_loop(session) if session else None
+        if session is None or session_loop is not asyncio.get_running_loop():
             session = aiohttp.ClientSession()
             close_temp = True
         else:
@@ -183,15 +177,8 @@ class AsyncSourceFetcher:
     async def fetch_source(self, url: str) -> Tuple[str, List[ConfigResult]]:
         """Fetch single source with comprehensive testing and deduplication."""
         session = self.session
-        if session is None:
-            loop_check = None
-        elif hasattr(session, "get_loop"):
-            loop_check = session.get_loop()
-        elif hasattr(session, "loop"):
-            loop_check = session.loop
-        else:
-            loop_check = asyncio.get_running_loop()
-        use_temp = session is None or loop_check is not asyncio.get_running_loop()
+        session_loop = get_client_loop(session) if session else None
+        use_temp = session is None or session_loop is not asyncio.get_running_loop()
         if use_temp:
             session = aiohttp.ClientSession()
         for attempt in range(CONFIG.max_retries):

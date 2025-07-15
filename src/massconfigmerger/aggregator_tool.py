@@ -30,6 +30,7 @@ import yaml
 
 import aiohttp
 from aiohttp import ClientSession, ClientTimeout
+from . import get_client_loop
 from tqdm import tqdm
 from telethon import TelegramClient, events, errors  # type: ignore
 from telethon.tl.custom.message import Message  # type: ignore
@@ -171,12 +172,8 @@ async def fetch_text(
         return None
 
     attempt = 0
-    if hasattr(session, "get_loop"):
-        use_temp = session.get_loop() is not asyncio.get_running_loop()
-    elif hasattr(session, "loop"):
-        use_temp = session.loop is not asyncio.get_running_loop()
-    else:
-        use_temp = False
+    session_loop = get_client_loop(session)
+    use_temp = session_loop is not None and session_loop is not asyncio.get_running_loop()
     if use_temp:
         session = aiohttp.ClientSession(proxy=proxy) if proxy else aiohttp.ClientSession()
     while attempt < retries:
