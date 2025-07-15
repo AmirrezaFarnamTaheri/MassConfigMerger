@@ -902,7 +902,6 @@ def main():
     )
     parser.add_argument(
         "--save-every",
-        "--batch-size",
         type=int,
         default=CONFIG.save_every,
         help="Save intermediate output every N configs (0 disables, default 100)",
@@ -910,7 +909,6 @@ def main():
     )
     parser.add_argument(
         "--stop-after-found",
-        "--threshold",
         type=int,
         default=CONFIG.stop_after_found,
         help="Stop processing after N unique configs (0 = unlimited)",
