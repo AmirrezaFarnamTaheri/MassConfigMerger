@@ -21,6 +21,9 @@ class DummyTqdm:
     def refresh(self):
         pass
 
+    def set_postfix(self, *args, **kwargs):
+        pass
+
     def close(self):
         self.closed = True
 
@@ -78,6 +81,27 @@ async def test_fetch_and_parse_configs_progress(monkeypatch):
     configs = await aggregator_tool.fetch_and_parse_configs(["u1", "u2"])
 
     assert configs == {"vmess://cfg"}
+    bar = bars[0]
+    assert bar.n == 2
+    assert bar.total == 2
+    assert bar.closed
+
+
+def test_sort_by_performance_progress(monkeypatch):
+    bars = []
+
+    def fake_tqdm(*args, **kwargs):
+        bar = DummyTqdm(*args, **kwargs)
+        bars.append(bar)
+        return bar
+
+    monkeypatch.setattr("massconfigmerger.vpn_merger.tqdm", fake_tqdm)
+
+    merger = UltimateVPNMerger()
+    r1 = ConfigResult(config="a", protocol="VMess", ping_time=0.5, is_reachable=True)
+    r2 = ConfigResult(config="b", protocol="VLESS", ping_time=0.2, is_reachable=True)
+    merger._sort_by_performance([r1, r2])
+
     bar = bars[0]
     assert bar.n == 2
     assert bar.total == 2

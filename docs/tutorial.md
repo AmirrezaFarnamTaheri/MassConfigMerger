@@ -24,6 +24,11 @@
    # or
    vpn-merger
    ```
+   Example output showing the new cumulative progress bar:
+   ```
+   🔄 [2/6] Fetching configs from 120 available sources...
+   Testing: 50/120 cfg
+   ```
 5. **Retest existing results** anytime with `vpn_retester.py`:
    ```bash
    python vpn_retester.py
