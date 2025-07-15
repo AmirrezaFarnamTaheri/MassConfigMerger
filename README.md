@@ -256,8 +256,9 @@ Install the `geoip2` package and download the free GeoLite2 database from MaxMin
 
 ## Testing
 
-Run `pytest` to execute the test suite. The package must be installed in
-editable mode after installing the runtime and development dependencies:
+Run `pytest` to execute the test suite. **The package must be installed in
+editable mode**, otherwise imports like `massconfigmerger` will fail. Install
+the runtime and development dependencies first and then install the package:
 
 ```bash
 pip install -r requirements.txt -r dev-requirements.txt
