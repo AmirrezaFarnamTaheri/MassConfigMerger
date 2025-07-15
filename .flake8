@@ -1,4 +1,4 @@
 [flake8]
-extend-ignore = E501,E302,E303,E305,E306,W291,W293
+extend-ignore = E501,E302,E303,E305,E306,W291,W293,W391
 per-file-ignores =
-    tests/*:E402,F401
+    tests/*:E402,F401,E401

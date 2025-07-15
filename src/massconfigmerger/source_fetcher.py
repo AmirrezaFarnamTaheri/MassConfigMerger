@@ -3,12 +3,11 @@ from __future__ import annotations
 import asyncio
 import base64
 import binascii
-import json
 import logging
 import random
 import re
 from pathlib import Path
-from typing import List, Optional, Tuple, Set, Callable, Awaitable
+from typing import List, Optional, Tuple, Set, Callable, Awaitable, Union
 from urllib.parse import urlparse
 
 import aiohttp
@@ -149,8 +148,6 @@ class AsyncSourceFetcher:
             loop_check = None
         elif hasattr(session, "get_loop"):
             loop_check = session.get_loop()
-        elif hasattr(session, "loop"):
-            loop_check = session.loop
         else:
             loop_check = asyncio.get_running_loop()
         if session is None or loop_check is not asyncio.get_running_loop():
@@ -187,8 +184,6 @@ class AsyncSourceFetcher:
             loop_check = None
         elif hasattr(session, "get_loop"):
             loop_check = session.get_loop()
-        elif hasattr(session, "loop"):
-            loop_check = session.loop
         else:
             loop_check = asyncio.get_running_loop()
         use_temp = session is None or loop_check is not asyncio.get_running_loop()

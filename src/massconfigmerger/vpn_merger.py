@@ -31,13 +31,12 @@ import re
 import ssl
 import sys
 import time
-import socket
 import json
 import base64
 import binascii
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast, Callable, Awaitable
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 from urllib.parse import urlparse, parse_qs
 from tqdm import tqdm

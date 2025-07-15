@@ -16,17 +16,15 @@ import json
 import logging
 import random
 import re
-import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Iterable, List, Set, Optional, Dict, Union, Tuple, cast
+from typing import Iterable, List, Set, Dict, Tuple, cast
 from urllib.parse import urlparse
 from .clash_utils import config_to_clash_proxy, build_clash_config
 
 import io
 from contextlib import redirect_stdout
 
-import yaml
 
 import aiohttp
 from aiohttp import ClientSession, ClientTimeout
@@ -173,8 +171,6 @@ async def fetch_text(
     attempt = 0
     if hasattr(session, "get_loop"):
         use_temp = session.get_loop() is not asyncio.get_running_loop()
-    elif hasattr(session, "loop"):
-        use_temp = session.loop is not asyncio.get_running_loop()
     else:
         use_temp = False
     if use_temp:
@@ -305,7 +301,7 @@ async def check_and_update_sources(
             f.write(f"{url}\n")
 
     if disabled_path and removed:
-        timestamp = datetime.utcnow().isoformat()
+        timestamp = datetime.now(timezone.utc).isoformat()
         with disabled_path.open("a") as f:
             for url in removed:
                 f.write(f"{timestamp} {url}\n")
@@ -382,7 +378,7 @@ async def scrape_telegram_configs(
     with channels_path.open() as f:
         channels = [
             (
-                line.strip()[len(prefix) :]
+                line.strip()[len(prefix):]
                 if line.strip().startswith(prefix)
                 else line.strip()
             )
@@ -394,7 +390,7 @@ async def scrape_telegram_configs(
         logging.info("No channels specified in %s", channels_path)
         return set()
 
-    since = datetime.utcnow() - timedelta(hours=last_hours)
+    since = datetime.now(timezone.utc) - timedelta(hours=last_hours)
     client = TelegramClient(
         cfg.session_path, cfg.telegram_api_id, cfg.telegram_api_hash
     )
@@ -647,7 +643,7 @@ async def telegram_bot_mode(
 
         for path in files:
             await event.respond(file=str(path))  # type: ignore[call-arg]
-        last_update = datetime.utcnow()
+        last_update = datetime.now(timezone.utc)
 
     @bot.on(events.NewMessage(pattern="/status"))
     async def status_handler(event: events.NewMessage.Event) -> None:
@@ -662,7 +658,7 @@ async def telegram_bot_mode(
 
 def setup_logging(log_dir: Path) -> None:
     log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / f"{datetime.utcnow().date()}.log"
+    log_file = log_dir / f"{datetime.now(timezone.utc).date()}.log"
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
@@ -774,7 +770,7 @@ def main() -> None:
         )
     else:
 
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         out_dir, files = asyncio.run(
             run_pipeline(
                 cfg,
@@ -786,7 +782,7 @@ def main() -> None:
                 prune=not args.no_prune,
             )
         )
-        elapsed = (datetime.utcnow() - start_time).total_seconds()
+        elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
         print(f"Aggregation complete. Files written to {out_dir.resolve()}")
         print(
             "Valid sources: {vs} | Configs scraped: {sc} | Unique configs: {uc}".format(

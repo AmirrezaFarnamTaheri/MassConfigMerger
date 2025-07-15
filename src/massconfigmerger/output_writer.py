@@ -3,17 +3,15 @@ from __future__ import annotations
 import base64
 import csv
 import json
-import logging
 import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
-from urllib.parse import urlparse
 
 import yaml
 
-from .clash_utils import config_to_clash_proxy, flag_emoji, build_clash_config
+from .clash_utils import config_to_clash_proxy
 from .result_processor import CONFIG, ConfigResult
 
 EXCLUDE_REGEXES: List[re.Pattern] = []

@@ -7,7 +7,6 @@ import aiohttp
 
 if not hasattr(aiohttp.ClientSession, "get_loop"):
     def _get_loop(self: aiohttp.ClientSession):
-        return self.loop
+        return self._loop
 
     aiohttp.ClientSession.get_loop = _get_loop  # type: ignore[attr-defined]
-
