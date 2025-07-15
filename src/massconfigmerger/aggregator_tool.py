@@ -63,15 +63,6 @@ HTTP_RE = re.compile(r"https?://\S+", re.IGNORECASE)
 # Safety limit for base64 decoding to avoid huge payloads
 MAX_DECODE_SIZE = 256 * 1024  # 256 kB
 
-
-def _get_script_dir() -> Path:
-    """Return a safe base directory for writing output."""
-    try:
-        return Path(__file__).resolve().parent
-    except NameError:
-        return Path.cwd()
-
-
 def extract_subscription_urls(text: str) -> Set[str]:
     """Return all HTTP(S) URLs in the text block."""
     return set(HTTP_RE.findall(text))
