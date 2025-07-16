@@ -31,7 +31,7 @@ def test_check_and_update_sources(monkeypatch, tmp_path):
     assert result == ["good"]
     # bad should remain until failure threshold reached
     lines = path.read_text().splitlines()
-    assert set(lines) == {"good", "bad"}
+    assert lines == ["good", "bad"]
     data = json.loads((tmp_path / "sources.failures.json").read_text())
     assert data["bad"] == 1
 
@@ -69,3 +69,35 @@ def test_prune_after_threshold(monkeypatch, tmp_path):
     assert path.read_text().strip() == ""
     disabled = (tmp_path / "disabled.txt").read_text().strip().split()
     assert "onlybad" in disabled[-1]
+
+
+def test_order_preserved_when_pruning(monkeypatch, tmp_path):
+    path = tmp_path / "sources.txt"
+    path.write_text("first\nsecond\nthird\n")
+
+    async def fake_fetch(session, url, timeout=10, *, retries=3, base_delay=1.0, **_):
+        if "second" in url:
+            return None
+        return "vmess://ok"
+
+    monkeypatch.setattr(aggregator_tool, "fetch_text", fake_fetch)
+
+    agg = aggregator_tool.Aggregator(Settings())
+
+    async def run_test():
+        async with aggregator_tool.aiohttp.ClientSession() as sess:
+            monkeypatch.setattr(
+                aggregator_tool.aiohttp,
+                "ClientSession",
+                lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not be called")),
+            )
+            await agg.check_and_update_sources(
+                path,
+                concurrent_limit=2,
+                max_failures=1,
+                disabled_path=tmp_path / "disabled.txt",
+                session=sess,
+            )
+
+    asyncio.run(run_test())
+    assert path.read_text().splitlines() == ["first", "third"]
