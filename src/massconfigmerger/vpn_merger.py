@@ -25,6 +25,7 @@ Expected Output: 800k-1.2M+ tested and sorted configs
 """
 
 import asyncio
+import signal
 import logging
 import random
 import re
@@ -134,6 +135,7 @@ class UltimateVPNMerger:
         self.cumulative_unique: List[ConfigResult] = []
         self.last_processed_index = 0
         self.last_saved_count = 0
+        self.current_progress: Optional[tqdm] = None
         self._file_lock = asyncio.Lock()
         self._history_lock = asyncio.Lock()
         # Store proxy history in configurable location
@@ -174,6 +176,20 @@ class UltimateVPNMerger:
             tmp = self.history_path.with_suffix(".tmp")
             tmp.write_text(json.dumps(self.proxy_history, indent=2))
             tmp.replace(self.history_path)
+
+    def _register_signal_handlers(self) -> None:
+        """Set up SIGINT handler to close progress bars gracefully."""
+        def handler() -> None:
+            self.stop_fetching = True
+            if self.fetcher.progress:
+                self.fetcher.progress.close()
+            if self.current_progress:
+                self.current_progress.close()
+        try:
+            loop = asyncio.get_running_loop()
+            loop.add_signal_handler(signal.SIGINT, handler)
+        except (RuntimeError, NotImplementedError, AttributeError):
+            signal.signal(signal.SIGINT, lambda s, f: handler())
 
     async def _load_existing_results(self, path: str) -> List[ConfigResult]:
         """Load previously saved configs from a raw or base64 file."""
@@ -221,6 +237,7 @@ class UltimateVPNMerger:
         print(f"📈 Smart Sorting: {'Enabled' if CONFIG.enable_sorting else 'Disabled'}")
         print()
         
+        self._register_signal_handlers()
         start_time = time.time()
         self.start_time = start_time
 
@@ -442,6 +459,7 @@ class UltimateVPNMerger:
 
         finally:
             self.fetcher.progress = None
+            self.current_progress = None
             progress.close()
             await self.fetcher.close()
 
@@ -623,15 +641,18 @@ class UltimateVPNMerger:
 
         progress = tqdm(total=len(results), desc="Testing", unit="cfg", leave=False)
         keyed = []
-        for r in results:
-            keyed.append((key_func(r), r))
-            progress.update(1)
-            progress.set_postfix(
-                processed=progress.n,
-                remaining=progress.total - progress.n,
-                refresh=False,
-            )
-        progress.close()
+        try:
+            for r in results:
+                keyed.append((key_func(r), r))
+                progress.update(1)
+                progress.set_postfix(
+                    processed=progress.n,
+                    remaining=progress.total - progress.n,
+                    refresh=False,
+                )
+        finally:
+            progress.close()
+            self.current_progress = None
 
         sorted_results = [r for _, r in sorted(keyed, key=lambda x: x[0])]
 
