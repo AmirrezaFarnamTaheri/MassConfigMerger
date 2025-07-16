@@ -14,3 +14,6 @@ PROTOCOL_RE = re.compile(
     re.IGNORECASE,
 )
 BASE64_RE = re.compile(r"^[A-Za-z0-9+/=_-]+$")
+
+# Safety limit for base64 decoding to avoid huge payloads
+MAX_DECODE_SIZE = 256 * 1024  # 256 kB

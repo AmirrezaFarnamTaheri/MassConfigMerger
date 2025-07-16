@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 import aiohttp
 from tqdm import tqdm
 
-from .constants import SOURCES_FILE
+from .constants import SOURCES_FILE, MAX_DECODE_SIZE
 from .result_processor import CONFIG, EnhancedConfigProcessor, ConfigResult
 from . import get_client_loop
 
@@ -28,7 +28,6 @@ PROTOCOL_RE = re.compile(
     re.IGNORECASE,
 )
 BASE64_RE = re.compile(r"^[A-Za-z0-9+/=_-]+$")
-MAX_DECODE_SIZE = 256 * 1024  # 256 kB
 
 
 async def fetch_text(

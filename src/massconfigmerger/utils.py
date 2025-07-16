@@ -12,10 +12,7 @@ from typing import Set
 
 from .config import Settings
 
-from .constants import PROTOCOL_RE, BASE64_RE
-
-# Safety limit for base64 decoding to avoid huge payloads
-MAX_DECODE_SIZE = 256 * 1024  # 256 kB
+from .constants import PROTOCOL_RE, BASE64_RE, MAX_DECODE_SIZE
 
 _warning_printed = False
 
