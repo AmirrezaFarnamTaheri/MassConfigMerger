@@ -202,6 +202,8 @@ qx_data = generate_qx_conf(proxies)
   [@userinfobot](https://t.me/userinfobot) and add the number to this list.
 - All events are logged to the directory specified in `log_dir` (defaults to
   `logs/` here) so you can audit what was fetched and from where.
+- The `channels.txt` file now lists several active Telegram channels discovered
+  during research, giving you more frequent updates.
 - On Windows consoles, colored output (like progress bars) requires the
   optional `colorama` library. Install it separately with `pip install colorama`
   if you want colors.
