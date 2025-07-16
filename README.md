@@ -159,7 +159,7 @@ re-downloading.
 | `quantumultx.conf` *(via `--output-qx`)* | Quantumult X server list compatible with version 1.1.9+ on iOS.                                      |
 | `xyz.conf` *(via `--output-xyz`)* | Demonstration XYZ format listing basic proxy info. |
 
-Enable the HTML summary with `--write-html` or by setting `write_html: true` in `config.yaml`.
+Enable the HTML summary when running the merger with `--write-html` (or `aggregator-tool --with-merger --write-html`) or by setting `write_html: true` in `config.yaml`.
 
 All of these files are written to the directory specified by `--output-dir`
 (defaults to `output/`) unless an absolute path is given.
