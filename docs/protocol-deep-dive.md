@@ -1,22 +1,25 @@
 ### 🔑 Protocol Types and Defaults
 
-Each server link is classified into a protocol type. By default the merger only keeps the following protocols, optimised for the Hiddify client:
+Each server link is classified into a protocol type. Only the following
+protocol names are recognised by the merger and can be used with the
+`--include-protocols` and `--exclude-protocols` options:
 
-- **Proxy** (HTTP/SOCKS)
+- **VMess**
+- **VLESS**
 - **Shadowsocks**
 - **ShadowsocksR**
 - **Trojan**
-- **Clash** / **ClashMeta**
-- **V2Ray** / **Xray**
-- **Reality**
-- **VMess**
-- **WireGuard**
-- **ECH**
-- **VLESS**
-- **Hysteria** / **Hysteria2**
+- **Hysteria2**
+- **Hysteria**
 - **TUIC**
-- **Sing-box** / **Singbox**
+- **Reality**
+- **Naive**
+- **Juicity**
+- **WireGuard**
 - **ShadowTLS**
+- **Brook**
+
+Any unrecognised scheme is categorised as **Other**.
 
 Some VPN clients may not recognise every item in this list, and other clients might support additional protocols that are omitted here. Use `--include-protocols` if you need to expand it.
 
