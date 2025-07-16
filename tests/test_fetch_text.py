@@ -160,3 +160,44 @@ async def test_fetch_text_mock_503_retry():
     text = await aggregator_tool.fetch_text(session, "http://example")
     assert text == "ok"
     assert session.calls == 2
+
+
+@pytest.mark.asyncio
+async def test_fetch_text_temp_session_closed(monkeypatch):
+    class DummyOrigSession:
+        def get_loop(self):
+            return asyncio.new_event_loop()
+
+        def get(self, url, timeout=None):  # pragma: no cover - should not be called
+            raise AssertionError("original session used")
+
+    class DummyResp:
+        status = 200
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            pass
+
+        async def text(self):
+            return "ok"
+
+    closed = False
+
+    class DummyTempSession:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def get(self, url, timeout=None):
+            return DummyResp()
+
+        async def close(self):
+            nonlocal closed
+            closed = True
+
+    monkeypatch.setattr(aggregator_tool.aiohttp, "ClientSession", DummyTempSession)
+
+    text = await aggregator_tool.fetch_text(DummyOrigSession(), "http://example")
+    assert text == "ok"
+    assert closed
