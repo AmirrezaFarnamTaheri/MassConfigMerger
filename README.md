@@ -7,7 +7,7 @@ links from hundreds of public sources.
 [](https://opensource.org/licenses/MIT)
 
 Welcome to **Mass Config Merger**! This project provides a powerful Python script that automatically fetches VPN configurations from the over 470 public sources listed in `sources.txt`, tests their connectivity, and merges them into a single, performance-sorted subscription link for use in your favorite VPN client. It can even save incremental batches while running so you always have up-to-date results.
-Both `aggregator_tool.py` and `vpn_merger.py` read from this same `sources.txt` file, so updating the list once applies to all tools. After installing the package with `pip install -e .` (or `pip install massconfigmerger` from PyPI) you can invoke them as `aggregator-tool`, `vpn-merger` and `vpn-retester`.
+Both `aggregator_tool.py` and `vpn_merger.py` read from this same `sources.txt` file, so updating the list once applies to all tools. After installing the package with `pip install -e .` (or `pip install massconfigmerger` from PyPI) you can invoke them as `aggregator-tool`, `vpn-merger`, `vpn-retester` and `massconfigmerger`.
 
 ```mermaid
 flowchart LR
@@ -65,6 +65,8 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
    python aggregator_tool.py --hours 12
    # or
    aggregator-tool --hours 12
+   # or
+   massconfigmerger fetch --hours 12
    ```
 
    This creates `output/merged.txt` and a log file under `logs/` named by the current date.
@@ -75,6 +77,8 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
    python vpn_merger.py
    # or
    vpn-merger
+   # or
+   massconfigmerger merge
    ```
 
    Use `--resume output/merged.txt` to continue a previous run without re-downloading.
@@ -85,6 +89,8 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
    python aggregator_tool.py --with-merger
    # or
    aggregator-tool --with-merger
+   # or
+   massconfigmerger full
    ```
 
    The merger automatically runs on the freshly aggregated results using the
@@ -194,7 +200,7 @@ qx_data = generate_qx_conf(proxies)
 The included `docker-compose.yml` automates running the scripts. `vpn_merger`
 loops every `MERGE_INTERVAL` seconds (default `86400`). Enable the optional
 `aggregator` profile to fetch new links on a schedule. It runs
-`aggregator_tool.py --with-merger` every `AGGREGATE_INTERVAL` seconds
+`massconfigmerger full` every `AGGREGATE_INTERVAL` seconds
 (default `43200`). The `retester` profile repeatedly runs
 `vpn_retester.py` in the same way.
 
