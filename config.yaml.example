@@ -25,6 +25,7 @@ protocols:
   - hy2
   - wireguard
 exclude_patterns: []
+include_patterns: []
 output_dir: output
 log_dir: logs
 request_timeout: 10  # HTTP request timeout in seconds

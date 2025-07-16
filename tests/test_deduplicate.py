@@ -37,6 +37,21 @@ def test_exclude_patterns_ignore_case():
     assert result == []
 
 
+def test_include_patterns():
+    link = "trojan://pw@foo.com:443"
+    other = "vmess://a"
+    cfg = Settings(
+        telegram_api_id=1,
+        telegram_api_hash="h",
+        telegram_bot_token="t",
+        allowed_user_ids=[1],
+        protocols=[],
+        include_patterns=["foo"],
+    )
+    result = aggregator_tool.deduplicate_and_filter({link, other}, cfg)
+    assert result == [link]
+
+
 def test_empty_protocol_list_accepts_all():
     data = {"v": "2"}
     b64 = base64.b64encode(json.dumps(data).encode()).decode().strip("=")

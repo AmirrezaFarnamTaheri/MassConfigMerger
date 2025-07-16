@@ -308,6 +308,11 @@ Use `--sort-by reliability` to rank servers by past success rates recorded in
 vpn-merger --sort-by reliability
 ```
 
+### Regex Filtering
+
+Use `--include-pattern` to keep only configs that match a regular expression.
+Combine it with `--exclude-pattern` to fine tune which servers remain.
+
 ### Huge Source List
 
 The `sources.txt` file collects links from hundreds of projects across GitHub

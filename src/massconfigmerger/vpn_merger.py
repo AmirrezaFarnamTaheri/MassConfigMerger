@@ -108,6 +108,7 @@ except ImportError as exc:
 
 # Reuse global regex list from output_writer
 EXCLUDE_REGEXES: List[re.Pattern] = OUTPUT_EXCLUDE_REGEXES
+INCLUDE_REGEXES: List[re.Pattern] = []
 
 # ============================================================================
 # MAIN PROCESSOR WITH UNIFIED FUNCTIONALITY
@@ -481,6 +482,8 @@ class UltimateVPNMerger:
                 continue
             if EXCLUDE_REGEXES and any(rx.search(text) for rx in EXCLUDE_REGEXES):
                 continue
+            if INCLUDE_REGEXES and not any(rx.search(text) for rx in INCLUDE_REGEXES):
+                continue
             if CONFIG.enable_url_testing and r.ping_time is None:
                 continue
             h = self.processor.create_semantic_hash(r.config)
@@ -590,6 +593,8 @@ class UltimateVPNMerger:
                 if result.country.upper() in CONFIG.exclude_countries:
                     continue
             if EXCLUDE_REGEXES and any(r.search(text) for r in EXCLUDE_REGEXES):
+                continue
+            if INCLUDE_REGEXES and not any(r.search(text) for r in INCLUDE_REGEXES):
                 continue
             config_hash = self.processor.create_semantic_hash(result.config)
             if config_hash not in seen_hashes:
@@ -937,6 +942,11 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
         action="append",
         help="Regular expression to skip configs (can be repeated)",
     )
+    parser.add_argument(
+        "--include-pattern",
+        action="append",
+        help="Regular expression configs must match (can be repeated)",
+    )
     parser.add_argument("--resume", type=str, default=None,
                         help="Resume processing from existing raw/base64 file")
     parser.add_argument("--output-dir", type=str, default=CONFIG.output_dir,
@@ -1069,8 +1079,11 @@ def main(args: argparse.Namespace | None = None) -> int:
             p.strip().upper() for p in args.exclude_protocols.split(',') if p.strip()
         }
     CONFIG.exclude_patterns = args.exclude_pattern or []
+    CONFIG.include_patterns = args.include_pattern or []
     global EXCLUDE_REGEXES
     EXCLUDE_REGEXES = [re.compile(p) for p in CONFIG.exclude_patterns]
+    global INCLUDE_REGEXES
+    INCLUDE_REGEXES = [re.compile(p) for p in CONFIG.include_patterns]
     CONFIG.resume_file = args.resume
     # Resolve and create output directory if needed
     resolved_output = Path(args.output_dir).expanduser().resolve()
