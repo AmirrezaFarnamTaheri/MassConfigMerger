@@ -14,23 +14,21 @@ import base64
 import binascii
 import json
 import logging
-import random
+import random  # noqa: F401 - used in tests for monkeypatching
 import re
-import sys
 from datetime import datetime, timedelta
 import time
 from pathlib import Path
-from typing import Iterable, List, Set, Optional, Dict, Union, Tuple, cast, Any
-from urllib.parse import urlparse
+from typing import Iterable, List, Set, Dict, Tuple, cast, Any
 from .clash_utils import config_to_clash_proxy, build_clash_config
 
 import io
 from contextlib import redirect_stdout
 
-import yaml
+
 
 import aiohttp
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientSession
 from .source_fetcher import fetch_text
 from tqdm import tqdm
 from telethon import TelegramClient, events, errors  # type: ignore
@@ -39,7 +37,6 @@ from . import vpn_merger
 
 from .constants import SOURCES_FILE
 from .utils import (
-    MAX_DECODE_SIZE,
     is_valid_config,
     parse_configs_from_text,
 )
@@ -223,7 +220,7 @@ async def scrape_telegram_configs(
     with channels_path.open() as f:
         channels = [
             (
-                line.strip()[len(prefix) :]
+                line.strip()[len(prefix):]
                 if line.strip().startswith(prefix)
                 else line.strip()
             )
@@ -336,13 +333,13 @@ def output_files(configs: List[str], out_dir: Path, cfg: Settings) -> List[Path]
     out_dir.mkdir(parents=True, exist_ok=True)
     written: List[Path] = []
 
-    merged_path = out_dir / "merged.txt"
+    merged_path = out_dir / "vpn_subscription_raw.txt"
     text = "\n".join(configs)
     merged_path.write_text(text)
     written.append(merged_path)
 
     if cfg.write_base64:
-        merged_b64 = out_dir / "merged_base64.txt"
+        merged_b64 = out_dir / "vpn_subscription_base64.txt"
         b64_content = base64.b64encode(text.encode()).decode()
         merged_b64.write_text(b64_content)
         written.append(merged_b64)
@@ -359,7 +356,7 @@ def output_files(configs: List[str], out_dir: Path, cfg: Settings) -> List[Path]
         for idx, link in enumerate(configs):
             proto = link.split("://", 1)[0].lower()
             outbounds.append({"type": proto, "tag": f"node-{idx}", "raw": link})
-        merged_singbox = out_dir / "merged_singbox.json"
+        merged_singbox = out_dir / "vpn_singbox.json"
         merged_singbox.write_text(
             json.dumps({"outbounds": outbounds}, indent=2, ensure_ascii=False)
         )
@@ -414,8 +411,8 @@ def output_files(configs: List[str], out_dir: Path, cfg: Settings) -> List[Path]
     logging.info(
         "Wrote %s%s%s%s%s%s%s",
         merged_path,
-        ", merged_base64.txt" if cfg.write_base64 else "",
-        ", merged_singbox.json" if cfg.write_singbox else "",
+        ", vpn_subscription_base64.txt" if cfg.write_base64 else "",
+        ", vpn_singbox.json" if cfg.write_singbox else "",
         ", clash.yaml" if cfg.write_clash and proxies else "",
         f", {Path(cfg.surge_file).name}" if cfg.surge_file else "",
         f", {Path(cfg.qx_file).name}" if cfg.qx_file else "",
@@ -608,10 +605,10 @@ def main() -> None:
         "--no-prune", action="store_true", help="do not remove failing sources"
     )
     parser.add_argument(
-        "--no-base64", action="store_true", help="skip merged_base64.txt"
+        "--no-base64", action="store_true", help="skip vpn_subscription_base64.txt"
     )
     parser.add_argument(
-        "--no-singbox", action="store_true", help="skip merged_singbox.json"
+        "--no-singbox", action="store_true", help="skip vpn_singbox.json"
     )
     parser.add_argument("--no-clash", action="store_true", help="skip clash.yaml")
     parser.add_argument(
@@ -704,7 +701,7 @@ def main() -> None:
         print(f"Aggregation complete. Files written to {out_dir.resolve()}")
 
         if args.with_merger:
-            vpn_merger.CONFIG.resume_file = str(out_dir / "merged.txt")
+            vpn_merger.CONFIG.resume_file = str(out_dir / "vpn_subscription_raw.txt")
             buf = io.StringIO()
             with redirect_stdout(buf):
                 vpn_merger.detect_and_run()

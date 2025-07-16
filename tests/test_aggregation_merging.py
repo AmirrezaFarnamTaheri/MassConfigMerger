@@ -129,5 +129,5 @@ async def test_run_pipeline_prunes_bad_sources(aiohttp_client, tmp_path, monkeyp
         failure_threshold=1,
     )
 
-    merged = out_dir / "merged.txt"
+    merged = out_dir / "vpn_subscription_raw.txt"
     assert merged.exists()
