@@ -195,11 +195,22 @@ qx_data = generate_qx_conf(proxies)
   updates.
 - When scraping Telegram make sure you only access **public** channels and
   respect Telegram's Terms of Service along with your local laws.
+- `allowed_user_ids` lists the Telegram user IDs that are permitted to issue
+  commands when the bot is running. Retrieve your own ID by messaging
+  [@userinfobot](https://t.me/userinfobot) and add the number to this list.
 - All events are logged to the directory specified in `log_dir` (defaults to
   `logs/` here) so you can audit what was fetched and from where.
 - On Windows consoles, colored output (like progress bars) requires the
   optional `colorama` library. Install it separately with `pip install colorama`
   if you want colors.
+
+### Telegram Bot Mode
+
+Set `telegram_api_id`, `telegram_api_hash` and `telegram_bot_token` in
+`config.yaml` to enable the bot interface. Only Telegram accounts listed in
+`allowed_user_ids` may issue commands. Obtain your numeric ID by messaging
+[@userinfobot](https://t.me/userinfobot) and copying the `id` field from its
+reply.
 
 ### Docker Compose Automation
 
@@ -276,7 +287,7 @@ The merger checks hundreds of servers. Reduce the number of sources or use a sma
 Ensure you ran the script in this repository and watch for errors. Results are saved in the `output/` folder or the location given by `--output-dir`.
 
 ### Telegram authentication errors
-Verify your `telegram_api_id`, `telegram_api_hash` and bot token. Incorrect credentials or using a restricted account will prevent the aggregator from accessing Telegram.
+Verify your `telegram_api_id`, `telegram_api_hash` and bot token. Incorrect credentials or using a restricted account will prevent the aggregator from accessing Telegram. See [Telegram Bot Mode](#telegram-bot-mode) for enabling access with `allowed_user_ids`.
 
 ### GeoIP lookup errors
 Install the `geoip2` package and download the free GeoLite2 database from MaxMind. Pass `--geoip-db /path/to/GeoLite2-Country.mmdb` to enable country filtering.
