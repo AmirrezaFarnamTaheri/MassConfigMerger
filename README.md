@@ -252,6 +252,23 @@ Key environment variables used by the compose file:
 - `MERGE_INTERVAL` – seconds between each run of `vpn_merger` (default `86400`)
 - `AGGREGATE_INTERVAL` – seconds between aggregator runs when the `aggregator` profile is enabled (default `43200`)
 
+### Flask Web Interface
+
+Install the optional `web` extras to enable a small Flask server:
+
+```bash
+pip install -e .[web]
+```
+
+Run it with:
+
+```bash
+python -m massconfigmerger.web
+```
+
+Visit `http://localhost:5000/aggregate` to run aggregation,
+`/merge` to merge the latest results and `/report` to view the last report.
+
 ### Proxy Configuration
 
 If your network requires using an HTTP or SOCKS proxy, you can provide the
