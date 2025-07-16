@@ -285,6 +285,10 @@ python -m massconfigmerger.web
 
 Visit `http://localhost:5000/aggregate` to run aggregation,
 `/merge` to merge the latest results and `/report` to view the last report.
+The aggregate route returns a JSON payload describing the output directory and
+generated files, `/merge` responds with `{"status": "merge complete"}` and
+`/report` serves the HTML or JSON report. See
+[docs/web-interface.md](docs/web-interface.md) for more details.
 
 ### Proxy Configuration
 
