@@ -5,6 +5,19 @@ from massconfigmerger import aggregator_tool
 from massconfigmerger.config import Settings
 
 
+class DummyTqdm:
+    def __init__(self, *args, **kwargs):
+        self.total = kwargs.get("total")
+        self.n = 0
+        self.closed = False
+
+    def update(self, n=1):
+        self.n += n
+
+    def close(self):
+        self.closed = True
+
+
 class DummyMessage:
     def __init__(self, msg):
         self.message = msg
@@ -53,7 +66,19 @@ def test_scrape_telegram_configs(monkeypatch, tmp_path):
     monkeypatch.setattr(
         aggregator_tool, "errors", types.SimpleNamespace(RPCError=Exception)
     )
+    bars = []
+
+    def fake_tqdm(*args, **kwargs):
+        bar = DummyTqdm(*args, **kwargs)
+        bars.append(bar)
+        return bar
+
+    monkeypatch.setattr(aggregator_tool, "tqdm", fake_tqdm)
 
     agg = aggregator_tool.Aggregator(cfg)
     result = asyncio.run(agg.scrape_telegram_configs(channels, 24))
     assert result == {"vmess://direct1", "vmess://from_url", "http://sub.example"}
+    bar = bars[0]
+    assert bar.n == 1
+    assert bar.total == 1
+    assert bar.closed

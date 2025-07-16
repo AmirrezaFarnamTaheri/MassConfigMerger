@@ -34,6 +34,7 @@ retry_base_delay: 1.0
 write_base64: true
 write_singbox: true
 write_clash: true
+show_progress: true
 HTTP_PROXY:
 SOCKS_PROXY:
 

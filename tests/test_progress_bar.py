@@ -5,6 +5,7 @@ import pytest
 from massconfigmerger.vpn_merger import UltimateVPNMerger
 from massconfigmerger.result_processor import ConfigResult
 from massconfigmerger import aggregator_tool
+from massconfigmerger.config import Settings
 
 
 class DummyTqdm:

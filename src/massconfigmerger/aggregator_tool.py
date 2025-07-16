@@ -201,15 +201,19 @@ class Aggregator:
         else:
             session_cm = aiohttp.ClientSession(connector=connector)
 
-        progress = tqdm(total=len(source_list), desc="Sources", unit="src", leave=False)
+        progress = None
+        if self.cfg.show_progress:
+            progress = tqdm(total=len(source_list), desc="Sources", unit="src", leave=False)
         try:
             async with session_cm as session:
                 tasks = [asyncio.create_task(fetch_one(session, u)) for u in source_list]
                 for task in asyncio.as_completed(tasks):
                     configs.update(await task)
-                    progress.update(1)
+                    if progress:
+                        progress.update(1)
         finally:
-            progress.close()
+            if progress:
+                progress.close()
 
         return configs
 
@@ -244,6 +248,9 @@ class Aggregator:
             cfg.session_path, cfg.telegram_api_id, cfg.telegram_api_hash
         )
         configs: Set[str] = set()
+        progress = None
+        if cfg.show_progress:
+            progress = tqdm(total=len(channels), desc="Channels", unit="chan", leave=False)
 
         try:
             await client.start()
@@ -288,6 +295,8 @@ class Aggregator:
                         channel,
                         len(configs) - count_before,
                     )
+                    if progress:
+                        progress.update(1)
             await client.disconnect()
         except (errors.RPCError, OSError, aiohttp.ClientError) as e:
             logging.warning("Telegram connection failed: %s", e)
@@ -296,6 +305,9 @@ class Aggregator:
             except (errors.RPCError, OSError):
                 pass
             return set()
+        finally:
+            if progress:
+                progress.close()
 
         logging.info("Telegram configs found: %d", len(configs))
         return configs
