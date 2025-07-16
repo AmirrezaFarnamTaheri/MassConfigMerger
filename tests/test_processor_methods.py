@@ -58,6 +58,12 @@ def make_shadowsocksr(host="example.com", port=443):
     return f"ssr://{b64}"
 
 
+def test_categorize_protocol_uppercase():
+    proc = EnhancedConfigProcessor()
+    assert proc.categorize_protocol("VMESS://foo") == "VMess"
+    assert proc.categorize_protocol("Ss://foo") == "Shadowsocks"
+
+
 def test_create_semantic_hash_consistent_with_fragment():
     proc = EnhancedConfigProcessor()
     link1 = make_trojan(note=None)
