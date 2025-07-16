@@ -7,7 +7,7 @@ import os
 import re
 
 import yaml
-from pydantic import field_validator
+from pydantic import field_validator, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,6 +27,7 @@ class Settings(BaseSettings):
 
     protocols: List[str] = []
     exclude_patterns: List[str] = []
+    include_patterns: List[str] = Field(default_factory=list)
     output_dir: str = "output"
     log_dir: str = "logs"
     request_timeout: int = 10

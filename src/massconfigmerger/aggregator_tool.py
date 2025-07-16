@@ -482,6 +482,7 @@ def deduplicate_and_filter(
     if protocols:
         protocols = [p.lower() for p in protocols]
     exclude = [re.compile(p, re.IGNORECASE) for p in cfg.exclude_patterns]
+    include = [re.compile(p, re.IGNORECASE) for p in cfg.include_patterns]
     seen: Set[str] = set()
     for link in sorted(c.strip() for c in config_set):
         l_lower = link.lower()
@@ -491,6 +492,8 @@ def deduplicate_and_filter(
         if protocols and not any(l_lower.startswith(p + "://") for p in protocols):
             continue
         if any(r.search(l_lower) for r in exclude):
+            continue
+        if include and not any(r.search(l_lower) for r in include):
             continue
         if not is_valid_config(link):
 
