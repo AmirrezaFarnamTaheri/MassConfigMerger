@@ -6,6 +6,7 @@ The package ships with a small Flask application that exposes a few helper route
 
 First install the optional dependencies:
 
+This extra installs only Flask and avoids FastAPI entirely, so it works with the default Pydantic 2 dependencies.
 ```bash
 pip install massconfigmerger[web]
 ```
