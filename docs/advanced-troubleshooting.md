@@ -17,7 +17,7 @@ Run `python vpn_merger.py --help` to see all options. Important flags include:
   * `--resume FILE` - load a previous output file before fetching new sources.
   * `--sources FILE` - read subscription URLs from a custom file (default `sources.txt`).
   * `--output-dir DIR` - specify where output files are stored.
-  * `--test-timeout SEC` - adjust connection test timeout.
+  * `--test-timeout SEC` - adjust connection test timeout (sets `connect_timeout`).
   * `--cumulative-batches` - make each batch cumulative instead of standalone.
   * `--no-strict-batch` - don't split strictly by `--save-every`, just trigger when exceeded.
   * `--shuffle-sources` - randomize source processing order.
@@ -50,7 +50,7 @@ If you have your own subscription links you'd like to merge, edit `sources.txt`:
 If you already generated a subscription file, run `python vpn_retester.py <path>` to check all servers again and sort them by current latency. The script accepts raw or base64 files and now exposes several tuning options:
 
 * `--concurrent-limit` limit how many tests run in parallel
-* `--test-timeout` set the connection timeout in seconds
+* `--test-timeout` set the connection timeout in seconds (stored in `connect_timeout`)
 * `--max-ping` drop configs slower than this ping (ms)
 * `--include-protocols` or `--exclude-protocols` filter by protocol (default drops `OTHER`)
 * `--output-dir` choose where results are written

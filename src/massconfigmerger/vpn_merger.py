@@ -959,7 +959,7 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
                         help="Resume processing from existing raw/base64 file")
     parser.add_argument("--output-dir", type=str, default=CONFIG.output_dir,
                         help="Directory to save output files")
-    parser.add_argument("--test-timeout", type=float, default=CONFIG.test_timeout,
+    parser.add_argument("--test-timeout", type=float, default=CONFIG.connect_timeout,
                         help="TCP connection test timeout in seconds")
     parser.add_argument("--no-url-test", action="store_true",
                         help="Disable server reachability testing")
@@ -1112,7 +1112,7 @@ def main(args: argparse.Namespace | None = None) -> int:
     resolved_output = Path(args.output_dir).expanduser().resolve()
     resolved_output.mkdir(parents=True, exist_ok=True)
     CONFIG.output_dir = str(resolved_output)
-    CONFIG.test_timeout = max(0.1, args.test_timeout)
+    CONFIG.connect_timeout = max(0.1, args.test_timeout)
     CONFIG.concurrent_limit = max(1, args.concurrent_limit)
     CONFIG.max_retries = max(1, args.max_retries)
     CONFIG.max_ping_ms = args.max_ping if args.max_ping > 0 else None
