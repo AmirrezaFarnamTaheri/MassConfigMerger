@@ -11,6 +11,7 @@ from massconfigmerger.result_processor import ConfigResult, CONFIG
 def test_generate_comprehensive_outputs(tmp_path, monkeypatch):
     monkeypatch.setattr(CONFIG, "output_dir", str(tmp_path))
     monkeypatch.setattr(CONFIG, "write_clash_proxies", True)
+    monkeypatch.setattr(CONFIG, "xyz_file", "xyz.conf")
     merger = UltimateVPNMerger()
 
     result = ConfigResult(
@@ -32,8 +33,9 @@ def test_generate_comprehensive_outputs(tmp_path, monkeypatch):
     singbox = tmp_path / "vpn_singbox.json"
     clash = tmp_path / "clash.yaml"
     proxies = tmp_path / "vpn_clash_proxies.yaml"
+    xyz = tmp_path / "xyz.conf"
 
-    for p in [raw, b64, csv_file, json_report, singbox, clash, proxies]:
+    for p in [raw, b64, csv_file, json_report, singbox, clash, proxies, xyz]:
         assert p.exists()
 
     assert base64.b64decode(b64.read_text()).decode() == raw.read_text()
@@ -66,3 +68,13 @@ def test_generate_comprehensive_outputs(tmp_path, monkeypatch):
     proxy_name = clash_data["proxies"][0]["name"]
     assert proxy_name == "🏳 ?? - src.example - 100ms"
     assert "proxies" in yaml.safe_load(proxies.read_text())
+    from massconfigmerger.advanced_converters import generate_xyz_conf
+    expected_xyz = generate_xyz_conf([
+        {
+            "name": "vmess-0",
+            "type": "vmess",
+            "server": "host",
+            "port": 80,
+        }
+    ])
+    assert xyz.read_text() == expected_xyz

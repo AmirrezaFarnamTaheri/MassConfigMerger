@@ -137,7 +137,12 @@ async def generate_comprehensive_outputs(
             tmp_clash.write_text(clash_yaml, encoding="utf-8")
             tmp_clash.replace(clash_file)
 
-        need_proxies = CONFIG.write_clash_proxies or CONFIG.surge_file or CONFIG.qx_file
+        need_proxies = (
+            CONFIG.write_clash_proxies
+            or CONFIG.surge_file
+            or CONFIG.qx_file
+            or CONFIG.xyz_file
+        )
         proxies: List[Dict[str, Any]] = []
         if need_proxies:
             for idx, r in enumerate(results):
@@ -171,3 +176,13 @@ async def generate_comprehensive_outputs(
             tmp_qx = qx_file.with_suffix('.tmp')
             tmp_qx.write_text(qx_content, encoding="utf-8")
             tmp_qx.replace(qx_file)
+
+        if CONFIG.xyz_file:
+            from .advanced_converters import generate_xyz_conf
+            xyz_content = generate_xyz_conf(proxies)
+            xyz_file = Path(CONFIG.xyz_file)
+            if not xyz_file.is_absolute():
+                xyz_file = output_dir / xyz_file
+            tmp_xyz = xyz_file.with_suffix('.tmp')
+            tmp_xyz.write_text(xyz_content, encoding="utf-8")
+            tmp_xyz.replace(xyz_file)

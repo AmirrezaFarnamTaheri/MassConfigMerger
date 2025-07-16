@@ -6,7 +6,7 @@ functions accept a list of Clash-style proxy dictionaries and return a
 string ready to be written to a configuration file.
 """
 
-__all__ = ["generate_surge_conf", "generate_qx_conf"]
+__all__ = ["generate_surge_conf", "generate_qx_conf", "generate_xyz_conf"]
 
 from typing import Any, Dict, List
 
@@ -85,4 +85,20 @@ def generate_qx_conf(proxies: List[Dict[str, Any]]) -> str:
                 params.append(f"grpc-service-name={p['serviceName']}")
         params.append(f"tag={p.get('name', 'proxy')}")
         lines.append(base + ", " + ", ".join(params))
+    return "\n".join(lines)
+
+
+def generate_xyz_conf(proxies: List[Dict[str, Any]]) -> str:
+    """Return a simple XYZ formatted configuration list for ``proxies``.
+
+    Each line contains ``name|server|port|type`` for quick import into the
+    hypothetical XYZ client.
+    """
+    lines = []
+    for p in proxies:
+        name = p.get("name", "proxy")
+        server = p.get("server", "")
+        port = p.get("port", 0)
+        typ = p.get("type", "http")
+        lines.append(f"{name}|{server}|{port}|{typ}")
     return "\n".join(lines)

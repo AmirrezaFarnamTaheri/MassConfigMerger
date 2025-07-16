@@ -141,16 +141,17 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 | `vpn_clash_proxies.yaml`      | Minimal Clash YAML listing only the proxies, suitable as a provider.                                      |
 | `surge.conf` *(via `--output-surge`)* | Surge format configuration. Works with Surge iOS/macOS 5 or later.                                    |
 | `quantumultx.conf` *(via `--output-qx`)* | Quantumult X server list compatible with version 1.1.9+ on iOS.                                      |
+| `xyz.conf` *(via `--output-xyz`)* | Example format for the fictitious XYZ client. |
 
 All of these files are written to the directory specified by `--output-dir`
 (defaults to `output/`) unless an absolute path is given.
 
-### Surge & Quantumult X Usage
+### Surge, Quantumult X & XYZ Usage
 
 Generate client-specific output automatically:
 
 ```bash
-python vpn_merger.py --output-surge surge.conf --output-qx quantumultx.conf
+python vpn_merger.py --output-surge surge.conf --output-qx quantumultx.conf --output-xyz xyz.conf
 ```
 
 Once the files are generated, host them somewhere your phone can reach or copy
@@ -163,11 +164,11 @@ remote URL. Refer to the [Surge manual](https://manual.nssurge.com/) and the
 Example of generating and serving the files locally:
 
 ```bash
-python vpn_merger.py --output-surge surge.conf --output-qx quantumultx.conf
+python vpn_merger.py --output-surge surge.conf --output-qx quantumultx.conf --output-xyz xyz.conf
 python3 -m http.server -d output 8000
 ```
-Then import `http://<your-ip>:8000/surge.conf` or
-`http://<your-ip>:8000/quantumultx.conf` in the respective app.
+Then import `http://<your-ip>:8000/surge.conf`,
+`http://<your-ip>:8000/quantumultx.conf` or `http://<your-ip>:8000/xyz.conf` in the respective app.
 
 You can also call the converters directly from
 [`src/massconfigmerger/advanced_converters.py`](src/massconfigmerger/advanced_converters.py):
@@ -176,10 +177,12 @@ You can also call the converters directly from
 from massconfigmerger.advanced_converters import (
     generate_surge_conf,
     generate_qx_conf,
+    generate_xyz_conf,
 )
 
 surge_data = generate_surge_conf(proxies)
 qx_data = generate_qx_conf(proxies)
+xyz_data = generate_xyz_conf(proxies)
 ```
 
 ### Important Notes

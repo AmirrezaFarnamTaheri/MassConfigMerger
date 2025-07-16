@@ -1,5 +1,9 @@
 import textwrap
-from massconfigmerger.advanced_converters import generate_surge_conf, generate_qx_conf
+from massconfigmerger.advanced_converters import (
+    generate_surge_conf,
+    generate_qx_conf,
+    generate_xyz_conf,
+)
 
 
 
@@ -69,6 +73,21 @@ def test_generate_qx_conf_missing_optional():
         vmess=s.com:443, obfs=ws, tag=ws-only
         vless=g.com:443, obfs=grpc, tag=grpc-only
         ss=x.com:80, password=pass, method=aes-128-gcm, tag=proxy
+        """
+    ).strip()
+    assert conf == expected
+
+
+def test_generate_xyz_conf_missing_optional():
+    proxies = [
+        {"server": "s.com"},
+        {},
+    ]
+    conf = generate_xyz_conf(proxies)
+    expected = textwrap.dedent(
+        """
+        proxy|s.com|0|http
+        proxy||0|http
         """
     ).strip()
     assert conf == expected

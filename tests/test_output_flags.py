@@ -3,7 +3,7 @@ import sys
 import yaml
 from pathlib import Path
 
-from massconfigmerger import aggregator_tool
+from massconfigmerger import aggregator_tool, vpn_merger
 from massconfigmerger.config import Settings
 
 
@@ -150,3 +150,21 @@ def test_cli_protocols_case_insensitive(monkeypatch, tmp_path):
     aggregator_tool.main()
 
     assert recorded["protocols"] == ["vmess", "trojan"]
+
+
+def test_vpn_merger_xyz_flag(monkeypatch, tmp_path):
+    def fake_detect_and_run(path=None):
+        return None
+
+    monkeypatch.setattr(vpn_merger, "detect_and_run", fake_detect_and_run)
+    monkeypatch.setattr(sys, "argv", [
+        "vpn_merger.py",
+        "--output-dir",
+        str(tmp_path),
+        "--output-xyz",
+        "xyz.conf",
+    ])
+
+    vpn_merger.main()
+
+    assert vpn_merger.CONFIG.xyz_file == "xyz.conf"

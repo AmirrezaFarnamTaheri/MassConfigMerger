@@ -1,5 +1,9 @@
 import textwrap
-from massconfigmerger.advanced_converters import generate_surge_conf, generate_qx_conf
+from massconfigmerger.advanced_converters import (
+    generate_surge_conf,
+    generate_qx_conf,
+    generate_xyz_conf,
+)
 
 
 def test_generate_surge_conf():
@@ -66,6 +70,21 @@ def test_generate_qx_conf():
         """
         vmess=s.com:443, id=id, tls=true, obfs=ws, obfs-host=h, obfs-uri=/ws, tag=ws
         vless=g.com:443, id=id2, tls=true, obfs=grpc, grpc-service-name=sn, tag=grpc
+        """
+    ).strip()
+    assert conf == expected
+
+
+def test_generate_xyz_conf():
+    proxies = [
+        {"name": "a", "type": "vmess", "server": "s.com", "port": 1},
+        {"name": "b", "type": "trojan", "server": "t.com", "port": 2},
+    ]
+    conf = generate_xyz_conf(proxies)
+    expected = textwrap.dedent(
+        """
+        a|s.com|1|vmess
+        b|t.com|2|trojan
         """
     ).strip()
     assert conf == expected

@@ -973,6 +973,13 @@ def main():
         default=None,
         help="Write Quantumult X formatted proxy list to FILE",
     )
+    parser.add_argument(
+        "--output-xyz",
+        metavar="FILE",
+        type=str,
+        default=None,
+        help="Write XYZ formatted proxy list to FILE",
+    )
     parser.add_argument("--geoip-db", type=str, default=None,
                         help="Path to GeoLite2 Country database for GeoIP lookup")
     parser.add_argument(
@@ -1035,6 +1042,7 @@ def main():
     CONFIG.write_clash_proxies = not args.no_proxy_yaml
     CONFIG.surge_file = args.output_surge
     CONFIG.qx_file = args.output_qx
+    CONFIG.xyz_file = args.output_xyz
     CONFIG.cumulative_batches = args.cumulative_batches
     CONFIG.strict_batch = not args.no_strict_batch
     CONFIG.shuffle_sources = args.shuffle_sources
