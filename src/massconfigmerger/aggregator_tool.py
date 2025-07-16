@@ -448,6 +448,7 @@ class Aggregator:
                 proxy=choose_proxy(cfg),
             )
             configs |= await self.scrape_telegram_configs(channels_file, last_hours)
+            # update total fetched configs after including Telegram results
             self.stats["fetched_configs"] = len(configs)
             logging.info("Fetched configs count: %d", self.stats["fetched_configs"])
         except KeyboardInterrupt:
