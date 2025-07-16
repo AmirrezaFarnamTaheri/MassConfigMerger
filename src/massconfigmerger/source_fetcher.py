@@ -8,7 +8,7 @@ import logging
 import random
 import re
 from pathlib import Path
-from typing import List, Optional, Tuple, Set, Callable, Awaitable
+from typing import List, Optional, Tuple, Set, Callable, Awaitable, Union, Any
 from urllib.parse import urlparse
 
 import aiohttp
