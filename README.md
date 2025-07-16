@@ -198,8 +198,8 @@ qx_data = generate_qx_conf(proxies)
 - All events are logged to the directory specified in `log_dir` (defaults to
   `logs/` here) so you can audit what was fetched and from where.
 - On Windows consoles, colored output (like progress bars) requires the
-  `colorama` library. It's included in the default dependencies, but make sure
-  it's installed if you want colors.
+  optional `colorama` library. Install it separately with `pip install colorama`
+  if you want colors.
 
 ### Docker Compose Automation
 
