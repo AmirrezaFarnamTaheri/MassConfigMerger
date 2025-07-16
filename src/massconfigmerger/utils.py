@@ -10,6 +10,8 @@ import re
 from urllib.parse import urlparse
 from typing import Set
 
+from .config import Settings
+
 from .constants import PROTOCOL_RE, BASE64_RE
 
 # Safety limit for base64 decoding to avoid huge payloads
@@ -126,4 +128,9 @@ def parse_configs_from_text(text: str) -> Set[str]:
                 logging.debug("Failed to decode base64 line: %s", exc)
                 continue
     return configs
+
+
+def choose_proxy(cfg: Settings) -> str | None:
+    """Return SOCKS proxy if defined, otherwise HTTP proxy."""
+    return cfg.SOCKS_PROXY or cfg.HTTP_PROXY
 
