@@ -447,9 +447,9 @@ class Aggregator:
                 base_delay=cfg.retry_base_delay,
                 proxy=choose_proxy(cfg),
             )
+            configs |= await self.scrape_telegram_configs(channels_file, last_hours)
             self.stats["fetched_configs"] = len(configs)
             logging.info("Fetched configs count: %d", self.stats["fetched_configs"])
-            configs |= await self.scrape_telegram_configs(channels_file, last_hours)
         except KeyboardInterrupt:
             logging.warning("Interrupted. Writing partial results...")
         finally:
