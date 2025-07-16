@@ -18,6 +18,7 @@ import random
 import re
 import sys
 from datetime import datetime, timedelta
+import time
 from pathlib import Path
 from typing import Iterable, List, Set, Optional, Dict, Union, Tuple, cast, Any
 from urllib.parse import urlparse
@@ -439,6 +440,7 @@ async def run_pipeline(
 
     out_dir = Path(cfg.output_dir)
     configs: Set[str] = set()
+    start = time.time()
     try:
         sources = await check_and_update_sources(
             sources_file,
@@ -473,6 +475,15 @@ async def run_pipeline(
         STATS["written_configs"] = len(final)
         logging.info("Final configs count: %d", STATS["written_configs"])
         files = output_files(final, out_dir, cfg)
+        elapsed = time.time() - start
+        summary = (
+            f"Sources checked: {STATS['valid_sources']} | "
+            f"Configs fetched: {STATS['fetched_configs']} | "
+            f"Unique configs: {STATS['written_configs']} | "
+            f"Elapsed: {elapsed:.1f}s"
+        )
+        print(summary)
+        logging.info(summary)
     return out_dir, files
 
 
@@ -679,7 +690,6 @@ def main() -> None:
         )
     else:
 
-        start_time = datetime.utcnow()
         out_dir, files = asyncio.run(
             run_pipeline(
                 cfg,
@@ -691,16 +701,7 @@ def main() -> None:
                 prune=not args.no_prune,
             )
         )
-        elapsed = (datetime.utcnow() - start_time).total_seconds()
         print(f"Aggregation complete. Files written to {out_dir.resolve()}")
-        print(
-            "Valid sources: {vs} | Configs scraped: {sc} | Unique configs: {uc}".format(
-                vs=STATS["valid_sources"],
-                sc=STATS["fetched_configs"],
-                uc=STATS["written_configs"],
-            )
-        )
-        print(f"Elapsed time: {elapsed:.1f}s")
 
         if args.with_merger:
             vpn_merger.CONFIG.resume_file = str(out_dir / "merged.txt")

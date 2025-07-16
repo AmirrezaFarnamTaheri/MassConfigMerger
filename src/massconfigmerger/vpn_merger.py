@@ -283,6 +283,16 @@ class UltimateVPNMerger:
 
         self._print_final_summary(len(unique_results), time.time() - self.start_time, stats)
 
+        elapsed = time.time() - start_time
+        summary = (
+            f"Sources checked: {len(self.available_sources)} | "
+            f"Configs fetched: {len(self.all_results)} | "
+            f"Unique configs: {len(unique_results)} | "
+            f"Elapsed: {elapsed:.1f}s"
+        )
+        print(summary)
+        logging.info(summary)
+
         # Clean up tester resources
         await self.processor.tester.close()
     
