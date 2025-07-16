@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 - Unit tests for configuration parsing and deduplication.
 - Improved Telegram configuration handling.
+- Example aggregator bot command in the README.
 
 ## [0.3.0] - 2025-07-12
 ### Added
