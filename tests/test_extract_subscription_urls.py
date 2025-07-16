@@ -13,3 +13,15 @@ def test_extract_subscription_urls_basic():
     assert "http://spam.eggs" in urls
     assert "https://trim.com" in urls
     assert all(not u.endswith((")", "]", ",", ".")) for u in urls)
+
+
+def test_extract_subscription_urls_extra_punctuation():
+    text = (
+        "Check https://foo.test! and http://bar.test? "
+        "plus https://baz.test;"
+    )
+    urls = extract_subscription_urls(text)
+    assert "https://foo.test" in urls
+    assert "http://bar.test" in urls
+    assert "https://baz.test" in urls
+    assert all(not u.endswith(("!", "?", ";")) for u in urls)
