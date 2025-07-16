@@ -331,7 +331,8 @@ vpn-merger --sort-by reliability
 ### Regex Filtering
 
 Use `--include-pattern` to keep only configs that match a regular expression.
-Combine it with `--exclude-pattern` to fine tune which servers remain.
+Combine it with `--exclude-pattern` to fine tune which servers remain. These
+flags work with both `vpn-merger` and `aggregator-tool`.
 
 ### Huge Source List
 
