@@ -10,3 +10,5 @@ geoip2
 pydantic
 pydantic-settings
 tqdm
+# Optional web server
+Flask
