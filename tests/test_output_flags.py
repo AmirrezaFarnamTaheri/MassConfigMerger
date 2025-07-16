@@ -141,6 +141,7 @@ def test_cli_with_merger(monkeypatch, tmp_path):
     )
 
 
+
 def test_cli_protocols_case_insensitive(monkeypatch, tmp_path):
     cfg_path = tmp_path / "cfg.yaml"
     cfg_path.write_text(yaml.safe_dump({"output_dir": str(tmp_path / "o"), "log_dir": str(tmp_path / "l")}))

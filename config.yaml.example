@@ -110,6 +110,7 @@ cumulative_batches: false
 strict_batch: true
 shuffle_sources: false
 write_csv: true
+write_html: false
 write_clash_proxies: true
 surge_file: null
 qx_file: null

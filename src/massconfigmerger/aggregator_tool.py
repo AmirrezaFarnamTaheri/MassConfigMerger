@@ -654,6 +654,7 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
         "--no-singbox", action="store_true", help="skip vpn_singbox.json"
     )
     parser.add_argument("--no-clash", action="store_true", help="skip clash.yaml")
+    parser.add_argument("--write-html", action="store_true", help="generate vpn_report.html")
     parser.add_argument(
         "--output-surge",
         metavar="FILE",
@@ -702,6 +703,8 @@ def main(args: argparse.Namespace | None = None) -> None:
         cfg.write_singbox = False
     if args.no_clash:
         cfg.write_clash = False
+    if args.write_html:
+        cfg.write_html = True
 
     if args.output_surge is not None:
         cfg.surge_file = args.output_surge
@@ -754,6 +757,7 @@ def main(args: argparse.Namespace | None = None) -> None:
             # propagate key settings from the aggregator config to the merger
             vpn_merger.CONFIG.output_dir = cfg.output_dir
             vpn_merger.CONFIG.write_base64 = cfg.write_base64
+            vpn_merger.CONFIG.write_html = cfg.write_html
             vpn_merger.CONFIG.include_protocols = cfg.include_protocols
             vpn_merger.CONFIG.exclude_protocols = cfg.exclude_protocols
             vpn_merger.CONFIG.exclude_patterns = list(cfg.exclude_patterns)

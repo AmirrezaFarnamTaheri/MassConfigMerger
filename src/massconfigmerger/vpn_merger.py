@@ -997,6 +997,8 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
                         help="Do not save base64 subscription file")
     parser.add_argument("--no-csv", action="store_true",
                         help="Do not save CSV report")
+    parser.add_argument("--write-html", action="store_true",
+                        help="Generate vpn_report.html")
     parser.add_argument("--no-proxy-yaml", action="store_true",
                         help="Do not save simple Clash proxy list")
     parser.add_argument(
@@ -1096,6 +1098,7 @@ def main(args: argparse.Namespace | None = None) -> int:
     CONFIG.log_file = args.log_file
     CONFIG.write_base64 = not args.no_base64
     CONFIG.write_csv = not args.no_csv
+    CONFIG.write_html = args.write_html
     CONFIG.write_clash_proxies = not args.no_proxy_yaml
     CONFIG.surge_file = args.output_surge
     CONFIG.qx_file = args.output_qx

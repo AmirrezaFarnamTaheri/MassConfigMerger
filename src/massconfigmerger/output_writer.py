@@ -18,6 +18,25 @@ from .result_processor import CONFIG, ConfigResult
 
 EXCLUDE_REGEXES: List[re.Pattern] = []
 
+
+def build_html_report(results: List[ConfigResult]) -> str:
+    """Return a simple HTML table summarizing results."""
+    rows = []
+    for r in results:
+        latency = round(r.ping_time * 1000, 2) if r.ping_time else ""
+        country = r.country or ""
+        host = r.host or ""
+        rows.append(
+            f"<tr><td>{r.protocol}</td><td>{host}</td><td>{latency}</td><td>{country}</td></tr>"
+        )
+    header = (
+        "<html><head><meta charset='utf-8'><title>VPN Report</title></head><body>"
+        "<table border='1'>"
+        "<tr><th>Protocol</th><th>Host</th><th>Latency (ms)</th><th>Country</th></tr>"
+    )
+    footer = "</table></body></html>"
+    return header + "".join(rows) + footer
+
 async def generate_comprehensive_outputs(
     merger: Any,
     results: List[ConfigResult],
@@ -67,6 +86,12 @@ async def generate_comprehensive_outputs(
                     ])
             tmp_csv.replace(csv_file)
 
+        if CONFIG.write_html:
+            html_file = output_dir / f"{prefix}vpn_report.html"
+            tmp_html = html_file.with_suffix('.tmp')
+            tmp_html.write_text(build_html_report(results), encoding="utf-8")
+            tmp_html.replace(html_file)
+
         report_file = output_dir / f"{prefix}vpn_report.json"
         report = {
             "generation_info": {
@@ -85,6 +110,7 @@ async def generate_comprehensive_outputs(
                 **({"base64": str(base64_file)} if CONFIG.write_base64 else {}),
                 **({"detailed_csv": str(csv_file)} if CONFIG.write_csv else {}),
                 "json_report": str(report_file),
+                **({"html_report": str(output_dir / f"{prefix}vpn_report.html")} if CONFIG.write_html else {}),
                 "singbox": str(output_dir / f"{prefix}vpn_singbox.json"),
                 "clash": str(output_dir / f"{prefix}clash.yaml"),
                 **(
