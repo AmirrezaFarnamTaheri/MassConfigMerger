@@ -24,14 +24,32 @@ Some VPN clients may not recognise every item in this list, and other clients mi
 
 ### Protocol Comparison
 
-| Protocol | Key Benefit | Typical Downside |
-| -------- | ----------- | ---------------- |
-| **VLESS** | Flexible, supports multiple transports | Requires domain + TLS |
-| **Reality** | Real HTTPS fingerprint for stealth | Needs valid certificate |
-| **Trojan** | Simple TLS tunneling | Open port may be detected |
-| **Shadowsocks** | Lightweight and fast | Weaker privacy guarantees |
-| **WireGuard** | Kernel-level performance | Minimal obfuscation |
-| **Hysteria** | QUIC based, great for high throughput | UDP may be blocked |
+| Protocol | Main Benefit | Downside | Typical Use Case |
+| -------- | ------------ | -------- | ---------------- |
+| **VMess** | Feature rich and widely supported | Distinct handshake detectable | General V2Ray clients |
+| **VLESS** | Flexible transports and modern features | Requires domain & TLS | Custom transport setups |
+| **Reality** | Mimics real HTTPS | Needs valid certificate | Stealth in hostile networks |
+| **Shadowsocks** | Lightweight and fast | Weaker privacy | Moderate censorship bypass |
+| **ShadowsocksR** | Adds protocol and obfs | Largely abandoned | Legacy SS deployments |
+| **Trojan** | Simple HTTPS tunneling | Open port detected | Bypass blocks with TLS |
+| **Hy2** | Hysteria2 compatibility prefix | Limited client support | Testing new Hysteria2 |
+| **Hysteria** | QUIC based, high throughput | UDP often blocked | Gaming or big downloads |
+| **Hysteria2** | Improved Hysteria with SMUX | UDP still blocked | Fast yet stealthy links |
+| **TUIC** | QUIC with congestion control | Few implementations | Mobile or unstable links |
+| **ShadowTLS** | Hides inside TLS handshake | Needs working web service | Evading SNI filtering |
+| **WireGuard** | Kernel-level speed and security | Minimal obfuscation | Performance focused VPN |
+| **SOCKS** | Simple generic proxy | No encryption | Basic traffic forwarding |
+| **SOCKS4** | Legacy SOCKS version | No authentication | Older software proxies |
+| **SOCKS5** | Auth support, widely used | Still unencrypted | Standard proxy for apps |
+| **HTTP** | Works with any browser | Unencrypted and obvious | Quick proxy setup |
+| **HTTPS** | Adds TLS layer | Certificate management | Proxy through port 443 |
+| **gRPC** | Uses HTTP/2 semantics | Rarely supported | Multiplexed V2Ray transport |
+| **WS** | Runs over ports 80/443 | Extra framing overhead | CDN or Cloudflare evasion |
+| **WSS** | WebSocket over TLS | Slightly higher latency | Blend with HTTPS traffic |
+| **TCP** | Ubiquitous and reliable | No obfuscation | Basic raw connections |
+| **KCP** | Handles packet loss well | Requires UDP | High‑latency networks |
+| **QUIC** | Fast handshake & multiplexing | UDP may be blocked | Modern UDP tunnels |
+| **H2** | Multiplexed HTTP/2 layer | Limited support | Firewall evasion via 443 |
 
 ## 📡 Protocol Deep Dive
 
