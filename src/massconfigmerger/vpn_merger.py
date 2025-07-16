@@ -28,17 +28,15 @@ import asyncio
 import logging
 import random
 import re
-import ssl
 import sys
 import time
 import argparse
-import socket
 import json
 import base64
 import binascii
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast, Callable, Awaitable
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 from urllib.parse import urlparse, parse_qs
 from tqdm import tqdm
@@ -66,7 +64,6 @@ from .utils import print_public_source_warning, choose_proxy
 
 try:
     import aiohttp
-    from aiohttp.resolver import AsyncResolver
 except ImportError as exc:
     raise ImportError(
         "Missing optional dependency 'aiohttp'. "
@@ -87,7 +84,7 @@ except ImportError as exc:
         "Run `pip install -r requirements.txt` before running this script."
     ) from exc
 
-from .config import Settings, load_config
+from .config import load_config
 
 try:
     import aiodns  # noqa: F401
@@ -307,19 +304,8 @@ class UltimateVPNMerger:
     
     async def _test_and_filter_sources(self) -> List[str]:
         """Test all sources for availability and filter out dead links."""
-        # Setup HTTP session
-        connector = aiohttp.TCPConnector(
-            limit=CONFIG.concurrent_limit,
-            limit_per_host=10,
-            ttl_dns_cache=300,
-            ssl=ssl.create_default_context(),
-            resolver=AsyncResolver()
-        )
-        
-        self.fetcher.session = aiohttp.ClientSession(
-            connector=connector, proxy=choose_proxy(CONFIG)
-        )
-        
+        assert self.fetcher.session is not None
+
         try:
             # Test all sources concurrently
             semaphore = asyncio.Semaphore(CONFIG.concurrent_limit)
@@ -457,8 +443,7 @@ class UltimateVPNMerger:
         finally:
             self.fetcher.progress = None
             progress.close()
-            if self.fetcher.session is not None:
-                await self.fetcher.session.close()
+            await self.fetcher.close()
 
         # Return the accumulated list for backward compatibility
         return self.all_results
@@ -1159,3 +1144,4 @@ def main(args: argparse.Namespace | None = None) -> int:
         print("\n📋 Alternative execution methods:")
         print("   • For Jupyter: await run_in_jupyter()")
         print("   • For scripts: python script.py")
+        return 1

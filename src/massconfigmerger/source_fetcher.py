@@ -3,12 +3,11 @@ from __future__ import annotations
 import asyncio
 import base64
 import binascii
-import json
 import logging
 import random
 import re
 from pathlib import Path
-from typing import List, Optional, Tuple, Set, Callable, Awaitable, Union, Any
+from typing import List, Optional, Tuple, Set, Callable, Awaitable, Union
 from urllib.parse import urlparse
 
 import aiohttp
@@ -148,24 +147,49 @@ class AsyncSourceFetcher:
         ] = None,
         *,
         proxy: str | None = None,
+        session: aiohttp.ClientSession | None = None,
     ):
         self.processor = processor
-        self.session: Optional[aiohttp.ClientSession] = None
         self.seen_hashes = seen_hashes
         self.hash_lock = hash_lock or asyncio.Lock()
         self.history_callback = history_callback
         self.progress: Optional[tqdm] = None
         self.proxy = proxy
+        self.session: aiohttp.ClientSession | None
+        if session is None:
+            try:
+                asyncio.get_running_loop()
+                self.session = aiohttp.ClientSession(proxy=self.proxy)
+                self._own_session = True
+            except RuntimeError:
+                # No running loop; initialize lazily
+                self.session = None
+                self._own_session = True
+        else:
+            self.session = session
+            self._own_session = False
+
+    async def close(self) -> None:
+        if self._own_session and self.session is not None:
+            await self.session.close()
+        self.session = None
+
+    async def __aenter__(self) -> "AsyncSourceFetcher":
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        await self.close()
 
     async def test_source_availability(self, url: str) -> bool:
         """Test if a source URL is available (returns 200 status)."""
         session = self.session
-        session_loop = get_client_loop(session) if session else None
-        if session is None or session_loop is not asyncio.get_running_loop():
-            session = aiohttp.ClientSession(proxy=self.proxy)
-            close_temp = True
-        else:
-            close_temp = False
+        loop = get_client_loop(session) if session else None
+        if session is None or loop is not asyncio.get_running_loop():
+            if self._own_session and session is not None:
+                await session.close()
+            self.session = aiohttp.ClientSession(proxy=self.proxy)
+            self._own_session = True
+            session = self.session
         try:
             timeout = aiohttp.ClientTimeout(total=10)
             async with session.head(url, timeout=timeout, allow_redirects=True) as response:
@@ -184,17 +208,17 @@ class AsyncSourceFetcher:
         except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
             logging.debug("availability check failed for %s: %s", url, exc)
             return False
-        finally:
-            if close_temp:
-                await session.close()
 
     async def fetch_source(self, url: str) -> Tuple[str, List[ConfigResult]]:
         """Fetch single source with comprehensive testing and deduplication."""
         session = self.session
-        session_loop = get_client_loop(session) if session else None
-        use_temp = session is None or session_loop is not asyncio.get_running_loop()
-        if use_temp:
-            session = aiohttp.ClientSession(proxy=self.proxy)
+        loop = get_client_loop(session) if session else None
+        if session is None or loop is not asyncio.get_running_loop():
+            if self._own_session and session is not None:
+                await session.close()
+            self.session = aiohttp.ClientSession(proxy=self.proxy)
+            self._own_session = True
+            session = self.session
         for attempt in range(CONFIG.max_retries):
             try:
                 timeout = aiohttp.ClientTimeout(total=CONFIG.request_timeout)
@@ -281,6 +305,4 @@ class AsyncSourceFetcher:
                 logging.debug("fetch_source error on %s: %s", url, exc)
                 if attempt < CONFIG.max_retries - 1:
                     await asyncio.sleep(min(3, 1.5 + random.random()))
-        if use_temp:
-            await session.close()
         return url, []
