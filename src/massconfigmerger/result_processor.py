@@ -180,7 +180,11 @@ class EnhancedConfigProcessor:
         return await self.tester.lookup_country(host)
 
     def categorize_protocol(self, config: str) -> str:
-        """Categorize configuration by protocol."""
+        """Categorize configuration by protocol.
+
+        Matching is case-insensitive so schemes like ``VMESS://`` work the same
+        as ``vmess://``.
+        """
         protocol_map = {
             "vmess://": "VMess",
             "vless://": "VLESS",
@@ -198,9 +202,9 @@ class EnhancedConfigProcessor:
             "shadowtls://": "ShadowTLS",
             "brook://": "Brook",
         }
-        config = config.lower()
+        config_lower = config.lower()
         for prefix, protocol in protocol_map.items():
-            if config.startswith(prefix):
+            if config_lower.startswith(prefix):
                 return protocol
         return "Other"
 

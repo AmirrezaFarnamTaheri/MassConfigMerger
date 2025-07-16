@@ -62,6 +62,8 @@ def test_categorize_protocol_uppercase():
     proc = EnhancedConfigProcessor()
     assert proc.categorize_protocol("VMESS://foo") == "VMess"
     assert proc.categorize_protocol("Ss://foo") == "Shadowsocks"
+    assert proc.categorize_protocol("TROJAN://foo") == "Trojan"
+    assert proc.categorize_protocol("HYSTERIA://foo") == "Hysteria"
 
 
 def test_create_semantic_hash_consistent_with_fragment():

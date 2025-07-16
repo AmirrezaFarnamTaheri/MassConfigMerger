@@ -20,6 +20,8 @@ Each server link is classified into a protocol type. By default the merger only 
 
 Some VPN clients may not recognise every item in this list, and other clients might support additional protocols that are omitted here. Use `--include-protocols` if you need to expand it.
 
+Protocol matching is **case-insensitive**, so links such as `VMESS://example` are treated the same as `vmess://example`.
+
 -----
 
 ### Protocol Comparison
