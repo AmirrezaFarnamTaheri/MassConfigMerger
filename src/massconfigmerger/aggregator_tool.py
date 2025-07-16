@@ -94,6 +94,7 @@ class Aggregator:
         prune: bool = True,
         disabled_path: Path | None = None,
         proxy: str | None = None,
+        session: ClientSession | None = None,
     ) -> List[str]:
         if not path.exists():
             logging.warning("sources file not found: %s", path)
@@ -114,12 +115,11 @@ class Aggregator:
         valid_sources: List[str] = []
         removed: List[str] = []
         semaphore = asyncio.Semaphore(concurrent_limit)
-        connector = aiohttp.TCPConnector(limit=concurrent_limit)
 
-        async def check(url: str) -> tuple[str, bool]:
+        async def check(sess: ClientSession, url: str) -> tuple[str, bool]:
             async with semaphore:
                 text = await fetch_text(
-                    session,
+                    sess,
                     url,
                     request_timeout,
                     retries=retries,
@@ -130,12 +130,8 @@ class Aggregator:
                 return url, False
             return url, True
 
-        if proxy:
-            session_cm = aiohttp.ClientSession(connector=connector, proxy=proxy)
-        else:
-            session_cm = aiohttp.ClientSession(connector=connector)
-        async with session_cm as session:
-            tasks = [asyncio.create_task(check(u)) for u in sorted(sources)]
+        async def run_checks(sess: ClientSession) -> None:
+            tasks = [asyncio.create_task(check(sess, u)) for u in sorted(sources)]
             for task in asyncio.as_completed(tasks):
                 url, ok = await task
                 if ok:
@@ -145,6 +141,17 @@ class Aggregator:
                     failures[url] = failures.get(url, 0) + 1
                     if prune and failures[url] >= max_failures:
                         removed.append(url)
+
+        if session is None:
+            connector = aiohttp.TCPConnector(limit=concurrent_limit)
+            if proxy:
+                session_cm = aiohttp.ClientSession(connector=connector, proxy=proxy)
+            else:
+                session_cm = aiohttp.ClientSession(connector=connector)
+            async with session_cm as sess:
+                await run_checks(sess)
+        else:
+            await run_checks(session)
 
         remaining = [u for u in sorted(sources) if u not in removed]
         with path.open("w") as f:
@@ -173,6 +180,7 @@ class Aggregator:
         retries: int = 3,
         base_delay: float = 1.0,
         proxy: str | None = None,
+        session: ClientSession | None = None,
     ) -> Set[str]:
         configs: Set[str] = set()
 
@@ -196,19 +204,24 @@ class Aggregator:
                 return set()
             return parse_configs_from_text(text)
 
-        connector = aiohttp.TCPConnector(limit=concurrent_limit)
-        if proxy:
-            session_cm = aiohttp.ClientSession(connector=connector, proxy=proxy)
-        else:
-            session_cm = aiohttp.ClientSession(connector=connector)
+        async def run_fetch(sess: ClientSession) -> None:
+            tasks = [asyncio.create_task(fetch_one(sess, u)) for u in source_list]
+            for task in asyncio.as_completed(tasks):
+                configs.update(await task)
+                progress.update(1)
 
         progress = tqdm(total=len(source_list), desc="Sources", unit="src", leave=False)
         try:
-            async with session_cm as session:
-                tasks = [asyncio.create_task(fetch_one(session, u)) for u in source_list]
-                for task in asyncio.as_completed(tasks):
-                    configs.update(await task)
-                    progress.update(1)
+            if session is None:
+                connector = aiohttp.TCPConnector(limit=concurrent_limit)
+                if proxy:
+                    session_cm = aiohttp.ClientSession(connector=connector, proxy=proxy)
+                else:
+                    session_cm = aiohttp.ClientSession(connector=connector)
+                async with session_cm as sess:
+                    await run_fetch(sess)
+            else:
+                await run_fetch(session)
         finally:
             progress.close()
 
@@ -423,6 +436,9 @@ class Aggregator:
         out_dir = Path(cfg.output_dir)
         configs: Set[str] = set()
         start = time.time()
+        proxy = choose_proxy(cfg)
+        connector = aiohttp.TCPConnector(limit=cfg.concurrent_limit)
+        session = aiohttp.ClientSession(connector=connector, proxy=proxy)
         try:
             sources = await self.check_and_update_sources(
                 sources_file,
@@ -436,7 +452,8 @@ class Aggregator:
                 disabled_path=(
                     sources_file.with_name("sources_disabled.txt") if prune else None
                 ),
-                proxy=choose_proxy(cfg),
+                proxy=proxy,
+                session=session,
             )
             self.stats["valid_sources"] = len(sources)
             configs = await self.fetch_and_parse_configs(
@@ -445,7 +462,8 @@ class Aggregator:
                 cfg.request_timeout,
                 retries=cfg.retry_attempts,
                 base_delay=cfg.retry_base_delay,
-                proxy=choose_proxy(cfg),
+                proxy=proxy,
+                session=session,
             )
             configs |= await self.scrape_telegram_configs(channels_file, last_hours)
             self.stats["fetched_configs"] = len(configs)
@@ -457,6 +475,7 @@ class Aggregator:
             self.stats["written_configs"] = len(final)
             logging.info("Final configs count: %d", self.stats["written_configs"])
             files = Aggregator.output_files(final, out_dir, cfg)
+            await session.close()
             elapsed = time.time() - start
             summary = (
                 f"Sources checked: {self.stats['valid_sources']} | "
