@@ -104,3 +104,14 @@ class NodeTester:
             except Exception as exc:  # pragma: no cover - env specific
                 logging.debug("Resolver close failed: %s", exc)
             self.resolver = None
+
+        if self._geoip_reader is not None:
+            try:
+                close = getattr(self._geoip_reader, "close", None)
+                if asyncio.iscoroutinefunction(close):
+                    await close()  # type: ignore[misc]
+                elif callable(close):
+                    close()
+            except Exception as exc:  # pragma: no cover - env specific
+                logging.debug("GeoIP reader close failed: %s", exc)
+            self._geoip_reader = None
