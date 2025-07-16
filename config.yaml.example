@@ -82,25 +82,20 @@ stop_after_found: 0
 top_n: 0
 tls_fragment: null
 include_protocols:
-  - PROXY
   - SHADOWSOCKS
   - SHADOWSOCKSR
   - TROJAN
-  - CLASH
-  - V2RAY
   - REALITY
   - VMESS
-  - XRAY
-  - WIREGUARD
-  - ECH
   - VLESS
   - HYSTERIA
-  - TUIC
-  - SING-BOX
-  - SINGBOX
-  - SHADOWTLS
-  - CLASHMETA
   - HYSTERIA2
+  - TUIC
+  - NAIVE
+  - JUICITY
+  - WIREGUARD
+  - SHADOWTLS
+  - BROOK
 exclude_protocols:
   - OTHER
 resume_file: null

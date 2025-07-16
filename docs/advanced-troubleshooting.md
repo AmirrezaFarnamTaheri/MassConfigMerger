@@ -11,6 +11,9 @@ Run `python vpn_merger.py --help` to see all options. Important flags include:
   * `--top-n N` - keep only the best `N` configs after sorting.
   * `--tls-fragment TEXT` - only keep configs containing this TLS fragment.
   * `--include-protocols LIST` - comma-separated protocols to include (e.g. `VLESS,Reality`).
+    Valid protocol names: `VMESS`, `VLESS`, `SHADOWSOCKS`, `SHADOWSOCKSR`,
+    `TROJAN`, `HYSTERIA2`, `HYSTERIA`, `TUIC`, `REALITY`, `NAIVE`, `JUICITY`,
+    `WIREGUARD`, `SHADOWTLS`, `BROOK`, and `OTHER`.
   * `--exclude-protocols LIST` - protocols to drop. By default `OTHER` is excluded; pass an empty string to keep everything.
   * `--exclude-pattern REGEX` - skip configs matching this regular expression (repeatable).
   * `--include-pattern REGEX` - only keep configs matching this regular expression (repeatable).

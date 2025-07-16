@@ -90,25 +90,20 @@ class Settings(BaseSettings):
     top_n: int = 0
     tls_fragment: Optional[str] = None
     include_protocols: Optional[Set[str]] = {
-        "PROXY",
         "SHADOWSOCKS",
         "SHADOWSOCKSR",
         "TROJAN",
-        "CLASH",
-        "V2RAY",
         "REALITY",
         "VMESS",
-        "XRAY",
-        "WIREGUARD",
-        "ECH",
         "VLESS",
         "HYSTERIA",
-        "TUIC",
-        "SING-BOX",
-        "SINGBOX",
-        "SHADOWTLS",
-        "CLASHMETA",
         "HYSTERIA2",
+        "TUIC",
+        "NAIVE",
+        "JUICITY",
+        "WIREGUARD",
+        "SHADOWTLS",
+        "BROOK",
     }
     exclude_protocols: Optional[Set[str]] = {"OTHER"}
     resume_file: Optional[str] = None
