@@ -366,17 +366,19 @@ Install the `geoip2` package and download the free GeoLite2 database from MaxMin
 
 ## Testing
 
-Run the tests with `pytest`. **Install the development extras before running
-the tests or `pytest` will fail with `ModuleNotFoundError`.** Use either of
-the following commands to make sure all dependencies are available:
+### Running tests
+
+Install the development extras before running the tests or `pytest` will
+fail with `ModuleNotFoundError`:
 
 ```bash
 pip install -e .[dev]
-# or
-pip install -r requirements-dev.txt
 ```
 
-Then execute:
+You can also use `pip install -r requirements-dev.txt` to install the same
+packages.
+
+Then execute the test suite:
 
 ```bash
 pytest

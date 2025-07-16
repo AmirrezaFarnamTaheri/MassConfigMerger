@@ -8,7 +8,11 @@ Thank you for helping improve Mass Config Merger! The steps below set up the dev
    ```bash
    pip install -e .[dev]
    ```
-2. Install the pre-commit hooks:
+2. Run the tests to ensure the environment is correctly set up:
+   ```bash
+   pytest
+   ```
+3. Install the pre-commit hooks:
    ```bash
    pre-commit install
    ```
