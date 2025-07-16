@@ -272,11 +272,11 @@ Install the `geoip2` package and download the free GeoLite2 database from MaxMin
 
 ## Testing
 
-Run `pytest` to execute the test suite. **The package must be installed in
-editable mode with the development extras**, otherwise running the tests will
-raise `ModuleNotFoundError` when modules like `massconfigmerger` or the testing
-tools themselves are missing. Install the runtime and development dependencies
-using the `dev` extras or the convenience requirements file:
+Run the tests with `pytest`. Install the project in editable mode with the
+development extras first to ensure all dependencies are available. Skipping this
+step will result in `ModuleNotFoundError` when modules like `massconfigmerger`
+or the testing tools are missing. You can use the convenience requirements file
+instead:
 
 ```bash
 pip install -e .[dev]
