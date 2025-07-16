@@ -65,7 +65,11 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
    *Install `geoip2` as well if you plan to filter by country and download the free GeoLite2 database from MaxMind.*
 
-4. **Gather configuration links**
+4. **Create your `config.yaml`**
+
+   Copy [`config.yaml.example`](config.yaml.example) to `config.yaml` and edit it before running the tools. This file lets you adjust proxy settings and many other options.
+
+5. **Gather configuration links**
 
    ```bash
    massconfigmerger fetch --hours 12
@@ -79,7 +83,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 `vpn_subscription_base64.txt` and `vpn_singbox.json`) and a log file under `logs/`
 named by the current date.
 
-5. **Merge and sort the results**
+6. **Merge and sort the results**
 
    ```bash
    massconfigmerger merge
@@ -92,7 +96,7 @@ named by the current date.
 Use `--resume output/vpn_subscription_raw.txt` to continue a previous run without
 re-downloading.
 
-6. **All in one step**
+7. **All in one step**
 
    ```bash
    massconfigmerger full
@@ -105,7 +109,7 @@ re-downloading.
    The merger automatically runs on the freshly aggregated results using the
    resume feature.
 
-7. **Country filters**
+8. **Country filters**
 
    ```bash
    python vpn_merger.py --geoip-db GeoLite2-Country.mmdb --include-country US,CA
@@ -115,11 +119,11 @@ re-downloading.
 
    Combine `--include-country` or `--exclude-country` with `--geoip-db` to select preferred regions.
 
-8. **Check the logs**
+9. **Check the logs**
 
    Every run writes detailed output to `logs/YYYY-MM-DD.log`. Review these files with `less` or `tail -f` to monitor progress and diagnose issues.
 
-9. **Import your subscription**
+10. **Import your subscription**
    - Use the link in `output/vpn_subscription_base64.txt` (unless `--no-base64` was used) or load `vpn_singbox.json` in clients like sing-box.
 
 > **Need more options?** Run `vpn-merger --help-extra` or see
