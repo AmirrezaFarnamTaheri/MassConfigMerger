@@ -31,6 +31,7 @@ import re
 import ssl
 import sys
 import time
+import argparse
 import socket
 import json
 import base64
@@ -884,15 +885,11 @@ async def run_in_jupyter(sources_file: Optional[Union[str, Path]] = None):
     print("🔄 Running in Jupyter/async environment")
     await main_async(sources_file)
 
-def main():
-    """Main entry point with event loop detection."""
-    if sys.version_info < (3, 8):
-        print("❌ Python 3.8+ required")
-        sys.exit(1)
+def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.ArgumentParser:
+    """Return an argument parser configured for the VPN merger."""
+    if parser is None:
+        parser = argparse.ArgumentParser(description="VPN Merger")
 
-    import argparse
-
-    parser = argparse.ArgumentParser(description="VPN Merger")
     parser.add_argument(
         "--sources",
         default=str(UnifiedSources.DEFAULT_FILE),
@@ -1002,13 +999,27 @@ def main():
         action="store_true",
         help="Show extended usage information and exit",
     )
-    args, unknown = parser.parse_known_args()
-    if args.help_extra:
-        parser.print_help()
-        print("\nFor a complete tutorial see docs/tutorial.md")
-        return 0
-    if unknown:
-        logging.warning("Ignoring unknown arguments: %s", unknown)
+
+    return parser
+
+
+def main(args: argparse.Namespace | None = None) -> int:
+    """Main entry point with event loop detection."""
+    if sys.version_info < (3, 8):
+        print("❌ Python 3.8+ required")
+        sys.exit(1)
+
+    if args is None:
+        parser = build_parser()
+        args, unknown = parser.parse_known_args()
+        if args.help_extra:
+            parser.print_help()
+            print("\nFor a complete tutorial see docs/tutorial.md")
+            return 0
+        if unknown:
+            logging.warning("Ignoring unknown arguments: %s", unknown)
+    else:
+        parser = None
 
     sources_file = args.sources
 

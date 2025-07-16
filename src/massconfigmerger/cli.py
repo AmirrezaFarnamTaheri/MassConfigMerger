@@ -2,6 +2,7 @@ import sys
 import argparse
 from . import aggregator_tool
 from . import vpn_merger
+from . import vpn_retester
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -12,25 +13,28 @@ def main(argv: list[str] | None = None) -> None:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     fetch_p = subparsers.add_parser("fetch", help="run the aggregation pipeline")
-    fetch_p.add_argument("args", nargs=argparse.REMAINDER)
+    aggregator_tool.build_parser(fetch_p)
 
     merge_p = subparsers.add_parser("merge", help="run the VPN merger")
-    merge_p.add_argument("args", nargs=argparse.REMAINDER)
+    vpn_merger.build_parser(merge_p)
+
+    retest_p = subparsers.add_parser("retest", help="retest an existing subscription")
+    vpn_retester.build_parser(retest_p)
 
     full_p = subparsers.add_parser("full", help="aggregate then merge")
-    full_p.add_argument("args", nargs=argparse.REMAINDER)
+    aggregator_tool.build_parser(full_p)
+    full_p.set_defaults(with_merger=True)
 
     ns = parser.parse_args(argv)
 
     if ns.command == "fetch":
-        sys.argv = ["aggregator-tool"] + ns.args
-        aggregator_tool.main()
+        aggregator_tool.main(ns)
     elif ns.command == "merge":
-        sys.argv = ["vpn-merger"] + ns.args
-        vpn_merger.main()
+        vpn_merger.main(ns)
+    elif ns.command == "retest":
+        vpn_retester.main(ns)
     elif ns.command == "full":
-        sys.argv = ["aggregator-tool"] + ns.args + ["--with-merger"]
-        aggregator_tool.main()
+        aggregator_tool.main(ns)
 
 
 if __name__ == "__main__":
