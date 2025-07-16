@@ -78,7 +78,8 @@ async def test_fetch_and_parse_configs_progress(monkeypatch):
 
     monkeypatch.setattr("massconfigmerger.aggregator_tool.fetch_text", fake_fetch_text)
 
-    configs = await aggregator_tool.fetch_and_parse_configs(["u1", "u2"])
+    agg = aggregator_tool.Aggregator(Settings())
+    configs = await agg.fetch_and_parse_configs(["u1", "u2"])
 
     assert configs == {"vmess://cfg"}
     bar = bars[0]

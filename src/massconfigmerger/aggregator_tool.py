@@ -44,14 +44,6 @@ from .utils import (
 from .config import Settings, load_config
 
 
-# Global stats updated by ``run_pipeline`` for summary output in ``main``.
-STATS: Dict[str, int] = {
-    "valid_sources": 0,
-    "fetched_configs": 0,
-    "written_configs": 0,
-}
-
-
 def _choose_proxy(cfg: Settings) -> str | None:
     """Return SOCKS proxy if defined, otherwise HTTP proxy."""
     return cfg.SOCKS_PROXY or cfg.HTTP_PROXY
@@ -70,228 +62,392 @@ def extract_subscription_urls(text: str) -> Set[str]:
     return set(HTTP_RE.findall(text))
 
 
+class Aggregator:
+    """Aggregate VPN configs while tracking summary statistics."""
 
+    def __init__(self, cfg: Settings) -> None:
+        self.cfg = cfg
+        self.stats: Dict[str, int] = {
+            "valid_sources": 0,
+            "fetched_configs": 0,
+            "written_configs": 0,
+        }
 
-async def check_and_update_sources(
-    path: Path,
-    concurrent_limit: int = 20,
-    request_timeout: int = 10,
-    *,
-    retries: int = 3,
-    base_delay: float = 1.0,
-    failures_path: Path | None = None,
-    max_failures: int = 3,
-    prune: bool = True,
-    disabled_path: Path | None = None,
-    proxy: str | None = None,
-) -> List[str]:
-    """Validate and deduplicate sources list concurrently."""
-    if not path.exists():
-        logging.warning("sources file not found: %s", path)
-        return []
+    async def check_and_update_sources(
+        self,
+        path: Path,
+        concurrent_limit: int = 20,
+        request_timeout: int = 10,
+        *,
+        retries: int = 3,
+        base_delay: float = 1.0,
+        failures_path: Path | None = None,
+        max_failures: int = 3,
+        prune: bool = True,
+        disabled_path: Path | None = None,
+        proxy: str | None = None,
+    ) -> List[str]:
+        if not path.exists():
+            logging.warning("sources file not found: %s", path)
+            return []
 
-    if failures_path is None:
-        failures_path = path.with_suffix(".failures.json")
+        if failures_path is None:
+            failures_path = path.with_suffix(".failures.json")
 
-    try:
-        failures = json.loads(failures_path.read_text())
-    except (OSError, json.JSONDecodeError) as exc:
-        logging.warning("Failed to load failures file: %s", exc)
-        failures = {}
-
-    with path.open() as f:
-        sources = {line.strip() for line in f if line.strip()}
-
-    valid_sources: List[str] = []
-    removed: List[str] = []
-    semaphore = asyncio.Semaphore(concurrent_limit)
-    connector = aiohttp.TCPConnector(limit=concurrent_limit)
-
-    async def check(url: str) -> tuple[str, bool]:
-        async with semaphore:
-            text = await fetch_text(
-                session,
-                url,
-                request_timeout,
-                retries=retries,
-                base_delay=base_delay,
-                proxy=proxy,
-            )
-        if not text or not parse_configs_from_text(text):
-            return url, False
-        return url, True
-
-    if proxy:
-        session_cm = aiohttp.ClientSession(connector=connector, proxy=proxy)
-    else:
-        session_cm = aiohttp.ClientSession(connector=connector)
-    async with session_cm as session:
-        tasks = [asyncio.create_task(check(u)) for u in sorted(sources)]
-        for task in asyncio.as_completed(tasks):
-            url, ok = await task
-            if ok:
-                failures.pop(url, None)
-                valid_sources.append(url)
-            else:
-                failures[url] = failures.get(url, 0) + 1
-                if prune and failures[url] >= max_failures:
-                    removed.append(url)
-
-    remaining = [u for u in sorted(sources) if u not in removed]
-    with path.open("w") as f:
-        for url in remaining:
-            f.write(f"{url}\n")
-
-    if disabled_path and removed:
-        timestamp = datetime.utcnow().isoformat()
-        with disabled_path.open("a") as f:
-            for url in removed:
-                f.write(f"{timestamp} {url}\n")
-    for url in removed:
-        failures.pop(url, None)
-
-    failures_path.write_text(json.dumps(failures, indent=2))
-
-    logging.info("Valid sources: %d", len(valid_sources))
-    return valid_sources
-
-
-async def fetch_and_parse_configs(
-    sources: Iterable[str],
-    concurrent_limit: int = 20,
-    request_timeout: int = 10,
-    *,
-    retries: int = 3,
-    base_delay: float = 1.0,
-    proxy: str | None = None,
-) -> Set[str]:
-    """Fetch configs from sources respecting concurrency limits with progress."""
-    configs: Set[str] = set()
-
-    source_list = list(sources)
-
-    semaphore = asyncio.Semaphore(concurrent_limit)
-
-    async def fetch_one(session: ClientSession, url: str) -> Set[str]:
-        async with semaphore:
-            text = await fetch_text(
-                session,
-                url,
-                request_timeout,
-                retries=retries,
-                base_delay=base_delay,
-                proxy=proxy,
-            )
-        if not text:
-            logging.warning("Failed to fetch %s", url)
-            return set()
-        return parse_configs_from_text(text)
-
-    connector = aiohttp.TCPConnector(limit=concurrent_limit)
-    if proxy:
-        session_cm = aiohttp.ClientSession(connector=connector, proxy=proxy)
-    else:
-        session_cm = aiohttp.ClientSession(connector=connector)
-
-    progress = tqdm(total=len(source_list), desc="Sources", unit="src", leave=False)
-    try:
-        async with session_cm as session:
-            tasks = [asyncio.create_task(fetch_one(session, u)) for u in source_list]
-            for task in asyncio.as_completed(tasks):
-                configs.update(await task)
-                progress.update(1)
-    finally:
-        progress.close()
-
-    return configs
-
-
-async def scrape_telegram_configs(
-    channels_path: Path, last_hours: int, cfg: Settings
-) -> Set[str]:
-    """Scrape telegram channels for configs."""
-    if cfg.telegram_api_id is None or cfg.telegram_api_hash is None:
-        logging.info("Telegram credentials not provided; skipping Telegram scrape")
-        return set()
-    if not channels_path.exists():
-        logging.warning("channels file missing: %s", channels_path)
-        return set()
-    prefix = "https://t.me/"
-    with channels_path.open() as f:
-        channels = [
-            (
-                line.strip()[len(prefix):]
-                if line.strip().startswith(prefix)
-                else line.strip()
-            )
-            for line in f
-            if line.strip()
-        ]
-
-    if not channels:
-        logging.info("No channels specified in %s", channels_path)
-        return set()
-
-    since = datetime.utcnow() - timedelta(hours=last_hours)
-    client = TelegramClient(
-        cfg.session_path, cfg.telegram_api_id, cfg.telegram_api_hash
-    )
-    configs: Set[str] = set()
-
-    try:
-        await client.start()
-        async with aiohttp.ClientSession(proxy=_choose_proxy(cfg)) as session:
-            for channel in channels:
-                count_before = len(configs)
-                success = False
-                for _ in range(2):
-                    try:
-                        async for msg in client.iter_messages(
-                            channel, offset_date=since
-                        ):
-                            if isinstance(msg, Message) and msg.message:
-                                text = msg.message
-                                configs.update(parse_configs_from_text(text))
-                                for sub in extract_subscription_urls(text):
-                                    text2 = await fetch_text(
-                                        session,
-                                        sub,
-                                        cfg.request_timeout,
-                                        retries=cfg.retry_attempts,
-                                        base_delay=cfg.retry_base_delay,
-                                        proxy=_choose_proxy(cfg),
-                                    )
-                                    if text2:
-                                        configs.update(parse_configs_from_text(text2))
-                        success = True
-                        break
-                    except (errors.RPCError, OSError) as e:
-                        logging.warning("Error scraping %s: %s", channel, e)
-                        try:
-                            await client.disconnect()
-                            await client.connect()
-                        except (errors.RPCError, OSError) as rexc:
-                            logging.warning("Reconnect failed: %s", rexc)
-                            break
-                if not success:
-                    logging.warning("Skipping %s due to repeated errors", channel)
-                    continue
-                logging.info(
-                    "Channel %s -> %d new configs",
-                    channel,
-                    len(configs) - count_before,
-                )
-        await client.disconnect()
-    except (errors.RPCError, OSError, aiohttp.ClientError) as e:
-        logging.warning("Telegram connection failed: %s", e)
         try:
-            await client.disconnect()
-        except (errors.RPCError, OSError):
-            pass
-        return set()
+            failures = json.loads(failures_path.read_text())
+        except (OSError, json.JSONDecodeError) as exc:
+            logging.warning("Failed to load failures file: %s", exc)
+            failures = {}
 
-    logging.info("Telegram configs found: %d", len(configs))
-    return configs
+        with path.open() as f:
+            sources = {line.strip() for line in f if line.strip()}
+
+        valid_sources: List[str] = []
+        removed: List[str] = []
+        semaphore = asyncio.Semaphore(concurrent_limit)
+        connector = aiohttp.TCPConnector(limit=concurrent_limit)
+
+        async def check(url: str) -> tuple[str, bool]:
+            async with semaphore:
+                text = await fetch_text(
+                    session,
+                    url,
+                    request_timeout,
+                    retries=retries,
+                    base_delay=base_delay,
+                    proxy=proxy,
+                )
+            if not text or not parse_configs_from_text(text):
+                return url, False
+            return url, True
+
+        if proxy:
+            session_cm = aiohttp.ClientSession(connector=connector, proxy=proxy)
+        else:
+            session_cm = aiohttp.ClientSession(connector=connector)
+        async with session_cm as session:
+            tasks = [asyncio.create_task(check(u)) for u in sorted(sources)]
+            for task in asyncio.as_completed(tasks):
+                url, ok = await task
+                if ok:
+                    failures.pop(url, None)
+                    valid_sources.append(url)
+                else:
+                    failures[url] = failures.get(url, 0) + 1
+                    if prune and failures[url] >= max_failures:
+                        removed.append(url)
+
+        remaining = [u for u in sorted(sources) if u not in removed]
+        with path.open("w") as f:
+            for url in remaining:
+                f.write(f"{url}\n")
+
+        if disabled_path and removed:
+            timestamp = datetime.utcnow().isoformat()
+            with disabled_path.open("a") as f:
+                for url in removed:
+                    f.write(f"{timestamp} {url}\n")
+        for url in removed:
+            failures.pop(url, None)
+
+        failures_path.write_text(json.dumps(failures, indent=2))
+
+        logging.info("Valid sources: %d", len(valid_sources))
+        return valid_sources
+
+    async def fetch_and_parse_configs(
+        self,
+        sources: Iterable[str],
+        concurrent_limit: int = 20,
+        request_timeout: int = 10,
+        *,
+        retries: int = 3,
+        base_delay: float = 1.0,
+        proxy: str | None = None,
+    ) -> Set[str]:
+        configs: Set[str] = set()
+
+        source_list = list(sources)
+        semaphore = asyncio.Semaphore(concurrent_limit)
+
+        async def fetch_one(session: ClientSession, url: str) -> Set[str]:
+            async with semaphore:
+                text = await fetch_text(
+                    session,
+                    url,
+                    request_timeout,
+                    retries=retries,
+                    base_delay=base_delay,
+                    proxy=proxy,
+                )
+            if not text:
+                logging.warning("Failed to fetch %s", url)
+                return set()
+            return parse_configs_from_text(text)
+
+        connector = aiohttp.TCPConnector(limit=concurrent_limit)
+        if proxy:
+            session_cm = aiohttp.ClientSession(connector=connector, proxy=proxy)
+        else:
+            session_cm = aiohttp.ClientSession(connector=connector)
+
+        progress = tqdm(total=len(source_list), desc="Sources", unit="src", leave=False)
+        try:
+            async with session_cm as session:
+                tasks = [asyncio.create_task(fetch_one(session, u)) for u in source_list]
+                for task in asyncio.as_completed(tasks):
+                    configs.update(await task)
+                    progress.update(1)
+        finally:
+            progress.close()
+
+        return configs
+
+    async def scrape_telegram_configs(
+        self, channels_path: Path, last_hours: int
+    ) -> Set[str]:
+        cfg = self.cfg
+        if cfg.telegram_api_id is None or cfg.telegram_api_hash is None:
+            logging.info("Telegram credentials not provided; skipping Telegram scrape")
+            return set()
+        if not channels_path.exists():
+            logging.warning("channels file missing: %s", channels_path)
+            return set()
+        prefix = "https://t.me/"
+        with channels_path.open() as f:
+            channels = [
+                (
+                    line.strip()[len(prefix):]
+                    if line.strip().startswith(prefix)
+                    else line.strip()
+                )
+                for line in f
+                if line.strip()
+            ]
+
+        if not channels:
+            logging.info("No channels specified in %s", channels_path)
+            return set()
+
+        since = datetime.utcnow() - timedelta(hours=last_hours)
+        client = TelegramClient(
+            cfg.session_path, cfg.telegram_api_id, cfg.telegram_api_hash
+        )
+        configs: Set[str] = set()
+
+        try:
+            await client.start()
+            async with aiohttp.ClientSession(proxy=_choose_proxy(cfg)) as session:
+                for channel in channels:
+                    count_before = len(configs)
+                    success = False
+                    for _ in range(2):
+                        try:
+                            async for msg in client.iter_messages(
+                                channel, offset_date=since
+                            ):
+                                if isinstance(msg, Message) and msg.message:
+                                    text = msg.message
+                                    configs.update(parse_configs_from_text(text))
+                                    for sub in extract_subscription_urls(text):
+                                        text2 = await fetch_text(
+                                            session,
+                                            sub,
+                                            cfg.request_timeout,
+                                            retries=cfg.retry_attempts,
+                                            base_delay=cfg.retry_base_delay,
+                                            proxy=_choose_proxy(cfg),
+                                        )
+                                        if text2:
+                                            configs.update(parse_configs_from_text(text2))
+                            success = True
+                            break
+                        except (errors.RPCError, OSError) as e:
+                            logging.warning("Error scraping %s: %s", channel, e)
+                            try:
+                                await client.disconnect()
+                                await client.connect()
+                            except (errors.RPCError, OSError) as rexc:
+                                logging.warning("Reconnect failed: %s", rexc)
+                                break
+                    if not success:
+                        logging.warning("Skipping %s due to repeated errors", channel)
+                        continue
+                    logging.info(
+                        "Channel %s -> %d new configs",
+                        channel,
+                        len(configs) - count_before,
+                    )
+            await client.disconnect()
+        except (errors.RPCError, OSError, aiohttp.ClientError) as e:
+            logging.warning("Telegram connection failed: %s", e)
+            try:
+                await client.disconnect()
+            except (errors.RPCError, OSError):
+                pass
+            return set()
+
+        logging.info("Telegram configs found: %d", len(configs))
+        return configs
+
+    def output_files(self, configs: List[str], out_dir: Path) -> List[Path]:
+        cfg = self.cfg
+        out_dir.mkdir(parents=True, exist_ok=True)
+        written: List[Path] = []
+
+        merged_path = out_dir / "vpn_subscription_raw.txt"
+        text = "\n".join(configs)
+        merged_path.write_text(text)
+        written.append(merged_path)
+
+        if cfg.write_base64:
+            merged_b64 = out_dir / "vpn_subscription_base64.txt"
+            b64_content = base64.b64encode(text.encode()).decode()
+            merged_b64.write_text(b64_content)
+            written.append(merged_b64)
+
+            try:
+                base64.b64decode(b64_content).decode()
+            except (binascii.Error, UnicodeDecodeError) as exc:
+                logging.warning("Base64 validation failed: %s", exc)
+
+        if cfg.write_singbox:
+            outbounds = []
+            for idx, link in enumerate(configs):
+                proto = link.split("://", 1)[0].lower()
+                outbounds.append({"type": proto, "tag": f"node-{idx}", "raw": link})
+            merged_singbox = out_dir / "vpn_singbox.json"
+            merged_singbox.write_text(
+                json.dumps({"outbounds": outbounds}, indent=2, ensure_ascii=False)
+            )
+            written.append(merged_singbox)
+
+        proxies: List[Dict[str, Any]] = []
+        need_proxies = (
+            cfg.write_clash or cfg.surge_file or cfg.qx_file or cfg.xyz_file
+        )
+        if need_proxies:
+            for idx, link in enumerate(configs):
+                proxy = config_to_clash_proxy(link, idx)
+                if proxy:
+                    proxies.append(proxy)
+
+        if cfg.write_clash and proxies:
+            clash_yaml = build_clash_config(proxies)
+            clash_file = out_dir / "clash.yaml"
+            clash_file.write_text(clash_yaml)
+            written.append(clash_file)
+
+        if cfg.surge_file and proxies:
+            from .advanced_converters import generate_surge_conf
+
+            surge_content = generate_surge_conf(proxies)
+            surge_path = Path(cfg.surge_file)
+            if not surge_path.is_absolute():
+                surge_path = out_dir / surge_path
+            surge_path.write_text(surge_content)
+            written.append(surge_path)
+
+        if cfg.qx_file and proxies:
+            from .advanced_converters import generate_qx_conf
+
+            qx_content = generate_qx_conf(proxies)
+            qx_path = Path(cfg.qx_file)
+            if not qx_path.is_absolute():
+                qx_path = out_dir / qx_path
+            qx_path.write_text(qx_content)
+            written.append(qx_path)
+
+        if cfg.xyz_file and proxies:
+            xyz_lines = [
+                f"{p.get('name')},{p.get('server')},{p.get('port')}" for p in proxies
+            ]
+            xyz_path = Path(cfg.xyz_file)
+            if not xyz_path.is_absolute():
+                xyz_path = out_dir / xyz_path
+            xyz_path.write_text("\n".join(xyz_lines))
+            written.append(xyz_path)
+
+        logging.info(
+            "Wrote %s%s%s%s%s%s%s",
+            merged_path,
+            ", vpn_subscription_base64.txt" if cfg.write_base64 else "",
+            ", vpn_singbox.json" if cfg.write_singbox else "",
+            ", clash.yaml" if cfg.write_clash and proxies else "",
+            f", {Path(cfg.surge_file).name}" if cfg.surge_file else "",
+            f", {Path(cfg.qx_file).name}" if cfg.qx_file else "",
+            f", {Path(cfg.xyz_file).name}" if cfg.xyz_file else "",
+        )
+
+        return written
+
+    async def run(
+        self,
+        protocols: List[str] | None = None,
+        sources_file: Path = SOURCES_FILE,
+        channels_file: Path = CHANNELS_FILE,
+        last_hours: int = 24,
+        *,
+        failure_threshold: int = 3,
+        prune: bool = True,
+    ) -> Tuple[Path, List[Path]]:
+        cfg = self.cfg
+        out_dir = Path(cfg.output_dir)
+        configs: Set[str] = set()
+        start = time.time()
+        try:
+            sources = await self.check_and_update_sources(
+                sources_file,
+                cfg.concurrent_limit,
+                cfg.request_timeout,
+                retries=cfg.retry_attempts,
+                base_delay=cfg.retry_base_delay,
+                failures_path=sources_file.with_suffix(".failures.json"),
+                max_failures=failure_threshold,
+                prune=prune,
+                disabled_path=(
+                    sources_file.with_name("sources_disabled.txt") if prune else None
+                ),
+                proxy=_choose_proxy(cfg),
+            )
+            self.stats["valid_sources"] = len(sources)
+            configs = await self.fetch_and_parse_configs(
+                sources,
+                cfg.concurrent_limit,
+                cfg.request_timeout,
+                retries=cfg.retry_attempts,
+                base_delay=cfg.retry_base_delay,
+                proxy=_choose_proxy(cfg),
+            )
+            self.stats["fetched_configs"] = len(configs)
+            logging.info("Fetched configs count: %d", self.stats["fetched_configs"])
+            configs |= await self.scrape_telegram_configs(channels_file, last_hours)
+        except KeyboardInterrupt:
+            logging.warning("Interrupted. Writing partial results...")
+        finally:
+            final = deduplicate_and_filter(configs, cfg, protocols)
+            self.stats["written_configs"] = len(final)
+            logging.info("Final configs count: %d", self.stats["written_configs"])
+            files = self.output_files(final, out_dir)
+            elapsed = time.time() - start
+            summary = (
+                f"Sources checked: {self.stats['valid_sources']} | "
+                f"Configs fetched: {self.stats['fetched_configs']} | "
+                f"Unique configs: {self.stats['written_configs']} | "
+                f"Elapsed: {elapsed:.1f}s"
+            )
+            print(summary)
+            logging.info(summary)
+        return out_dir, files
+
+
+
+
+
+
+
+
 
 
 def deduplicate_and_filter(
@@ -328,98 +484,6 @@ def deduplicate_and_filter(
     return final
 
 
-def output_files(configs: List[str], out_dir: Path, cfg: Settings) -> List[Path]:
-    """Write merged files and return list of written file paths respecting cfg flags."""
-    out_dir.mkdir(parents=True, exist_ok=True)
-    written: List[Path] = []
-
-    merged_path = out_dir / "vpn_subscription_raw.txt"
-    text = "\n".join(configs)
-    merged_path.write_text(text)
-    written.append(merged_path)
-
-    if cfg.write_base64:
-        merged_b64 = out_dir / "vpn_subscription_base64.txt"
-        b64_content = base64.b64encode(text.encode()).decode()
-        merged_b64.write_text(b64_content)
-        written.append(merged_b64)
-
-        # Validate base64 decodes cleanly
-        try:
-            base64.b64decode(b64_content).decode()
-        except (binascii.Error, UnicodeDecodeError) as exc:
-            logging.warning("Base64 validation failed: %s", exc)
-
-    if cfg.write_singbox:
-        # Simple sing-box style JSON
-        outbounds = []
-        for idx, link in enumerate(configs):
-            proto = link.split("://", 1)[0].lower()
-            outbounds.append({"type": proto, "tag": f"node-{idx}", "raw": link})
-        merged_singbox = out_dir / "vpn_singbox.json"
-        merged_singbox.write_text(
-            json.dumps({"outbounds": outbounds}, indent=2, ensure_ascii=False)
-        )
-        written.append(merged_singbox)
-
-    proxies: List[Dict[str, Any]] = []
-    need_proxies = (
-        cfg.write_clash or cfg.surge_file or cfg.qx_file or cfg.xyz_file
-    )
-    if need_proxies:
-        for idx, link in enumerate(configs):
-            proxy = config_to_clash_proxy(link, idx)
-            if proxy:
-                proxies.append(proxy)
-
-    if cfg.write_clash and proxies:
-        clash_yaml = build_clash_config(proxies)
-        clash_file = out_dir / "clash.yaml"
-        clash_file.write_text(clash_yaml)
-        written.append(clash_file)
-
-    if cfg.surge_file and proxies:
-        from .advanced_converters import generate_surge_conf
-
-        surge_content = generate_surge_conf(proxies)
-        surge_path = Path(cfg.surge_file)
-        if not surge_path.is_absolute():
-            surge_path = out_dir / surge_path
-        surge_path.write_text(surge_content)
-        written.append(surge_path)
-
-    if cfg.qx_file and proxies:
-        from .advanced_converters import generate_qx_conf
-
-        qx_content = generate_qx_conf(proxies)
-        qx_path = Path(cfg.qx_file)
-        if not qx_path.is_absolute():
-            qx_path = out_dir / qx_path
-        qx_path.write_text(qx_content)
-        written.append(qx_path)
-
-    if cfg.xyz_file and proxies:
-        xyz_lines = [
-            f"{p.get('name')},{p.get('server')},{p.get('port')}" for p in proxies
-        ]
-        xyz_path = Path(cfg.xyz_file)
-        if not xyz_path.is_absolute():
-            xyz_path = out_dir / xyz_path
-        xyz_path.write_text("\n".join(xyz_lines))
-        written.append(xyz_path)
-
-    logging.info(
-        "Wrote %s%s%s%s%s%s%s",
-        merged_path,
-        ", vpn_subscription_base64.txt" if cfg.write_base64 else "",
-        ", vpn_singbox.json" if cfg.write_singbox else "",
-        ", clash.yaml" if cfg.write_clash and proxies else "",
-        f", {Path(cfg.surge_file).name}" if cfg.surge_file else "",
-        f", {Path(cfg.qx_file).name}" if cfg.qx_file else "",
-        f", {Path(cfg.xyz_file).name}" if cfg.xyz_file else "",
-    )
-
-    return written
 
 
 async def run_pipeline(
@@ -432,56 +496,16 @@ async def run_pipeline(
     failure_threshold: int = 3,
     prune: bool = True,
 ) -> Tuple[Path, List[Path]]:
-    """Full aggregation pipeline.
-    Returns output directory and list of created files."""
-
-    out_dir = Path(cfg.output_dir)
-    configs: Set[str] = set()
-    start = time.time()
-    try:
-        sources = await check_and_update_sources(
-            sources_file,
-            cfg.concurrent_limit,
-            cfg.request_timeout,
-            retries=cfg.retry_attempts,
-            base_delay=cfg.retry_base_delay,
-            failures_path=sources_file.with_suffix(".failures.json"),
-            max_failures=failure_threshold,
-            prune=prune,
-            disabled_path=(
-                sources_file.with_name("sources_disabled.txt") if prune else None
-            ),
-            proxy=_choose_proxy(cfg),
-        )
-        STATS["valid_sources"] = len(sources)
-        configs = await fetch_and_parse_configs(
-            sources,
-            cfg.concurrent_limit,
-            cfg.request_timeout,
-            retries=cfg.retry_attempts,
-            base_delay=cfg.retry_base_delay,
-            proxy=_choose_proxy(cfg),
-        )
-        STATS["fetched_configs"] = len(configs)
-        logging.info("Fetched configs count: %d", STATS["fetched_configs"])
-        configs |= await scrape_telegram_configs(channels_file, last_hours, cfg)
-    except KeyboardInterrupt:
-        logging.warning("Interrupted. Writing partial results...")
-    finally:
-        final = deduplicate_and_filter(configs, cfg, protocols)
-        STATS["written_configs"] = len(final)
-        logging.info("Final configs count: %d", STATS["written_configs"])
-        files = output_files(final, out_dir, cfg)
-        elapsed = time.time() - start
-        summary = (
-            f"Sources checked: {STATS['valid_sources']} | "
-            f"Configs fetched: {STATS['fetched_configs']} | "
-            f"Unique configs: {STATS['written_configs']} | "
-            f"Elapsed: {elapsed:.1f}s"
-        )
-        print(summary)
-        logging.info(summary)
-    return out_dir, files
+    """Run the aggregation pipeline and return output directory and files."""
+    aggregator = Aggregator(cfg)
+    return await aggregator.run(
+        protocols,
+        sources_file,
+        channels_file,
+        last_hours,
+        failure_threshold=failure_threshold,
+        prune=prune,
+    )
 
 
 async def telegram_bot_mode(
@@ -522,8 +546,8 @@ async def telegram_bot_mode(
         if event.sender_id not in cfg.allowed_user_ids:
             return
         await event.respond("Running update...")
-        out_dir, files = await run_pipeline(
-            cfg,
+        aggregator = Aggregator(cfg)
+        out_dir, files = await aggregator.run(
             None,
             sources_file,
             channels_file,
@@ -687,9 +711,9 @@ def main() -> None:
         )
     else:
 
+        aggregator = Aggregator(cfg)
         out_dir, files = asyncio.run(
-            run_pipeline(
-                cfg,
+            aggregator.run(
                 protocols,
                 Path(args.sources),
                 Path(args.channels),

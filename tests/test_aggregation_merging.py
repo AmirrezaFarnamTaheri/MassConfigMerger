@@ -5,6 +5,7 @@ from aiohttp import web
 pytest_plugins = "aiohttp.pytest_plugin"
 
 from massconfigmerger import aggregator_tool
+from massconfigmerger.config import Settings
 from massconfigmerger.vpn_merger import UltimateVPNMerger
 from massconfigmerger.result_processor import ConfigResult, CONFIG
 from massconfigmerger.config import Settings
@@ -34,14 +35,15 @@ async def test_fetch_and_parse_configs_handles_errors(aiohttp_client, tmp_path):
         str(client.make_url("/slow")),
     ]
 
-    configs = await aggregator_tool.fetch_and_parse_configs(
+    agg = aggregator_tool.Aggregator(Settings())
+    configs = await agg.fetch_and_parse_configs(
         urls, concurrent_limit=3, request_timeout=0.05
     )
     assert configs == {"vmess://good"}
 
     path = tmp_path / "sources.txt"
     path.write_text("\n".join(urls))
-    valid = await aggregator_tool.check_and_update_sources(
+    valid = await agg.check_and_update_sources(
         path, concurrent_limit=3, request_timeout=0.05, prune=False
     )
     assert valid == [str(client.make_url("/good"))]
@@ -120,12 +122,14 @@ async def test_run_pipeline_prunes_bad_sources(aiohttp_client, tmp_path, monkeyp
     async def fake_scrape(*_a, **_k):
         return set()
 
-    monkeypatch.setattr(aggregator_tool, "scrape_telegram_configs", fake_scrape)
+    monkeypatch.setattr(aggregator_tool.Aggregator, "scrape_telegram_configs", fake_scrape)
 
-    out_dir, _ = await aggregator_tool.run_pipeline(
-        cfg,
+    agg = aggregator_tool.Aggregator(cfg)
+    out_dir, _ = await agg.run(
+        None,
         sources_file=src,
         channels_file=channels,
+        last_hours=24,
         failure_threshold=1,
     )
 

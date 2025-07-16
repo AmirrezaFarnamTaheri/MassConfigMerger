@@ -3,6 +3,7 @@ import asyncio
 import json
 
 from massconfigmerger import aggregator_tool
+from massconfigmerger.config import Settings
 
 
 def test_check_and_update_sources(monkeypatch, tmp_path):
@@ -16,8 +17,9 @@ def test_check_and_update_sources(monkeypatch, tmp_path):
 
     monkeypatch.setattr(aggregator_tool, "fetch_text", fake_fetch_text)
 
+    agg = aggregator_tool.Aggregator(Settings())
     result = asyncio.run(
-        aggregator_tool.check_and_update_sources(path, concurrent_limit=2)
+        agg.check_and_update_sources(path, concurrent_limit=2)
     )
     assert result == ["good"]
     # bad should remain until failure threshold reached
@@ -37,8 +39,9 @@ def test_prune_after_threshold(monkeypatch, tmp_path):
     monkeypatch.setattr(aggregator_tool, "fetch_text", fail_fetch)
 
     # first run - not pruned
+    agg = aggregator_tool.Aggregator(Settings())
     asyncio.run(
-        aggregator_tool.check_and_update_sources(
+        agg.check_and_update_sources(
             path,
             concurrent_limit=1,
             max_failures=2,
@@ -49,7 +52,7 @@ def test_prune_after_threshold(monkeypatch, tmp_path):
 
     # second run - should be pruned
     asyncio.run(
-        aggregator_tool.check_and_update_sources(
+        agg.check_and_update_sources(
             path,
             concurrent_limit=1,
             max_failures=2,
