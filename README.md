@@ -240,7 +240,7 @@ Run the tool in bot mode using your configuration file:
 aggregator-tool --bot --config config.yaml
 ```
 
-Keep the tool running so the `/update` and `/status` commands respond.
+The tool must be running for the `/update` and `/status` commands to work.
 
 ### Docker Compose Automation
 
