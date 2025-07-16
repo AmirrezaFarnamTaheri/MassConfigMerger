@@ -267,6 +267,15 @@ Key environment variables used by the compose file:
 - `MERGE_INTERVAL` – seconds between each run of `vpn_merger` (default `86400`)
 - `AGGREGATE_INTERVAL` – seconds between aggregator runs when the `aggregator` profile is enabled (default `43200`)
 
+### Optional Extras
+
+The project defines a couple of [extras](https://packaging.python.org/en/latest/tutorials/installing-packages/#installing-extras) for optional features:
+
+- `dev` – installs the testing tools and linters needed for development (`pytest`, `mypy`, `flake8`, etc.).
+- `web` – installs the minimal Flask-based web interface. No FastAPI dependency is required.
+
+Install them with `pip install -e .[dev]` or `pip install -e .[web]` as needed.
+
 ### Flask Web Interface
 
 Install the optional `web` extras to enable a small Flask server:

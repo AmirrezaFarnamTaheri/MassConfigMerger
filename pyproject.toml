@@ -20,7 +20,7 @@ dependencies = [
     "telethon",
     "PyYAML",
     "geoip2",
-    "pydantic",
+    "pydantic>=2",
     "pydantic-settings",
     "tqdm",
 ]

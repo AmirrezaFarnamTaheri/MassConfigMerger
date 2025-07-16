@@ -7,7 +7,7 @@ nest-asyncio
 telethon
 PyYAML
 geoip2
-pydantic
+pydantic>=2
 pydantic-settings
 tqdm
 # Optional web server
