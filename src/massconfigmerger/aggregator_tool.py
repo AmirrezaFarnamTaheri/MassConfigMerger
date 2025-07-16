@@ -112,7 +112,15 @@ class Aggregator:
             failures = {}
 
         with path.open() as f:
-            sources = {line.strip() for line in f if line.strip()}
+            seen = set()
+            sources: List[str] = []
+            for line in f:
+                url = line.strip()
+                if not url:
+                    continue
+                if url not in seen:
+                    seen.add(url)
+                    sources.append(url)
 
         valid_sources: List[str] = []
         removed: List[str] = []
@@ -133,7 +141,7 @@ class Aggregator:
             return url, True
 
         async def run_checks(sess: ClientSession) -> None:
-            tasks = [asyncio.create_task(check(sess, u)) for u in sorted(sources)]
+            tasks = [asyncio.create_task(check(sess, u)) for u in sources]
             for task in asyncio.as_completed(tasks):
                 url, ok = await task
                 if ok:
@@ -155,7 +163,7 @@ class Aggregator:
         else:
             await run_checks(session)
 
-        remaining = [u for u in sorted(sources) if u not in removed]
+        remaining = [u for u in sources if u not in removed]
         with path.open("w") as f:
             for url in remaining:
                 f.write(f"{url}\n")
