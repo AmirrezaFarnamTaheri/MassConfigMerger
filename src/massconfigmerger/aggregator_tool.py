@@ -243,6 +243,7 @@ class Aggregator:
         client = TelegramClient(
             cfg.session_path, cfg.telegram_api_id, cfg.telegram_api_hash
         )
+        progress = tqdm(total=len(channels), desc="Channels", unit="chan", leave=False)
         configs: Set[str] = set()
 
         try:
@@ -282,12 +283,14 @@ class Aggregator:
                                 break
                     if not success:
                         logging.warning("Skipping %s due to repeated errors", channel)
+                        progress.update(1)
                         continue
                     logging.info(
                         "Channel %s -> %d new configs",
                         channel,
                         len(configs) - count_before,
                     )
+                    progress.update(1)
             await client.disconnect()
         except (errors.RPCError, OSError, aiohttp.ClientError) as e:
             logging.warning("Telegram connection failed: %s", e)
@@ -296,6 +299,8 @@ class Aggregator:
             except (errors.RPCError, OSError):
                 pass
             return set()
+        finally:
+            progress.close()
 
         logging.info("Telegram configs found: %d", len(configs))
         return configs

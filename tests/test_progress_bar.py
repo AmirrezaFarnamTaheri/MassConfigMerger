@@ -1,4 +1,5 @@
 import asyncio
+import types
 
 import pytest
 
@@ -104,6 +105,64 @@ def test_sort_by_performance_progress(monkeypatch):
     r2 = ConfigResult(config="b", protocol="VLESS", ping_time=0.2, is_reachable=True)
     merger._sort_by_performance([r1, r2])
 
+    bar = bars[0]
+    assert bar.n == 2
+    assert bar.total == 2
+    assert bar.closed
+
+
+@pytest.mark.asyncio
+async def test_scrape_telegram_configs_progress(monkeypatch, tmp_path):
+    bars = []
+
+    def fake_tqdm(*args, **kwargs):
+        bar = DummyTqdm(*args, **kwargs)
+        bars.append(bar)
+        return bar
+
+    monkeypatch.setattr("massconfigmerger.aggregator_tool.tqdm", fake_tqdm)
+
+    class DummyMessage:
+        def __init__(self, msg):
+            self.message = msg
+
+    class DummyClient:
+        def __init__(self, *a, **k):
+            pass
+
+        async def start(self):
+            return self
+
+        async def iter_messages(self, channel, offset_date=None):
+            messages = [DummyMessage("vmess://direct1"), DummyMessage("http://sub.example")]
+            for m in messages:
+                yield m
+
+        async def disconnect(self):
+            pass
+
+        async def connect(self):
+            pass
+
+    async def fake_fetch_text(session, url, timeout=10, *, retries=3, base_delay=1.0, **_):
+        if "sub.example" in url:
+            return "vmess://from_url"
+        return None
+
+    channels = tmp_path / "channels.txt"
+    channels.write_text("chan1\nchan2\n")
+
+    cfg = Settings(telegram_api_id=1, telegram_api_hash="h")
+
+    monkeypatch.setattr(aggregator_tool, "TelegramClient", DummyClient)
+    monkeypatch.setattr(aggregator_tool, "Message", DummyMessage)
+    monkeypatch.setattr(aggregator_tool, "fetch_text", fake_fetch_text)
+    monkeypatch.setattr(aggregator_tool, "errors", types.SimpleNamespace(RPCError=Exception))
+
+    agg = aggregator_tool.Aggregator(cfg)
+    result = await agg.scrape_telegram_configs(channels, 24)
+
+    assert result == {"vmess://direct1", "vmess://from_url", "http://sub.example"}
     bar = bars[0]
     assert bar.n == 2
     assert bar.total == 2
