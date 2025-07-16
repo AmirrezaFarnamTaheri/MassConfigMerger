@@ -42,14 +42,10 @@ from .utils import (
     is_valid_config,
     parse_configs_from_text,
     print_public_source_warning,
+    choose_proxy,
 )
 
 from .config import Settings, load_config
-
-
-def _choose_proxy(cfg: Settings) -> str | None:
-    """Return SOCKS proxy if defined, otherwise HTTP proxy."""
-    return cfg.SOCKS_PROXY or cfg.HTTP_PROXY
 
 CONFIG_FILE = Path("config.yaml")
 CHANNELS_FILE = Path("channels.txt")
@@ -252,7 +248,7 @@ class Aggregator:
 
         try:
             await client.start()
-            async with aiohttp.ClientSession(proxy=_choose_proxy(cfg)) as session:
+            async with aiohttp.ClientSession(proxy=choose_proxy(cfg)) as session:
                 for channel in channels:
                     count_before = len(configs)
                     success = False
@@ -271,7 +267,7 @@ class Aggregator:
                                             cfg.request_timeout,
                                             retries=cfg.retry_attempts,
                                             base_delay=cfg.retry_base_delay,
-                                            proxy=_choose_proxy(cfg),
+                                            proxy=choose_proxy(cfg),
                                         )
                                         if text2:
                                             configs.update(parse_configs_from_text(text2))
@@ -430,7 +426,7 @@ class Aggregator:
                 disabled_path=(
                     sources_file.with_name("sources_disabled.txt") if prune else None
                 ),
-                proxy=_choose_proxy(cfg),
+                proxy=choose_proxy(cfg),
             )
             self.stats["valid_sources"] = len(sources)
             configs = await self.fetch_and_parse_configs(
@@ -439,7 +435,7 @@ class Aggregator:
                 cfg.request_timeout,
                 retries=cfg.retry_attempts,
                 base_delay=cfg.retry_base_delay,
-                proxy=_choose_proxy(cfg),
+                proxy=choose_proxy(cfg),
             )
             self.stats["fetched_configs"] = len(configs)
             logging.info("Fetched configs count: %d", self.stats["fetched_configs"])

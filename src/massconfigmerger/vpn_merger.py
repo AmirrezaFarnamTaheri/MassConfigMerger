@@ -62,7 +62,7 @@ from .result_processor import (
 )
 from .output_writer import generate_comprehensive_outputs, EXCLUDE_REGEXES as OUTPUT_EXCLUDE_REGEXES
 from .clash_utils import config_to_clash_proxy, flag_emoji, build_clash_config
-from .utils import print_public_source_warning
+from .utils import print_public_source_warning, choose_proxy
 
 try:
     import aiohttp
@@ -88,11 +88,6 @@ except ImportError as exc:
     ) from exc
 
 from .config import Settings, load_config
-
-
-def _choose_proxy(cfg: Settings = CONFIG) -> str | None:
-    """Return SOCKS proxy if defined, otherwise HTTP proxy."""
-    return cfg.SOCKS_PROXY or cfg.HTTP_PROXY
 
 try:
     import aiodns  # noqa: F401
@@ -130,7 +125,7 @@ class UltimateVPNMerger:
             self.seen_hashes,
             self.seen_hashes_lock,
             self._update_history,
-            proxy=_choose_proxy(CONFIG),
+            proxy=choose_proxy(CONFIG),
         )
         self.batch_counter = 0
         self.next_batch_threshold = CONFIG.save_every if CONFIG.save_every else float('inf')
@@ -322,7 +317,7 @@ class UltimateVPNMerger:
         )
         
         self.fetcher.session = aiohttp.ClientSession(
-            connector=connector, proxy=_choose_proxy(CONFIG)
+            connector=connector, proxy=choose_proxy(CONFIG)
         )
         
         try:
@@ -382,7 +377,7 @@ class UltimateVPNMerger:
                 int(CONFIG.request_timeout),
                 retries=1,
                 base_delay=0.5,
-                proxy=_choose_proxy(CONFIG),
+                proxy=choose_proxy(CONFIG),
             )
             if not text:
                 continue
