@@ -18,9 +18,16 @@ def test_check_and_update_sources(monkeypatch, tmp_path):
     monkeypatch.setattr(aggregator_tool, "fetch_text", fake_fetch_text)
 
     agg = aggregator_tool.Aggregator(Settings())
-    result = asyncio.run(
-        agg.check_and_update_sources(path, concurrent_limit=2)
-    )
+    async def run_test():
+        async with aggregator_tool.aiohttp.ClientSession() as sess:
+            monkeypatch.setattr(
+                aggregator_tool.aiohttp,
+                "ClientSession",
+                lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not be called")),
+            )
+            return await agg.check_and_update_sources(path, concurrent_limit=2, session=sess)
+
+    result = asyncio.run(run_test())
     assert result == ["good"]
     # bad should remain until failure threshold reached
     lines = path.read_text().splitlines()
