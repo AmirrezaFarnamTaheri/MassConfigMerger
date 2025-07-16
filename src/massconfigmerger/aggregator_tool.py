@@ -21,6 +21,7 @@ import argparse
 from datetime import datetime, timedelta
 import time
 import sys
+import os
 from pathlib import Path
 from typing import Iterable, List, Set, Dict, Tuple, cast, Any
 from .clash_utils import config_to_clash_proxy, build_clash_config
@@ -37,6 +38,7 @@ from tqdm import tqdm
 from telethon import TelegramClient, events, errors  # type: ignore
 from telethon.tl.custom.message import Message  # type: ignore
 from . import vpn_merger
+from . import output_writer
 
 from .constants import SOURCES_FILE
 from .utils import (
@@ -736,6 +738,11 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
         action="store_true",
         help="run vpn_merger on the aggregated results using the resume feature",
     )
+    parser.add_argument(
+        "--upload-gist",
+        action="store_true",
+        help="upload generated files to a GitHub Gist",
+    )
 
     return parser
 
@@ -816,6 +823,17 @@ def main(args: argparse.Namespace | None = None) -> None:
             )
         )
         print(f"Aggregation complete. Files written to {out_dir.resolve()}")
+
+        if args.upload_gist:
+            token = cfg.github_token or os.environ.get("GITHUB_TOKEN")
+            if not token:
+                print("GitHub token not provided. Set github_token in config or GITHUB_TOKEN env var")
+            else:
+                links = asyncio.run(
+                    output_writer.upload_files_to_gist(files, token)
+                )
+                path = output_writer.write_upload_links(links, out_dir)
+                print(f"Uploaded files. Links saved to {path}")
 
         if args.with_merger:
             vpn_merger.CONFIG.resume_file = str(out_dir / "vpn_subscription_raw.txt")

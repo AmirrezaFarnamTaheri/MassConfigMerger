@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     write_clash: bool = True
     HTTP_PROXY: Optional[str] = None
     SOCKS_PROXY: Optional[str] = None
+    github_token: Optional[str] = None
 
     # Merger settings
     headers: Dict[str, str] = {

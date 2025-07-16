@@ -210,3 +210,37 @@ async def generate_comprehensive_outputs(
             tmp_xyz = xyz_file.with_suffix('.tmp')
             tmp_xyz.write_text("\n".join(xyz_lines), encoding="utf-8")
             tmp_xyz.replace(xyz_file)
+
+async def upload_files_to_gist(paths: List[Path], token: str, *, base_url: str = "https://api.github.com") -> Dict[str, str]:
+    """Upload files as separate private gists and return name->raw_url mapping."""
+    import aiohttp
+
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github+json",
+    }
+    result: Dict[str, str] = {}
+    base = base_url.rstrip("/") + "/gists"
+    async with aiohttp.ClientSession(headers=headers) as session:
+        for path in paths:
+            payload = {
+                "files": {path.name: {"content": path.read_text(encoding="utf-8")}},
+                "public": False,
+                "description": "MassConfigMerger output",
+            }
+            async with session.post(base, json=payload) as resp:
+                resp.raise_for_status()
+                data = await resp.json()
+                raw = data["files"][path.name]["raw_url"]
+                result[path.name] = raw
+    return result
+
+
+def write_upload_links(links: Dict[str, str], output_dir: Path) -> Path:
+    """Write uploaded file links to output_dir/upload_links.txt and return the path."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    dest = output_dir / "upload_links.txt"
+    tmp = dest.with_suffix(".tmp")
+    tmp.write_text("\n".join(f"{k}: {v}" for k, v in links.items()), encoding="utf-8")
+    tmp.replace(dest)
+    return dest
