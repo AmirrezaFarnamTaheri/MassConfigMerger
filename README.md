@@ -69,7 +69,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
    massconfigmerger fetch --hours 12
    ```
 
-   This creates `output/merged.txt` and a log file under `logs/` named by the current date.
+   `aggregator_tool.py` on its own creates `output/merged.txt` (plus `merged_base64.txt` and `merged_singbox.json`) and a log file under `logs/` named by the current date.
 
 5. **Merge and sort the results**
 
@@ -132,6 +132,9 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
 | File Name                              | Purpose                                                                                                  |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `merged.txt` | Raw links collected from all sources. |
+| `merged_base64.txt` | Base64-encoded version of `merged.txt`. |
+| `merged_singbox.json` | Basic sing-box JSON from the aggregator. |
 | `vpn_subscription_base64.txt` | *(optional)* A base64-encoded file. Most apps import directly from this file's raw URL.                  |
 | `vpn_subscription_raw.txt`    | A plain text list of all the VPN configuration links.                                                    |
 | `vpn_detailed.csv`            | *(optional)* A spreadsheet with detailed info about each server, including protocol, host, and ping time. |
