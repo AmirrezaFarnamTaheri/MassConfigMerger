@@ -146,12 +146,15 @@ re-downloading.
 | `vpn_subscription_raw.txt`    | A plain text list of all the VPN configuration links.                                                    |
 | `vpn_detailed.csv`            | *(optional)* A spreadsheet with detailed info about each server, including protocol, host, and ping time. |
 | `vpn_report.json`             | A detailed report with all stats and configurations in a developer-friendly format.                      |
+| `vpn_report.html`             | *(optional)* Simple HTML table summarizing protocol, host, latency and country.                           |
 | `vpn_singbox.json`            | Outbound objects ready for import into sing-box/Stash.                                                   |
 | `clash.yaml`                  | Clash configuration with all proxies and a basic group. Compatible with Clash/Clash Meta.                  |
 | `vpn_clash_proxies.yaml`      | Minimal Clash YAML listing only the proxies, suitable as a provider.                                      |
 | `surge.conf` *(via `--output-surge`)* | Surge format configuration. Works with Surge iOS/macOS 5 or later.                                    |
 | `quantumultx.conf` *(via `--output-qx`)* | Quantumult X server list compatible with version 1.1.9+ on iOS.                                      |
 | `xyz.conf` *(via `--output-xyz`)* | Demonstration XYZ format listing basic proxy info. |
+
+Enable the HTML summary with `--write-html` or by setting `write_html: true` in `config.yaml`.
 
 All of these files are written to the directory specified by `--output-dir`
 (defaults to `output/`) unless an absolute path is given.

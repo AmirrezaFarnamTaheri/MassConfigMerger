@@ -117,6 +117,7 @@ class Settings(BaseSettings):
     strict_batch: bool = True
     shuffle_sources: bool = False
     write_csv: bool = True
+    write_html: bool = False
     write_clash_proxies: bool = True
     surge_file: Optional[str] = None
     qx_file: Optional[str] = None

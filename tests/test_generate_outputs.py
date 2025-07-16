@@ -66,3 +66,26 @@ def test_generate_comprehensive_outputs(tmp_path, monkeypatch):
     proxy_name = clash_data["proxies"][0]["name"]
     assert proxy_name == "🏳 ?? - src.example - 100ms"
     assert "proxies" in yaml.safe_load(proxies.read_text())
+
+
+def test_generate_html_output(tmp_path, monkeypatch):
+    monkeypatch.setattr(CONFIG, "output_dir", str(tmp_path))
+    monkeypatch.setattr(CONFIG, "write_html", True)
+    merger = UltimateVPNMerger()
+
+    res = ConfigResult(
+        config="vmess://uuid@h:80",
+        protocol="VMess",
+        host="h",
+        port=80,
+        ping_time=0.2,
+        is_reachable=True,
+        source_url="src",
+    )
+    stats = merger._analyze_results([res], [])
+    asyncio.run(merger._generate_comprehensive_outputs([res], stats, 0.0))
+
+    html = tmp_path / "vpn_report.html"
+    assert html.exists()
+    txt = html.read_text()
+    assert "<table" in txt and "Latency" in txt
