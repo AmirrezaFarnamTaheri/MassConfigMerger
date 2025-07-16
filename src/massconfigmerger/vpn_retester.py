@@ -97,8 +97,11 @@ def save_results(results: List[Tuple[str, Optional[float]]], sort: bool, top_n: 
     print(f"\n✔ Retested files saved in {output_dir}/")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Retest and sort an existing VPN subscription list")
+def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.ArgumentParser:
+    """Return an argument parser configured for the retester."""
+    if parser is None:
+        parser = argparse.ArgumentParser(description="Retest and sort an existing VPN subscription list")
+
     parser.add_argument("input", help="Path to existing raw or base64 subscription file")
     parser.add_argument("--top-n", type=int, default=0, help="Keep only the N fastest configs")
     parser.add_argument("--no-sort", action="store_true", help="Skip sorting by latency")
@@ -110,17 +113,18 @@ def main() -> None:
                         help="Discard configs slower than this ping in ms (0 disables)")
     parser.add_argument("--include-protocols", type=str, default=None,
                         help="Comma-separated protocols to include")
-    parser.add_argument(
-        "--exclude-protocols",
-        type=str,
-        default=None,
-        help="Comma-separated protocols to exclude (default: OTHER)"
-    )
+    parser.add_argument("--exclude-protocols", type=str, default=None,
+                        help="Comma-separated protocols to exclude (default: OTHER)")
     parser.add_argument("--output-dir", type=str, default=CONFIG.output_dir,
                         help="Directory to save output files")
     parser.add_argument("--no-base64", action="store_true", help="Do not save base64 file")
     parser.add_argument("--no-csv", action="store_true", help="Do not save CSV report")
-    args = parser.parse_args()
+
+    return parser
+
+def main(args: argparse.Namespace | None = None) -> None:
+    if args is None:
+        args = build_parser().parse_args()
 
     CONFIG.concurrent_limit = max(1, args.concurrent_limit)
     CONFIG.test_timeout = max(0.1, args.test_timeout)

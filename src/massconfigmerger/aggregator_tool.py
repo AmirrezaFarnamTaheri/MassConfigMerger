@@ -16,6 +16,7 @@ import json
 import logging
 import random  # noqa: F401 - used in tests for monkeypatching
 import re
+import argparse
 from datetime import datetime, timedelta
 import time
 from pathlib import Path
@@ -582,15 +583,15 @@ def setup_logging(log_dir: Path) -> None:
     )
 
 
-def main() -> None:
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description=(
-            "Mass VPN Config Aggregator. Telegram credentials are only required "
-            "when scraping Telegram or running bot mode"
+def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.ArgumentParser:
+    """Return an argument parser configured for the aggregator tool."""
+    if parser is None:
+        parser = argparse.ArgumentParser(
+            description=(
+                "Mass VPN Config Aggregator. Telegram credentials are only required "
+                "when scraping Telegram or running bot mode"
+            )
         )
-    )
     parser.add_argument("--bot", action="store_true", help="run in telegram bot mode")
     parser.add_argument("--protocols", help="comma separated protocols to keep")
     parser.add_argument(
@@ -661,7 +662,13 @@ def main() -> None:
         action="store_true",
         help="run vpn_merger on the aggregated results using the resume feature",
     )
-    args = parser.parse_args()
+
+    return parser
+
+
+def main(args: argparse.Namespace | None = None) -> None:
+    if args is None:
+        args = build_parser().parse_args()
 
     cfg = load_config(Path(args.config))
     if args.output_dir:

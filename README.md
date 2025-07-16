@@ -66,11 +66,11 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 4. **Gather configuration links**
 
    ```bash
-   python aggregator_tool.py --hours 12
+   massconfigmerger fetch --hours 12
    # or
    aggregator-tool --hours 12
    # or
-   massconfigmerger fetch --hours 12
+   python aggregator_tool.py --hours 12
    ```
 
 `aggregator_tool.py` on its own creates `output/vpn_subscription_raw.txt` (plus
@@ -80,11 +80,11 @@ named by the current date.
 5. **Merge and sort the results**
 
    ```bash
-   python vpn_merger.py
+   massconfigmerger merge
    # or
    vpn-merger
    # or
-   massconfigmerger merge
+   python vpn_merger.py
    ```
 
 Use `--resume output/vpn_subscription_raw.txt` to continue a previous run without
@@ -93,11 +93,11 @@ re-downloading.
 6. **All in one step**
 
    ```bash
-   python aggregator_tool.py --with-merger
+   massconfigmerger full
    # or
    aggregator-tool --with-merger
    # or
-   massconfigmerger full
+   python aggregator_tool.py --with-merger
    ```
 
    The merger automatically runs on the freshly aggregated results using the

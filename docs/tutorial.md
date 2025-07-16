@@ -12,28 +12,34 @@
    pip install -e .
    ```
    Installing from PyPI works too (`pip install massconfigmerger`) and provides the `aggregator-tool`, `vpn-merger` and `vpn-retester` commands.
-3. **Run `aggregator_tool.py`** to grab fresh configuration links:
+3. **Run `massconfigmerger fetch`** to grab fresh configuration links:
    ```bash
-   python aggregator_tool.py --hours 12
+   massconfigmerger fetch --hours 12
    # or
    aggregator-tool --hours 12
+   # or
+   python aggregator_tool.py --hours 12
    ```
-4. **Run `vpn_merger.py`** to test and merge all configs:
+4. **Run `massconfigmerger merge`** to test and merge all configs:
    ```bash
-   python vpn_merger.py
+   massconfigmerger merge
    # or
    vpn-merger
+   # or
+   python vpn_merger.py
    ```
    Example output showing the new cumulative progress bar:
    ```
    🔄 [2/6] Fetching configs from 120 available sources...
    Testing: 50/120 cfg
    ```
-5. **Retest existing results** anytime with `vpn_retester.py`:
+5. **Retest existing results** anytime with `massconfigmerger retest`:
    ```bash
-   python vpn_retester.py
+   massconfigmerger retest
    # or
    vpn-retester
+   # or
+   python vpn_retester.py
    ```
 6. Import the files in `output/` into your VPN client or share the base64 link.
 
