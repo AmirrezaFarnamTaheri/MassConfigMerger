@@ -226,8 +226,15 @@ The script automates a simple but powerful process to create the best possible s
 
   * **These are public servers.** The VPN configurations are sourced from public channels. You should assume that the server operators are **unknown and untrusted**.
   * **Do NOT use for sensitive data.** Do not log into banking sites, handle personal emails, or transmit any sensitive information while connected to these servers. Your traffic may not be private.
+  * **Free nodes may log or alter traffic.** Because these servers are operated by strangers, assume that anything you send through them could be recorded or modified.
   * **For general-purpose use only.** This service is excellent for general Browse, bypassing geo-restrictions, and accessing blocked content. It is **not** a replacement for a reputable, paid VPN service if you require high security and privacy.
   * **You are using this at your own risk.** The creators of this script are not responsible for how you use these servers.
+
+**Best practices for safer browsing:**
+
+  - Avoid signing into important accounts.
+  - Stick to HTTPS sites so the connection is encrypted end-to-end.
+  - Use throwaway or secondary credentials if you only need temporary access.
 
 -----
 
