@@ -141,6 +141,7 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 | `vpn_clash_proxies.yaml`      | Minimal Clash YAML listing only the proxies, suitable as a provider.                                      |
 | `surge.conf` *(via `--output-surge`)* | Surge format configuration. Works with Surge iOS/macOS 5 or later.                                    |
 | `quantumultx.conf` *(via `--output-qx`)* | Quantumult X server list compatible with version 1.1.9+ on iOS.                                      |
+| `xyz.conf` *(via `--output-xyz`)* | Demonstration XYZ format listing basic proxy info. |
 
 All of these files are written to the directory specified by `--output-dir`
 (defaults to `output/`) unless an absolute path is given.
@@ -150,7 +151,7 @@ All of these files are written to the directory specified by `--output-dir`
 Generate client-specific output automatically:
 
 ```bash
-python vpn_merger.py --output-surge surge.conf --output-qx quantumultx.conf
+python vpn_merger.py --output-surge surge.conf --output-qx quantumultx.conf --output-xyz xyz.conf
 ```
 
 Once the files are generated, host them somewhere your phone can reach or copy
@@ -163,7 +164,7 @@ remote URL. Refer to the [Surge manual](https://manual.nssurge.com/) and the
 Example of generating and serving the files locally:
 
 ```bash
-python vpn_merger.py --output-surge surge.conf --output-qx quantumultx.conf
+python vpn_merger.py --output-surge surge.conf --output-qx quantumultx.conf --output-xyz xyz.conf
 python3 -m http.server -d output 8000
 ```
 Then import `http://<your-ip>:8000/surge.conf` or
