@@ -144,8 +144,11 @@ class UltimateVPNMerger:
         self.last_saved_count = 0
         self._file_lock = asyncio.Lock()
         self._history_lock = asyncio.Lock()
-        # Store proxy history in output/proxy_history.json
-        self.history_path = Path(CONFIG.output_dir) / "proxy_history.json"
+        # Store proxy history in configurable location
+        hist_path = Path(CONFIG.history_file)
+        if not hist_path.is_absolute():
+            hist_path = Path(CONFIG.output_dir) / hist_path
+        self.history_path = hist_path
         self.history_path.parent.mkdir(parents=True, exist_ok=True)
         try:
             self.proxy_history = json.loads(self.history_path.read_text())
@@ -992,6 +995,12 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
     parser.add_argument("--smux", type=int, default=CONFIG.smux_streams,
                         help="Set smux streams for URI configs (0=disable)")
     parser.add_argument(
+        "--history-file",
+        type=str,
+        default=None,
+        help="Path to proxy history JSON file",
+    )
+    parser.add_argument(
         "--http-proxy",
         type=str,
         default=None,
@@ -1125,6 +1134,8 @@ def main(args: argparse.Namespace | None = None) -> int:
     CONFIG.shuffle_sources = args.shuffle_sources
     CONFIG.mux_concurrency = max(0, args.mux)
     CONFIG.smux_streams = max(0, args.smux)
+    if args.history_file is not None:
+        CONFIG.history_file = args.history_file
     if args.http_proxy is not None:
         CONFIG.HTTP_PROXY = args.http_proxy
     if args.socks_proxy is not None:

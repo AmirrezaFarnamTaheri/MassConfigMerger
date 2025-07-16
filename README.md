@@ -320,6 +320,7 @@ settings in two ways (plus an override flag for the merger):
 Use `--sort-by reliability` to rank servers by past success rates recorded in
 `proxy_history.json`. The file location is set by the `history_file` option in
 `config.yaml`.
+You can override it for a single run with `--history-file custom.json`.
 
 ```bash
 vpn-merger --sort-by reliability
