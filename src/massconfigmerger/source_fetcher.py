@@ -160,14 +160,18 @@ class AsyncSourceFetcher:
             try:
                 asyncio.get_running_loop()
                 self.session = aiohttp.ClientSession(proxy=self.proxy)
-                self._own_session = True
             except RuntimeError:
                 # No running loop; initialize lazily
                 self.session = None
-                self._own_session = True
+            self._own_session = True
         else:
             self.session = session
             self._own_session = False
+
+    def _ensure_session(self) -> aiohttp.ClientSession:
+        if self.session is None:
+            self.session = aiohttp.ClientSession(proxy=self.proxy)
+        return self.session
 
     async def close(self) -> None:
         if self._own_session and self.session is not None:
@@ -182,14 +186,7 @@ class AsyncSourceFetcher:
 
     async def test_source_availability(self, url: str) -> bool:
         """Test if a source URL is available (returns 200 status)."""
-        session = self.session
-        loop = get_client_loop(session) if session else None
-        if session is None or loop is not asyncio.get_running_loop():
-            if self._own_session and session is not None:
-                await session.close()
-            self.session = aiohttp.ClientSession(proxy=self.proxy)
-            self._own_session = True
-            session = self.session
+        session = self._ensure_session()
         try:
             timeout = aiohttp.ClientTimeout(total=10)
             async with session.head(url, timeout=timeout, allow_redirects=True) as response:
@@ -211,14 +208,7 @@ class AsyncSourceFetcher:
 
     async def fetch_source(self, url: str) -> Tuple[str, List[ConfigResult]]:
         """Fetch single source with comprehensive testing and deduplication."""
-        session = self.session
-        loop = get_client_loop(session) if session else None
-        if session is None or loop is not asyncio.get_running_loop():
-            if self._own_session and session is not None:
-                await session.close()
-            self.session = aiohttp.ClientSession(proxy=self.proxy)
-            self._own_session = True
-            session = self.session
+        session = self._ensure_session()
         for attempt in range(CONFIG.max_retries):
             try:
                 timeout = aiohttp.ClientTimeout(total=CONFIG.request_timeout)

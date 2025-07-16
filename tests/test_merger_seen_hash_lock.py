@@ -21,9 +21,6 @@ async def test_merger_seen_hash_lock_prevents_duplicates():
     await client.start_server()
 
     merger = UltimateVPNMerger()
-    await merger.fetcher.close()
-    merger.fetcher.session = client.session
-    merger.fetcher._own_session = False
 
     url = str(client.make_url("/"))
     r1, r2 = await asyncio.gather(
