@@ -12,6 +12,7 @@ from typing import Optional, Tuple
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse, parse_qsl
 
 from .config import Settings, load_config
+from .constants import MAX_DECODE_SIZE as GLOBAL_MAX_DECODE_SIZE
 from .tester import NodeTester
 
 DEFAULT_CONFIG_FILE = Path(__file__).resolve().with_name("config.yaml")
@@ -38,7 +39,7 @@ class ConfigResult:
 class EnhancedConfigProcessor:
     """Advanced configuration processor with comprehensive testing capabilities."""
 
-    MAX_DECODE_SIZE = 256 * 1024  # 256 kB safety limit for base64 payloads
+    MAX_DECODE_SIZE = GLOBAL_MAX_DECODE_SIZE
 
     def __init__(self) -> None:
         self.tester = NodeTester(CONFIG)

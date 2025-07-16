@@ -1,6 +1,7 @@
 import base64
 
 from massconfigmerger import utils
+from massconfigmerger.constants import MAX_DECODE_SIZE
 
 
 def test_multiple_links_same_line():
@@ -38,7 +39,7 @@ def test_extract_all_protocols():
 
 
 def test_parse_oversized_line(caplog):
-    big_line = "A" * (utils.MAX_DECODE_SIZE + 1)
+    big_line = "A" * (MAX_DECODE_SIZE + 1)
     with caplog.at_level('DEBUG'):
         result = utils.parse_configs_from_text(big_line)
     assert result == set()
