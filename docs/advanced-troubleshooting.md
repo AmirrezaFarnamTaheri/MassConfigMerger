@@ -96,6 +96,11 @@ dependencies first**. You can either install the package in editable mode with
 the `dev` extras or use the provided `requirements-dev.txt` file before
 invoking `pytest`:
 
+> **Important**: run `pip install -e .[dev]` (or
+> `pip install -r requirements-dev.txt`) before executing `pytest`. The
+> `pytest_asyncio` plugin and other test requirements are only installed with
+> these development dependencies.
+
 ```bash
 pip install -e .[dev]
 # or
