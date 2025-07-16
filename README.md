@@ -357,6 +357,14 @@ Use `--include-pattern` to keep only configs that match a regular expression.
 Combine it with `--exclude-pattern` to fine tune which servers remain. These
 flags work with both `vpn-merger` and `aggregator-tool`.
 
+### GitHub Gist Upload
+
+Use `--upload-gist` with either `vpn-merger` or `aggregator-tool` to automatically
+upload the generated files to a private GitHub Gist. Provide a token with the
+`gist` scope via the `github_token` setting in `config.yaml` or the
+`GITHUB_TOKEN` environment variable. After uploading, the raw URLs are saved in
+`output/upload_links.txt` for quick reference.
+
 ### Huge Source List
 
 The `sources.txt` file collects links from hundreds of projects across GitHub

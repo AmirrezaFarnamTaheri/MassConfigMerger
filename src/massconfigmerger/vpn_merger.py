@@ -32,6 +32,7 @@ import re
 import sys
 import time
 import argparse
+import os
 import json
 import base64
 import binascii
@@ -59,7 +60,12 @@ from .result_processor import (
     ConfigResult,
     EnhancedConfigProcessor,
 )
-from .output_writer import generate_comprehensive_outputs, EXCLUDE_REGEXES as OUTPUT_EXCLUDE_REGEXES
+from .output_writer import (
+    generate_comprehensive_outputs,
+    EXCLUDE_REGEXES as OUTPUT_EXCLUDE_REGEXES,
+    upload_files_to_gist,
+    write_upload_links,
+)
 from .clash_utils import config_to_clash_proxy, flag_emoji, build_clash_config
 from .utils import print_public_source_warning, choose_proxy
 
@@ -1061,6 +1067,11 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
         action="store_true",
         help="Show extended usage information and exit",
     )
+    parser.add_argument(
+        "--upload-gist",
+        action="store_true",
+        help="upload output files to a GitHub Gist",
+    )
 
     return parser
 
@@ -1159,10 +1170,28 @@ def main(args: argparse.Namespace | None = None) -> int:
     print("🔧 VPN Merger - Checking environment...")
 
     try:
-        return detect_and_run(sources_file)
+        detect_and_run(sources_file)
     except (OSError, aiohttp.ClientError, RuntimeError, ValueError) as e:
         print(f"❌ Error: {e}")
         print("\n📋 Alternative execution methods:")
         print("   • For Jupyter: await run_in_jupyter()")
         print("   • For scripts: python script.py")
         return 1
+
+    if args.upload_gist:
+        token = CONFIG.github_token or os.environ.get("GITHUB_TOKEN")
+        if not token:
+            print("GitHub token not provided. Set github_token in config or GITHUB_TOKEN env var")
+        else:
+            report_file = Path(CONFIG.output_dir) / "vpn_report.json"
+            try:
+                data = json.loads(report_file.read_text())
+                file_paths = [Path(p) for p in data.get("output_files", {}).values()]
+            except Exception:
+                file_paths = []
+            if file_paths:
+                links = asyncio.run(upload_files_to_gist(file_paths, token))
+                write_upload_links(links, Path(CONFIG.output_dir))
+                print("Uploaded files. Links saved to", Path(CONFIG.output_dir) / "upload_links.txt")
+
+    return 0
