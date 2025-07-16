@@ -14,6 +14,7 @@ Run `python vpn_merger.py --help` to see all options. Important flags include:
   * `--exclude-protocols LIST` - protocols to drop. By default `OTHER` is excluded; pass an empty string to keep everything.
   * `--exclude-pattern REGEX` - skip configs matching this regular expression (repeatable).
   * `--include-pattern REGEX` - only keep configs matching this regular expression (repeatable).
+    These pattern flags also apply to `aggregator-tool`.
   * `--resume FILE` - load a previous output file before fetching new sources.
   * `--sources FILE` - read subscription URLs from a custom file (default `sources.txt`).
   * `--output-dir DIR` - specify where output files are stored.
