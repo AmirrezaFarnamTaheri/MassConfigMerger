@@ -70,6 +70,7 @@ class NodeTester:
             return None
         try:
             from geoip2.database import Reader
+            from geoip2.errors import AddressNotFoundError
         except ImportError:  # pragma: no cover - optional dependency
             return None
 
@@ -88,7 +89,7 @@ class NodeTester:
                 ip = info[0][4][0]
             resp = self._geoip_reader.country(ip)
             return resp.country.iso_code
-        except (OSError, socket.gaierror) as exc:
+        except (OSError, socket.gaierror, AddressNotFoundError) as exc:
             logging.debug("GeoIP lookup failed: %s", exc)
             return None
 

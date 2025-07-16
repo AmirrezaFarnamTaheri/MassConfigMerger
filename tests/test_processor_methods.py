@@ -297,12 +297,46 @@ def test_lookup_country(monkeypatch):
 
     dummy_geoip2 = types.ModuleType("geoip2")
     dummy_database = types.ModuleType("geoip2.database")
+    dummy_errors = types.ModuleType("geoip2.errors")
+    class DummyAddressNotFoundError(Exception):
+        pass
+    dummy_errors.AddressNotFoundError = DummyAddressNotFoundError
     dummy_database.Reader = DummyReader
     dummy_geoip2.database = dummy_database
+    dummy_geoip2.errors = dummy_errors
     monkeypatch.setitem(sys.modules, "geoip2", dummy_geoip2)
     monkeypatch.setitem(sys.modules, "geoip2.database", dummy_database)
+    monkeypatch.setitem(sys.modules, "geoip2.errors", dummy_errors)
 
     assert asyncio.run(proc.lookup_country("1.2.3.4")) == "US"
+
+
+def test_lookup_country_address_not_found(monkeypatch):
+    proc = EnhancedConfigProcessor()
+    monkeypatch.setattr(CONFIG, "geoip_db", "dummy.mmdb")
+
+    class DummyAddressNotFoundError(Exception):
+        pass
+
+    class DummyReader:
+        def __init__(self, path):
+            pass
+
+        def country(self, ip):
+            raise DummyAddressNotFoundError("no match")
+
+    dummy_geoip2 = types.ModuleType("geoip2")
+    dummy_database = types.ModuleType("geoip2.database")
+    dummy_errors = types.ModuleType("geoip2.errors")
+    dummy_database.Reader = DummyReader
+    dummy_errors.AddressNotFoundError = DummyAddressNotFoundError
+    dummy_geoip2.database = dummy_database
+    dummy_geoip2.errors = dummy_errors
+    monkeypatch.setitem(sys.modules, "geoip2", dummy_geoip2)
+    monkeypatch.setitem(sys.modules, "geoip2.database", dummy_database)
+    monkeypatch.setitem(sys.modules, "geoip2.errors", dummy_errors)
+
+    assert asyncio.run(proc.lookup_country("1.2.3.4")) is None
 
 
 def test_deduplicate_semantic_equivalent(monkeypatch):
