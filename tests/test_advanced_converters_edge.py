@@ -72,4 +72,3 @@ def test_generate_qx_conf_missing_optional():
         """
     ).strip()
     assert conf == expected
-

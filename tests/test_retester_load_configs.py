@@ -39,4 +39,3 @@ def test_load_unicode_decode_error(tmp_path):
     p.write_text(data, encoding="utf-8")
     with pytest.raises(ValueError):
         vpn_retester.load_configs(p)
-

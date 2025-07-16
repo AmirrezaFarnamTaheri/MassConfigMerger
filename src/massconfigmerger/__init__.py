@@ -15,4 +15,3 @@ def get_client_loop(session: aiohttp.ClientSession) -> asyncio.AbstractEventLoop
         except RuntimeError:
             return None
     return getattr(session, "_loop", None)
-

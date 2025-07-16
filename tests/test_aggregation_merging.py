@@ -8,7 +8,6 @@ from massconfigmerger import aggregator_tool
 from massconfigmerger.config import Settings
 from massconfigmerger.vpn_merger import UltimateVPNMerger
 from massconfigmerger.result_processor import ConfigResult, CONFIG
-from massconfigmerger.config import Settings
 
 
 @pytest.mark.asyncio
