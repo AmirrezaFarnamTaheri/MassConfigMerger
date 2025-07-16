@@ -98,3 +98,26 @@ def test_protocol_filter_mixed_case_argument():
     )
     result = aggregator_tool.deduplicate_and_filter({vmess, trojan}, cfg, ["VMeSS"])
     assert result == [vmess]
+
+
+def test_semantic_deduplication_vmess():
+    """Links representing the same VMess config should deduplicate."""
+    data = {"v": "2", "add": "host", "port": "80", "id": "uuid"}
+    json1 = json.dumps(data)
+    b64_1 = base64.b64encode(json1.encode()).decode().strip("=")
+    link1 = f"vmess://{b64_1}"
+
+    json2 = json.dumps({"id": "uuid", "port": "80", "add": "host", "v": "2"})
+    b64_2 = base64.b64encode(json2.encode()).decode().strip("=")
+    link2 = f"VMESS://{b64_2}"
+
+    cfg = Settings(
+        telegram_api_id=1,
+        telegram_api_hash="h",
+        telegram_bot_token="t",
+        allowed_user_ids=[1],
+        protocols=["vmess"],
+    )
+    result = aggregator_tool.deduplicate_and_filter({link1, link2}, cfg)
+    assert len(result) == 1
+    assert result[0] in {link1, link2}
