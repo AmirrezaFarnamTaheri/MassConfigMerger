@@ -54,5 +54,6 @@ def test_scrape_telegram_configs(monkeypatch, tmp_path):
         aggregator_tool, "errors", types.SimpleNamespace(RPCError=Exception)
     )
 
-    result = asyncio.run(aggregator_tool.scrape_telegram_configs(channels, 24, cfg))
+    agg = aggregator_tool.Aggregator(cfg)
+    result = asyncio.run(agg.scrape_telegram_configs(channels, 24))
     assert result == {"vmess://direct1", "vmess://from_url", "http://sub.example"}

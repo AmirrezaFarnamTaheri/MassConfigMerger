@@ -23,13 +23,14 @@ async def test_run_pipeline_prints_summary(monkeypatch, capsys, tmp_path):
     def fake_dedup(configs, _cfg, _p):
         return list(configs)
 
-    monkeypatch.setattr(aggregator_tool, "check_and_update_sources", fake_check)
-    monkeypatch.setattr(aggregator_tool, "fetch_and_parse_configs", fake_fetch)
-    monkeypatch.setattr(aggregator_tool, "scrape_telegram_configs", fake_scrape)
-    monkeypatch.setattr(aggregator_tool, "output_files", fake_output)
+    monkeypatch.setattr(aggregator_tool.Aggregator, "check_and_update_sources", fake_check)
+    monkeypatch.setattr(aggregator_tool.Aggregator, "fetch_and_parse_configs", fake_fetch)
+    monkeypatch.setattr(aggregator_tool.Aggregator, "scrape_telegram_configs", fake_scrape)
+    monkeypatch.setattr(aggregator_tool.Aggregator, "output_files", fake_output)
     monkeypatch.setattr(aggregator_tool, "deduplicate_and_filter", fake_dedup)
 
-    await aggregator_tool.run_pipeline(Settings(output_dir=str(tmp_path)))
+    agg = aggregator_tool.Aggregator(Settings(output_dir=str(tmp_path)))
+    await agg.run()
     out = capsys.readouterr().out
     assert "Sources checked: 2" in out
     assert "Configs fetched: 2" in out
