@@ -91,6 +91,20 @@ async def test_file_lock_prevents_duplicates(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_aggregator_output_files_atomic(tmp_path):
+    cfg = Settings(
+        output_dir=str(tmp_path),
+        write_base64=False,
+        write_singbox=False,
+        write_clash=False,
+    )
+    aggregator_tool.Aggregator.output_files(["vmess://uuid@host:80"], tmp_path, cfg)
+
+    assert (tmp_path / "vpn_subscription_raw.txt").exists()
+    assert not any(p.suffix == ".tmp" for p in tmp_path.iterdir())
+
+
+@pytest.mark.asyncio
 async def test_run_pipeline_prunes_bad_sources(aiohttp_client, tmp_path, monkeypatch):
     async def good(request):
         return web.Response(text="vless://user@host:80")
