@@ -114,6 +114,12 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
                         help="TCP connection timeout in seconds")
     parser.add_argument("--max-ping", type=int, default=0,
                         help="Discard configs slower than this ping in ms (0 disables)")
+    parser.add_argument(
+        "--history-file",
+        type=str,
+        default=None,
+        help="Path to proxy history JSON file",
+    )
     parser.add_argument("--include-protocols", type=str, default=None,
                         help="Comma-separated protocols to include")
     parser.add_argument("--exclude-protocols", type=str, default=None,
@@ -150,6 +156,8 @@ def main(args: argparse.Namespace | None = None) -> None:
             p.strip().upper() for p in args.exclude_protocols.split(',') if p.strip()
         }
     CONFIG.output_dir = str(Path(args.output_dir).expanduser())
+    if args.history_file is not None:
+        CONFIG.history_file = args.history_file
     CONFIG.write_base64 = not args.no_base64
     CONFIG.write_csv = not args.no_csv
 

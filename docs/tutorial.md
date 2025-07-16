@@ -204,6 +204,7 @@ vpn-merger --sort-by reliability
 ```
 Set a custom path with the `history_file` option in
 [`config.yaml.example`](../config.yaml.example).
+You can also pass `--history-file path.json` on the command line.
 
 ## 🔬 Deep Dive
 
