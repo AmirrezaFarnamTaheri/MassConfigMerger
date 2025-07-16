@@ -660,7 +660,11 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
         "--no-singbox", action="store_true", help="skip vpn_singbox.json"
     )
     parser.add_argument("--no-clash", action="store_true", help="skip clash.yaml")
-    parser.add_argument("--write-html", action="store_true", help="generate vpn_report.html")
+    parser.add_argument(
+        "--write-html",
+        action="store_true",
+        help="enable vpn_report.html when used with --with-merger",
+    )
     parser.add_argument(
         "--shuffle-sources",
         action="store_true",
