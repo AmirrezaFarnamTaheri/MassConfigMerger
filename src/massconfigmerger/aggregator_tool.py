@@ -40,6 +40,7 @@ from .constants import SOURCES_FILE
 from .utils import (
     is_valid_config,
     parse_configs_from_text,
+    print_public_source_warning,
 )
 
 from .config import Settings, load_config
@@ -692,6 +693,7 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
 
 
 def main(args: argparse.Namespace | None = None) -> None:
+    print_public_source_warning()
     if args is None:
         args = build_parser().parse_args()
 

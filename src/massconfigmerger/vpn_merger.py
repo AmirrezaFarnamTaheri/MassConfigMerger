@@ -62,6 +62,7 @@ from .result_processor import (
 )
 from .output_writer import generate_comprehensive_outputs, EXCLUDE_REGEXES as OUTPUT_EXCLUDE_REGEXES
 from .clash_utils import config_to_clash_proxy, flag_emoji, build_clash_config
+from .utils import print_public_source_warning
 
 try:
     import aiohttp
@@ -1045,6 +1046,7 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
 
 def main(args: argparse.Namespace | None = None) -> int:
     """Main entry point with event loop detection."""
+    print_public_source_warning()
     if sys.version_info < (3, 8):
         print("❌ Python 3.8+ required")
         sys.exit(1)

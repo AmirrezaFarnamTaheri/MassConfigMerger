@@ -1,5 +1,6 @@
 import sys
 import argparse
+from .utils import print_public_source_warning
 from . import aggregator_tool
 from . import vpn_merger
 from . import vpn_retester
@@ -7,6 +8,7 @@ from . import vpn_retester
 
 def main(argv: list[str] | None = None) -> None:
     """Entry point for the massconfigmerger command."""
+    print_public_source_warning()
     argv = list(sys.argv[1:] if argv is None else argv)
 
     parser = argparse.ArgumentParser(prog="massconfigmerger", description="Unified interface for Mass Config Merger")

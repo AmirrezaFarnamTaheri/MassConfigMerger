@@ -15,6 +15,19 @@ from .constants import PROTOCOL_RE, BASE64_RE
 # Safety limit for base64 decoding to avoid huge payloads
 MAX_DECODE_SIZE = 256 * 1024  # 256 kB
 
+_warning_printed = False
+
+
+def print_public_source_warning() -> None:
+    """Print a usage warning once per execution."""
+    global _warning_printed
+    if not _warning_printed:
+        print(
+            "WARNING: Collected VPN nodes come from public sources. "
+            "Use at your own risk and comply with local laws."
+        )
+        _warning_printed = True
+
 
 def is_valid_config(link: str) -> bool:
     """Simple validation for known protocols."""
