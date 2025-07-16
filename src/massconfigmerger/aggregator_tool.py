@@ -59,8 +59,16 @@ HTTP_RE = re.compile(r"https?://\S+", re.IGNORECASE)
 # Safety limit for base64 decoding to avoid huge payloads (imported from utils)
 
 def extract_subscription_urls(text: str) -> Set[str]:
-    """Return all HTTP(S) URLs in the text block."""
-    return set(HTTP_RE.findall(text))
+    """Return all HTTP(S) URLs in the text block.
+
+    Trailing punctuation such as ``)``, ``]``, ``,``, or ``.`` is stripped
+    from the matched URLs.
+    """
+
+    urls: Set[str] = set()
+    for match in HTTP_RE.findall(text):
+        urls.add(match.rstrip(")].,"))
+    return urls
 
 
 class Aggregator:
