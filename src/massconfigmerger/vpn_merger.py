@@ -87,7 +87,7 @@ except ImportError as exc:
         "Run `pip install -r requirements.txt` before running this script."
     ) from exc
 
-from .config import Settings
+from .config import Settings, load_config
 
 
 def _choose_proxy(cfg: Settings = CONFIG) -> str | None:
@@ -1064,6 +1064,12 @@ def main(args: argparse.Namespace | None = None) -> int:
             logging.warning("Ignoring unknown arguments: %s", unknown)
     else:
         parser = None
+
+    try:
+        load_config()
+    except ValueError:
+        print("Config file not found. Copy config.yaml.example to config.yaml.")
+        sys.exit(1)
 
     sources_file = args.sources
 

@@ -6,6 +6,7 @@ import argparse
 import base64
 import binascii
 import csv
+import sys
 from pathlib import Path
 from typing import List, Tuple, Optional
 
@@ -13,6 +14,7 @@ from tqdm.asyncio import tqdm_asyncio
 
 from .vpn_merger import EnhancedConfigProcessor, CONFIG
 from .utils import print_public_source_warning
+from .config import load_config
 
 
 async def _test_config(proc: EnhancedConfigProcessor, cfg: str) -> Tuple[str, Optional[float]]:
@@ -127,6 +129,12 @@ def main(args: argparse.Namespace | None = None) -> None:
     print_public_source_warning()
     if args is None:
         args = build_parser().parse_args()
+
+    try:
+        load_config()
+    except ValueError:
+        print("Config file not found. Copy config.yaml.example to config.yaml.")
+        sys.exit(1)
 
     CONFIG.concurrent_limit = max(1, args.concurrent_limit)
     CONFIG.test_timeout = max(0.1, args.test_timeout)

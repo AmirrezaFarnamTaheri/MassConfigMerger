@@ -19,6 +19,7 @@ import re
 import argparse
 from datetime import datetime, timedelta
 import time
+import sys
 from pathlib import Path
 from typing import Iterable, List, Set, Dict, Tuple, cast, Any
 from .clash_utils import config_to_clash_proxy, build_clash_config
@@ -703,7 +704,11 @@ def main(args: argparse.Namespace | None = None) -> None:
     if args is None:
         args = build_parser().parse_args()
 
-    cfg = load_config(Path(args.config))
+    try:
+        cfg = load_config(Path(args.config))
+    except ValueError:
+        print("Config file not found. Copy config.yaml.example to config.yaml.")
+        sys.exit(1)
     if args.output_dir:
         cfg.output_dir = args.output_dir
     if args.concurrent_limit is not None:

@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 from massconfigmerger import vpn_merger
 from massconfigmerger.result_processor import CONFIG
+from massconfigmerger.config import Settings
 
 
 def test_cli_country_flags(monkeypatch, tmp_path):
@@ -13,6 +14,7 @@ def test_cli_country_flags(monkeypatch, tmp_path):
         return None
 
     monkeypatch.setattr(vpn_merger, "detect_and_run", fake_detect_and_run)
+    monkeypatch.setattr(vpn_merger, "load_config", lambda: Settings())
     monkeypatch.setattr(CONFIG, "include_countries", None)
     monkeypatch.setattr(CONFIG, "exclude_countries", None)
     monkeypatch.setattr(sys, "argv", [
