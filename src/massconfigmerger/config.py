@@ -119,6 +119,7 @@ class Settings(BaseSettings):
     write_clash_proxies: bool = True
     surge_file: Optional[str] = None
     qx_file: Optional[str] = None
+    xyz_file: Optional[str] = None
     mux_concurrency: int = 8
     smux_streams: int = 4
     geoip_db: Optional[str] = None

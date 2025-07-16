@@ -28,6 +28,14 @@ def test_output_files_skip_clash(tmp_path):
     assert not (tmp_path / "clash.yaml").exists()
 
 
+def test_output_files_extra_formats(tmp_path):
+    cfg = Settings(surge_file="s.conf", qx_file="q.conf", xyz_file="x.conf")
+    aggregator_tool.output_files(["vmess://a"], tmp_path, cfg)
+    assert (tmp_path / "s.conf").exists()
+    assert (tmp_path / "q.conf").exists()
+    assert (tmp_path / "x.conf").exists()
+
+
 def test_cli_flags_override(monkeypatch, tmp_path):
     cfg_data = {
         "output_dir": str(tmp_path / "out"),
@@ -150,3 +158,35 @@ def test_cli_protocols_case_insensitive(monkeypatch, tmp_path):
     aggregator_tool.main()
 
     assert recorded["protocols"] == ["vmess", "trojan"]
+
+
+def test_cli_output_format_flags(monkeypatch, tmp_path):
+    cfg_path = tmp_path / "cfg.yaml"
+    cfg_path.write_text(
+        yaml.safe_dump({"output_dir": str(tmp_path / "o"), "log_dir": str(tmp_path / "l")})
+    )
+
+    async def fake_run_pipeline(cfg, *a, **k):
+        aggregator_tool.output_files(["vmess://a"], Path(cfg.output_dir), cfg)
+        return Path(cfg.output_dir), []
+
+    monkeypatch.setattr(aggregator_tool, "run_pipeline", fake_run_pipeline)
+    monkeypatch.setattr(aggregator_tool, "setup_logging", lambda *_: None)
+    monkeypatch.setattr(sys, "argv", [
+        "aggregator_tool.py",
+        "--config",
+        str(cfg_path),
+        "--output-surge",
+        "s.conf",
+        "--output-qx",
+        "q.conf",
+        "--output-xyz",
+        "x.conf",
+    ])
+
+    aggregator_tool.main()
+
+    out_dir = tmp_path / "o"
+    assert (out_dir / "s.conf").exists()
+    assert (out_dir / "q.conf").exists()
+    assert (out_dir / "x.conf").exists()

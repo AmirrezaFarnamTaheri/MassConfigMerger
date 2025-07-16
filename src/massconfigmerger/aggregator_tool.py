@@ -19,7 +19,7 @@ import re
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Iterable, List, Set, Optional, Dict, Union, Tuple, cast
+from typing import Iterable, List, Set, Optional, Dict, Union, Tuple, cast, Any
 from urllib.parse import urlparse
 from .clash_utils import config_to_clash_proxy, build_clash_config
 
@@ -459,24 +459,61 @@ def output_files(configs: List[str], out_dir: Path, cfg: Settings) -> List[Path]
         )
         written.append(merged_singbox)
 
-    proxies = []
-    if cfg.write_clash:
+    proxies: List[Dict[str, Any]] = []
+    need_proxies = (
+        cfg.write_clash or cfg.surge_file or cfg.qx_file or cfg.xyz_file
+    )
+    if need_proxies:
         for idx, link in enumerate(configs):
             proxy = config_to_clash_proxy(link, idx)
             if proxy:
                 proxies.append(proxy)
-        if proxies:
-            clash_yaml = build_clash_config(proxies)
-            clash_file = out_dir / "clash.yaml"
-            clash_file.write_text(clash_yaml)
-            written.append(clash_file)
+
+    if cfg.write_clash and proxies:
+        clash_yaml = build_clash_config(proxies)
+        clash_file = out_dir / "clash.yaml"
+        clash_file.write_text(clash_yaml)
+        written.append(clash_file)
+
+    if cfg.surge_file and proxies:
+        from .advanced_converters import generate_surge_conf
+
+        surge_content = generate_surge_conf(proxies)
+        surge_path = Path(cfg.surge_file)
+        if not surge_path.is_absolute():
+            surge_path = out_dir / surge_path
+        surge_path.write_text(surge_content)
+        written.append(surge_path)
+
+    if cfg.qx_file and proxies:
+        from .advanced_converters import generate_qx_conf
+
+        qx_content = generate_qx_conf(proxies)
+        qx_path = Path(cfg.qx_file)
+        if not qx_path.is_absolute():
+            qx_path = out_dir / qx_path
+        qx_path.write_text(qx_content)
+        written.append(qx_path)
+
+    if cfg.xyz_file and proxies:
+        xyz_lines = [
+            f"{p.get('name')},{p.get('server')},{p.get('port')}" for p in proxies
+        ]
+        xyz_path = Path(cfg.xyz_file)
+        if not xyz_path.is_absolute():
+            xyz_path = out_dir / xyz_path
+        xyz_path.write_text("\n".join(xyz_lines))
+        written.append(xyz_path)
 
     logging.info(
-        "Wrote %s%s%s%s",
+        "Wrote %s%s%s%s%s%s%s",
         merged_path,
         ", merged_base64.txt" if cfg.write_base64 else "",
         ", merged_singbox.json" if cfg.write_singbox else "",
         ", clash.yaml" if cfg.write_clash and proxies else "",
+        f", {Path(cfg.surge_file).name}" if cfg.surge_file else "",
+        f", {Path(cfg.qx_file).name}" if cfg.qx_file else "",
+        f", {Path(cfg.xyz_file).name}" if cfg.xyz_file else "",
     )
 
     return written
@@ -662,6 +699,27 @@ def main() -> None:
     )
     parser.add_argument("--no-clash", action="store_true", help="skip clash.yaml")
     parser.add_argument(
+        "--output-surge",
+        metavar="FILE",
+        type=str,
+        default=None,
+        help="write Surge formatted proxy list to FILE",
+    )
+    parser.add_argument(
+        "--output-qx",
+        metavar="FILE",
+        type=str,
+        default=None,
+        help="write Quantumult X formatted proxy list to FILE",
+    )
+    parser.add_argument(
+        "--output-xyz",
+        metavar="FILE",
+        type=str,
+        default=None,
+        help="write XYZ formatted proxy list to FILE",
+    )
+    parser.add_argument(
         "--with-merger",
         action="store_true",
         help="run vpn_merger on the aggregated results using the resume feature",
@@ -682,6 +740,13 @@ def main() -> None:
         cfg.write_singbox = False
     if args.no_clash:
         cfg.write_clash = False
+
+    if args.output_surge is not None:
+        cfg.surge_file = args.output_surge
+    if args.output_qx is not None:
+        cfg.qx_file = args.output_qx
+    if args.output_xyz is not None:
+        cfg.xyz_file = args.output_xyz
 
     resolved_output = Path(cfg.output_dir).expanduser().resolve()
     resolved_output.mkdir(parents=True, exist_ok=True)
