@@ -40,6 +40,8 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
 ### ⚡ Quick Start
 
+**Legal Notice**: This software is provided for educational purposes only. You are responsible for complying with all local regulations when using any collected VPN nodes.
+
 1. **Install Python 3.8 or newer**
    - On **Windows** download it from [python.org](https://www.python.org/downloads/) and tick *Add Python to PATH* during setup.
    - On **macOS/Linux** use your package manager, e.g. `sudo apt install python3`.
