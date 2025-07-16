@@ -9,28 +9,28 @@ from massconfigmerger.config import Settings
 
 def test_output_files_skip_base64(tmp_path):
     cfg = Settings(write_base64=False)
-    aggregator_tool.Aggregator(cfg).output_files(["vmess://a"], tmp_path)
+    aggregator_tool.output_files(["vmess://a"], tmp_path, cfg)
     assert (tmp_path / "vpn_subscription_raw.txt").exists()
     assert not (tmp_path / "vpn_subscription_base64.txt").exists()
 
 
 def test_output_files_skip_singbox(tmp_path):
     cfg = Settings(write_singbox=False)
-    aggregator_tool.Aggregator(cfg).output_files(["vmess://a"], tmp_path)
+    aggregator_tool.output_files(["vmess://a"], tmp_path, cfg)
     assert (tmp_path / "vpn_subscription_raw.txt").exists()
     assert not (tmp_path / "vpn_singbox.json").exists()
 
 
 def test_output_files_skip_clash(tmp_path):
     cfg = Settings(write_clash=False)
-    aggregator_tool.Aggregator(cfg).output_files(["vmess://a"], tmp_path)
+    aggregator_tool.output_files(["vmess://a"], tmp_path, cfg)
     assert (tmp_path / "vpn_subscription_raw.txt").exists()
     assert not (tmp_path / "clash.yaml").exists()
 
 
 def test_output_files_extra_formats(tmp_path):
     cfg = Settings(surge_file="s.conf", qx_file="q.conf", xyz_file="x.conf")
-    aggregator_tool.Aggregator(cfg).output_files(["vmess://a"], tmp_path)
+    aggregator_tool.output_files(["vmess://a"], tmp_path, cfg)
     assert (tmp_path / "s.conf").exists()
     assert (tmp_path / "q.conf").exists()
     assert (tmp_path / "x.conf").exists()
@@ -51,7 +51,7 @@ def test_cli_flags_override(monkeypatch, tmp_path):
 
     async def fake_run_pipeline(cfg, *a, **k):
         recorded["cfg"] = cfg
-        aggregator_tool.Aggregator(cfg).output_files(["vmess://a"], Path(cfg.output_dir))
+        aggregator_tool.output_files(["vmess://a"], Path(cfg.output_dir), cfg)
         return Path(cfg.output_dir), []
 
     monkeypatch.setattr(aggregator_tool, "run_pipeline", fake_run_pipeline)
@@ -173,7 +173,7 @@ def test_cli_output_format_flags(monkeypatch, tmp_path):
     )
 
     async def fake_run_pipeline(cfg, *a, **k):
-        aggregator_tool.Aggregator(cfg).output_files(["vmess://a"], Path(cfg.output_dir))
+        aggregator_tool.output_files(["vmess://a"], Path(cfg.output_dir), cfg)
         return Path(cfg.output_dir), []
 
     monkeypatch.setattr(aggregator_tool, "run_pipeline", fake_run_pipeline)

@@ -300,8 +300,10 @@ class Aggregator:
         logging.info("Telegram configs found: %d", len(configs))
         return configs
 
-    def output_files(self, configs: List[str], out_dir: Path) -> List[Path]:
-        cfg = self.cfg
+    @staticmethod
+    def output_files(
+        configs: List[str], out_dir: Path, cfg: Settings
+    ) -> List[Path]:
         out_dir.mkdir(parents=True, exist_ok=True)
         written: List[Path] = []
 
@@ -438,7 +440,7 @@ class Aggregator:
             final = deduplicate_and_filter(configs, cfg, protocols)
             self.stats["written_configs"] = len(final)
             logging.info("Final configs count: %d", self.stats["written_configs"])
-            files = self.output_files(final, out_dir)
+            files = Aggregator.output_files(final, out_dir, cfg)
             elapsed = time.time() - start
             summary = (
                 f"Sources checked: {self.stats['valid_sources']} | "
@@ -449,6 +451,11 @@ class Aggregator:
             print(summary)
             logging.info(summary)
         return out_dir, files
+
+def output_files(configs: List[str], out_dir: Path, cfg: Settings) -> List[Path]:
+    """Convenience wrapper around Aggregator.output_files."""
+    return Aggregator.output_files(configs, out_dir, cfg)
+
 
 
 
@@ -726,9 +733,9 @@ def main(args: argparse.Namespace | None = None) -> None:
         )
     else:
 
-        aggregator = Aggregator(cfg)
         out_dir, files = asyncio.run(
-            aggregator.run(
+            run_pipeline(
+                cfg,
                 protocols,
                 Path(args.sources),
                 Path(args.channels),
@@ -741,6 +748,13 @@ def main(args: argparse.Namespace | None = None) -> None:
 
         if args.with_merger:
             vpn_merger.CONFIG.resume_file = str(out_dir / "vpn_subscription_raw.txt")
+            # propagate key settings from the aggregator config to the merger
+            vpn_merger.CONFIG.output_dir = cfg.output_dir
+            vpn_merger.CONFIG.write_base64 = cfg.write_base64
+            vpn_merger.CONFIG.include_protocols = cfg.include_protocols
+            vpn_merger.CONFIG.exclude_protocols = cfg.exclude_protocols
+            vpn_merger.CONFIG.exclude_patterns = list(cfg.exclude_patterns)
+            vpn_merger.CONFIG.concurrent_limit = cfg.concurrent_limit
             buf = io.StringIO()
             with redirect_stdout(buf):
                 vpn_merger.detect_and_run()
