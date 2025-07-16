@@ -34,8 +34,9 @@ retry_base_delay: 1.0
 write_base64: true
 write_singbox: true
 write_clash: true
-HTTP_PROXY:
-SOCKS_PROXY:
+# Optional proxy settings used by aggregator_tool and vpn_merger
+HTTP_PROXY: # e.g. http://127.0.0.1:8080
+SOCKS_PROXY: # e.g. socks5://127.0.0.1:1080
 
 # Merger options
 headers:

@@ -272,7 +272,7 @@ Visit `http://localhost:5000/aggregate` to run aggregation,
 ### Proxy Configuration
 
 If your network requires using an HTTP or SOCKS proxy, you can provide the
-settings in two ways:
+settings in two ways (plus an override flag for the merger):
 
 1. **Environment variables** – export `HTTP_PROXY` or `SOCKS_PROXY` before
    running the scripts:
@@ -288,6 +288,13 @@ settings in two ways:
    in the placeholder `HTTP_PROXY:` or `SOCKS_PROXY:` lines. These options work
    the same as the environment variables and are useful when running behind a
    firewall.
+
+3. **Command line** – `vpn-merger` accepts `--http-proxy` or `--socks-proxy`
+   to override for a single run:
+
+   ```bash
+   vpn-merger --http-proxy http://127.0.0.1:8080
+   ```
 
 ## Advanced Features
 

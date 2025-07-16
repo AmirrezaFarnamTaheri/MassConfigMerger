@@ -86,6 +86,13 @@ except ImportError as exc:
         "Run `pip install -r requirements.txt` before running this script."
     ) from exc
 
+from .config import Settings
+
+
+def _choose_proxy(cfg: Settings = CONFIG) -> str | None:
+    """Return SOCKS proxy if defined, otherwise HTTP proxy."""
+    return cfg.SOCKS_PROXY or cfg.HTTP_PROXY
+
 try:
     import aiodns  # noqa: F401
 except ImportError as exc:
@@ -121,6 +128,7 @@ class UltimateVPNMerger:
             self.seen_hashes,
             self.seen_hashes_lock,
             self._update_history,
+            proxy=_choose_proxy(CONFIG),
         )
         self.batch_counter = 0
         self.next_batch_threshold = CONFIG.save_every if CONFIG.save_every else float('inf')
@@ -308,7 +316,9 @@ class UltimateVPNMerger:
             resolver=AsyncResolver()
         )
         
-        self.fetcher.session = aiohttp.ClientSession(connector=connector)
+        self.fetcher.session = aiohttp.ClientSession(
+            connector=connector, proxy=_choose_proxy(CONFIG)
+        )
         
         try:
             # Test all sources concurrently
@@ -367,6 +377,7 @@ class UltimateVPNMerger:
                 int(CONFIG.request_timeout),
                 retries=1,
                 base_delay=0.5,
+                proxy=_choose_proxy(CONFIG),
             )
             if not text:
                 continue
@@ -960,6 +971,18 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
                         help="Set mux concurrency for URI configs (0=disable)")
     parser.add_argument("--smux", type=int, default=CONFIG.smux_streams,
                         help="Set smux streams for URI configs (0=disable)")
+    parser.add_argument(
+        "--http-proxy",
+        type=str,
+        default=None,
+        help="HTTP proxy URL overriding config/env",
+    )
+    parser.add_argument(
+        "--socks-proxy",
+        type=str,
+        default=None,
+        help="SOCKS proxy URL overriding config/env",
+    )
     parser.add_argument("--no-base64", action="store_true",
                         help="Do not save base64 subscription file")
     parser.add_argument("--no-csv", action="store_true",
@@ -1061,6 +1084,10 @@ def main(args: argparse.Namespace | None = None) -> int:
     CONFIG.shuffle_sources = args.shuffle_sources
     CONFIG.mux_concurrency = max(0, args.mux)
     CONFIG.smux_streams = max(0, args.smux)
+    if args.http_proxy is not None:
+        CONFIG.HTTP_PROXY = args.http_proxy
+    if args.socks_proxy is not None:
+        CONFIG.SOCKS_PROXY = args.socks_proxy
     CONFIG.geoip_db = args.geoip_db
     if args.include_country:
         CONFIG.include_countries = {c.strip().upper() for c in args.include_country.split(',') if c.strip()}
