@@ -132,6 +132,7 @@ re-downloading.
 - [Full Tutorial](docs/tutorial.md)
 - [Protocol Deep Dive](docs/protocol-deep-dive.md)
 - [Advanced Troubleshooting](docs/advanced-troubleshooting.md)
+- [Huge Source List](#huge-source-list)
 - [📂 Understanding the Output Files](#-understanding-the-output-files)
 - [Advanced Features](#advanced-features)
 - [FAQ](#faq)
@@ -282,6 +283,18 @@ Use `--sort-by reliability` to rank servers by past success rates recorded in
 ```bash
 vpn-merger --sort-by reliability
 ```
+
+### Huge Source List
+
+The `sources.txt` file collects links from hundreds of projects across GitHub
+and Telegram. Recent additions include:
+
+- Pawdroid/Free-servers
+- aiboboxx/v2rayfree
+- aiboboxx/clashfree
+- ermaozi/get_subscribe
+- TelegramV2rayCollector
+- MahsaFreeConfig
 
 ### Handling Failing Sources
 
