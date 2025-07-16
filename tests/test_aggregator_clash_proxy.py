@@ -6,7 +6,8 @@ from massconfigmerger.config import Settings
 
 def test_aggregator_clash_proxy(tmp_path):
     cfg = Settings(output_dir=str(tmp_path), write_clash=True)
-    import base64, json
+    import base64
+    import json
 
     vmess_data = {
         "add": "v.example",
