@@ -47,10 +47,12 @@ from .config import Settings, load_config
 
 
 # Global stats updated by ``run_pipeline`` for summary output in ``main``.
-STATS: Dict[str, int] = {
+STATS: Dict[str, float] = {
+    "sources_checked": 0,
     "valid_sources": 0,
     "fetched_configs": 0,
     "written_configs": 0,
+    "duration": 0.0,
 }
 
 
@@ -103,6 +105,7 @@ async def check_and_update_sources(
 
     with path.open() as f:
         sources = {line.strip() for line in f if line.strip()}
+    STATS["sources_checked"] = len(sources)
 
     valid_sources: List[str] = []
     removed: List[str] = []
@@ -439,6 +442,7 @@ async def run_pipeline(
 
     out_dir = Path(cfg.output_dir)
     configs: Set[str] = set()
+    start_time = datetime.utcnow()
     try:
         sources = await check_and_update_sources(
             sources_file,
@@ -473,6 +477,20 @@ async def run_pipeline(
         STATS["written_configs"] = len(final)
         logging.info("Final configs count: %d", STATS["written_configs"])
         files = output_files(final, out_dir, cfg)
+        STATS["duration"] = (datetime.utcnow() - start_time).total_seconds()
+
+    summary = (
+        "Sources checked: {sc} | Valid sources: {vs} | Configs scraped: {fc} | "
+        "Unique configs: {uc} | Duration: {dur:.1f}s".format(
+            sc=STATS["sources_checked"],
+            vs=STATS["valid_sources"],
+            fc=STATS["fetched_configs"],
+            uc=STATS["written_configs"],
+            dur=STATS["duration"],
+        )
+    )
+    print(summary)
+    logging.info(summary)
     return out_dir, files
 
 
@@ -678,8 +696,6 @@ def main() -> None:
             )
         )
     else:
-
-        start_time = datetime.utcnow()
         out_dir, files = asyncio.run(
             run_pipeline(
                 cfg,
@@ -691,16 +707,8 @@ def main() -> None:
                 prune=not args.no_prune,
             )
         )
-        elapsed = (datetime.utcnow() - start_time).total_seconds()
         print(f"Aggregation complete. Files written to {out_dir.resolve()}")
-        print(
-            "Valid sources: {vs} | Configs scraped: {sc} | Unique configs: {uc}".format(
-                vs=STATS["valid_sources"],
-                sc=STATS["fetched_configs"],
-                uc=STATS["written_configs"],
-            )
-        )
-        print(f"Elapsed time: {elapsed:.1f}s")
+
 
         if args.with_merger:
             vpn_merger.CONFIG.resume_file = str(out_dir / "merged.txt")

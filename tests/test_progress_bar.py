@@ -106,3 +106,68 @@ def test_sort_by_performance_progress(monkeypatch):
     assert bar.n == 2
     assert bar.total == 2
     assert bar.closed
+
+
+@pytest.mark.asyncio
+async def test_run_pipeline_summary(monkeypatch, tmp_path, capsys):
+    cfg = aggregator_tool.Settings(
+        output_dir=str(tmp_path / "o"),
+        log_dir=str(tmp_path / "l"),
+        write_base64=False,
+        write_singbox=False,
+        write_clash=False,
+    )
+
+    async def fake_check(*_a, **_k):
+        aggregator_tool.STATS["sources_checked"] = 3
+        return ["a", "b"]
+
+    async def fake_fetch(*_a, **_k):
+        return {"vmess://a", "vmess://b"}
+
+    async def fake_scrape(*_a, **_k):
+        return set()
+
+    monkeypatch.setattr(aggregator_tool, "check_and_update_sources", fake_check)
+    monkeypatch.setattr(aggregator_tool, "fetch_and_parse_configs", fake_fetch)
+    monkeypatch.setattr(aggregator_tool, "scrape_telegram_configs", fake_scrape)
+    monkeypatch.setattr(aggregator_tool, "deduplicate_and_filter", lambda c, *_: list(c))
+    monkeypatch.setattr(aggregator_tool, "output_files", lambda c, out, cfg: [out / "m.txt"])
+
+    await aggregator_tool.run_pipeline(cfg, sources_file=tmp_path / "s.txt", channels_file=tmp_path / "c.txt")
+    captured = capsys.readouterr().out
+    assert "Sources checked: 3" in captured
+
+
+@pytest.mark.asyncio
+async def test_vpn_merger_summary(monkeypatch, capsys):
+    merger = UltimateVPNMerger()
+
+    async def fake_test():
+        return ["u1"]
+
+    async def fake_fetch(_):
+        merger.all_results = [
+            ConfigResult(config="vmess://a", protocol="VMess", source_url="u1"),
+            ConfigResult(config="vmess://b", protocol="VMess", source_url="u1"),
+        ]
+
+    async def fake_preflight(*_a, **_k):
+        return True
+
+    monkeypatch.setattr(merger, "_test_and_filter_sources", fake_test)
+    monkeypatch.setattr(merger, "_fetch_all_sources", fake_fetch)
+    monkeypatch.setattr(merger, "_preflight_connectivity_check", fake_preflight)
+    monkeypatch.setattr(merger, "_sort_by_performance", lambda x: x)
+
+    async def noop_async(*_a, **_k):
+        return None
+
+    monkeypatch.setattr(merger, "_generate_comprehensive_outputs", noop_async)
+    monkeypatch.setattr(merger, "_save_proxy_history", noop_async)
+    monkeypatch.setattr(merger, "_print_final_summary", lambda *a, **k: None)
+    monkeypatch.setattr(merger.processor.tester, "close", noop_async)
+
+    await merger.run()
+    captured = capsys.readouterr().out
+    assert "Sources checked:" in captured

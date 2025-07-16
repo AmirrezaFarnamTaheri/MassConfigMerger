@@ -101,6 +101,14 @@ except ImportError as exc:
 # Reuse global regex list from output_writer
 EXCLUDE_REGEXES: List[re.Pattern] = OUTPUT_EXCLUDE_REGEXES
 
+# Basic counters for a concise summary
+STATS: Dict[str, float] = {
+    "sources_checked": 0,
+    "configs_fetched": 0,
+    "unique_configs": 0,
+    "duration": 0.0,
+}
+
 # ============================================================================
 # MAIN PROCESSOR WITH UNIFIED FUNCTIONALITY
 # ============================================================================
@@ -217,6 +225,7 @@ class UltimateVPNMerger:
         
         start_time = time.time()
         self.start_time = start_time
+        STATS["sources_checked"] = len(self.sources)
 
         if CONFIG.resume_file:
             print(f"🔄 Loading existing configs from {CONFIG.resume_file} ...")
@@ -242,6 +251,7 @@ class UltimateVPNMerger:
         # Step 2: Fetch all configs from available sources
         print(f"\n🔄 [2/6] Fetching configs from {len(self.available_sources)} available sources...")
         await self._fetch_all_sources(self.available_sources)
+        STATS["configs_fetched"] = len(self.all_results)
         
         # Step 3: Deduplicate efficiently  
         print(f"\n🔍 [3/6] Deduplicating {len(self.all_results):,} configs...")
@@ -274,6 +284,7 @@ class UltimateVPNMerger:
         # Step 5: Analyze protocols and performance
         print(f"\n📋 [5/6] Analyzing {len(unique_results):,} unique configs...")
         stats = self._analyze_results(unique_results, self.available_sources)
+        STATS["unique_configs"] = len(unique_results)
         
         # Step 6: Generate comprehensive outputs
         print("\n💾 [6/6] Generating comprehensive outputs...")
@@ -281,7 +292,17 @@ class UltimateVPNMerger:
 
         await self._save_proxy_history()
 
-        self._print_final_summary(len(unique_results), time.time() - self.start_time, stats)
+        STATS["duration"] = time.time() - start_time
+        self._print_final_summary(len(unique_results), STATS["duration"], stats)
+
+        summary = (
+            f"Sources checked: {STATS['sources_checked']} | "
+            f"Configs fetched: {STATS['configs_fetched']} | "
+            f"Unique configs: {STATS['unique_configs']} | "
+            f"Duration: {STATS['duration']:.1f}s"
+        )
+        print(summary)
+        logging.info(summary)
 
         # Clean up tester resources
         await self.processor.tester.close()
