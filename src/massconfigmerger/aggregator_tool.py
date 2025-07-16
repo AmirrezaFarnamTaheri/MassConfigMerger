@@ -47,6 +47,7 @@ from .utils import (
     print_public_source_warning,
     choose_proxy,
 )
+from .result_processor import EnhancedConfigProcessor
 
 from .config import Settings, load_config
 
@@ -522,12 +523,14 @@ def deduplicate_and_filter(
         protocols = [p.lower() for p in protocols]
     exclude = [re.compile(p, re.IGNORECASE) for p in cfg.exclude_patterns]
     include = [re.compile(p, re.IGNORECASE) for p in cfg.include_patterns]
+    processor = EnhancedConfigProcessor()
     seen: Set[str] = set()
     for link in sorted(c.strip() for c in config_set):
         l_lower = link.lower()
-        if l_lower in seen:
+        link_hash = processor.create_semantic_hash(link)
+        if link_hash in seen:
             continue
-        seen.add(l_lower)
+        seen.add(link_hash)
         if protocols and not any(l_lower.startswith(p + "://") for p in protocols):
             continue
         if any(r.search(l_lower) for r in exclude):
