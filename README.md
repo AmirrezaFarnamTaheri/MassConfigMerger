@@ -230,6 +230,14 @@ fields. If these credentials are left empty Telegram channels from
 `sources.txt` will be skipped. See the [Telegram credentials
 section](config.yaml.example#L5-L11) of `config.yaml.example` for reference.
 
+Run the tool in bot mode using your configuration file:
+
+```bash
+aggregator-tool --bot --config config.yaml
+```
+
+Keep the tool running so the `/update` and `/status` commands respond.
+
 ### Docker Compose Automation
 
 The included `docker-compose.yml` automates running the scripts. `vpn_merger`
