@@ -668,3 +668,6 @@ https://raw.githubusercontent.com/mahsanet/MahsaFreeConfig/main/mtn/sub_1.txt
 https://raw.githubusercontent.com/mahsanet/MahsaFreeConfig/main/mtn/sub_2.txt
 https://raw.githubusercontent.com/mahsanet/MahsaFreeConfig/main/mtn/sub_3.txt
 https://raw.githubusercontent.com/mahsanet/MahsaFreeConfig/main/mtn/sub_4.txt
+https://raw.githubusercontent.com/aiboboxx/clashfree/main/clash.yaml
+https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/clash.yml
+https://raw.githubusercontent.com/ripaojiedian/freenode/main/clash.yaml
