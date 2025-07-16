@@ -196,3 +196,28 @@ def test_cli_output_format_flags(monkeypatch, tmp_path):
     assert (out_dir / "s.conf").exists()
     assert (out_dir / "q.conf").exists()
     assert (out_dir / "x.conf").exists()
+
+
+def test_cli_shuffle_sources(monkeypatch, tmp_path):
+    cfg_path = tmp_path / "cfg.yaml"
+    cfg_path.write_text(
+        yaml.safe_dump({"output_dir": str(tmp_path / "o"), "log_dir": str(tmp_path / "l")})
+    )
+
+    recorded = {}
+
+    async def fake_run_pipeline(cfg, *a, **k):
+        recorded["cfg"] = cfg
+        return Path(cfg.output_dir), []
+
+    monkeypatch.setattr(aggregator_tool, "run_pipeline", fake_run_pipeline)
+    monkeypatch.setattr(aggregator_tool, "setup_logging", lambda *_: None)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["aggregator_tool.py", "--config", str(cfg_path), "--shuffle-sources"],
+    )
+
+    aggregator_tool.main()
+
+    assert recorded["cfg"].shuffle_sources is True
