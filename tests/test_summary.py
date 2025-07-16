@@ -8,10 +8,10 @@ from massconfigmerger.config import Settings
 
 @pytest.mark.asyncio
 async def test_run_pipeline_prints_summary(monkeypatch, capsys, tmp_path):
-    async def fake_check(*_a, **_k):
+    async def fake_check(*args, **kwargs):
         return ["s1", "s2"]
 
-    async def fake_fetch(*_a, **_k):
+    async def fake_fetch(*args, **kwargs):
         return {"vmess://a", "vmess://b"}
 
     async def fake_scrape(*_a, **_k):

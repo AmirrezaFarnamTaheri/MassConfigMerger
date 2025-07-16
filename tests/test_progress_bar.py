@@ -81,7 +81,14 @@ async def test_fetch_and_parse_configs_progress(monkeypatch):
     monkeypatch.setattr("massconfigmerger.aggregator_tool.fetch_text", fake_fetch_text)
 
     agg = aggregator_tool.Aggregator(Settings())
-    configs = await agg.fetch_and_parse_configs(["u1", "u2"])
+
+    async with aggregator_tool.aiohttp.ClientSession() as sess:
+        monkeypatch.setattr(
+            aggregator_tool.aiohttp,
+            "ClientSession",
+            lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not be called")),
+        )
+        configs = await agg.fetch_and_parse_configs(["u1", "u2"], session=sess)
 
     assert configs == {"vmess://cfg"}
     bar = bars[0]
