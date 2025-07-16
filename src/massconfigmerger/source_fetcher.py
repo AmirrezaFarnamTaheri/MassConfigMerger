@@ -54,31 +54,41 @@ async def fetch_text(
     attempt = 0
     session_loop = get_client_loop(session)
     use_temp = session_loop is not None and session_loop is not asyncio.get_running_loop()
-    if use_temp:
-        session = aiohttp.ClientSession(proxy=proxy) if proxy else aiohttp.ClientSession()
-    while attempt < retries:
-        try:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=timeout)) as resp:
-                if resp.status == 200:
-                    return await resp.text()
-                if 400 <= resp.status < 500 and resp.status != 429:
-                    logging.debug("fetch_text non-retry status %s on %s", resp.status, url)
-                    return None
-                if not (500 <= resp.status < 600 or resp.status == 429):
-                    logging.debug(
-                        "fetch_text non-transient status %s on %s", resp.status, url
-                    )
-                    return None
-        except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
-            logging.debug("fetch_text error on %s: %s", url, exc)
 
-        attempt += 1
-        if attempt >= retries:
-            break
-        delay = base_delay * 2 ** (attempt - 1)
-        await asyncio.sleep(delay + random.uniform(0, jitter))
-    if use_temp:
-        await session.close()
+    temp_session = (
+        aiohttp.ClientSession(proxy=proxy) if use_temp else session
+    )
+
+    try:
+        while attempt < retries:
+            try:
+                async with temp_session.get(
+                    url, timeout=aiohttp.ClientTimeout(total=timeout)
+                ) as resp:
+                    if resp.status == 200:
+                        return await resp.text()
+                    if 400 <= resp.status < 500 and resp.status != 429:
+                        logging.debug(
+                            "fetch_text non-retry status %s on %s", resp.status, url
+                        )
+                        return None
+                    if not (500 <= resp.status < 600 or resp.status == 429):
+                        logging.debug(
+                            "fetch_text non-transient status %s on %s", resp.status, url
+                        )
+                        return None
+            except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+                logging.debug("fetch_text error on %s: %s", url, exc)
+
+            attempt += 1
+            if attempt >= retries:
+                break
+            delay = base_delay * 2 ** (attempt - 1)
+            await asyncio.sleep(delay + random.uniform(0, jitter))
+    finally:
+        if use_temp:
+            await temp_session.close()
+
     return None
 
 
