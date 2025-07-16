@@ -318,13 +318,13 @@ class Aggregator:
 
         merged_path = out_dir / "vpn_subscription_raw.txt"
         text = "\n".join(configs)
-        merged_path.write_text(text)
+        merged_path.write_text(text, encoding="utf-8")
         written.append(merged_path)
 
         if cfg.write_base64:
             merged_b64 = out_dir / "vpn_subscription_base64.txt"
             b64_content = base64.b64encode(text.encode()).decode()
-            merged_b64.write_text(b64_content)
+            merged_b64.write_text(b64_content, encoding="utf-8")
             written.append(merged_b64)
 
             try:
@@ -339,7 +339,8 @@ class Aggregator:
                 outbounds.append({"type": proto, "tag": f"node-{idx}", "raw": link})
             merged_singbox = out_dir / "vpn_singbox.json"
             merged_singbox.write_text(
-                json.dumps({"outbounds": outbounds}, indent=2, ensure_ascii=False)
+                json.dumps({"outbounds": outbounds}, indent=2, ensure_ascii=False),
+                encoding="utf-8",
             )
             written.append(merged_singbox)
 
@@ -356,7 +357,7 @@ class Aggregator:
         if cfg.write_clash and proxies:
             clash_yaml = build_clash_config(proxies)
             clash_file = out_dir / "clash.yaml"
-            clash_file.write_text(clash_yaml)
+            clash_file.write_text(clash_yaml, encoding="utf-8")
             written.append(clash_file)
 
         if cfg.surge_file and proxies:
@@ -366,7 +367,7 @@ class Aggregator:
             surge_path = Path(cfg.surge_file)
             if not surge_path.is_absolute():
                 surge_path = out_dir / surge_path
-            surge_path.write_text(surge_content)
+            surge_path.write_text(surge_content, encoding="utf-8")
             written.append(surge_path)
 
         if cfg.qx_file and proxies:
@@ -376,7 +377,7 @@ class Aggregator:
             qx_path = Path(cfg.qx_file)
             if not qx_path.is_absolute():
                 qx_path = out_dir / qx_path
-            qx_path.write_text(qx_content)
+            qx_path.write_text(qx_content, encoding="utf-8")
             written.append(qx_path)
 
         if cfg.xyz_file and proxies:
@@ -386,7 +387,7 @@ class Aggregator:
             xyz_path = Path(cfg.xyz_file)
             if not xyz_path.is_absolute():
                 xyz_path = out_dir / xyz_path
-            xyz_path.write_text("\n".join(xyz_lines))
+            xyz_path.write_text("\n".join(xyz_lines), encoding="utf-8")
             written.append(xyz_path)
 
         logging.info(
