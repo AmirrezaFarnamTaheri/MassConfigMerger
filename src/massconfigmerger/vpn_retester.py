@@ -12,6 +12,7 @@ from typing import List, Tuple, Optional
 from tqdm.asyncio import tqdm_asyncio
 
 from .vpn_merger import EnhancedConfigProcessor, CONFIG
+from .utils import print_public_source_warning
 
 
 async def _test_config(proc: EnhancedConfigProcessor, cfg: str) -> Tuple[str, Optional[float]]:
@@ -123,6 +124,7 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
     return parser
 
 def main(args: argparse.Namespace | None = None) -> None:
+    print_public_source_warning()
     if args is None:
         args = build_parser().parse_args()
 
