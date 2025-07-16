@@ -63,13 +63,13 @@ HTTP_RE = re.compile(r"https?://\S+", re.IGNORECASE)
 def extract_subscription_urls(text: str) -> Set[str]:
     """Return all HTTP(S) URLs in the text block.
 
-    Trailing punctuation such as ``)``, ``]``, ``,``, or ``.`` is stripped
-    from the matched URLs.
+    Trailing punctuation such as ``)``, ``]``, ``,``, ``.``, ``!``, ``?``, or ``;``
+    is stripped from the matched URLs.
     """
 
     urls: Set[str] = set()
     for match in HTTP_RE.findall(text):
-        urls.add(match.rstrip(")].,"))
+        urls.add(match.rstrip(")].,!?:;"))
     return urls
 
 
