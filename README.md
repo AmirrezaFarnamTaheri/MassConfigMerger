@@ -217,6 +217,20 @@ qx_data = generate_qx_conf(proxies)
 - On Windows consoles, colored output (like progress bars) requires the
   optional `colorama` library. Install it separately with `pip install colorama`
   if you want colors.
+### Expected Console Output
+
+Running `vpn-merger` shows progress for each step:
+
+```text
+🚀 VPN Subscription Merger - Final Unified & Polished Edition
+[1/6] Testing source availability and removing dead links...
+  [001/123] ✅ Available
+[2/6] Fetching configs from N available sources...
+  [001/N] ✓ X configs (Y reachable) - example.com
+```
+
+Press `Ctrl+C` at any time to stop; the active progress bar will close without a traceback.
+
 
 ### Telegram Bot Mode
 
