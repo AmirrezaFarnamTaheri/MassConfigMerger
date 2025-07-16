@@ -178,6 +178,8 @@ class Aggregator:
         configs: Set[str] = set()
 
         source_list = list(sources)
+        if self.cfg.shuffle_sources:
+            random.shuffle(source_list)
         semaphore = asyncio.Semaphore(concurrent_limit)
 
         async def fetch_one(session: ClientSession, url: str) -> Set[str]:
@@ -655,6 +657,11 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
     )
     parser.add_argument("--no-clash", action="store_true", help="skip clash.yaml")
     parser.add_argument(
+        "--shuffle-sources",
+        action="store_true",
+        help="process sources in random order",
+    )
+    parser.add_argument(
         "--output-surge",
         metavar="FILE",
         type=str,
@@ -709,6 +716,7 @@ def main(args: argparse.Namespace | None = None) -> None:
         cfg.qx_file = args.output_qx
     if args.output_xyz is not None:
         cfg.xyz_file = args.output_xyz
+    cfg.shuffle_sources = getattr(args, "shuffle_sources", False)
 
     resolved_output = Path(cfg.output_dir).expanduser().resolve()
     resolved_output.mkdir(parents=True, exist_ok=True)
