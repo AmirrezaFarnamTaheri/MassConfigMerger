@@ -146,6 +146,8 @@ class AsyncSourceFetcher:
         history_callback: Optional[
             Callable[[str, bool, Optional[float]], Awaitable[None]]
         ] = None,
+        *,
+        proxy: str | None = None,
     ):
         self.processor = processor
         self.session: Optional[aiohttp.ClientSession] = None
@@ -153,13 +155,14 @@ class AsyncSourceFetcher:
         self.hash_lock = hash_lock or asyncio.Lock()
         self.history_callback = history_callback
         self.progress: Optional[tqdm] = None
+        self.proxy = proxy
 
     async def test_source_availability(self, url: str) -> bool:
         """Test if a source URL is available (returns 200 status)."""
         session = self.session
         session_loop = get_client_loop(session) if session else None
         if session is None or session_loop is not asyncio.get_running_loop():
-            session = aiohttp.ClientSession()
+            session = aiohttp.ClientSession(proxy=self.proxy)
             close_temp = True
         else:
             close_temp = False
@@ -191,7 +194,7 @@ class AsyncSourceFetcher:
         session_loop = get_client_loop(session) if session else None
         use_temp = session is None or session_loop is not asyncio.get_running_loop()
         if use_temp:
-            session = aiohttp.ClientSession()
+            session = aiohttp.ClientSession(proxy=self.proxy)
         for attempt in range(CONFIG.max_retries):
             try:
                 timeout = aiohttp.ClientTimeout(total=CONFIG.request_timeout)
