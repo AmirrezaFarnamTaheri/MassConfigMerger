@@ -198,8 +198,9 @@ class EnhancedConfigProcessor:
             "shadowtls://": "ShadowTLS",
             "brook://": "Brook",
         }
+        config_lower = config.lower()
         for prefix, protocol in protocol_map.items():
-            if config.startswith(prefix):
+            if config_lower.startswith(prefix):
                 return protocol
         return "Other"
 
