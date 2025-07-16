@@ -139,6 +139,7 @@ aggregator run.
 | **Shuffle Sources** | `--shuffle-sources` randomizes the source order. | Helpful when using `--stop-after-found` to avoid bias. |
 | **Sing-box JSON Output** | Every batch also produces `vpn_singbox.json`. | Import directly into modern clients like sing-box/Stash. |
 | **Clash YAML Output** | Generate `clash.yaml` (or `batch_*clash.yaml`) for Clash/Clash Meta users. | Works with any client supporting Clash configs. |
+| **Surge & QX Output** | `--output-surge FILE` and `--output-qx FILE` create configs for Surge and Quantumult X. | Easily import into iOS clients. |
 | **Hiddify Optimised** | Default protocols match the Hiddify client. | Other clients may reject some entries. |
 
 ### 🔍 Feature Breakdown
@@ -190,6 +191,17 @@ aggregator run.
 **Logging to File**
 
 > Use `--log-file myrun.log` to save all console output to a file for later review. Helpful when running the script unattended on a server.
+
+### Sorting by Reliability
+
+Past test results are stored in `proxy_history.json`. Use them to order servers
+by stability:
+
+```bash
+vpn-merger --sort-by reliability
+```
+Set a custom path with the `history_file` option in
+[`config.yaml.example`](../config.yaml.example).
 
 ## 🔬 Deep Dive
 
@@ -400,6 +412,18 @@ Users of **Clash** or **Clash Meta** can import the provided `clash.yaml` for a 
 1. Open **Clash Meta** and go to **Profiles**.
 2. Click **Import** and select the path or URL to `vpn_clash_proxies.yaml`.
 3. Enable the new profile to see all proxies.
+
+
+### Generating Surge & Quantumult X Configs
+
+Pass `--output-surge` or `--output-qx` to write files for these apps:
+
+```bash
+python vpn_merger.py --output-surge surge.conf --output-qx quantumultx.conf
+```
+
+The helpers used for this conversion live in
+[`src/massconfigmerger/advanced_converters.py`](../src/massconfigmerger/advanced_converters.py).
 
 -----
 
