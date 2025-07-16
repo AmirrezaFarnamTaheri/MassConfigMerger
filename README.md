@@ -65,9 +65,9 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
    *Install `geoip2` as well if you plan to filter by country and download the free GeoLite2 database from MaxMind.*
 
-4. **Create your `config.yaml`**
+4. **Copy and customize `config.yaml`**
 
-   Copy [`config.yaml.example`](config.yaml.example) to `config.yaml` and edit it before running the tools. This file lets you adjust proxy settings and many other options.
+   After installing the requirements, copy [`config.yaml.example`](config.yaml.example) to `config.yaml` before running any of the scripts. Edit this file to set proxy settings or tweak other options as needed.
 
 5. **Gather configuration links**
 
