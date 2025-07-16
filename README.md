@@ -6,7 +6,7 @@ links from hundreds of public sources.
 [![CI](https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/actions/workflows/ci.yml/badge.svg)](https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/actions/workflows/ci.yml)
 [](https://opensource.org/licenses/MIT)
 
-Welcome to **Mass Config Merger**! This project provides a powerful Python script that automatically fetches VPN configurations from the over 470 public sources listed in `sources.txt`, tests their connectivity, and merges them into a single, performance-sorted subscription link for use in your favorite VPN client. It can even save incremental batches while running so you always have up-to-date results.
+Welcome to **Mass Config Merger**! This project provides a powerful Python script that automatically fetches VPN configurations from the 679 public sources listed in `sources.txt`, tests their connectivity, and merges them into a single, performance-sorted subscription link for use in your favorite VPN client. It can even save incremental batches while running so you always have up-to-date results.
 Both `aggregator_tool.py` and `vpn_merger.py` read from this same `sources.txt` file, so updating the list once applies to all tools. After installing the package with `pip install -e .` (or `pip install massconfigmerger` from PyPI) you can invoke them as `aggregator-tool`, `vpn-merger`, `vpn-retester` and `massconfigmerger`.
 
 ```mermaid

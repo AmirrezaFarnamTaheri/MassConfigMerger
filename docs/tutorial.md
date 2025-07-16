@@ -119,7 +119,7 @@ aggregator run.
 
 | Feature | Description | Typical Use Case |
 | ------- | ----------- | ---------------- |
-| **Huge Source List** | `sources.txt` includes over 470 public subscription sources and is shared by all tools. | Get a massive selection of servers with a single command. |
+| **Huge Source List** | `sources.txt` includes over 670 public subscription sources and is shared by all tools. | Get a massive selection of servers with a single command. |
 | **Availability Testing** | Checks each source before downloading. | Skip dead links and save time. |
 | **Connectivity Testing** | Optional TCP checks measure real latency. | Prioritize servers that actually respond. |
 | **Smart Sorting** | Orders the final list by reachability and speed. | Quickly pick the best server in your VPN client. |
@@ -210,7 +210,7 @@ You can also pass `--history-file path.json` on the command line.
 
 The script automates a simple but powerful process to create the best possible subscription link from public sources:
 
-1.  **📰 Gathers Sources**: It reads `sources.txt`, which contains over 470 public links where VPN configurations are shared.
+1.  **📰 Gathers Sources**: It reads `sources.txt`, which contains over 670 public links where VPN configurations are shared.
 2.  **✅ Tests Source Availability**: It quickly checks each of these links to see which ones are currently online and accessible.
 3.  **📥 Fetches All Configs**: It visits every active link and downloads all the individual VPN server configurations (`VLESS://`, `VMess://`, etc.).
 4.  **⚡ Tests Server Performance**: This is the key step. It attempts a direct connection to each individual server to measure its real-world connection speed (latency/ping). Servers that are offline or too slow are discarded.
