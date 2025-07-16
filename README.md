@@ -20,6 +20,8 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
 **Security Note**: All VPN servers collected by this tool are pulled from public sources. Because the server owners are unknown, treat them as untrusted and avoid using them for banking or other sensitive activities. See the [full disclaimer](docs/tutorial.md#-important-security--privacy-disclaimer) for more details.
 
+**Free Server Warning**: Public VPN nodes can log or inspect your traffic. Because these hosts are run by unknown parties, your connection may not be private. See [docs/tutorial.md](docs/tutorial.md) for details.
+
 > **Note**: The default protocol list is optimised for the Hiddify client. Other VPN apps may require adjusting `--include-protocols`.
 
 > **How protocols are filtered**
