@@ -314,13 +314,25 @@ class Aggregator:
 
         merged_path = out_dir / "vpn_subscription_raw.txt"
         text = "\n".join(configs)
-        merged_path.write_text(text, encoding="utf-8")
+        tmp_raw = merged_path.with_suffix(".tmp")
+        try:
+            tmp_raw.write_text(text, encoding="utf-8")
+            tmp_raw.replace(merged_path)
+        finally:
+            if tmp_raw.exists():
+                tmp_raw.unlink(missing_ok=True)
         written.append(merged_path)
 
         if cfg.write_base64:
             merged_b64 = out_dir / "vpn_subscription_base64.txt"
             b64_content = base64.b64encode(text.encode()).decode()
-            merged_b64.write_text(b64_content, encoding="utf-8")
+            tmp_b64 = merged_b64.with_suffix(".tmp")
+            try:
+                tmp_b64.write_text(b64_content, encoding="utf-8")
+                tmp_b64.replace(merged_b64)
+            finally:
+                if tmp_b64.exists():
+                    tmp_b64.unlink(missing_ok=True)
             written.append(merged_b64)
 
             try:
@@ -334,10 +346,16 @@ class Aggregator:
                 proto = link.split("://", 1)[0].lower()
                 outbounds.append({"type": proto, "tag": f"node-{idx}", "raw": link})
             merged_singbox = out_dir / "vpn_singbox.json"
-            merged_singbox.write_text(
-                json.dumps({"outbounds": outbounds}, indent=2, ensure_ascii=False),
-                encoding="utf-8",
-            )
+            tmp_singbox = merged_singbox.with_suffix(".tmp")
+            try:
+                tmp_singbox.write_text(
+                    json.dumps({"outbounds": outbounds}, indent=2, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+                tmp_singbox.replace(merged_singbox)
+            finally:
+                if tmp_singbox.exists():
+                    tmp_singbox.unlink(missing_ok=True)
             written.append(merged_singbox)
 
         proxies: List[Dict[str, Any]] = []
@@ -353,7 +371,13 @@ class Aggregator:
         if cfg.write_clash and proxies:
             clash_yaml = build_clash_config(proxies)
             clash_file = out_dir / "clash.yaml"
-            clash_file.write_text(clash_yaml, encoding="utf-8")
+            tmp_clash = clash_file.with_suffix(".tmp")
+            try:
+                tmp_clash.write_text(clash_yaml, encoding="utf-8")
+                tmp_clash.replace(clash_file)
+            finally:
+                if tmp_clash.exists():
+                    tmp_clash.unlink(missing_ok=True)
             written.append(clash_file)
 
         if cfg.surge_file and proxies:
@@ -363,7 +387,13 @@ class Aggregator:
             surge_path = Path(cfg.surge_file)
             if not surge_path.is_absolute():
                 surge_path = out_dir / surge_path
-            surge_path.write_text(surge_content, encoding="utf-8")
+            tmp_surge = surge_path.with_suffix(".tmp")
+            try:
+                tmp_surge.write_text(surge_content, encoding="utf-8")
+                tmp_surge.replace(surge_path)
+            finally:
+                if tmp_surge.exists():
+                    tmp_surge.unlink(missing_ok=True)
             written.append(surge_path)
 
         if cfg.qx_file and proxies:
@@ -373,7 +403,13 @@ class Aggregator:
             qx_path = Path(cfg.qx_file)
             if not qx_path.is_absolute():
                 qx_path = out_dir / qx_path
-            qx_path.write_text(qx_content, encoding="utf-8")
+            tmp_qx = qx_path.with_suffix(".tmp")
+            try:
+                tmp_qx.write_text(qx_content, encoding="utf-8")
+                tmp_qx.replace(qx_path)
+            finally:
+                if tmp_qx.exists():
+                    tmp_qx.unlink(missing_ok=True)
             written.append(qx_path)
 
         if cfg.xyz_file and proxies:
@@ -383,7 +419,13 @@ class Aggregator:
             xyz_path = Path(cfg.xyz_file)
             if not xyz_path.is_absolute():
                 xyz_path = out_dir / xyz_path
-            xyz_path.write_text("\n".join(xyz_lines), encoding="utf-8")
+            tmp_xyz = xyz_path.with_suffix(".tmp")
+            try:
+                tmp_xyz.write_text("\n".join(xyz_lines), encoding="utf-8")
+                tmp_xyz.replace(xyz_path)
+            finally:
+                if tmp_xyz.exists():
+                    tmp_xyz.unlink(missing_ok=True)
             written.append(xyz_path)
 
         logging.info(
