@@ -222,3 +222,41 @@ def test_cli_shuffle_sources(monkeypatch, tmp_path):
     aggregator_tool.main()
 
     assert recorded["cfg"].shuffle_sources is True
+
+
+def test_cli_pattern_flags(monkeypatch, tmp_path):
+    cfg_path = tmp_path / "cfg.yaml"
+    cfg_path.write_text(
+        yaml.safe_dump({
+            "output_dir": str(tmp_path / "o"),
+            "log_dir": str(tmp_path / "l"),
+            "exclude_patterns": ["cfg"],
+            "include_patterns": ["in"],
+        })
+    )
+
+    recorded = {}
+
+    async def fake_run_pipeline(cfg, *a, **k):
+        recorded["exclude"] = cfg.exclude_patterns
+        recorded["include"] = cfg.include_patterns
+        return Path(cfg.output_dir), []
+
+    monkeypatch.setattr(aggregator_tool, "run_pipeline", fake_run_pipeline)
+    monkeypatch.setattr(aggregator_tool, "setup_logging", lambda *_: None)
+    monkeypatch.setattr(sys, "argv", [
+        "aggregator_tool.py",
+        "--config",
+        str(cfg_path),
+        "--exclude-pattern",
+        "foo",
+        "--exclude-pattern",
+        "bar",
+        "--include-pattern",
+        "baz",
+    ])
+
+    aggregator_tool.main()
+
+    assert recorded["exclude"] == ["cfg", "foo", "bar"]
+    assert recorded["include"] == ["in", "baz"]

@@ -629,6 +629,16 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
     parser.add_argument("--bot", action="store_true", help="run in telegram bot mode")
     parser.add_argument("--protocols", help="comma separated protocols to keep")
     parser.add_argument(
+        "--include-pattern",
+        action="append",
+        help="regular expression configs must match (can be repeated)",
+    )
+    parser.add_argument(
+        "--exclude-pattern",
+        action="append",
+        help="regular expression to skip configs (can be repeated)",
+    )
+    parser.add_argument(
         "--config", default=str(CONFIG_FILE), help="path to config.yaml"
     )
     parser.add_argument(
@@ -742,6 +752,10 @@ def main(args: argparse.Namespace | None = None) -> None:
         cfg.qx_file = args.output_qx
     if args.output_xyz is not None:
         cfg.xyz_file = args.output_xyz
+    if args.include_pattern:
+        cfg.include_patterns.extend(args.include_pattern)
+    if args.exclude_pattern:
+        cfg.exclude_patterns.extend(args.exclude_pattern)
     cfg.shuffle_sources = getattr(args, "shuffle_sources", False)
 
     resolved_output = Path(cfg.output_dir).expanduser().resolve()
