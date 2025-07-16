@@ -214,6 +214,13 @@ Set `telegram_api_id`, `telegram_api_hash` and `telegram_bot_token` in
 [@userinfobot](https://t.me/userinfobot) and copying the `id` field from its
 reply.
 
+Acquire the `telegram_api_id` and `telegram_api_hash` by signing in at
+[my.telegram.org](https://my.telegram.org) and creating a new application.
+Copy the displayed **App api_id** and **App api_hash** into the corresponding
+fields. If these credentials are left empty Telegram channels from
+`sources.txt` will be skipped. See the [Telegram credentials
+section](config.yaml.example#L5-L11) of `config.yaml.example` for reference.
+
 ### Docker Compose Automation
 
 The included `docker-compose.yml` automates running the scripts. `vpn_merger`
