@@ -466,7 +466,8 @@ class Aggregator:
                 session=session,
             )
             configs |= await self.scrape_telegram_configs(channels_file, last_hours)
-            # update total fetched configs after including Telegram results
+            # Update total fetched configs after scraping Telegram so both
+            # HTTP and Telegram sources are reflected in the count
             self.stats["fetched_configs"] = len(configs)
             logging.info("Fetched configs count: %d", self.stats["fetched_configs"])
         except KeyboardInterrupt:
