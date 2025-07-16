@@ -22,7 +22,7 @@ async def test_fetch_source_retries_on_error(aiohttp_client, monkeypatch):
     app.router.add_get("/", handler)
     client = await aiohttp_client(app)
 
-    fetcher = AsyncSourceFetcher(EnhancedConfigProcessor(), set(), session=client.session)
+    fetcher = AsyncSourceFetcher(EnhancedConfigProcessor(), set())
 
     monkeypatch.setattr(CONFIG, "max_retries", 3)
     url, results = await fetcher.fetch_source(client.make_url("/"))
@@ -42,7 +42,7 @@ async def test_fetch_source_timeout(aiohttp_client, monkeypatch):
     app.router.add_get("/", handler)
     client = await aiohttp_client(app)
 
-    fetcher = AsyncSourceFetcher(EnhancedConfigProcessor(), set(), session=client.session)
+    fetcher = AsyncSourceFetcher(EnhancedConfigProcessor(), set())
 
     monkeypatch.setattr(CONFIG, "request_timeout", 0.01)
     monkeypatch.setattr(CONFIG, "max_retries", 1)
@@ -61,7 +61,7 @@ async def test_seen_hash_lock_prevents_duplicates(aiohttp_client):
     client = await aiohttp_client(app)
 
     seen = set()
-    fetcher = AsyncSourceFetcher(EnhancedConfigProcessor(), seen, session=client.session)
+    fetcher = AsyncSourceFetcher(EnhancedConfigProcessor(), seen)
 
     r1, r2 = await asyncio.gather(
         fetcher.fetch_source(client.make_url("/")),
@@ -83,8 +83,8 @@ async def test_shared_lock_across_instances(aiohttp_client):
 
     seen = set()
     lock = asyncio.Lock()
-    f1 = AsyncSourceFetcher(EnhancedConfigProcessor(), seen, lock, session=client.session)
-    f2 = AsyncSourceFetcher(EnhancedConfigProcessor(), seen, lock, session=client.session)
+    f1 = AsyncSourceFetcher(EnhancedConfigProcessor(), seen, lock)
+    f2 = AsyncSourceFetcher(EnhancedConfigProcessor(), seen, lock)
 
     r1, r2 = await asyncio.gather(
         f1.fetch_source(client.make_url("/")),
@@ -105,7 +105,7 @@ async def test_fetch_source_concurrent_execution(aiohttp_client):
     app.router.add_get("/", handler)
     client = await aiohttp_client(app)
 
-    fetcher = AsyncSourceFetcher(EnhancedConfigProcessor(), set(), session=client.session)
+    fetcher = AsyncSourceFetcher(EnhancedConfigProcessor(), set())
 
     start = asyncio.get_event_loop().time()
     await asyncio.gather(
@@ -127,7 +127,7 @@ async def test_source_availability_concurrent_execution(aiohttp_client):
     app.router.add_get("/", handler)
     client = await aiohttp_client(app)
 
-    fetcher = AsyncSourceFetcher(EnhancedConfigProcessor(), set(), session=client.session)
+    fetcher = AsyncSourceFetcher(EnhancedConfigProcessor(), set())
 
     start = asyncio.get_event_loop().time()
     await asyncio.gather(
