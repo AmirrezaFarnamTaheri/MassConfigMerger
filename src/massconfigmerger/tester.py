@@ -55,7 +55,7 @@ class NodeTester:
 
             _, writer = await asyncio.wait_for(
                 asyncio.open_connection(target, port),
-                timeout=self.config.test_timeout,
+                timeout=self.config.connect_timeout,
             )
             writer.close()
             await writer.wait_closed()

@@ -131,7 +131,7 @@ aggregator run.
 | **MUX/SMUX Tuning** | `--mux` and `--smux` modify connection multiplexing. | Improve throughput with modern clients. |
 | **Resume from File** | `--resume` loads a previous raw/base64 output before fetching. | Continue a crashed run without starting over. |
 | **Custom Output Dir** | Use `--output-dir` to choose where files are saved. | Organize results anywhere you like. |
-| **Set Test Timeout** | Tune connection checks with `--test-timeout`. | Useful for slow or distant servers. |
+| **Set Test Timeout** | Tune connection checks with `connect_timeout` or `--test-timeout`. | Useful for slow or distant servers. |
 | **Disable Features** | Flags `--no-url-test`, `--no-sort`, `--no-base64` and `--no-csv` give full control. | Skip slow checks or extra files when not needed. |
 | **Max Ping Filter** | Remove configs with latency above `--max-ping` ms. | Keep only fast servers for gaming or streaming. |
 | **Concurrent Limit / Retries** | Tweak network load with `--concurrent-limit` and `--max-retries`. | Prevent crashes on slow networks or strict hosts. |
