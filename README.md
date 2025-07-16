@@ -33,6 +33,17 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 > options** in `config.yaml.example`) to drop any unwanted protocols before
 > writing the final files. Adjust this list to match what your VPN client
 > supports or to exclude protocols you don't trust.
+>
+> The merger's output can contain the following protocol names:
+> `PROXY`, `SHADOWSOCKS`, `SHADOWSOCKSR`, `TROJAN`, `CLASH`, `V2RAY`,
+> `REALITY`, `VMESS`, `XRAY`, `WIREGUARD`, `ECH`, `VLESS`, `HYSTERIA`, `TUIC`,
+> `SING-BOX`, `SINGBOX`, `SHADOWTLS`, `CLASHMETA`, `HYSTERIA2`.
+>
+> To keep only a subset you can run:
+>
+> ```bash
+> vpn-merger --include-protocols PROXY,VLESS,VMESS
+> ```
 
 **Important**: Install the dependencies with `pip install -r requirements.txt` before running **any** of the Python scripts. You can also run `pip install -e .` (or install from PyPI) to register the `aggregator-tool`, `vpn-merger` and `vpn-retester` commands.
 
