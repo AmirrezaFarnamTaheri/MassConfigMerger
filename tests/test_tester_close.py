@@ -1,5 +1,6 @@
 import asyncio
 import types
+import sys
 import pytest
 
 from massconfigmerger.tester import NodeTester
@@ -51,3 +52,36 @@ async def test_retest_configs_closes_tester(monkeypatch):
 
     await vpn_retester.retest_configs(["dummy"])
     assert closed
+
+
+@pytest.mark.asyncio
+async def test_node_tester_close_geoip_reader(monkeypatch):
+    tester = NodeTester(Settings())
+    monkeypatch.setattr(tester.config, "geoip_db", "dummy.mmdb")
+
+    class DummyCountry:
+        iso_code = "US"
+
+    class DummyReader:
+        def __init__(self, path):
+            self.closed = False
+
+        def country(self, ip):
+            return types.SimpleNamespace(country=DummyCountry())
+
+        def close(self):
+            self.closed = True
+
+    dummy_geoip2 = types.ModuleType("geoip2")
+    dummy_database = types.ModuleType("geoip2.database")
+    dummy_database.Reader = DummyReader
+    dummy_geoip2.database = dummy_database
+    monkeypatch.setitem(sys.modules, "geoip2", dummy_geoip2)
+    monkeypatch.setitem(sys.modules, "geoip2.database", dummy_database)
+
+    await tester.lookup_country("1.2.3.4")
+    reader = tester._geoip_reader
+
+    await tester.close()
+    assert isinstance(reader, DummyReader) and reader.closed
+    assert tester._geoip_reader is None
