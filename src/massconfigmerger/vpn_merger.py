@@ -837,6 +837,15 @@ class UltimateVPNMerger:
         else:
             success = "N/A"
         print(f"📈 Success rate: {success}")
+        if CONFIG.sort_by == "reliability":
+            total_checks = sum(h.get("total_checks", 0) for h in self.proxy_history.values())
+            successes = sum(h.get("successful_checks", 0) for h in self.proxy_history.values())
+            if total_checks:
+                avg_rel = successes / total_checks * 100
+                reliability = f"{avg_rel:.1f}% over {total_checks} checks"
+            else:
+                reliability = "N/A over 0 checks"
+            print(f"⭐ Average reliability: {reliability}")
         speed = (config_count / elapsed_time) if elapsed_time else 0
 
         rows = [
