@@ -91,11 +91,15 @@ New files will appear in the chosen output directory:
 
 ### Running the tests
 
-If you want to run the project's unit tests, install the package in editable
-mode with the development extras before invoking `pytest`:
+If you want to run the project's unit tests, **install the development
+dependencies first**. You can either install the package in editable mode with
+the `dev` extras or use the provided `requirements-dev.txt` file before
+invoking `pytest`:
 
 ```bash
 pip install -e .[dev]
+# or
+pip install -r requirements-dev.txt
 pytest
 ```
 
