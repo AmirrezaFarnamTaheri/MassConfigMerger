@@ -671,3 +671,9 @@ https://raw.githubusercontent.com/mahsanet/MahsaFreeConfig/main/mtn/sub_4.txt
 https://raw.githubusercontent.com/aiboboxx/clashfree/main/clash.yaml
 https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/clash.yml
 https://raw.githubusercontent.com/ripaojiedian/freenode/main/clash.yaml
+https://raw.githubusercontent.com/Pawdroid/Free-servers/main/sub
+https://raw.githubusercontent.com/aiboboxx/v2rayfree/main/v2
+https://raw.githubusercontent.com/aiboboxx/clashfree/main/clash.yml
+https://raw.githubusercontent.com/Kwinshadow/TelegramV2rayCollector/main/sublinks/mix.txt
+https://raw.githubusercontent.com/zengfr/free-vpn-subscribe/main/vpn_sub_.txt
+https://raw.githubusercontent.com/Mahdi0024/ProxyCollector/master/sub/proxies.txt
