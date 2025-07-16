@@ -74,10 +74,16 @@ async def test_node_tester_close_geoip_reader(monkeypatch):
 
     dummy_geoip2 = types.ModuleType("geoip2")
     dummy_database = types.ModuleType("geoip2.database")
+    dummy_errors = types.ModuleType("geoip2.errors")
+    class DummyAddressNotFoundError(Exception):
+        pass
+    dummy_errors.AddressNotFoundError = DummyAddressNotFoundError
     dummy_database.Reader = DummyReader
     dummy_geoip2.database = dummy_database
+    dummy_geoip2.errors = dummy_errors
     monkeypatch.setitem(sys.modules, "geoip2", dummy_geoip2)
     monkeypatch.setitem(sys.modules, "geoip2.database", dummy_database)
+    monkeypatch.setitem(sys.modules, "geoip2.errors", dummy_errors)
 
     await tester.lookup_country("1.2.3.4")
     reader = tester._geoip_reader
