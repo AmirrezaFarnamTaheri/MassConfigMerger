@@ -158,6 +158,7 @@ All of these files are written to the directory specified by `--output-dir`
 
 ### Surge & Quantumult X Usage
 
+Enable these formats by passing `--output-surge` and `--output-qx` to the merger.
 Generate client-specific output automatically:
 
 ```bash
