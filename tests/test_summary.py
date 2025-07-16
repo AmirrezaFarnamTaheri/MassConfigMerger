@@ -86,3 +86,25 @@ async def test_vpn_merger_run_summary(monkeypatch, capsys):
     assert "Sources checked: 2" in out
     assert "Configs fetched: 2" in out
     assert "Unique configs: 2" in out
+
+
+def test_print_final_summary_reliability(monkeypatch, capsys):
+    """Ensure reliability metric is shown when sorting by reliability."""
+    from massconfigmerger.result_processor import CONFIG
+    monkeypatch.setattr(CONFIG, "sort_by", "reliability")
+    merger = UltimateVPNMerger()
+    merger.proxy_history = {
+        "h1": {"successful_checks": 1, "total_checks": 2, "last_latency_ms": None, "last_seen_online_utc": None},
+        "h2": {"successful_checks": 3, "total_checks": 3, "last_latency_ms": None, "last_seen_online_utc": None},
+    }
+    stats = {
+        "protocol_stats": {},
+        "performance_stats": {},
+        "total_configs": 2,
+        "reachable_configs": 2,
+        "available_sources": 0,
+        "total_sources": 0,
+    }
+    merger._print_final_summary(2, 1.0, stats)
+    out = capsys.readouterr().out
+    assert "Average reliability: 80.0% over 5 checks" in out
