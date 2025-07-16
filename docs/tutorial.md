@@ -20,6 +20,8 @@
    # or
    python aggregator_tool.py --hours 12
    ```
+   > **Quick start:** Run `massconfigmerger full --hours 12` to fetch and merge
+   > everything in one step.
 4. **Run `massconfigmerger merge`** to test and merge all configs:
    ```bash
    massconfigmerger merge

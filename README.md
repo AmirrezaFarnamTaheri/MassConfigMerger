@@ -99,15 +99,16 @@ re-downloading.
 7. **All in one step**
 
    ```bash
-   massconfigmerger full
+   massconfigmerger full --hours 12
    # or
-   aggregator-tool --with-merger
+   aggregator-tool --with-merger --hours 12
    # or
-   python aggregator_tool.py --with-merger
+   python aggregator_tool.py --with-merger --hours 12
    ```
 
    The merger automatically runs on the freshly aggregated results using the
-   resume feature.
+   resume feature. This is the quickest way to grab fresh links and merge them
+   in a single command.
 
 8. **Country filters**
 
