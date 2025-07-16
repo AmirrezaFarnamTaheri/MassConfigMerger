@@ -88,3 +88,16 @@ New files will appear in the chosen output directory:
    - *Best Value*: `4` which balances speed and resource usage.
    - *Default*: `4`.
 
+### Running the tests
+
+If you want to run the project's unit tests, install the package in editable
+mode with the development extras before invoking `pytest`:
+
+```bash
+pip install -e .[dev]
+pytest
+```
+
+Failing to install the `dev` extras first will result in `ModuleNotFoundError`
+when the test suite tries to import `massconfigmerger`.
+
