@@ -35,14 +35,14 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 > supports or to exclude protocols you don't trust.
 >
 > The merger's output can contain the following protocol names:
-> `PROXY`, `SHADOWSOCKS`, `SHADOWSOCKSR`, `TROJAN`, `CLASH`, `V2RAY`,
-> `REALITY`, `VMESS`, `XRAY`, `WIREGUARD`, `ECH`, `VLESS`, `HYSTERIA`, `TUIC`,
-> `SING-BOX`, `SINGBOX`, `SHADOWTLS`, `CLASHMETA`, `HYSTERIA2`.
+> `VMESS`, `VLESS`, `SHADOWSOCKS`, `SHADOWSOCKSR`, `TROJAN`,
+> `HYSTERIA2`, `HYSTERIA`, `TUIC`, `REALITY`, `NAIVE`, `JUICITY`,
+> `WIREGUARD`, `SHADOWTLS`, `BROOK`, `OTHER`.
 >
 > To keep only a subset you can run:
 >
 > ```bash
-> vpn-merger --include-protocols PROXY,VLESS,VMESS
+> vpn-merger --include-protocols VLESS,VMESS
 > ```
 
 **Important**: Install the dependencies with `pip install -r requirements.txt` before running **any** of the Python scripts. You can also run `pip install -e .` (or install from PyPI) to register the `aggregator-tool`, `vpn-merger` and `vpn-retester` commands.
