@@ -316,24 +316,27 @@ Install them with `pip install -e .[dev]` or `pip install -e .[web]` as needed.
 
 ### Flask Web Interface
 
-Install the optional `web` extras to enable a small Flask server:
+Mass Config Merger ships with a lightweight Flask server that exposes simple
+endpoints to drive the aggregation and merging steps from a web browser or other
+HTTP client.
+
+Install the `web` extras from PyPI:
 
 ```bash
-pip install -e .[web]
+pip install massconfigmerger[web]
 ```
 
-Run it with:
+You can also install from a local checkout with `pip install -e .[web]`.
+
+Run the server with:
 
 ```bash
 python -m massconfigmerger.web
 ```
 
-Visit `http://localhost:5000/aggregate` to run aggregation,
-`/merge` to merge the latest results and `/report` to view the last report.
-The aggregate route returns a JSON payload describing the output directory and
-generated files, `/merge` responds with `{"status": "merge complete"}` and
-`/report` serves the HTML or JSON report. See
-[docs/web-interface.md](docs/web-interface.md) for more details.
+Navigate to `http://localhost:5000/aggregate` to collect new configurations,
+`/merge` to merge the latest results and `/report` to view the last report. See
+[docs/web-interface.md](docs/web-interface.md) for details on these routes.
 
 ### Proxy Configuration
 
