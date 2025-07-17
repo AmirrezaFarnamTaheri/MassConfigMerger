@@ -228,6 +228,8 @@ qx_data = generate_qx_conf(proxies)
 - On Windows consoles, colored output (like progress bars) requires the
   optional `colorama` library. Install it separately with `pip install colorama`
   if you want colors.
+- A small progress bar is shown when fetching sources even if URL testing is
+  disabled so you can monitor overall progress.
 ### Expected Console Output
 
 Running `vpn-merger` shows progress for each step:
