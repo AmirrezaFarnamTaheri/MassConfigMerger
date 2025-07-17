@@ -20,6 +20,17 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
 **Security Note**: All VPN servers collected by this tool come from public lists. Operators are unknown and may log or even alter your traffic. Avoid using them for banking or other sensitive tasks. See the [Important Security & Privacy Disclaimer](docs/tutorial.md#-important-security--privacy-disclaimer) for best practices.
 
+- These nodes come from public sources with unknown operators.
+- Avoid using them for banking or sensitive work.
+- Traffic may be logged or modified.
+- Best for casual browsing or bypassing blocks, not as a secure VPN.
+- Use at your own risk.
+
+**Best practice reminders:**
+- Don't sign into critical accounts.
+- Prefer HTTPS connections.
+- Use temporary or secondary credentials when possible.
+
 > **Note**: The default protocol list is optimised for the Hiddify client. Other VPN apps may require adjusting `--include-protocols`.
 
 > **How protocols are filtered**
