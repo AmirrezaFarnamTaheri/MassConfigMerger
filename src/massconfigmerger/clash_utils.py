@@ -309,21 +309,21 @@ def config_to_clash_proxy(
                 parts = main.split(":")
                 if len(parts) < 6:
                     return None
-                server, port, proto, method, obfs, pwd_enc = parts[:6]
+                server, port_str, proto, method, obfs, pwd_enc = parts[:6]
                 try:
-                    password = base64.urlsafe_b64decode(
+                    password_val = base64.urlsafe_b64decode(
                         pwd_enc + "=" * (-len(pwd_enc) % 4)
                     ).decode()
                 except (binascii.Error, UnicodeDecodeError):
-                    password = pwd_enc
+                    password_val = pwd_enc
                 q = parse_qs(tail[1:]) if tail.startswith("?") else {}
                 proxy = {
                     "name": name,
                     "type": "ssr",
                     "server": server,
-                    "port": int(port),
+                    "port": int(port_str),
                     "cipher": method,
-                    "password": password,
+                    "password": password_val,
                     "protocol": proto,
                     "obfs": obfs,
                 }
@@ -429,11 +429,11 @@ def config_to_clash_proxy(
                 "port": p.port,
             }
             uuid = p.username or q.get("uuid", [None])[0]
-            password = p.password or q.get("password", [None])[0]
+            tuic_password_val = p.password or q.get("password", [None])[0]
             if uuid:
                 proxy["uuid"] = uuid
-            if password:
-                proxy["password"] = password
+            if tuic_password_val:
+                proxy["password"] = tuic_password_val
             key_map = {
                 "alpn": ["alpn"],
                 "congestion-control": ["congestion-control", "congestion_control"],
