@@ -97,6 +97,48 @@ async def test_fetch_and_parse_configs_progress(monkeypatch):
     assert bar.closed
 
 
+@pytest.mark.asyncio
+async def test_signal_handler_closes_current_progress(monkeypatch):
+    bars = []
+    handler = {}
+
+    class HandlerTqdm(DummyTqdm):
+        def update(self, n=1):
+            if not handler.get("called"):
+                assert merger.current_progress is self
+                handler["called"] = True
+                captured["handler"]()
+            super().update(n)
+
+    def fake_tqdm(*args, **kwargs):
+        bar = HandlerTqdm(*args, **kwargs)
+        bars.append(bar)
+        return bar
+
+    monkeypatch.setattr("massconfigmerger.vpn_merger.tqdm", fake_tqdm)
+
+    merger = UltimateVPNMerger()
+
+    loop = asyncio.get_running_loop()
+    captured = {}
+
+    def fake_add_signal_handler(sig, h):
+        captured["handler"] = h
+
+    monkeypatch.setattr(loop, "add_signal_handler", fake_add_signal_handler)
+
+    merger._register_signal_handlers()
+
+    r1 = ConfigResult(config="a", protocol="VMess", ping_time=0.1, is_reachable=True)
+    r2 = ConfigResult(config="b", protocol="VLESS", ping_time=0.2, is_reachable=True)
+    merger._sort_by_performance([r1, r2])
+
+    assert handler.get("called")
+    bar = bars[0]
+    assert bar.closed
+    assert merger.current_progress is None
+
+
 def test_sort_by_performance_progress(monkeypatch):
     bars = []
 

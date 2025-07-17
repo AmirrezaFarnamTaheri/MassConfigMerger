@@ -80,7 +80,7 @@ except ImportError as exc:
 # Event loop compatibility fix
 try:
     import nest_asyncio
-    import os
+    import os  # noqa: F811
     if __name__ == "__main__" or os.environ.get("NEST_ASYNCIO") == "1":
         nest_asyncio.apply()
         if __name__ == "__main__":
@@ -187,10 +187,14 @@ class UltimateVPNMerger:
         """Set up SIGINT handler to close progress bars gracefully."""
         def handler() -> None:
             self.stop_fetching = True
-            if self.fetcher.progress:
-                self.fetcher.progress.close()
             if self.current_progress:
                 self.current_progress.close()
+                if self.fetcher.progress is self.current_progress:
+                    self.fetcher.progress = None
+                self.current_progress = None
+            if self.fetcher.progress:
+                self.fetcher.progress.close()
+                self.fetcher.progress = None
         try:
             loop = asyncio.get_running_loop()
             loop.add_signal_handler(signal.SIGINT, handler)
@@ -375,6 +379,7 @@ class UltimateVPNMerger:
         proc = EnhancedConfigProcessor()
 
         progress = tqdm(total=max_tests, desc="Testing", unit="cfg", leave=False)
+        self.current_progress = progress
 
         for url in self.available_sources:
             if tested >= max_tests:
@@ -400,11 +405,13 @@ class UltimateVPNMerger:
                     progress.update(1)
                     if ping is not None:
                         progress.close()
+                        self.current_progress = None
                         return True
                     if tested >= max_tests:
                         break
 
         progress.close()
+        self.current_progress = None
 
         return False
     
@@ -415,6 +422,7 @@ class UltimateVPNMerger:
         successful_sources = 0
         progress = tqdm(total=0, desc="Testing", unit="cfg", leave=False)
         self.fetcher.progress = progress
+        self.current_progress = progress
 
         try:
             # Process sources with semaphore
@@ -646,6 +654,7 @@ class UltimateVPNMerger:
         key_func = sort_key_latency if CONFIG.sort_by != "reliability" else sort_key_reliability
 
         progress = tqdm(total=len(results), desc="Testing", unit="cfg", leave=False)
+        self.current_progress = progress
         keyed = []
         try:
             for r in results:
