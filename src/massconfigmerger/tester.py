@@ -6,7 +6,10 @@ import re
 import socket
 import sys
 import time
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover - optional dependency
+    from geoip2.database import Reader
 
 try:
     from aiohttp.resolver import AsyncResolver
@@ -21,11 +24,13 @@ from .config import Settings
 class NodeTester:
     """Utility class for node latency testing and GeoIP lookup."""
 
+    _geoip_reader: Optional["Reader"]
+
     def __init__(self, config: Settings) -> None:
         self.config = config
         self.dns_cache: dict[str, str] = {}
         self.resolver: Optional[AsyncResolver] = None
-        self._geoip_reader = None
+        self._geoip_reader: Optional["Reader"] = None
 
     async def test_connection(self, host: str, port: int) -> Optional[float]:
         """Return latency in seconds or ``None`` on failure."""
@@ -87,6 +92,7 @@ class NodeTester:
             if not re.match(r"^[0-9.]+$", host):
                 info = await asyncio.get_running_loop().getaddrinfo(host, None)
                 ip = info[0][4][0]
+            assert self._geoip_reader is not None
             resp = self._geoip_reader.country(ip)
             return resp.country.iso_code
         except (OSError, socket.gaierror, AddressNotFoundError) as exc:
