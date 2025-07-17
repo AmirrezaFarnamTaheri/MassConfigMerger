@@ -446,49 +446,28 @@ class Aggregator:
     ) -> Tuple[Path, List[Path]]:
         cfg = self.cfg
         out_dir = Path(cfg.output_dir)
-        configs: Set[str] = set()
         start = time.time()
+
         proxy = choose_proxy(cfg)
         connector = aiohttp.TCPConnector(limit=cfg.concurrent_limit)
         session = aiohttp.ClientSession(connector=connector, proxy=proxy)
+
+        configs: Set[str] = set()
         try:
-            sources = await self.check_and_update_sources(
+            configs = await self._load_sources(
                 sources_file,
-                cfg.concurrent_limit,
-                cfg.request_timeout,
-                retries=cfg.retry_attempts,
-                base_delay=cfg.retry_base_delay,
-                failures_path=sources_file.with_suffix(".failures.json"),
-                max_failures=failure_threshold,
-                prune=prune,
-                disabled_path=(
-                    sources_file.with_name("sources_disabled.txt") if prune else None
-                ),
+                failure_threshold,
+                prune,
                 proxy=proxy,
                 session=session,
             )
-            self.stats["valid_sources"] = len(sources)
-            configs = await self.fetch_and_parse_configs(
-                sources,
-                cfg.concurrent_limit,
-                cfg.request_timeout,
-                retries=cfg.retry_attempts,
-                base_delay=cfg.retry_base_delay,
-                proxy=proxy,
-                session=session,
-            )
-            configs |= await self.scrape_telegram_configs(channels_file, last_hours)
-            # Update total fetched configs after scraping Telegram so both
-            # HTTP and Telegram sources are reflected in the count
+            configs |= await self._scrape_telegram(channels_file, last_hours)
             self.stats["fetched_configs"] = len(configs)
             logging.info("Fetched configs count: %d", self.stats["fetched_configs"])
         except KeyboardInterrupt:
             logging.warning("Interrupted. Writing partial results...")
         finally:
-            final = deduplicate_and_filter(configs, cfg, protocols)
-            self.stats["written_configs"] = len(final)
-            logging.info("Final configs count: %d", self.stats["written_configs"])
-            files = Aggregator.output_files(final, out_dir, cfg)
+            files = self._write_outputs(configs, protocols, out_dir)
             await session.close()
             elapsed = time.time() - start
             summary = (
@@ -500,6 +479,60 @@ class Aggregator:
             print(summary)
             logging.info(summary)
         return out_dir, files
+
+    async def _load_sources(
+        self,
+        sources_file: Path,
+        failure_threshold: int,
+        prune: bool,
+        *,
+        proxy: str | None = None,
+        session: ClientSession | None = None,
+    ) -> Set[str]:
+        cfg = self.cfg
+        sources = await self.check_and_update_sources(
+            sources_file,
+            cfg.concurrent_limit,
+            cfg.request_timeout,
+            retries=cfg.retry_attempts,
+            base_delay=cfg.retry_base_delay,
+            failures_path=sources_file.with_suffix(".failures.json"),
+            max_failures=failure_threshold,
+            prune=prune,
+            disabled_path=(
+                sources_file.with_name("sources_disabled.txt") if prune else None
+            ),
+            proxy=proxy,
+            session=session,
+        )
+        self.stats["valid_sources"] = len(sources)
+        configs = await self.fetch_and_parse_configs(
+            sources,
+            cfg.concurrent_limit,
+            cfg.request_timeout,
+            retries=cfg.retry_attempts,
+            base_delay=cfg.retry_base_delay,
+            proxy=proxy,
+            session=session,
+        )
+        return configs
+
+    async def _scrape_telegram(
+        self, channels_file: Path, last_hours: int
+    ) -> Set[str]:
+        return await self.scrape_telegram_configs(channels_file, last_hours)
+
+    def _write_outputs(
+        self,
+        configs: Set[str],
+        protocols: List[str] | None,
+        out_dir: Path,
+    ) -> List[Path]:
+        cfg = self.cfg
+        final = deduplicate_and_filter(configs, cfg, protocols)
+        self.stats["written_configs"] = len(final)
+        logging.info("Final configs count: %d", self.stats["written_configs"])
+        return Aggregator.output_files(final, out_dir, cfg)
 
 def output_files(configs: List[str], out_dir: Path, cfg: Settings) -> List[Path]:
     """Convenience wrapper around Aggregator.output_files."""
