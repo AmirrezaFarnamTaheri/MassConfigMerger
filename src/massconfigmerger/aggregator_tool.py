@@ -219,7 +219,8 @@ class Aggregator:
             tasks = [asyncio.create_task(fetch_one(sess, u)) for u in source_list]
             for task in asyncio.as_completed(tasks):
                 configs.update(await task)
-                progress.update(1)
+                if self.cfg.enable_url_testing:
+                    progress.update(1)
 
         progress = tqdm(total=len(source_list), desc="Sources", unit="src", leave=False)
         try:
