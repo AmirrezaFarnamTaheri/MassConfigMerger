@@ -6,7 +6,7 @@ import re
 import socket
 import sys
 import time
-from typing import Optional
+from typing import Optional, Any
 
 try:
     from aiohttp.resolver import AsyncResolver
@@ -25,7 +25,7 @@ class NodeTester:
         self.config = config
         self.dns_cache: dict[str, str] = {}
         self.resolver: Optional[AsyncResolver] = None
-        self._geoip_reader = None
+        self._geoip_reader: Any = None
 
     async def test_connection(self, host: str, port: int) -> Optional[float]:
         """Return latency in seconds or ``None`` on failure."""
