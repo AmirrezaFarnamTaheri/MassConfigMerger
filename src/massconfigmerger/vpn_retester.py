@@ -110,8 +110,12 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
     parser.add_argument("--no-sort", action="store_true", help="Skip sorting by latency")
     parser.add_argument("--concurrent-limit", type=int, default=CONFIG.concurrent_limit,
                         help="Number of concurrent tests")
-    parser.add_argument("--test-timeout", type=float, default=CONFIG.connect_timeout,
-                        help="TCP connection timeout in seconds")
+    parser.add_argument(
+        "--connect-timeout",
+        type=float,
+        default=CONFIG.connect_timeout,
+        help="TCP connect timeout in seconds",
+    )
     parser.add_argument("--max-ping", type=int, default=0,
                         help="Discard configs slower than this ping in ms (0 disables)")
     parser.add_argument(
@@ -143,7 +147,7 @@ def main(args: argparse.Namespace | None = None) -> None:
         sys.exit(1)
 
     CONFIG.concurrent_limit = max(1, args.concurrent_limit)
-    CONFIG.connect_timeout = max(0.1, args.test_timeout)
+    CONFIG.connect_timeout = max(0.1, args.connect_timeout)
     CONFIG.max_ping_ms = args.max_ping if args.max_ping > 0 else None
     if args.include_protocols:
         CONFIG.include_protocols = {p.strip().upper() for p in args.include_protocols.split(',') if p.strip()}
