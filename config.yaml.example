@@ -76,7 +76,6 @@ valid_prefixes:
   - h2://
 enable_url_testing: true
 enable_sorting: true
-test_timeout: 5.0
 save_every: 1000
 stop_after_found: 0
 top_n: 0

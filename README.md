@@ -415,7 +415,7 @@ recorded in `sources_disabled.txt`. Advanced users can change the limit with
 ## FAQ
 
 ### Why does the script take so long?
-The merger checks hundreds of servers. Reduce the number of sources or use a smaller `--concurrent-limit`. Skipping tests with `--no-url-test` can also speed up runs.
+The merger checks hundreds of servers. Reduce the number of sources or use a smaller `--concurrent-limit`. Skipping tests with `--no-url-test` can also speed up runs. If connections often fail, increase the `--connect-timeout` value.
 
 ### There is no output directory
 Ensure you ran the script in this repository and watch for errors. Results are saved in the `output/` folder or the location given by `--output-dir`.
