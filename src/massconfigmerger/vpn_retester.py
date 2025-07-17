@@ -116,8 +116,12 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
         default=CONFIG.connect_timeout,
         help="TCP connect timeout in seconds",
     )
-    parser.add_argument("--max-ping", type=int, default=0,
-                        help="Discard configs slower than this ping in ms (0 disables)")
+    parser.add_argument(
+        "--max-ping",
+        type=int,
+        default=CONFIG.max_ping_ms,
+        help="Discard configs slower than this ping in ms (0 disables)",
+    )
     parser.add_argument(
         "--history-file",
         type=str,
@@ -148,7 +152,7 @@ def main(args: argparse.Namespace | None = None) -> None:
 
     CONFIG.concurrent_limit = max(1, args.concurrent_limit)
     CONFIG.connect_timeout = max(0.1, args.connect_timeout)
-    CONFIG.max_ping_ms = args.max_ping if args.max_ping > 0 else None
+    CONFIG.max_ping_ms = args.max_ping
     if args.include_protocols:
         CONFIG.include_protocols = {p.strip().upper() for p in args.include_protocols.split(',') if p.strip()}
     if args.exclude_protocols is None:

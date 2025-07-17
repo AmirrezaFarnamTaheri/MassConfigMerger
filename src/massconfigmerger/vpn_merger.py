@@ -1000,8 +1000,12 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
                         help="Number of concurrent requests")
     parser.add_argument("--max-retries", type=int, default=CONFIG.max_retries,
                         help="Retry attempts when fetching sources")
-    parser.add_argument("--max-ping", type=int, default=0,
-                        help="Discard configs slower than this ping in ms (0 = no limit)")
+    parser.add_argument(
+        "--max-ping",
+        type=int,
+        default=CONFIG.max_ping_ms,
+        help="Discard configs slower than this ping in ms (0 = no limit)",
+    )
     parser.add_argument("--log-file", type=str, default=None,
                         help="Write output messages to a log file")
     parser.add_argument("--cumulative-batches", action="store_true",
@@ -1145,7 +1149,7 @@ def main(args: argparse.Namespace | None = None) -> int:
     CONFIG.connect_timeout = max(0.1, args.connect_timeout)
     CONFIG.concurrent_limit = max(1, args.concurrent_limit)
     CONFIG.max_retries = max(1, args.max_retries)
-    CONFIG.max_ping_ms = args.max_ping if args.max_ping > 0 else None
+    CONFIG.max_ping_ms = args.max_ping
     CONFIG.log_file = args.log_file
     CONFIG.write_base64 = not args.no_base64
     CONFIG.write_csv = not args.no_csv
