@@ -1,10 +1,10 @@
+# Terminated
 This project is terminated.
 
-You can check the webpage:
+You can either check the **webpage**:
 https://amirrezafarnamtaheri.github.io/StreamlineVPN/
 
-Or the repo:
-
+Or the **repo**:
 https://github.com/AmirrezaFarnamTaheri/StreamlineVPN
 
 # Mass Config Merger 🚀
