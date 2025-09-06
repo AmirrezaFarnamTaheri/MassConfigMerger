@@ -1,3 +1,12 @@
+This project is terminated.
+
+You can check the webpage:
+https://amirrezafarnamtaheri.github.io/StreamlineVPN/
+
+Or the repo:
+
+https://github.com/AmirrezaFarnamTaheri/StreamlineVPN
+
 # Mass Config Merger 🚀
 
 Automated toolchain for collecting, testing and merging free VPN configuration
