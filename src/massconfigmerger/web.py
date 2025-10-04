@@ -9,9 +9,9 @@ from pathlib import Path
 from flask import Flask, render_template_string, send_file
 
 from .config import load_config
-from .aggregator_tool import run_pipeline, SOURCES_FILE, CHANNELS_FILE
-from .vpn_merger import detect_and_run
-from .result_processor import CONFIG
+from .aggregator_tool import run_pipeline as run_aggregator_pipeline
+from .vpn_merger import run_merger as run_merger_pipeline
+from .constants import SOURCES_FILE
 
 app = Flask(__name__)
 
@@ -23,36 +23,34 @@ def load_cfg():
     return load_config(CONFIG_PATH)
 
 
-def run_aggregator() -> tuple[Path, list[Path]]:
-    """Run the aggregation pipeline synchronously."""
-    cfg = load_cfg()
-    return asyncio.run(
-        run_pipeline(cfg, sources_file=SOURCES_FILE, channels_file=CHANNELS_FILE)
-    )
-
-
-def run_merger() -> None:
-    """Run the VPN merger using the latest aggregated results."""
-    cfg = load_cfg()
-    CONFIG.output_dir = cfg.output_dir
-    CONFIG.resume_file = str(Path(cfg.output_dir) / "vpn_subscription_raw.txt")
-    detect_and_run(Path(SOURCES_FILE))
-
-
 @app.route("/aggregate")
 def aggregate() -> dict:
-    out_dir, files = run_aggregator()
+    """Run the aggregation pipeline and return the output files."""
+    cfg = load_cfg()
+    # The new run_pipeline doesn't use CHANNELS_FILE directly, it's handled in the aggregator
+    out_dir, files = asyncio.run(
+        run_aggregator_pipeline(cfg, sources_file=SOURCES_FILE)
+    )
     return {"output_dir": str(out_dir), "files": [str(p) for p in files]}
 
 
 @app.route("/merge")
 def merge() -> dict:
-    run_merger()
+    """Run the VPN merger using the latest aggregated results."""
+    cfg = load_cfg()
+    resume_file = Path(cfg.output_dir) / "vpn_subscription_raw.txt"
+    if not resume_file.exists():
+        return {"error": f"Resume file not found: {resume_file}"}, 404
+
+    asyncio.run(
+        run_merger_pipeline(cfg, sources_file=SOURCES_FILE, resume_file=resume_file)
+    )
     return {"status": "merge complete"}
 
 
 @app.route("/report")
 def report():
+    """Display the HTML or JSON report."""
     cfg = load_cfg()
     html_report = Path(cfg.output_dir) / "vpn_report.html"
     if html_report.exists():
@@ -69,7 +67,7 @@ def report():
 
 def main() -> None:
     """Run the Flask development server."""
-    app.run()
+    app.run(host="0.0.0.0", port=8080)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,2 @@
+[console_scripts]
+massconfigmerger = massconfigmerger.cli:main

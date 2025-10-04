@@ -19,10 +19,11 @@ except ModuleNotFoundError as exc:  # pragma: no cover - only triggers when deps
 pytest_plugins = ["pytest_asyncio", "aiohttp.pytest_plugin"]
 
 import asyncio
-from massconfigmerger.result_processor import CONFIG
+from massconfigmerger.config import Settings
 
 # Do not use proxies when running tests to avoid network issues with local
 # test servers.
+CONFIG = Settings()
 CONFIG.HTTP_PROXY = None
 CONFIG.SOCKS_PROXY = None
 import pytest

@@ -1,3 +1,31 @@
+Metadata-Version: 2.4
+Name: massconfigmerger
+Version: 0.4.0
+Summary: VPN subscription aggregator and merger
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: aiohttp
+Requires-Dist: aiodns
+Requires-Dist: nest-asyncio
+Requires-Dist: telethon
+Requires-Dist: PyYAML
+Requires-Dist: geoip2
+Requires-Dist: pydantic>=2
+Requires-Dist: pydantic-settings
+Requires-Dist: tqdm
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: pytest-asyncio; extra == "dev"
+Requires-Dist: types-PyYAML; extra == "dev"
+Requires-Dist: types-requests; extra == "dev"
+Requires-Dist: flake8; extra == "dev"
+Requires-Dist: mypy; extra == "dev"
+Requires-Dist: pre-commit; extra == "dev"
+Provides-Extra: web
+Requires-Dist: Flask; extra == "web"
+Dynamic: license-file
+
 # Mass Config Merger 🚀
 
 Automated toolchain for collecting, testing and merging free VPN configuration
