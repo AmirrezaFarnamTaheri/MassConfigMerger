@@ -30,13 +30,12 @@ def extract_host_port(
                 host = data.get("add") or data.get("host")
                 port = data.get("port")
                 return host, int(port) if port else None
-            except (
-                binascii.Error,
-                UnicodeDecodeError,
-                json.JSONDecodeError,
-                ValueError,
-            ) as exc:
-                logging.debug("extract_host_port vmess failed: %s", exc)
+            except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError):
+                # Fallback to URI-style parsing (common for VLESS)
+                p = urlparse(config)
+                if p.hostname and p.port:
+                    return p.hostname, p.port
+                logging.debug("extract_host_port vmess/vless fallback failed for: %s", config)
 
         if config.startswith("ssr://"):
             try:
