@@ -30,10 +30,14 @@ async def upload_files_to_gist(
     }
     result: Dict[str, str] = {}
     base = base_url.rstrip("/") + "/gists"
-    async with aiohttp.ClientSession(headers=headers) as session:
+    timeout = aiohttp.ClientTimeout(total=30)
+    async with aiohttp.ClientSession(headers=headers, timeout=timeout) as session:
         for path in paths:
+            if not path.exists() or not path.is_file():
+                raise RuntimeError(f"Gist upload source is not a file: {path}")
+            content = path.read_text(encoding="utf-8")
             payload = {
-                "files": {path.name: {"content": path.read_text(encoding="utf-8")}},
+                "files": {path.name: {"content": content}},
                 "public": False,
                 "description": "MassConfigMerger output",
             }
