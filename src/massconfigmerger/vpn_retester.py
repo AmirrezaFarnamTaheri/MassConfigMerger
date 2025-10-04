@@ -2,22 +2,21 @@
 """Retest and sort an existing VPN subscription output."""
 
 import asyncio
-import argparse
 import base64
 import binascii
 import csv
-import sys
 from pathlib import Path
 from typing import List, Tuple, Optional
 
 from tqdm.asyncio import tqdm_asyncio
 
-from .utils import EnhancedConfigProcessor, print_public_source_warning
-from .config import Settings, load_config
+from .config import Settings
+from .core.config_processor import ConfigProcessor
+from .core.utils import print_public_source_warning
 
 
 async def _test_config(
-    proc: EnhancedConfigProcessor, cfg: str
+    proc: ConfigProcessor, cfg: str
 ) -> Tuple[str, Optional[float]]:
     host, port = proc.extract_host_port(cfg)
     if host and port:
@@ -30,8 +29,8 @@ async def _test_config(
 async def retest_configs(
     configs: List[str], settings: Settings
 ) -> List[Tuple[str, Optional[float]]]:
-    proc = EnhancedConfigProcessor(settings)
-    semaphore = asyncio.Semaphore(settings.concurrent_limit)
+    proc = ConfigProcessor(settings)
+    semaphore = asyncio.Semaphore(settings.network.concurrent_limit)
 
     async def worker(cfg: str) -> Tuple[str, Optional[float]]:
         async with semaphore:
@@ -41,7 +40,8 @@ async def retest_configs(
     try:
         return await tqdm_asyncio.gather(*tasks, total=len(tasks), desc="Testing")
     finally:
-        await proc.tester.close()
+        if proc.tester:
+             await proc.tester.close()
 
 
 def load_configs(path: Path) -> List[str]:
@@ -58,16 +58,16 @@ def load_configs(path: Path) -> List[str]:
 
 def filter_configs(configs: List[str], settings: Settings) -> List[str]:
     """Filter configs based on include/exclude protocol settings."""
-    if settings.include_protocols is None and settings.exclude_protocols is None:
+    if settings.filtering.include_protocols is None and settings.filtering.exclude_protocols is None:
         return configs
 
-    proc = EnhancedConfigProcessor(settings)
+    proc = ConfigProcessor(settings)
     filtered = []
     for cfg in configs:
         proto = proc.categorize_protocol(cfg).upper()
-        if settings.include_protocols and proto not in settings.include_protocols:
+        if settings.filtering.include_protocols and proto not in settings.filtering.include_protocols:
             continue
-        if settings.exclude_protocols and proto in settings.exclude_protocols:
+        if settings.filtering.exclude_protocols and proto in settings.filtering.exclude_protocols:
             continue
         filtered.append(cfg)
     return filtered
@@ -79,7 +79,7 @@ def save_results(
     sort: bool,
     top_n: int,
 ) -> None:
-    output_dir = Path(settings.output_dir)
+    output_dir = Path(settings.output.output_dir)
     output_dir.mkdir(exist_ok=True)
 
     if sort:
@@ -94,13 +94,13 @@ def save_results(
     raw_path = output_dir / "vpn_retested_raw.txt"
     raw_path.write_text("\n".join(configs), encoding="utf-8")
 
-    if settings.write_base64:
+    if settings.output.write_base64:
         base64_path = output_dir / "vpn_retested_base64.txt"
         base64_path.write_text(
             base64.b64encode("\n".join(configs).encode()).decode(), encoding="utf-8"
         )
 
-    if settings.write_csv:
+    if settings.output.write_csv:
         csv_path = output_dir / "vpn_retested_detailed.csv"
         with open(csv_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
@@ -123,14 +123,10 @@ async def run_retester(
     configs = load_configs(input_file)
     configs = filter_configs(configs, cfg)
     results = await retest_configs(configs, cfg)
-    if cfg.max_ping_ms is not None:
+    if cfg.filtering.max_ping_ms is not None:
         results = [
             (c, p)
             for c, p in results
-            if p is not None and p * 1000 <= cfg.max_ping_ms
+            if p is not None and p * 1000 <= cfg.filtering.max_ping_ms
         ]
     save_results(results, cfg, sort, top_n)
-
-
-# This file is not intended to be run directly anymore.
-# The main entry point is now cli.py.

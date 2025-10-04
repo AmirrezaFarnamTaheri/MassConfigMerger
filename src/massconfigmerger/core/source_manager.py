@@ -9,7 +9,7 @@ from typing import List, Set
 import aiohttp
 from tqdm import tqdm
 
-from .. import utils
+from . import utils
 from ..config import Settings
 
 
@@ -30,7 +30,7 @@ class SourceManager:
         """Get the aiohttp session, creating it if it doesn't exist."""
         if self.session is None or self.session.closed:
             proxy = utils.choose_proxy(self.settings)
-            connector = aiohttp.TCPConnector(limit=self.settings.concurrent_limit)
+            connector = aiohttp.TCPConnector(limit=self.settings.network.concurrent_limit)
             self.session = aiohttp.ClientSession(connector=connector, proxy=proxy)
         return self.session
 
@@ -50,7 +50,7 @@ class SourceManager:
             A set of unique configuration links.
         """
         configs: Set[str] = set()
-        semaphore = asyncio.Semaphore(self.settings.concurrent_limit)
+        semaphore = asyncio.Semaphore(self.settings.network.concurrent_limit)
         session = await self.get_session()
 
         async def fetch_one(url: str) -> Set[str]:
@@ -58,9 +58,9 @@ class SourceManager:
                 text = await utils.fetch_text(
                     session,
                     url,
-                    self.settings.request_timeout,
-                    retries=self.settings.retry_attempts,
-                    base_delay=self.settings.retry_base_delay,
+                    self.settings.network.request_timeout,
+                    retries=self.settings.network.retry_attempts,
+                    base_delay=self.settings.network.retry_base_delay,
                     proxy=utils.choose_proxy(self.settings),
                 )
             if not text:
@@ -110,7 +110,7 @@ class SourceManager:
 
         valid_sources: List[str] = []
         removed: List[str] = []
-        semaphore = asyncio.Semaphore(self.settings.concurrent_limit)
+        semaphore = asyncio.Semaphore(self.settings.network.concurrent_limit)
         session = await self.get_session()
 
         async def check(url: str) -> tuple[str, bool]:
@@ -118,9 +118,9 @@ class SourceManager:
                 text = await utils.fetch_text(
                     session,
                     url,
-                    self.settings.request_timeout,
-                    retries=self.settings.retry_attempts,
-                    base_delay=self.settings.retry_base_delay,
+                    self.settings.network.request_timeout,
+                    retries=self.settings.network.retry_attempts,
+                    base_delay=self.settings.network.retry_base_delay,
                     proxy=utils.choose_proxy(self.settings),
                 )
             return url, bool(text and utils.parse_configs_from_text(text))

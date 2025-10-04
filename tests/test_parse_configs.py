@@ -1,6 +1,6 @@
 import base64
 
-from massconfigmerger import utils
+from massconfigmerger.core import utils
 from massconfigmerger.constants import MAX_DECODE_SIZE
 
 

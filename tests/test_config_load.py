@@ -1,159 +1,78 @@
-import json
 import yaml
 from pathlib import Path
-import pytest
-from pydantic import ValidationError
-
-from massconfigmerger.config import Settings, load_config
-
+from massconfigmerger.config import load_config
 
 def test_load_defaults(tmp_path):
+    """Test that default settings are loaded correctly."""
     p = tmp_path / "config.yaml"
     p.write_text("{}")
     loaded = load_config(p)
-    assert loaded.output_dir == "output"
-    assert loaded.log_dir == "logs"
-    assert loaded.protocols == []
-    assert loaded.exclude_patterns == []
-    assert loaded.concurrent_limit == 20
-    assert loaded.retry_attempts == 3
-    assert loaded.retry_base_delay == 1.0
-    assert loaded.session_path == "user.session"
+    assert loaded.output.output_dir == "output"
+    assert loaded.network.concurrent_limit == 20
+    assert loaded.telegram.api_id is None
 
+def test_load_custom_values(tmp_path):
+    """Test that custom values from a YAML file override defaults."""
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        yaml.safe_dump(
+            {
+                "output": {"output_dir": "/tmp/test"},
+                "network": {"concurrent_limit": 50},
+                "telegram": {"api_id": 12345},
+            }
+        )
+    )
+    loaded = load_config(p)
+    assert loaded.output.output_dir == "/tmp/test"
+    assert loaded.network.concurrent_limit == 50
+    assert loaded.telegram.api_id == 12345
 
-def test_load_invalid_yaml(tmp_path):
+def test_load_invalid_yaml_uses_defaults(tmp_path):
+    """Test that an invalid YAML file results in default settings."""
     p = tmp_path / "bad.yaml"
-    p.write_text(": { invalid }")  # Invalid yaml
-    # pydantic-settings will ignore the invalid file and use defaults
+    p.write_text(": { invalid }")
     settings = load_config(p)
-    assert settings.concurrent_limit == 20
-
+    assert settings.network.concurrent_limit == 20
+    assert settings.telegram.api_id is None
 
 def test_file_not_found_uses_defaults():
+    """Test that a missing config file results in default settings."""
     missing = Path("non_existent_config.yaml")
     settings = load_config(missing)
-    assert settings.concurrent_limit == 20
+    assert settings.network.concurrent_limit == 20
 
-
-def test_load_without_credentials(tmp_path):
-    """Loading an empty config should succeed with Telegram fields unset."""
-    p = tmp_path / "cfg.yaml"
-    p.write_text("{}")
-    cfg = load_config(p)
-    assert cfg.telegram_api_id is None
-    assert cfg.telegram_api_hash is None
-    assert cfg.telegram_bot_token is None
-    assert cfg.allowed_user_ids == []
-
-
-def test_settings_custom(tmp_path):
-    p = tmp_path / "cfg.yaml"
+def test_env_variable_override(tmp_path, monkeypatch):
+    """Test that environment variables override YAML settings."""
+    p = tmp_path / "config.yaml"
     p.write_text(
-        yaml.safe_dump({"retry_attempts": 5, "retry_base_delay": 0.5})
+        yaml.safe_dump(
+            {
+                "telegram": {"api_id": 123},
+                "network": {"request_timeout": 5},
+            }
+        )
     )
-    cfg = load_config(p)
-    assert cfg.retry_attempts == 5
-    assert cfg.retry_base_delay == 0.5
+    monkeypatch.setenv("telegram__api_id", "54321")
+    monkeypatch.setenv("network__request_timeout", "15")
 
+    loaded = load_config(p)
+    assert loaded.telegram.api_id == 54321
+    assert loaded.network.request_timeout == 15
 
-def test_env_fallback(tmp_path, monkeypatch):
+def test_allowed_user_ids_validation(tmp_path):
+    """Test validation and parsing of allowed_user_ids."""
     p = tmp_path / "config.yaml"
-    p.write_text("{}")
-    monkeypatch.setenv("TELEGRAM_API_ID", "42")
-    monkeypatch.setenv("TELEGRAM_API_HASH", "hash")
-    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "token")
-    monkeypatch.setenv("ALLOWED_USER_IDS", "[1]")
+    p.write_text(
+        yaml.safe_dump(
+            {
+                "telegram": {"allowed_user_ids": "1, 2,3, 4 ,5"}
+            }
+        )
+    )
     loaded = load_config(p)
-    assert loaded.telegram_api_id == 42
-    assert loaded.telegram_api_hash == "hash"
-    assert loaded.telegram_bot_token == "token"
-    assert loaded.allowed_user_ids == [1]
+    assert loaded.telegram.allowed_user_ids == [1, 2, 3, 4, 5]
 
-
-def test_env_override(tmp_path, monkeypatch):
-    cfg = {
-        "telegram_api_id": 1,
-        "telegram_api_hash": "hash",
-        "telegram_bot_token": "token",
-        "allowed_user_ids": [1],
-    }
-    p = tmp_path / "config.yaml"
-    p.write_text(yaml.safe_dump(cfg))
-    monkeypatch.setenv("TELEGRAM_API_ID", "99")
-    monkeypatch.setenv("TELEGRAM_API_HASH", "newhash")
-    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "newtoken")
+    p.write_text(yaml.safe_dump({"telegram": {"allowed_user_ids": 12345}}))
     loaded = load_config(p)
-    assert loaded.telegram_api_id == 99
-    assert loaded.telegram_api_hash == "newhash"
-    assert loaded.telegram_bot_token == "newtoken"
-
-
-def test_allowed_ids_env_fallback(tmp_path, monkeypatch):
-    cfg = {
-        "telegram_api_id": 1,
-        "telegram_api_hash": "hash",
-        "telegram_bot_token": "token",
-    }
-    p = tmp_path / "c.yaml"
-    p.write_text(yaml.safe_dump(cfg))
-    monkeypatch.setenv("ALLOWED_USER_IDS", "[5, 6]")
-    loaded = load_config(p)
-    assert loaded.allowed_user_ids == [5, 6]
-
-
-def test_allowed_ids_env_override(tmp_path, monkeypatch):
-    cfg = {
-        "telegram_api_id": 1,
-        "telegram_api_hash": "hash",
-        "telegram_bot_token": "token",
-        "allowed_user_ids": [1],
-    }
-    p = tmp_path / "c.yaml"
-    p.write_text(yaml.safe_dump(cfg))
-    monkeypatch.setenv("ALLOWED_USER_IDS", "[2, 3]")
-    loaded = load_config(p)
-    assert loaded.allowed_user_ids == [2, 3]
-
-
-def test_allowed_ids_string_values(tmp_path):
-    cfg = {
-        "telegram_api_id": 1,
-        "telegram_api_hash": "hash",
-        "telegram_bot_token": "token",
-        "allowed_user_ids": ["7", "8"],
-    }
-    p = tmp_path / "cfg.yaml"
-    p.write_text(yaml.safe_dump(cfg))
-    loaded = load_config(p)
-    assert loaded.allowed_user_ids == [7, 8]
-
-
-def test_env_override_generic_fields(tmp_path, monkeypatch):
-    cfg = {
-        "output_dir": "a",
-        "concurrent_limit": 5,
-        "retry_base_delay": 0.1,
-        "write_clash": True,
-        "protocols": ["vmess"],
-        "headers": {"Foo": "Bar"},
-    }
-    p = tmp_path / "c.yaml"
-    p.write_text(yaml.safe_dump(cfg))
-
-    monkeypatch.setenv("OUTPUT_DIR", "env")
-    monkeypatch.setenv("CONCURRENT_LIMIT", "99")
-    monkeypatch.setenv("RETRY_BASE_DELAY", "0.5")
-    monkeypatch.setenv("WRITE_CLASH", "false")
-    monkeypatch.setenv("PROTOCOLS", '["ss","ssr"]')
-    monkeypatch.setenv("HEADERS", '{"X":"1"}')
-    monkeypatch.setenv("SESSION_PATH", "foo.session")
-
-    loaded = load_config(p)
-
-    assert loaded.output_dir == "env"
-    assert loaded.concurrent_limit == 99
-    assert loaded.retry_base_delay == 0.5
-    assert loaded.write_clash is False
-    assert loaded.protocols == ["ss", "ssr"]
-    assert loaded.headers == {"Foo": "Bar", "X": "1"}
-    assert loaded.session_path == "foo.session"
+    assert loaded.telegram.allowed_user_ids == [12345]

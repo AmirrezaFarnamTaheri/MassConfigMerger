@@ -38,7 +38,7 @@ def aggregate() -> dict:
 def merge() -> dict:
     """Run the VPN merger using the latest aggregated results."""
     cfg = load_cfg()
-    resume_file = Path(cfg.output_dir) / "vpn_subscription_raw.txt"
+    resume_file = Path(cfg.output.output_dir) / "vpn_subscription_raw.txt"
     if not resume_file.exists():
         return {"error": f"Resume file not found: {resume_file}"}, 404
 
@@ -52,10 +52,10 @@ def merge() -> dict:
 def report():
     """Display the HTML or JSON report."""
     cfg = load_cfg()
-    html_report = Path(cfg.output_dir) / "vpn_report.html"
+    html_report = Path(cfg.output.output_dir) / "vpn_report.html"
     if html_report.exists():
         return send_file(html_report)
-    json_report = Path(cfg.output_dir) / "vpn_report.json"
+    json_report = Path(cfg.output.output_dir) / "vpn_report.json"
     if not json_report.exists():
         return "Report not found", 404
     data = json.loads(json_report.read_text())
