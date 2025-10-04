@@ -44,7 +44,7 @@ def extract_host_port(
                 decoded_bytes = base64.urlsafe_b64decode(padded)
                 if len(decoded_bytes) > max_decode_size:
                     return None, None
-                decoded = decoded_bytes.decode()
+                decoded = decoded_bytes.decode("utf-8")
                 host_part = decoded.split("/", 1)[0]
                 parts = host_part.split(":")
                 if len(parts) < 2:
