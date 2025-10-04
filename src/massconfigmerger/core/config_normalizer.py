@@ -22,7 +22,7 @@ def extract_host_port(
             try:
                 json_part = config.split("://", 1)[1]
                 padded = json_part + "=" * (-len(json_part) % 4)
-                decoded_bytes = base64.urlsafe_b64decode(padded)
+                decoded_bytes = base64.b64decode(padded)
                 if len(decoded_bytes) > max_decode_size:
                     return None, None
                 decoded = decoded_bytes.decode("utf-8", "ignore")
