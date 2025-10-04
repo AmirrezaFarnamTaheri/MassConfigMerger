@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List
 
 from ..config import Settings
+from .format_converters import FormatConverter
 
 
 class OutputGenerator:
@@ -46,5 +47,17 @@ class OutputGenerator:
                 encoding="utf-8",
             )
             written_files.append(base64_path)
+
+        converter = FormatConverter(configs)
+
+        if self.settings.output.write_clash:
+            clash_config_path = output_dir / "clash_config.yaml"
+            clash_config_path.write_text(converter.to_clash_config(), encoding="utf-8")
+            written_files.append(clash_config_path)
+
+        if self.settings.output.write_clash_proxies:
+            clash_proxies_path = output_dir / "clash_proxies.yaml"
+            clash_proxies_path.write_text(converter.to_clash_proxies(), encoding="utf-8")
+            written_files.append(clash_proxies_path)
 
         return written_files
