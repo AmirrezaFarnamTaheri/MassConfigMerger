@@ -40,3 +40,12 @@ services:
              done"
     environment:
       - RETEST_INTERVAL=86400
+
+  web:
+    build: .
+    image: vpn-merger
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./output:/app/output
+    command: python -m src.massconfigmerger.web

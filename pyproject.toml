@@ -26,9 +26,6 @@ dependencies = [
 ]
 
 [project.scripts]
-aggregator-tool = "massconfigmerger.aggregator_tool:main"
-vpn-merger = "massconfigmerger.vpn_merger:main"
-vpn-retester = "massconfigmerger.vpn_retester:main"
 massconfigmerger = "massconfigmerger.cli:main"
 
 [project.optional-dependencies]

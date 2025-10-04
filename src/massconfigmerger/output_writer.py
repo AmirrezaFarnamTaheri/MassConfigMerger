@@ -11,7 +11,11 @@ from typing import Any, Dict, List
 import yaml
 
 from .clash_utils import config_to_clash_proxy
-from .result_processor import CONFIG, ConfigResult
+from .config import Settings
+from .utils import ConfigResult
+
+# TODO: Refactor this to not use a global CONFIG object
+CONFIG = Settings()
 
 EXCLUDE_REGEXES: List[re.Pattern] = []
 
