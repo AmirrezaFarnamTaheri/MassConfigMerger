@@ -13,19 +13,19 @@ def run_verification():
 
         print("Verifying /aggregate route...")
         page.goto(f"{base_url}/aggregate")
-        time.sleep(2) # Give time for the async operation to complete
+        page.wait_for_load_state('networkidle', timeout=30000) # Wait up to 30s
         page.screenshot(path="output/verification_aggregate.png")
         print(".../aggregate verified.")
 
         print("Verifying /merge route...")
         page.goto(f"{base_url}/merge")
-        time.sleep(2)
+        page.wait_for_load_state('networkidle', timeout=30000)
         page.screenshot(path="output/verification_merge.png")
         print(".../merge verified.")
 
         print("Verifying /report route...")
         page.goto(f"{base_url}/report")
-        time.sleep(2)
+        page.wait_for_load_state('networkidle', timeout=30000)
         page.screenshot(path="output/verification_report.png")
         print(".../report verified.")
 
