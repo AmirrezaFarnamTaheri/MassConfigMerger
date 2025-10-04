@@ -39,7 +39,8 @@ def is_valid_config(link: str) -> bool:
     if scheme == "vmess":
         padded = rest + "=" * (-len(rest) % 4)
         try:
-            json.loads(base64.b64decode(padded, validate=True).decode())
+            decoded = base64.urlsafe_b64decode(padded).decode()
+            json.loads(decoded)
             return True
         except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError) as exc:
             logging.warning("Invalid vmess config: %s", exc)
@@ -166,7 +167,7 @@ async def fetch_text(
                     )
                     return None
         except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
-            logging.debug("fetch_text error on %s: %s", exc)
+            logging.debug("fetch_text error on %s: %s", url, exc)
 
         attempt += 1
         if attempt >= retries:

@@ -90,15 +90,58 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 def _update_settings_from_args(cfg: Settings, args: argparse.Namespace):
-    """Update settings from command-line arguments."""
+    """Update settings from command-line arguments with explicit mapping."""
+    mapping = {
+        "concurrent_limit": ("network", "concurrent_limit"),
+        "request_timeout": ("network", "request_timeout"),
+        "connect_timeout": ("network", "connect_timeout"),
+        "protocols": ("filtering", "protocols"),
+        "include_pattern": ("filtering", "include_patterns"),
+        "exclude_pattern": ("filtering", "exclude_patterns"),
+        "max_ping": ("filtering", "max_ping_ms"),
+        "include_protocols": ("filtering", "include_protocols"),
+        "exclude_protocols": ("filtering", "exclude_protocols"),
+        "output_dir": ("output", "output_dir"),
+        "output_surge": ("output", "surge_file"),
+        "output_qx": ("output", "qx_file"),
+        "top_n": ("processing", "top_n"),
+        "shuffle_sources": ("processing", "shuffle_sources"),
+        "resume": ("processing", "resume_file"),
+    }
     arg_dict = vars(args)
-    for key, value in arg_dict.items():
-        if value is not None:
-            for model_name in cfg.model_fields:
-                model_instance = getattr(cfg, model_name)
-                if hasattr(model_instance, key):
-                    setattr(model_instance, key, value)
-                    break
+
+    for arg_key, val in arg_dict.items():
+        if val is None:
+            continue
+
+        if arg_key == "no_base64":
+            cfg.output.write_base64 = not val
+            continue
+        if arg_key == "no_csv":
+            cfg.output.write_csv = not val
+            continue
+        if arg_key == "no_sort":
+            cfg.processing.enable_sorting = not val
+            continue
+
+        if arg_key in ("include_pattern", "exclude_pattern"):
+            field_name = mapping[arg_key][1]
+            existing = getattr(cfg.filtering, field_name)
+            setattr(cfg.filtering, field_name, existing + val)
+            continue
+
+        if arg_key in ("protocols", "include_protocols", "exclude_protocols"):
+            if isinstance(val, str):
+                val = {v.strip().upper() for v in val.split(",") if v.strip()}
+            elif isinstance(val, list):
+                val = {v.strip().upper() for v in val}
+
+        target = mapping.get(arg_key)
+        if target:
+            submodel_name, field_name = target
+            submodel = getattr(cfg, submodel_name)
+            if hasattr(submodel, field_name):
+                setattr(submodel, field_name, val)
 
 def _handle_fetch(args: argparse.Namespace, cfg: Settings):
     asyncio.run(aggregator_tool.run_pipeline(cfg, protocols=args.protocols.split(",") if args.protocols else None, sources_file=Path(args.sources), channels_file=Path(args.channels), last_hours=args.hours, failure_threshold=args.failure_threshold, prune=not args.no_prune))

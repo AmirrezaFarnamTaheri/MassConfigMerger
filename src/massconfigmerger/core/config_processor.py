@@ -6,7 +6,7 @@ import binascii
 import json
 import logging
 import re
-from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
+from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse, parse_qs
 from typing import Optional, Tuple, List, Set
 import hashlib
 from dataclasses import dataclass
@@ -69,11 +69,15 @@ class ConfigProcessor:
         """Test a list of configurations for connectivity and latency."""
         semaphore = asyncio.Semaphore(self.settings.network.concurrent_limit)
 
-        async def worker(cfg: str) -> Tuple[str, Optional[float]]:
+        async def safe_worker(cfg: str) -> Tuple[str, Optional[float]]:
             async with semaphore:
-                return await self._test_config(cfg)
+                try:
+                    return await self._test_config(cfg)
+                except Exception as exc:
+                    logging.debug("test_configs worker failed for %s: %s", cfg, exc)
+                    return cfg, None
 
-        tasks = [asyncio.create_task(worker(c)) for c in configs]
+        tasks = [asyncio.create_task(safe_worker(c)) for c in configs]
         try:
             return await tqdm_asyncio.gather(*tasks, total=len(tasks), desc="Testing configs")
         finally:
@@ -92,7 +96,12 @@ class ConfigProcessor:
             if payload:
                 try:
                     padded = payload + "=" * (-len(payload) % 4)
-                    decoded = base64.b64decode(padded).decode("utf-8", "ignore")
+                    decoded_bytes = base64.b64decode(padded)
+                    if len(decoded_bytes) > self.MAX_DECODE_SIZE:
+                        return urlunparse(
+                            parsed._replace(query=sorted_query, fragment="")
+                        )
+                    decoded = decoded_bytes.decode("utf-8", "ignore")
                     data = json.loads(decoded)
                     canonical_json = json.dumps(data, sort_keys=True)
                     payload = (
@@ -132,7 +141,10 @@ class ConfigProcessor:
                 try:
                     after = config.split("://", 1)[1].split("#", 1)[0]
                     padded = after + "=" * (-len(after) % 4)
-                    decoded = base64.urlsafe_b64decode(padded).decode()
+                    decoded_bytes = base64.urlsafe_b64decode(padded)
+                    if len(decoded_bytes) > self.MAX_DECODE_SIZE:
+                        return None, None
+                    decoded = decoded_bytes.decode()
                     host_part = decoded.split("/", 1)[0]
                     parts = host_part.split(":")
                     if len(parts) < 2:
@@ -171,10 +183,14 @@ class ConfigProcessor:
                     identifier = parsed.username
                 else:
                     padded = after_scheme + "=" * (-len(after_scheme) % 4)
-                    decoded = base64.b64decode(padded).decode("utf-8", "ignore")
-                    data = json.loads(decoded)
-                    json.dumps(data, sort_keys=True)
-                    identifier = data.get("id") or data.get("uuid") or data.get("user")
+                    decoded_bytes = base64.b64decode(padded)
+                    if len(decoded_bytes) > self.MAX_DECODE_SIZE:
+                        identifier = None
+                    else:
+                        decoded = decoded_bytes.decode("utf-8", "ignore")
+                        data = json.loads(decoded)
+                        json.dumps(data, sort_keys=True)
+                        identifier = data.get("id") or data.get("uuid") or data.get("user")
             except (
                 binascii.Error,
                 UnicodeDecodeError,
@@ -205,10 +221,14 @@ class ConfigProcessor:
                     base = normalized_config.split("://", 1)[1]
                     base = base.split("?", 1)[0]
                     padded = base + "=" * (-len(base) % 4)
-                    decoded = base64.b64decode(padded).decode("utf-8", "ignore")
-                    before_at = decoded.split("@", 1)[0]
-                    _, password = before_at.split(":", 1)
-                    identifier = password
+                    decoded_bytes = base64.b64decode(padded)
+                    if len(decoded_bytes) > self.MAX_DECODE_SIZE:
+                        identifier = None
+                    else:
+                        decoded = decoded_bytes.decode("utf-8", "ignore")
+                        before_at = decoded.split("@", 1)[0]
+                        _, password = before_at.split(":", 1)
+                        identifier = password
             except (binascii.Error, UnicodeDecodeError, ValueError) as exc:
                 logging.debug("semantic_hash ss failed: %s", exc)
 

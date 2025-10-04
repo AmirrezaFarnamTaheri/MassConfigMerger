@@ -10,6 +10,40 @@ from typing import Any, Dict, List, Optional, Union
 class ProxyParser:
     """A class to parse different proxy protocols from their config links."""
 
+    def _sanitize_str(self, value: Any) -> Any:
+        """Strip whitespace and remove newlines from string values."""
+        if isinstance(value, str):
+            return value.strip().replace("\n", "").replace("\r", "")
+        return value
+
+    def _sanitize_headers(self, headers_data: Any) -> Any:
+        """Sanitize ws-headers, which can be a dict, a JSON string, or a base64-encoded JSON string."""
+        if not headers_data:
+            return None
+
+        headers = headers_data
+        if isinstance(headers_data, str):
+            try:
+                # Attempt to decode from base64, then parse JSON
+                padded = headers_data + "=" * (-len(headers_data) % 4)
+                decoded_json = base64.urlsafe_b64decode(padded).decode()
+                headers = json.loads(decoded_json)
+            except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError):
+                try:
+                    # If not base64, maybe it's a plain JSON string
+                    headers = json.loads(headers_data)
+                except (json.JSONDecodeError, TypeError):
+                    # Otherwise, treat as a plain string
+                    pass
+
+        if isinstance(headers, dict):
+            return {
+                self._sanitize_str(k): self._sanitize_str(v)
+                for k, v in headers.items()
+            }
+
+        return self._sanitize_str(headers)
+
     def __init__(self):
         self.parsers = {
             "vmess": self._parse_vmess,
@@ -57,43 +91,33 @@ class ProxyParser:
         try:
             padded = base + "=" * (-len(base) % 4)
             data = json.loads(base64.b64decode(padded).decode())
-            name = data.get("ps") or data.get("name") or name
+            name = self._sanitize_str(data.get("ps") or data.get("name") or name)
             proxy = {
                 "name": name,
                 "type": "vmess",
-                "server": data.get("add") or data.get("host", ""),
+                "server": self._sanitize_str(data.get("add") or data.get("host", "")),
                 "port": int(data.get("port", 0)),
-                "uuid": data.get("id") or data.get("uuid", ""),
+                "uuid": self._sanitize_str(data.get("id") or data.get("uuid", "")),
                 "alterId": int(data.get("aid", 0)),
-                "cipher": data.get("type", "auto"),
+                "cipher": self._sanitize_str(data.get("type", "auto")),
             }
             if data.get("tls") or data.get("security"):
                 proxy["tls"] = True
-            net = data.get("net") or data.get("type")
+            net = self._sanitize_str(data.get("net") or data.get("type"))
             if net in ("ws", "grpc"):
                 proxy["network"] = net
-            if data.get("host"):
-                proxy["host"] = data.get("host")
-            if data.get("path"):
-                proxy["path"] = data.get("path")
+
+            for key in ("host", "path", "sni", "alpn", "fp", "flow", "serviceName"):
+                if data.get(key):
+                    proxy[key] = self._sanitize_str(data.get(key))
+
             if data.get("ws-headers"):
-                try:
-                    proxy["ws-headers"] = json.loads(data["ws-headers"])
-                except (json.JSONDecodeError, TypeError):
-                    proxy["ws-headers"] = data["ws-headers"]
+                proxy["ws-headers"] = self._sanitize_headers(data.get("ws-headers"))
+
             ws_opts = data.get("ws-opts")
             if ws_opts and isinstance(ws_opts, dict) and ws_opts.get("headers"):
-                proxy["ws-headers"] = ws_opts.get("headers")
-            if data.get("serviceName"):
-                proxy["serviceName"] = data.get("serviceName")
-            if data.get("sni"):
-                proxy["sni"] = data.get("sni")
-            if data.get("alpn"):
-                proxy["alpn"] = data.get("alpn")
-            if data.get("fp"):
-                proxy["fp"] = data.get("fp")
-            if data.get("flow"):
-                proxy["flow"] = data.get("flow")
+                proxy["ws-headers"] = self._sanitize_headers(ws_opts.get("headers"))
+
             return proxy
         except (
             binascii.Error,
@@ -106,203 +130,157 @@ class ProxyParser:
             q = parse_qs(p.query)
             security = q.get("security")
             proxy = {
-                "name": p.fragment or name,
+                "name": self._sanitize_str(p.fragment or name),
                 "type": "vmess",
-                "server": p.hostname or "",
+                "server": self._sanitize_str(p.hostname or ""),
                 "port": p.port or 0,
-                "uuid": p.username or "",
+                "uuid": self._sanitize_str(p.username or ""),
                 "alterId": int(q.get("aid", [0])[0]),
-                "cipher": q.get("type", ["auto"])[0],
+                "cipher": self._sanitize_str(q.get("type", ["auto"])[0]),
             }
             if security:
                 proxy["tls"] = True
             net = q.get("type") or q.get("mode")
             if net:
-                proxy["network"] = net[0]
+                proxy["network"] = self._sanitize_str(net[0])
             for key in ("host", "path", "sni", "alpn", "fp", "flow", "serviceName"):
                 if key in q:
-                    proxy[key] = q[key][0]
+                    proxy[key] = self._sanitize_str(q[key][0])
             if "ws-headers" in q:
-                try:
-                    padded = q["ws-headers"][0] + "=" * (
-                        -len(q["ws-headers"][0]) % 4
-                    )
-                    proxy["ws-headers"] = json.loads(
-                        base64.urlsafe_b64decode(padded)
-                    )
-                except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError):
-                    proxy["ws-headers"] = q["ws-headers"][0]
+                proxy["ws-headers"] = self._sanitize_headers(q["ws-headers"][0])
             return proxy
 
     def _parse_vless(self, config: str, idx: int, scheme: str) -> Optional[Dict[str, Any]]:
         p = urlparse(config)
         q = parse_qs(p.query)
-        name = p.fragment or f"{scheme}-{idx}"
+        name = self._sanitize_str(p.fragment or f"{scheme}-{idx}")
         security = q.get("security")
         proxy = {
             "name": name,
             "type": "vless",
-            "server": p.hostname or "",
+            "server": self._sanitize_str(p.hostname or ""),
             "port": p.port or 0,
-            "uuid": p.username or "",
-            "encryption": q.get("encryption", ["none"])[0],
+            "uuid": self._sanitize_str(p.username or ""),
+            "encryption": self._sanitize_str(q.get("encryption", ["none"])[0]),
         }
         if security:
             proxy["tls"] = True
         net = q.get("type") or q.get("mode")
         if net:
-            proxy["network"] = net[0]
+            proxy["network"] = self._sanitize_str(net[0])
         for key in ("host", "path", "sni", "alpn", "fp", "flow", "serviceName"):
             if key in q:
-                proxy[key] = q[key][0]
-        pbk = (
-            q.get("pbk")
-            or q.get("public-key")
-            or q.get("publicKey")
-            or q.get("public_key")
-            or q.get("publickey")
-        )
-        sid = (
-            q.get("sid")
-            or q.get("short-id")
-            or q.get("shortId")
-            or q.get("short_id")
-            or q.get("shortid")
-        )
-        spider = q.get("spiderX") or q.get("spider-x") or q.get("spider_x")
-        if pbk:
-            proxy["pbk"] = pbk[0]
-        if sid:
-            proxy["sid"] = sid[0]
-        if spider:
-            proxy["spiderX"] = spider[0]
+                proxy[key] = self._sanitize_str(q[key][0])
+
+        pbk_q = q.get("pbk") or q.get("public-key") or q.get("publicKey") or q.get("public_key") or q.get("publickey")
+        sid_q = q.get("sid") or q.get("short-id") or q.get("shortId") or q.get("short_id") or q.get("shortid")
+        spider_q = q.get("spiderX") or q.get("spider-x") or q.get("spider_x")
+
+        pbk = self._sanitize_str(pbk_q[0]) if pbk_q else None
+        sid = self._sanitize_str(sid_q[0]) if sid_q else None
+        spider = self._sanitize_str(spider_q[0]) if spider_q else None
+
+        if pbk: proxy["pbk"] = pbk
+        if sid: proxy["sid"] = sid
+        if spider: proxy["spiderX"] = spider
+
         reality_opts = {}
-        if pbk:
-            reality_opts["public-key"] = pbk[0]
-        if sid:
-            reality_opts["short-id"] = sid[0]
-        if spider:
-            reality_opts["spider-x"] = spider[0]
-        if reality_opts:
-            proxy["reality-opts"] = reality_opts
+        if pbk: reality_opts["public-key"] = pbk
+        if sid: reality_opts["short-id"] = sid
+        if spider: reality_opts["spider-x"] = spider
+        if reality_opts: proxy["reality-opts"] = reality_opts
+
         if "ws-headers" in q:
-            try:
-                padded = q["ws-headers"][0] + "=" * (-len(q["ws-headers"][0]) % 4)
-                proxy["ws-headers"] = json.loads(base64.urlsafe_b64decode(padded))
-            except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError):
-                proxy["ws-headers"] = q["ws-headers"][0]
+            proxy["ws-headers"] = self._sanitize_headers(q["ws-headers"][0])
         return proxy
 
     def _parse_reality(self, config: str, idx: int, scheme: str) -> Optional[Dict[str, Any]]:
         p = urlparse(config)
         q = parse_qs(p.query)
-        name = p.fragment or f"{scheme}-{idx}"
+        name = self._sanitize_str(p.fragment or f"{scheme}-{idx}")
         proxy = {
             "name": name,
             "type": "vless",
-            "server": p.hostname or "",
+            "server": self._sanitize_str(p.hostname or ""),
             "port": p.port or 0,
-            "uuid": p.username or "",
-            "encryption": q.get("encryption", ["none"])[0],
+            "uuid": self._sanitize_str(p.username or ""),
+            "encryption": self._sanitize_str(q.get("encryption", ["none"])[0]),
             "tls": True,
         }
-        for key in ("sni", "alpn", "fp", "serviceName"):
+        for key in ("sni", "alpn", "fp", "serviceName", "flow", "host", "path"):
             if key in q:
-                proxy[key] = q[key][0]
-        pbk = (
-            q.get("pbk")
-            or q.get("public-key")
-            or q.get("publicKey")
-            or q.get("public_key")
-            or q.get("publickey")
-        )
-        sid = (
-            q.get("sid")
-            or q.get("short-id")
-            or q.get("shortId")
-            or q.get("short_id")
-            or q.get("shortid")
-        )
-        spider = q.get("spiderX") or q.get("spider-x") or q.get("spider_x")
-        if pbk:
-            proxy["pbk"] = pbk[0]
-        if sid:
-            proxy["sid"] = sid[0]
-        if spider:
-            proxy["spiderX"] = spider[0]
-        if "ws-headers" in q:
-            try:
-                padded = q["ws-headers"][0] + "=" * (-len(q["ws-headers"][0]) % 4)
-                proxy["ws-headers"] = json.loads(base64.urlsafe_b64decode(padded))
-            except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError):
-                proxy["ws-headers"] = q["ws-headers"][0]
-        flows = q.get("flow")
-        if flows:
-            proxy["flow"] = flows[0]
+                proxy[key] = self._sanitize_str(q[key][0])
+
+        pbk_q = q.get("pbk") or q.get("public-key") or q.get("publicKey") or q.get("public_key") or q.get("publickey")
+        sid_q = q.get("sid") or q.get("short-id") or q.get("shortId") or q.get("short_id") or q.get("shortid")
+        spider_q = q.get("spiderX") or q.get("spider-x") or q.get("spider_x")
+
+        pbk = self._sanitize_str(pbk_q[0]) if pbk_q else None
+        sid = self._sanitize_str(sid_q[0]) if sid_q else None
+        spider = self._sanitize_str(spider_q[0]) if spider_q else None
+
+        if pbk: proxy["pbk"] = pbk
+        if sid: proxy["sid"] = sid
+        if spider: proxy["spiderX"] = spider
+
         reality_opts = {}
-        if pbk:
-            reality_opts["public-key"] = pbk[0]
-        if sid:
-            reality_opts["short-id"] = sid[0]
-        if spider:
-            reality_opts["spider-x"] = spider[0]
-        if reality_opts:
-            proxy["reality-opts"] = reality_opts
+        if pbk: reality_opts["public-key"] = pbk
+        if sid: reality_opts["short-id"] = sid
+        if spider: reality_opts["spider-x"] = spider
+        if reality_opts: proxy["reality-opts"] = reality_opts
+
         net = q.get("type") or q.get("mode")
         if net:
-            proxy["network"] = net[0]
-        for key in ("host", "path"):
-            if key in q:
-                proxy[key] = q[key][0]
+            proxy["network"] = self._sanitize_str(net[0])
+
+        if "ws-headers" in q:
+            proxy["ws-headers"] = self._sanitize_headers(q["ws-headers"][0])
         return proxy
 
     def _parse_trojan(self, config: str, idx: int, scheme: str) -> Optional[Dict[str, Any]]:
         p = urlparse(config)
         q = parse_qs(p.query)
-        name = p.fragment or f"{scheme}-{idx}"
-        security = q.get("security")
+        name = self._sanitize_str(p.fragment or f"{scheme}-{idx}")
         proxy = {
             "name": name,
             "type": "trojan",
-            "server": p.hostname or "",
+            "server": self._sanitize_str(p.hostname or ""),
             "port": p.port or 0,
-            "password": p.username or p.password or "",
+            "password": self._sanitize_str(p.username or p.password or ""),
         }
-        sni_vals = q.get("sni")
-        if sni_vals:
-            proxy["sni"] = sni_vals[0]
-        if security:
+        if q.get("sni"):
+            proxy["sni"] = self._sanitize_str(q.get("sni")[0])
+        if q.get("security"):
             proxy["tls"] = True
         net = q.get("type") or q.get("mode")
         if net:
-            proxy["network"] = net[0]
+            proxy["network"] = self._sanitize_str(net[0])
         for key in ("host", "path", "alpn", "flow", "serviceName"):
             if key in q:
-                proxy[key] = q[key][0]
+                proxy[key] = self._sanitize_str(q[key][0])
+
         if "ws-headers" in q:
-            try:
-                padded = q["ws-headers"][0] + "=" * (-len(q["ws-headers"][0]) % 4)
-                proxy["ws-headers"] = json.loads(base64.urlsafe_b64decode(padded))
-            except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError):
-                proxy["ws-headers"] = q["ws-headers"][0]
+            proxy["ws-headers"] = self._sanitize_headers(q["ws-headers"][0])
         return proxy
 
     def _parse_ss(self, config: str, idx: int, scheme: str) -> Optional[Dict[str, Any]]:
         p = urlparse(config)
-        name = p.fragment or f"{scheme}-{idx}"
+        name = self._sanitize_str(p.fragment or f"{scheme}-{idx}")
         if p.username and p.password and p.hostname and p.port:
-            method = p.username
-            password = p.password
-            server = p.hostname
+            method = self._sanitize_str(p.username)
+            password = self._sanitize_str(p.password)
+            server = self._sanitize_str(p.hostname)
             port = p.port
         else:
             base = config.split("://", 1)[1].split("#", 1)[0]
             padded = base + "=" * (-len(base) % 4)
             decoded = base64.b64decode(padded).decode()
             before_at, host_port = decoded.split("@")
-            method, password = before_at.split(":")
+            method_raw, password_raw = before_at.split(":")
             server_str, port_str = host_port.split(":")
-            server = server_str
+            method = self._sanitize_str(method_raw)
+            password = self._sanitize_str(password_raw)
+            server = self._sanitize_str(server_str)
             port = int(port_str)
         return {
             "name": name,
@@ -321,61 +299,42 @@ class ProxyParser:
             decoded = base64.urlsafe_b64decode(padded).decode()
             main, _, tail = decoded.partition("/")
             parts = main.split(":")
-            if len(parts) < 6:
-                return None
+            if len(parts) < 6: return None
             server, port_str, proto, method, obfs, pwd_enc = parts[:6]
+
             try:
-                password = base64.urlsafe_b64decode(
-                    pwd_enc + "=" * (-len(pwd_enc) % 4)
-                ).decode()
+                password_decoded = base64.urlsafe_b64decode(pwd_enc + "=" * (-len(pwd_enc) % 4)).decode()
+                password = self._sanitize_str(password_decoded)
             except (binascii.Error, UnicodeDecodeError):
-                password = pwd_enc
+                password = self._sanitize_str(pwd_enc)
+
             q = parse_qs(tail[1:]) if tail.startswith("?") else {}
             proxy = {
                 "name": name,
                 "type": "ssr",
-                "server": server,
+                "server": self._sanitize_str(server),
                 "port": int(port_str),
-                "cipher": method,
+                "cipher": self._sanitize_str(method),
                 "password": password,
-                "protocol": proto,
-                "obfs": obfs,
+                "protocol": self._sanitize_str(proto),
+                "obfs": self._sanitize_str(obfs),
             }
-            if "obfsparam" in q:
-                try:
-                    proxy["obfs-param"] = base64.urlsafe_b64decode(
-                        q["obfsparam"][0] + "=" * (-len(q["obfsparam"][0]) % 4)
-                    ).decode()
-                except (binascii.Error, UnicodeDecodeError):
-                    proxy["obfs-param"] = q["obfsparam"][0]
-            if "protoparam" in q:
-                try:
-                    proxy["protocol-param"] = base64.urlsafe_b64decode(
-                        q["protoparam"][0] + "=" * (-len(q["protoparam"][0]) % 4)
-                    ).decode()
-                except (binascii.Error, UnicodeDecodeError):
-                    proxy["protocol-param"] = q["protoparam"][0]
-            if "remarks" in q:
-                try:
-                    proxy["name"] = base64.urlsafe_b64decode(
-                        q["remarks"][0] + "=" * (-len(q["remarks"][0]) % 4)
-                    ).decode()
-                except (binascii.Error, UnicodeDecodeError):
-                    proxy["name"] = q["remarks"][0]
-            if "group" in q:
-                try:
-                    proxy["group"] = base64.urlsafe_b64decode(
-                        q["group"][0] + "=" * (-len(q["group"][0]) % 4)
-                    ).decode()
-                except (binascii.Error, UnicodeDecodeError):
-                    proxy["group"] = q["group"][0]
+
+            for param, key in [("obfsparam", "obfs-param"), ("protoparam", "protocol-param"), ("remarks", "name"), ("group", "group")]:
+                if param in q:
+                    try:
+                        val = base64.urlsafe_b64decode(q[param][0] + "=" * (-len(q[param][0]) % 4)).decode()
+                    except (binascii.Error, UnicodeDecodeError):
+                        val = q[param][0]
+                    proxy[key] = self._sanitize_str(val)
+
             if "udpport" in q:
                 try:
                     proxy["udpport"] = int(q["udpport"][0])
                 except ValueError:
-                    proxy["udpport"] = q["udpport"][0]
+                    logging.debug("Could not parse udpport '%s' as integer.", q["udpport"][0])
             if "uot" in q:
-                proxy["uot"] = q["uot"][0]
+                proxy["uot"] = self._sanitize_str(q["uot"][0])
             return proxy
         except (binascii.Error, UnicodeDecodeError, ValueError) as exc:
             logging.debug("SSRs parse failed: %s", exc)
@@ -383,73 +342,68 @@ class ProxyParser:
 
     def _parse_naive(self, config: str, idx: int, scheme: str) -> Optional[Dict[str, Any]]:
         p = urlparse(config)
-        name = p.fragment or f"{scheme}-{idx}"
+        name = self._sanitize_str(p.fragment or f"{scheme}-{idx}")
         if not p.hostname or not p.port:
             return None
         return {
             "name": name,
             "type": "http",
-            "server": p.hostname,
+            "server": self._sanitize_str(p.hostname),
             "port": p.port,
-            "username": p.username or "",
-            "password": p.password or "",
+            "username": self._sanitize_str(p.username or ""),
+            "password": self._sanitize_str(p.password or ""),
             "tls": True,
         }
 
     def _parse_hysteria(self, config: str, idx: int, scheme: str) -> Optional[Dict[str, Any]]:
         p = urlparse(config)
-        name = p.fragment or f"{scheme}-{idx}"
+        name = self._sanitize_str(p.fragment or f"{scheme}-{idx}")
         if not p.hostname or not p.port:
             return None
         q = parse_qs(p.query)
         proxy = {
             "name": name,
             "type": "hysteria2" if scheme in ("hy2", "hysteria2") else "hysteria",
-            "server": p.hostname,
+            "server": self._sanitize_str(p.hostname),
             "port": p.port,
         }
-        passwd = p.password or q.get("password", [None])[0]
+        passwd_q = q.get("password", [None])[0]
+        passwd = self._sanitize_str(p.password or passwd_q)
         if p.username and not passwd:
-            passwd = p.username
+            passwd = self._sanitize_str(p.username)
         if passwd:
             proxy["password"] = passwd
-        for key in (
-            "auth",
-            "peer",
-            "sni",
-            "insecure",
-            "alpn",
-            "obfs",
-            "obfs-password",
-        ):
+
+        for key in ("auth", "peer", "sni", "insecure", "alpn", "obfs", "obfs-password"):
             if key in q:
-                proxy[key.replace("-", "_")] = q[key][0]
+                proxy[key] = self._sanitize_str(q[key][0])
+
         up_keys = ["upmbps", "up", "up_mbps"]
         down_keys = ["downmbps", "down", "down_mbps"]
         for k in up_keys:
             if k in q:
-                proxy["upmbps"] = q[k][0]
+                proxy["upmbps"] = self._sanitize_str(q[k][0])
                 break
         for k in down_keys:
             if k in q:
-                proxy["downmbps"] = q[k][0]
+                proxy["downmbps"] = self._sanitize_str(q[k][0])
                 break
         return proxy
 
     def _parse_tuic(self, config: str, idx: int, scheme: str) -> Optional[Dict[str, Any]]:
         p = urlparse(config)
-        name = p.fragment or f"{scheme}-{idx}"
+        name = self._sanitize_str(p.fragment or f"{scheme}-{idx}")
         if not p.hostname or not p.port:
             return None
         q = parse_qs(p.query)
         proxy = {
             "name": name,
             "type": "tuic",
-            "server": p.hostname,
+            "server": self._sanitize_str(p.hostname),
             "port": p.port,
         }
-        uuid = p.username or q.get("uuid", [None])[0]
-        passwd = p.password or q.get("password", [None])[0]
+        uuid = self._sanitize_str(p.username or q.get("uuid", [None])[0])
+        passwd = self._sanitize_str(p.password or q.get("password", [None])[0])
         if uuid:
             proxy["uuid"] = uuid
         if passwd:
@@ -462,19 +416,19 @@ class ProxyParser:
         for out_key, keys in key_map.items():
             for k in keys:
                 if k in q:
-                    proxy[out_key] = q[k][0]
+                    proxy[out_key] = self._sanitize_str(q[k][0])
                     break
         return proxy
 
     def _parse_fallback(self, config: str, idx: int, scheme: str) -> Optional[Dict[str, Any]]:
         p = urlparse(config)
-        name = p.fragment or f"{scheme}-{idx}"
+        name = self._sanitize_str(p.fragment or f"{scheme}-{idx}")
         if not p.hostname or not p.port:
             return None
         typ = "socks5" if scheme.startswith("socks") else "http"
         return {
             "name": name,
             "type": typ,
-            "server": p.hostname,
+            "server": self._sanitize_str(p.hostname),
             "port": p.port,
         }

@@ -17,21 +17,24 @@ from .core.file_utils import find_project_root
 
 try:
     REPO_ROOT = find_project_root()
-    DEFAULT_CONFIG_PATH = REPO_ROOT / "config.yaml"
+    DEFAULT_CONFIG_PATH: Optional[Path] = REPO_ROOT / "config.yaml"
 except FileNotFoundError:
-    REPO_ROOT = Path.cwd()
-    DEFAULT_CONFIG_PATH = REPO_ROOT / "config.yaml"
-    logging.warning("Could not find project root marker 'pyproject.toml'. Using current working directory as root.")
+    REPO_ROOT = None
+    DEFAULT_CONFIG_PATH = None
+    logging.warning(
+        "Could not find project root marker 'pyproject.toml'. Default config.yaml will not be loaded."
+    )
 
 
 class YamlConfigSettingsSource(PydanticBaseSettingsSource):
     """A settings source that loads variables from a YAML file."""
-    def __init__(self, settings_cls: Type[BaseSettings], yaml_file: Path):
+
+    def __init__(self, settings_cls: Type[BaseSettings], yaml_file: Optional[Path]):
         super().__init__(settings_cls)
         self.yaml_file = yaml_file
 
     def get_field_value(self, field: Any, field_name: str) -> tuple[Any, str] | None:
-        if not self.yaml_file.exists():
+        if not self.yaml_file or not self.yaml_file.exists():
             return None
         try:
             yaml_data = yaml.safe_load(self.yaml_file.read_text()) or {}
@@ -41,7 +44,7 @@ class YamlConfigSettingsSource(PydanticBaseSettingsSource):
             return None
 
     def __call__(self) -> dict[str, Any]:
-        if not self.yaml_file.exists():
+        if not self.yaml_file or not self.yaml_file.exists():
             return {}
         try:
             return yaml.safe_load(self.yaml_file.read_text()) or {}
