@@ -16,6 +16,9 @@ async def upload_files_to_gist(
     """Upload files as separate private gists and return name->raw_url mapping."""
     import aiohttp
 
+    if not token:
+        raise ValueError("GitHub token is required to upload gists")
+
     headers = {
         "Authorization": f"token {token}",
         "Accept": "application/vnd.github+json",
@@ -30,9 +33,16 @@ async def upload_files_to_gist(
                 "description": "MassConfigMerger output",
             }
             async with session.post(base, json=payload) as resp:
-                resp.raise_for_status()
+                text = await resp.text()
+                try:
+                    resp.raise_for_status()
+                except Exception as e:
+                    raise RuntimeError(f"Gist upload failed for {path.name}: {resp.status} {text}") from e
                 data = await resp.json()
-                raw = data["files"][path.name]["raw_url"]
+                try:
+                    raw = data["files"][path.name]["raw_url"]
+                except Exception:
+                    raise RuntimeError(f"Unexpected Gist response for {path.name}: {data}")
                 result[path.name] = raw
     return result
 
