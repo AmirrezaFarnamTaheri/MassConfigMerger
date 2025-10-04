@@ -56,14 +56,32 @@ async def scrape_telegram_configs(
         return set()
 
     since = datetime.utcnow() - timedelta(hours=last_hours)
+    proxy = choose_proxy(cfg)
+
+    # Convert aiohttp-style proxy to Telethon proxy if applicable
+    telethon_proxy = None
+    if proxy:
+        # Expecting proxy like "http://host:port" or "socks5://host:port"
+        try:
+            from urllib.parse import urlparse
+            pu = urlparse(proxy)
+            if pu.scheme in ("socks5", "socks4"):
+                # Telethon expects (proxy_type, addr, port) or with auth
+                proxy_type = "socks5" if pu.scheme == "socks5" else "socks4"
+                telethon_proxy = (proxy_type, pu.hostname, pu.port, True, pu.username, pu.password)
+            elif pu.scheme in ("http", "https"):
+                # HTTP proxies can be used with socks via PySocks as HTTP
+                telethon_proxy = ("http", pu.hostname, pu.port, True, pu.username, pu.password)
+        except Exception as e:
+            logging.debug("Failed to adapt proxy for Telethon: %s", e)
+
     client = TelegramClient(
-        cfg.telegram.session_path, cfg.telegram.api_id, cfg.telegram.api_hash
+        cfg.telegram.session_path, cfg.telegram.api_id, cfg.telegram.api_hash, proxy=telethon_proxy
     )
     configs: Set[str] = set()
 
     try:
         await client.start()
-        proxy = choose_proxy(cfg)
         async with aiohttp.ClientSession(proxy=proxy) as session:
             for channel in tqdm(channels, desc="Scraping Channels", unit="channel"):
                 try:
