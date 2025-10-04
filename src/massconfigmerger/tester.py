@@ -85,7 +85,6 @@ class NodeTester:
                 logging.debug("GeoIP reader init failed: %s", exc)
                 self._geoip_reader = None
                 return None
-                return None
 
         try:
             ip = host
