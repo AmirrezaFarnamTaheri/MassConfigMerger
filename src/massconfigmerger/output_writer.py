@@ -102,7 +102,7 @@ def write_all_outputs(
             if proxy:
                 proxies.append(proxy)
 
-    if settings.output.surge_file:
+    if settings.output.surge_file and proxies:
         surge_content = generate_surge_conf(proxies)
         surge_file = output_dir / settings.output.surge_file
         surge_file.parent.mkdir(parents=True, exist_ok=True)
