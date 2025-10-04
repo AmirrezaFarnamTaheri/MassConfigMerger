@@ -111,7 +111,7 @@ def write_all_outputs(
         tmp_surge.replace(surge_file)
         written_files.append(surge_file)
 
-    if settings.output.qx_file:
+    if settings.output.qx_file and proxies:
         qx_content = generate_qx_conf(proxies)
         qx_file = output_dir / settings.output.qx_file
         qx_file.parent.mkdir(parents=True, exist_ok=True)
