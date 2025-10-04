@@ -15,9 +15,14 @@ async def upload_files_to_gist(
 ) -> Dict[str, str]:
     """Upload files as separate private gists and return name->raw_url mapping."""
     import aiohttp
+    from urllib.parse import urlparse
 
     if not token:
         raise ValueError("GitHub token is required to upload gists")
+
+    parsed = urlparse(base_url)
+    if parsed.scheme.lower() != "https" or not parsed.netloc:
+        raise ValueError(f"Invalid base_url: {base_url}")
 
     headers = {
         "Authorization": f"token {token}",
