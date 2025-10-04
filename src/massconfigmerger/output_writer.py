@@ -105,13 +105,19 @@ def write_all_outputs(
     if settings.output.surge_file:
         surge_content = generate_surge_conf(proxies)
         surge_file = output_dir / settings.output.surge_file
-        surge_file.write_text(surge_content, encoding="utf-8")
+        surge_file.parent.mkdir(parents=True, exist_ok=True)
+        tmp_surge = surge_file.with_suffix(surge_file.suffix + ".tmp")
+        tmp_surge.write_text(surge_content, encoding="utf-8")
+        tmp_surge.replace(surge_file)
         written_files.append(surge_file)
 
     if settings.output.qx_file:
         qx_content = generate_qx_conf(proxies)
         qx_file = output_dir / settings.output.qx_file
-        qx_file.write_text(qx_content, encoding="utf-8")
+        qx_file.parent.mkdir(parents=True, exist_ok=True)
+        tmp_qx = qx_file.with_suffix(qx_file.suffix + ".tmp")
+        tmp_qx.write_text(qx_content, encoding="utf-8")
+        tmp_qx.replace(qx_file)
         written_files.append(qx_file)
 
     return written_files
