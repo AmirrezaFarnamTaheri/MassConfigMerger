@@ -3,7 +3,7 @@ from pathlib import Path
 from aiohttp import web
 import pytest
 
-from massconfigmerger.output_writer import upload_files_to_gist, write_upload_links
+from massconfigmerger.gist_uploader import upload_files_to_gist, write_upload_links
 
 
 @pytest.mark.asyncio

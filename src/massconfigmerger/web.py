@@ -9,7 +9,7 @@ from pathlib import Path
 from flask import Flask, render_template_string, send_file
 
 from .config import load_config
-from .aggregator_tool import run_pipeline as run_aggregator_pipeline
+from .pipeline import run_aggregation_pipeline
 from .vpn_merger import run_merger as run_merger_pipeline
 from .constants import SOURCES_FILE
 
@@ -29,7 +29,7 @@ def aggregate() -> dict:
     cfg = load_cfg()
     # The new run_pipeline doesn't use CHANNELS_FILE directly, it's handled in the aggregator
     out_dir, files = asyncio.run(
-        run_aggregator_pipeline(cfg, sources_file=SOURCES_FILE)
+        run_aggregation_pipeline(cfg, sources_file=SOURCES_FILE)
     )
     return {"output_dir": str(out_dir), "files": [str(p) for p in files]}
 

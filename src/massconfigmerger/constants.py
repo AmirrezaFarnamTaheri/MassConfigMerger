@@ -2,6 +2,7 @@ from pathlib import Path
 import re
 
 SOURCES_FILE = Path("sources.txt")
+CHANNELS_FILE = Path("channels.txt")
 
 # Regular expressions shared across modules
 PROTOCOL_RE = re.compile(

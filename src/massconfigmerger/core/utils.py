@@ -16,6 +16,23 @@ from ..constants import PROTOCOL_RE, BASE64_RE, MAX_DECODE_SIZE
 _warning_printed = False
 
 
+def extract_subscription_urls(text: str) -> Set[str]:
+    """Extract all http/https URLs from a text block, cleaning them."""
+    # This regex is designed to be simple and effective for this use case.
+    # It captures http/https URLs and avoids including common trailing punctuation.
+    url_pattern = re.compile(r'https?://[^\s<>"]+|www\.[^\s<>"]+')
+
+    # We need to manually clean trailing punctuation as the regex can be greedy
+    raw_urls = url_pattern.findall(text)
+    cleaned_urls = set()
+    for url in raw_urls:
+        # Repeatedly strip trailing punctuation that might be attached to the URL
+        while url and url[-1] in '.,!?:;)]':
+            url = url[:-1]
+        cleaned_urls.add(url)
+    return cleaned_urls
+
+
 def print_public_source_warning() -> None:
     """Print a usage warning once per execution."""
     global _warning_printed
@@ -74,7 +91,10 @@ def is_valid_config(link: str) -> bool:
     if scheme in host_required:
         if "@" not in rest:
             return False
-        host = rest.split("@", 1)[1].split("/", 1)[0]
+        user_info, host_part = rest.split("@", 1)
+        host = host_part.split("/", 1)[0]
+        if scheme == "ss" and ":" not in user_info:
+            return False
         return ":" in host
 
     simple_host_port = {

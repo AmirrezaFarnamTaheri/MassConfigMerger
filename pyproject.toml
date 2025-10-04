@@ -23,6 +23,7 @@ dependencies = [
     "pydantic>=2",
     "pydantic-settings",
     "tqdm",
+    "flask"
 ]
 
 [project.scripts]

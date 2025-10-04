@@ -6,10 +6,14 @@ import re
 import socket
 import sys
 import time
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
 
-if TYPE_CHECKING:  # pragma: no cover - optional dependency
+try:  # pragma: no cover - optional dependency
     from geoip2.database import Reader
+    from geoip2.errors import AddressNotFoundError
+except ImportError:
+    Reader = None
+    AddressNotFoundError = None
 
 try:
     from aiohttp.resolver import AsyncResolver
@@ -34,7 +38,7 @@ class NodeTester:
 
     async def test_connection(self, host: str, port: int) -> Optional[float]:
         """Return latency in seconds or ``None`` on failure."""
-        if not self.config.enable_url_testing:
+        if not self.config.processing.enable_url_testing:
             return None
 
         start = time.time()
@@ -60,7 +64,7 @@ class NodeTester:
 
             _, writer = await asyncio.wait_for(
                 asyncio.open_connection(target, port),
-                timeout=self.config.connect_timeout,
+                timeout=self.config.network.connect_timeout,
             )
             writer.close()
             await writer.wait_closed()
@@ -71,17 +75,12 @@ class NodeTester:
 
     async def lookup_country(self, host: str) -> Optional[str]:
         """Return ISO country code for ``host`` if GeoIP database configured."""
-        if not host or not self.config.geoip_db:
-            return None
-        try:
-            from geoip2.database import Reader
-            from geoip2.errors import AddressNotFoundError
-        except ImportError:  # pragma: no cover - optional dependency
+        if not host or not self.config.processing.geoip_db or not Reader:
             return None
 
         if self._geoip_reader is None:
             try:
-                self._geoip_reader = Reader(self.config.geoip_db)
+                self._geoip_reader = Reader(self.config.processing.geoip_db)
             except OSError as exc:
                 logging.debug("GeoIP reader init failed: %s", exc)
                 self._geoip_reader = None

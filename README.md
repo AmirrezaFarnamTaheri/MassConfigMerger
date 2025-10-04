@@ -6,9 +6,9 @@ links from hundreds of public sources.
 [![CI](https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/actions/workflows/ci.yml/badge.svg)](https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Welcome to **Mass Config Merger**! This project provides a powerful, unified command-line tool that automatically fetches VPN configurations from hundreds of public sources, tests their connectivity, and merges them into a single, performance-sorted subscription link for use in your favorite VPN client.
+Welcome to **Mass Config Merger**! This project provides a command-line tool that automatically fetches VPN configurations from hundreds of public sources, tests their connectivity, and merges them into a single, performance-sorted subscription link for use in your favorite VPN client.
 
-The `massconfigmerger` command provides a unified interface with several subcommands:
+The `massconfigmerger` command provides an interface with several subcommands:
 ```mermaid
 graph TD
     A[massconfigmerger] --> B[fetch]
@@ -112,15 +112,28 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
 > **Need more options?** Run `massconfigmerger --help` or `massconfigmerger <command> --help` for the full list of options.
 
+## ✨ Features
+
+- **Multi-Source Aggregation**: Automatically fetches VPN configurations from standard web sources and Telegram channels.
+- **Comprehensive Protocol Support**: Parses a wide variety of protocols, including VMess, VLESS, Trojan, Shadowsocks, SSR, Hysteria, and more.
+- **Performance Testing**: Tests the connectivity and latency of each server to ensure only working configurations are included.
+- **Flexible Filtering**: Allows filtering of configurations by protocol, country (with GeoIP database), or custom regex patterns.
+- **Latency-Based Sorting**: Ranks the merged configurations by latency.
+- **Multiple Output Formats**: Generates subscription files for various clients, including raw text, base64, Clash, Sing-Box, Surge, and Quantumult X.
+- **CSV and JSON Reporting**: Creates detailed CSV and JSON reports for analysis.
+- **Command-Line Interface**: Provides control over all fetching, merging, and testing operations.
+- **Web Interface**: Includes a basic Flask web server to trigger aggregation and merging remotely.
+- **Automation-Ready**: Can be automated for periodic runs using the included Docker Compose setup.
+
 ## 📖 Table of Contents
 
 - [Quick Start](#-quick-start)
 - [Full Tutorial](docs/tutorial.md)
 - [Protocol Deep Dive](docs/protocol-deep-dive.md)
 - [Advanced Troubleshooting](docs/advanced-troubleshooting.md)
-- [Huge Source List](#huge-source-list)
+- [Source List](#source-list)
 - [📂 Understanding the Output Files](#-understanding-the-output-files)
-- [Advanced Features](#advanced-features)
+- [Additional Features](#additional-features)
 - [FAQ](#faq)
 
 ## 📂 Understanding the Output Files
