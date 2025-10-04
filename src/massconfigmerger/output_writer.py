@@ -24,7 +24,9 @@ from .report_generator import generate_html_report, generate_json_report
 def write_raw_configs(configs: List[str], output_dir: Path, prefix: str = "") -> Path:
     """Write raw config links to a file."""
     raw_file = output_dir / f"{prefix}vpn_subscription_raw.txt"
-    raw_file.write_text("\n".join(configs), encoding="utf-8")
+    tmp_file = raw_file.with_suffix(raw_file.suffix + ".tmp")
+    tmp_file.write_text("\n".join(configs), encoding="utf-8")
+    tmp_file.replace(raw_file)
     return raw_file
 
 def write_base64_configs(configs: List[str], output_dir: Path, prefix: str = "") -> Path:
