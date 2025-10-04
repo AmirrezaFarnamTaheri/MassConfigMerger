@@ -55,6 +55,9 @@ def generate_json_report(
     return report_file
 
 
+import html
+
+
 def generate_html_report(
     results: List[ConfigResult], output_dir: Path, prefix: str = ""
 ) -> Path:
@@ -62,10 +65,11 @@ def generate_html_report(
     rows = []
     for r in results:
         latency = round(r.ping_time * 1000, 2) if r.ping_time else ""
-        country = r.country or ""
-        host = r.host or ""
+        country = html.escape(r.country or "")
+        host = html.escape(r.host or "")
+        protocol = html.escape(r.protocol or "")
         rows.append(
-            f"<tr><td>{r.protocol}</td><td>{host}</td><td>{latency}</td><td>{country}</td></tr>"
+            f"<tr><td>{protocol}</td><td>{host}</td><td>{latency}</td><td>{country}</td></tr>"
         )
     header = (
         "<html><head><meta charset='utf-8'><title>VPN Report</title></head><body>"
