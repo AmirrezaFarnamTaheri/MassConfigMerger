@@ -38,12 +38,13 @@ async def upload_files_to_gist(
                 "description": "MassConfigMerger output",
             }
             async with session.post(base, json=payload) as resp:
-                text = await resp.text()
+                body = await resp.text()
+                if resp.status >= 400:
+                    raise RuntimeError(f"Gist upload failed for {path.name}: {resp.status} {body}")
                 try:
-                    resp.raise_for_status()
+                    data = json.loads(body)
                 except Exception as e:
-                    raise RuntimeError(f"Gist upload failed for {path.name}: {resp.status} {text}") from e
-                data = await resp.json()
+                    raise RuntimeError(f"Failed to parse Gist response for {path.name}: {body}") from e
                 try:
                     raw = data["files"][path.name]["raw_url"]
                 except Exception:
