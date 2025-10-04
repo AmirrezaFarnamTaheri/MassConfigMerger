@@ -40,7 +40,6 @@ async def test_source_manager_fetch_sources(settings):
     source_manager = SourceManager(settings)
     sources = ["http://example.com/sub1"]
 
-    # Correctly mock the async context manager for aiohttp session
     mock_response = MagicMock()
     mock_response.text = AsyncMock(return_value=VALID_VMESS)
     mock_response.status = 200
@@ -68,7 +67,6 @@ async def test_source_manager_check_and_update_sources(settings, tmp_path):
     mock_response_fail.status = 404
 
     mock_session = MagicMock()
-    # Configure the mock to return different responses for different calls
     mock_session.get.return_value.__aenter__.side_effect = [
         mock_response_ok,
         mock_response_fail,
@@ -79,35 +77,31 @@ async def test_source_manager_check_and_update_sources(settings, tmp_path):
         assert "http://example.com/sub1" in valid_sources
         assert "http://example.com/sub2" not in valid_sources
 
-
 def test_config_processor_filter_configs(settings):
     """Test that the ConfigProcessor can filter configs."""
     config_processor = ConfigProcessor(settings)
     configs = {VALID_VMESS, VALID_VLESS, VALID_TROJAN}
-    filtered = config_processor.filter_configs(configs, protocols=["vmess", "vless"])
+    filtered = config_processor.filter_configs(configs, protocols=["VMESS", "VLESS"])
     assert VALID_VMESS in filtered
     assert VALID_VLESS in filtered
     assert VALID_TROJAN not in filtered
-
 
 @pytest.mark.asyncio
 async def test_config_processor_test_configs(settings):
     """Test that the ConfigProcessor can test configs."""
     config_processor = ConfigProcessor(settings)
     configs = [VALID_VMESS]
-    with patch(
-        "massconfigmerger.utils.EnhancedConfigProcessor.test_connection",
-        new_callable=AsyncMock,
-        return_value=0.1,
-    ):
+    with patch.object(config_processor.tester, "test_connection", new_callable=AsyncMock) as mock_test:
+        mock_test.return_value = 0.1  # 100ms ping
         results = await config_processor.test_configs(configs)
         assert len(results) == 1
         assert results[0][0] == VALID_VMESS
-        assert results[0][1] is not None
+        assert results[0][1] == 0.1
 
 
 def test_output_generator_write_outputs(settings, tmp_path):
     """Test that the OutputGenerator can write output files."""
+    settings.output.write_base64 = True
     output_generator = OutputGenerator(settings)
     configs = [VALID_VMESS, VALID_VLESS]
     output_dir = tmp_path / "output"
@@ -117,3 +111,8 @@ def test_output_generator_write_outputs(settings, tmp_path):
     raw_path = output_dir / "vpn_subscription_raw.txt"
     assert raw_path.exists()
     assert raw_path.read_text() == f"{VALID_VMESS}\n{VALID_VLESS}"
+
+    base64_path = output_dir / "vpn_subscription_base64.txt"
+    assert base64_path.exists()
+    expected_b64 = base64.b64encode(f"{VALID_VMESS}\n{VALID_VLESS}".encode()).decode()
+    assert base64_path.read_text() == expected_b64

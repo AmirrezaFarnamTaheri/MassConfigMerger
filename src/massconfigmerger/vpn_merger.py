@@ -61,7 +61,7 @@ async def run_merger(
             results = results[:top_n]
 
         final_configs = [c for c, _ in results]
-        output_dir = Path(cfg.output_dir)
+        output_dir = Path(cfg.output.output_dir)
         output_generator.write_outputs(final_configs, output_dir)
 
         logging.info("Merge complete. Found %d configs.", len(final_configs))

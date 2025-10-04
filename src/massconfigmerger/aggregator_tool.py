@@ -33,11 +33,11 @@ CHANNELS_FILE = Path("channels.txt")
 from .core.config_processor import ConfigProcessor
 from .core.output_generator import OutputGenerator
 from .core.source_manager import SourceManager
-from .utils import (
-    print_public_source_warning,
+from .core.utils import (
     choose_proxy,
     fetch_text,
     parse_configs_from_text,
+    print_public_source_warning,
 )
 
 # Match full config links for supported protocols
@@ -56,7 +56,7 @@ async def scrape_telegram_configs(
     cfg: Settings, channels_path: Path, last_hours: int
 ) -> Set[str]:
     """Scrape configurations from Telegram channels."""
-    if not all([cfg.telegram_api_id, cfg.telegram_api_hash]):
+    if not all([cfg.telegram.api_id, cfg.telegram.api_hash]):
         logging.info("Telegram credentials not provided; skipping Telegram scrape")
         return set()
     if not channels_path.exists():
@@ -76,7 +76,7 @@ async def scrape_telegram_configs(
         return set()
 
     since = datetime.utcnow() - timedelta(hours=last_hours)
-    client = TelegramClient(cfg.session_path, cfg.telegram_api_id, cfg.telegram_api_hash)
+    client = TelegramClient(cfg.telegram.session_path, cfg.telegram.api_id, cfg.telegram.api_hash)
     configs: Set[str] = set()
 
     try:
@@ -93,9 +93,9 @@ async def scrape_telegram_configs(
                                 text2 = await fetch_text(
                                     session,
                                     sub,
-                                    cfg.request_timeout,
-                                    retries=cfg.retry_attempts,
-                                    base_delay=cfg.retry_base_delay,
+                                    cfg.network.request_timeout,
+                                    retries=cfg.network.retry_attempts,
+                                    base_delay=cfg.network.retry_base_delay,
                                     proxy=proxy,
                                 )
                                 if text2:
@@ -142,7 +142,7 @@ async def run_pipeline(
         filtered_configs = config_processor.filter_configs(configs, protocols)
 
         # Write output files
-        output_dir = Path(cfg.output_dir)
+        output_dir = Path(cfg.output.output_dir)
         files = output_generator.write_outputs(filtered_configs, output_dir)
 
         logging.info("Aggregation complete. Found %d configs.", len(filtered_configs))
@@ -161,10 +161,10 @@ async def telegram_bot_mode(
     """Launch Telegram bot for on-demand updates."""
     if not all(
         [
-            cfg.telegram_api_id,
-            cfg.telegram_api_hash,
-            cfg.telegram_bot_token,
-            cfg.allowed_user_ids,
+            cfg.telegram.api_id,
+            cfg.telegram.api_hash,
+            cfg.telegram.bot_token,
+            cfg.telegram.allowed_user_ids,
         ]
     ):
         logging.info("Telegram credentials not provided; skipping bot mode")
@@ -173,21 +173,21 @@ async def telegram_bot_mode(
     bot = cast(
         TelegramClient,
         TelegramClient(
-            cfg.session_path, cfg.telegram_api_id, cfg.telegram_api_hash
-        ).start(bot_token=cfg.telegram_bot_token),
+            cfg.telegram.session_path, cfg.telegram.api_id, cfg.telegram.api_hash
+        ).start(bot_token=cfg.telegram.bot_token),
     )
     last_update = None
 
     @bot.on(events.NewMessage(pattern="/help"))
     async def help_handler(event: events.NewMessage.Event) -> None:
-        if event.sender_id not in cfg.allowed_user_ids:
+        if event.sender_id not in cfg.telegram.allowed_user_ids:
             return
         await event.respond("/update - run aggregation\n/status - last update time")
 
     @bot.on(events.NewMessage(pattern="/update"))
     async def update_handler(event: events.NewMessage.Event) -> None:
         nonlocal last_update
-        if event.sender_id not in cfg.allowed_user_ids:
+        if event.sender_id not in cfg.telegram.allowed_user_ids:
             return
         await event.respond("Running update...")
         _out_dir, files = await run_pipeline(
@@ -203,7 +203,7 @@ async def telegram_bot_mode(
 
     @bot.on(events.NewMessage(pattern="/status"))
     async def status_handler(event: events.NewMessage.Event) -> None:
-        if event.sender_id not in cfg.allowed_user_ids:
+        if event.sender_id not in cfg.telegram.allowed_user_ids:
             return
         msg = "Never" if not last_update else last_update.isoformat()
         await event.respond(f"Last update: {msg}")

@@ -1,7 +1,7 @@
 import base64
 import json
 
-from massconfigmerger.utils import is_valid_config
+from massconfigmerger.core.utils import is_valid_config
 
 def test_vmess_with_fragment_accepted():
     data = {"v": "2", "ps": "test"}

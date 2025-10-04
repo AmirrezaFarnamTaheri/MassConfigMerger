@@ -12,7 +12,7 @@ import yaml
 
 from .clash_utils import config_to_clash_proxy
 from .config import Settings
-from .utils import ConfigResult
+from .core.config_processor import ConfigResult
 
 # TODO: Refactor this to not use a global CONFIG object
 CONFIG = Settings()

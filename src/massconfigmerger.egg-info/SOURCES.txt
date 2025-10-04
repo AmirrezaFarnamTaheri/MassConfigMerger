@@ -10,7 +10,6 @@ src/massconfigmerger/config.py
 src/massconfigmerger/constants.py
 src/massconfigmerger/output_writer.py
 src/massconfigmerger/tester.py
-src/massconfigmerger/utils.py
 src/massconfigmerger/vpn_merger.py
 src/massconfigmerger/vpn_retester.py
 src/massconfigmerger/web.py
@@ -22,8 +21,11 @@ src/massconfigmerger.egg-info/requires.txt
 src/massconfigmerger.egg-info/top_level.txt
 src/massconfigmerger/core/__init__.py
 src/massconfigmerger/core/config_processor.py
+src/massconfigmerger/core/file_utils.py
 src/massconfigmerger/core/output_generator.py
+src/massconfigmerger/core/proxy_parser.py
 src/massconfigmerger/core/source_manager.py
+src/massconfigmerger/core/utils.py
 tests/test_advanced_converters.py
 tests/test_advanced_converters_edge.py
 tests/test_clash_parsing_extra.py
