@@ -47,15 +47,14 @@ class SourceManager:
 
         This method ensures that a single session is reused for multiple
         requests, which is more efficient. It configures the session with
-        the appropriate connector and proxy settings.
+        the appropriate connector.
 
         Returns:
             An active aiohttp.ClientSession instance.
         """
         if self.session is None or self.session.closed:
-            proxy = utils.choose_proxy(self.settings)
             connector = aiohttp.TCPConnector(limit=self.settings.network.concurrent_limit)
-            self.session = aiohttp.ClientSession(connector=connector, proxy=proxy)
+            self.session = aiohttp.ClientSession(connector=connector)
         return self.session
 
     async def close_session(self) -> None:
@@ -80,6 +79,7 @@ class SourceManager:
         configs: Set[str] = set()
         semaphore = asyncio.Semaphore(self.settings.network.concurrent_limit)
         session = await self.get_session()
+        proxy = utils.choose_proxy(self.settings)
 
         async def fetch_one(url: str) -> Set[str]:
             async with semaphore:
@@ -89,7 +89,6 @@ class SourceManager:
                     self.settings.network.request_timeout,
                     retries=self.settings.network.retry_attempts,
                     base_delay=self.settings.network.retry_base_delay,
-                    proxy=utils.choose_proxy(self.settings),
                 )
             if not text:
                 logging.warning("Failed to fetch %s", url)
@@ -145,6 +144,7 @@ class SourceManager:
         removed: List[str] = []
         semaphore = asyncio.Semaphore(self.settings.network.concurrent_limit)
         session = await self.get_session()
+        proxy = utils.choose_proxy(self.settings)
 
         async def check(url: str) -> tuple[str, bool]:
             async with semaphore:
@@ -154,7 +154,6 @@ class SourceManager:
                     self.settings.network.request_timeout,
                     retries=self.settings.network.retry_attempts,
                     base_delay=self.settings.network.retry_base_delay,
-                    proxy=utils.choose_proxy(self.settings),
                 )
             return url, bool(text and utils.parse_configs_from_text(text))
 

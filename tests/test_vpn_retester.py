@@ -135,16 +135,18 @@ async def test_run_retester_flow(
 
 
 @pytest.mark.asyncio
+@patch("massconfigmerger.vpn_retester.config_normalizer.extract_host_port")
 @patch("massconfigmerger.vpn_retester.ConfigProcessor")
-async def test_retest_configs(MockConfigProcessor, tmp_path: Path):
+async def test_retest_configs(MockConfigProcessor, mock_extract_host_port, tmp_path: Path):
     """Test the retest_configs function."""
     # Arrange
     from massconfigmerger.vpn_retester import retest_configs
 
     settings = Settings()
     mock_proc = MockConfigProcessor.return_value
-    mock_proc.extract_host_port.side_effect = [("host1", 1234), (None, None)]
+    mock_extract_host_port.side_effect = [("host1", 1234), (None, None)]
     mock_proc.test_connection = AsyncMock(return_value=0.123)
+    mock_proc.lookup_country = AsyncMock(return_value="US")
     mock_proc.tester.close = AsyncMock()
 
     configs = ["config1_valid", "config2_invalid"]

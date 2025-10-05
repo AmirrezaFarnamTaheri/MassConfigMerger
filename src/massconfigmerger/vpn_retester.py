@@ -20,6 +20,7 @@ from tqdm.asyncio import tqdm_asyncio
 from .config import Settings
 from .core.config_processor import ConfigProcessor, ConfigResult
 from .core.utils import get_sort_key
+from .core import config_normalizer
 
 
 async def _test_config(proc: ConfigProcessor, cfg: str) -> ConfigResult:
@@ -33,10 +34,12 @@ async def _test_config(proc: ConfigProcessor, cfg: str) -> ConfigResult:
     Returns:
         A ConfigResult object containing the test results.
     """
-    host, port = proc.extract_host_port(cfg)
-    ping = None
+    host, port = config_normalizer.extract_host_port(cfg)
+    ping, country = None, None
     if host and port:
-        ping = await proc.test_connection(host, port)
+        ping, country = await asyncio.gather(
+            proc.test_connection(host, port), proc.lookup_country(host)
+        )
 
     return ConfigResult(
         config=cfg,
@@ -45,6 +48,7 @@ async def _test_config(proc: ConfigProcessor, cfg: str) -> ConfigResult:
         protocol=proc.categorize_protocol(cfg),
         host=host,
         port=port,
+        country=country,
     )
 
 

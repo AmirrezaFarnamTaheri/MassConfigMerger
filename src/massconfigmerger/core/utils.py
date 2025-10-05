@@ -252,7 +252,6 @@ async def fetch_text(
     retries: int = 3,
     base_delay: float = 1.0,
     jitter: float = 0.1,
-    proxy: str | None = None,
 ) -> str | None:
     """
     Fetch text content from a URL with retries and exponential backoff.
@@ -268,7 +267,6 @@ async def fetch_text(
         retries: The maximum number of retry attempts.
         base_delay: The base delay for the exponential backoff in seconds.
         jitter: A random factor to add to the delay to avoid thundering herd problems.
-        proxy: The proxy URL to use for the request.
 
     Returns:
         The text content of the response, or None if the request fails
@@ -283,7 +281,7 @@ async def fetch_text(
     while attempt < retries:
         try:
             async with session.get(
-                url, timeout=aiohttp.ClientTimeout(total=timeout), proxy=proxy
+                url, timeout=aiohttp.ClientTimeout(total=timeout)
             ) as resp:
                 if resp.status == 200:
                     return await resp.text(errors="ignore")

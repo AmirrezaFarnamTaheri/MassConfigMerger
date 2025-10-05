@@ -356,6 +356,12 @@ def _handle_sources_list(args: argparse.Namespace):
 
 def _handle_sources_add(args: argparse.Namespace):
     """Handler for the 'sources add' command."""
+    from urllib.parse import urlparse
+
+    parsed_url = urlparse(args.url)
+    if not (parsed_url.scheme in {"http", "https"} and parsed_url.netloc):
+        print(f"Invalid URL format: {args.url}")
+        return
     if source_operations.add_source(Path(args.sources_file), args.url):
         print(f"Source added: {args.url}")
     else:
@@ -364,10 +370,27 @@ def _handle_sources_add(args: argparse.Namespace):
 
 def _handle_sources_remove(args: argparse.Namespace):
     """Handler for the 'sources remove' command."""
-    if source_operations.remove_source(Path(args.sources_file), args.url):
-        print(f"Source removed: {args.url}")
+    from urllib.parse import urlparse, urlunparse
+
+    parsed = urlparse(args.url)
+    if not (parsed.scheme in {"http", "https"} and parsed.netloc):
+        print(f"Invalid URL format: {args.url}")
+        return
+    # Normalize by removing fragments/query and ensuring lowercased scheme/host
+    normalized = urlunparse(
+        (
+            parsed.scheme.lower(),
+            parsed.netloc.lower(),
+            parsed.path or "",
+            "",
+            "",
+            "",
+        )
+    )
+    if source_operations.remove_source(Path(args.sources_file), normalized):
+        print(f"Source removed: {normalized}")
     else:
-        print(f"Source not found: {args.url}")
+        print(f"Source not found: {normalized}")
 
 
 def _handle_fetch(args: argparse.Namespace, cfg: Settings):

@@ -95,7 +95,6 @@ async def scrape_telegram_configs(
                                     cfg.network.request_timeout,
                                     retries=cfg.network.retry_attempts,
                                     base_delay=cfg.network.retry_base_delay,
-                                    proxy=proxy,
                                 )
                                 if text2:
                                     configs.update(parse_configs_from_text(text2))
