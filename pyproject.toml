@@ -23,7 +23,8 @@ dependencies = [
     "pydantic>=2",
     "pydantic-settings",
     "tqdm",
-    "flask"
+    "flask",
+    "aiosqlite"
 ]
 
 [project.scripts]
@@ -40,6 +41,7 @@ dev = [
     "flake8",
     "mypy",
     "pre-commit",
+    "pip-audit",
 ]
 web = [
     "Flask",

@@ -34,8 +34,8 @@ async def test_test_configs_worker_failure(mock_test_config: AsyncMock):
     # This should not raise an exception
     results = await processor.test_configs(configs)
 
-    assert not results # The result from the failed worker should be excluded
-    mock_test_config.assert_awaited_once_with("vless://test1")
+    assert not results  # The result from the failed worker should be excluded
+    mock_test_config.assert_awaited_once_with("vless://test1", {})
 
 
 @pytest.mark.asyncio

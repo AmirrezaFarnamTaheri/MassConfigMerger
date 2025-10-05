@@ -17,6 +17,7 @@ from .core.config_processor import ConfigProcessor
 from .core.output_generator import OutputGenerator
 from .core.source_manager import SourceManager
 from .core.utils import get_sort_key
+from .db import Database
 
 
 async def run_merger(
@@ -46,6 +47,8 @@ async def run_merger(
     source_manager = SourceManager(cfg)
     config_processor = ConfigProcessor(cfg)
     output_generator = OutputGenerator(cfg)
+    db = Database(cfg.output.history_db_file)
+    await db.connect()
 
     try:
         if resume_file:
@@ -56,14 +59,21 @@ async def run_merger(
                 sources = [line.strip() for line in f if line.strip()]
             configs = await source_manager.fetch_sources(sources)
 
+        history = await db.get_proxy_history()
         filtered_configs = config_processor.filter_configs(configs)
-        results = await config_processor.test_configs(filtered_configs)
+        results = await config_processor.test_configs(filtered_configs, history)
 
         if cfg.processing.enable_sorting:
             results.sort(key=get_sort_key(cfg.processing.sort_by))
 
         if cfg.processing.top_n > 0:
             results = results[: cfg.processing.top_n]
+
+        # Update history
+        for result in results:
+            if result.host and result.port:
+                key = f"{result.host}:{result.port}"
+                await db.update_proxy_history(key, result.is_reachable)
 
         final_configs = [r.config for r in results]
         output_dir = Path(cfg.output.output_dir)
@@ -73,3 +83,4 @@ async def run_merger(
 
     finally:
         await source_manager.close_session()
+        await db.close()

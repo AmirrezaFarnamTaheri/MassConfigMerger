@@ -161,13 +161,13 @@ Adjust `MERGE_INTERVAL` and `AGGREGATE_INTERVAL` in `docker-compose.yml` to chan
 
 ### Sorting by Reliability
 
-Past test results are stored in `proxy_history.json`. Use them to order servers
+Past test results are stored in `proxy_history.db`. Use them to order servers
 by stability:
 
 ```bash
 massconfigmerger merge --sort-by reliability
 ```
-Set a custom path with the `history_file` option in
+Set a custom path with the `history_db_file` option in
 [`config.yaml.example`](../config.yaml.example).
 
 ## 🔬 Deep Dive

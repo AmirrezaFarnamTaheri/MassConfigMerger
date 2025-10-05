@@ -9,12 +9,15 @@ of servers using a GeoIP database.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
 import socket
 import sys
 import time
 from typing import Optional
+
+import aiohttp
 
 try:  # pragma: no cover - optional dependency
     from geoip2.database import Reader
@@ -78,7 +81,7 @@ class NodeTester:
                 self._geoip_reader = None
         return self._geoip_reader
 
-    async def _resolve_host(self, host: str) -> str:
+    async def resolve_host(self, host: str) -> str:
         """Resolve a hostname to an IP address, with caching."""
         if host in self.dns_cache:
             return self.dns_cache[host]
@@ -112,7 +115,7 @@ class NodeTester:
 
         start_time = time.time()
         try:
-            target_ip = await self._resolve_host(host)
+            target_ip = await self.resolve_host(host)
             _, writer = await asyncio.wait_for(
                 asyncio.open_connection(target_ip, port),
                 timeout=self.config.network.connect_timeout,
@@ -134,7 +137,7 @@ class NodeTester:
             return None
 
         try:
-            ip = await self._resolve_host(host)
+            ip = await self.resolve_host(host)
             resp = geoip_reader.country(ip)
             return resp.country.iso_code
         except (OSError, socket.gaierror, AddressNotFoundError) as exc:
@@ -159,3 +162,63 @@ class NodeTester:
         self._resolver = None
         await self._close_resource(self._geoip_reader, "GeoIP reader")
         self._geoip_reader = None
+
+
+class BlocklistChecker:
+    """A utility for checking IPs against a blocklist."""
+
+    def __init__(self, config: Settings):
+        self.config = config
+        self._session: aiohttp.ClientSession | None = None
+
+    async def get_session(self) -> aiohttp.ClientSession:
+        """Get or create the aiohttp client session."""
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession(headers=self.config.network.headers)
+        return self._session
+
+    async def is_malicious(self, ip_address: str) -> bool:
+        """Check if an IP address is considered malicious based on blocklist detections."""
+        if (
+            not self.config.security.apivoid_api_key
+            or self.config.security.blocklist_detection_threshold <= 0
+        ):
+            return False
+
+        session = await self.get_session()
+        url = "https://api.apivoid.com/v2/ip-reputation"
+        payload = {"ip": ip_address}
+        headers = {
+            "Accept": "application/json",
+            "X-API-Key": self.config.security.apivoid_api_key,
+        }
+
+        try:
+            async with session.post(
+                url, json=payload, headers=headers, timeout=self.config.network.request_timeout
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    detections = data.get("blacklists", {}).get("detections", 0)
+                    if detections >= self.config.security.blocklist_detection_threshold:
+                        logging.info(
+                            "IP %s is on %d blacklists, marking as malicious.",
+                            ip_address,
+                            detections,
+                        )
+                        return True
+                else:
+                    logging.warning(
+                        "APIVoid API request failed with status %d for IP %s",
+                        resp.status,
+                        ip_address,
+                    )
+        except (aiohttp.ClientError, asyncio.TimeoutError, json.JSONDecodeError) as exc:
+            logging.warning("APIVoid API request failed for IP %s: %s", ip_address, exc)
+
+        return False
+
+    async def close(self) -> None:
+        """Close the aiohttp client session."""
+        if self._session and not self._session.closed:
+            await self._session.close()

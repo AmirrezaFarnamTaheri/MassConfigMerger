@@ -160,9 +160,9 @@ class OutputSettings(BaseModel):
     log_file: Optional[Path] = Field(
         None, description="Path to a specific file for logging, instead of a directory."
     )
-    history_file: Path = Field(
-        Path("proxy_history.json"),
-        description="File to store proxy connection history for reliability scoring.",
+    history_db_file: Path = Field(
+        Path("proxy_history.db"),
+        description="SQLite database file to store proxy connection history for reliability scoring.",
     )
     write_base64: bool = Field(
         True, description="Whether to write a base64-encoded subscription file."
@@ -192,6 +192,18 @@ class OutputSettings(BaseModel):
     )
     github_token: Optional[str] = Field(
         None, description="GitHub personal access token for uploading gists."
+    )
+
+
+class SecuritySettings(BaseModel):
+    """Settings for security-related features like blocklist checking."""
+
+    apivoid_api_key: Optional[str] = Field(
+        None, description="API key for APIVoid IP Reputation API."
+    )
+    blocklist_detection_threshold: int = Field(
+        1,
+        description="Number of blacklist detections required to consider an IP malicious. 0 to disable.",
     )
 
 
@@ -255,6 +267,7 @@ class Settings(BaseSettings):
     filtering: FilteringSettings = Field(default_factory=FilteringSettings)
     output: OutputSettings = Field(default_factory=OutputSettings)
     processing: ProcessingSettings = Field(default_factory=ProcessingSettings)
+    security: SecuritySettings = Field(default_factory=SecuritySettings)
 
     config_file: Optional[Path] = Field(default=None, exclude=True)
 

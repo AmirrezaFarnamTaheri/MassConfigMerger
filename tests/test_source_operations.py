@@ -99,3 +99,42 @@ def test_handle_remove_source_success(sources_file: Path, capsys):
     handle_remove_source(args)
     captured = capsys.readouterr()
     assert f"Source removed: {url_to_remove}" in captured.out
+
+
+def test_add_source_creates_file(tmp_path: Path):
+    """Test that add_source creates the file if it doesn't exist."""
+    sources_file = tmp_path / "new_sources.txt"
+    new_url = "http://source.com"
+    added = add_source(sources_file, new_url)
+    assert added is True
+    assert sources_file.exists()
+    assert sources_file.read_text() == f"{new_url}\n"
+
+
+@patch("massconfigmerger.source_operations._is_public_url", return_value=False)
+def test_handle_add_source_non_public(mock_is_public, sources_file: Path, capsys):
+    """Test handle_add_source with a non-public URL."""
+    url = "http://localhost/source"
+    args = argparse.Namespace(sources_file=str(sources_file), url=url)
+    handle_add_source(args)
+    captured = capsys.readouterr()
+    assert f"URL does not point to a public IP address: {url}" in captured.out
+
+
+@patch("massconfigmerger.source_operations._is_public_url", return_value=True)
+def test_handle_add_source_existing(mock_is_public, sources_file: Path, capsys):
+    """Test handle_add_source when the source already exists."""
+    url = "http://source1.com"
+    args = argparse.Namespace(sources_file=str(sources_file), url=url)
+    handle_add_source(args)
+    captured = capsys.readouterr()
+    assert f"Source already exists: {url}" in captured.out
+
+
+def test_handle_remove_source_not_found(sources_file: Path, capsys):
+    """Test handle_remove_source when the source is not found."""
+    url = "http://nonexistent.com"
+    args = argparse.Namespace(sources_file=str(sources_file), url=url)
+    handle_remove_source(args)
+    captured = capsys.readouterr()
+    assert f"Source not found: {url}" in captured.out
