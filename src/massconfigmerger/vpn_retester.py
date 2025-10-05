@@ -13,14 +13,14 @@ import base64
 import binascii
 import csv
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 from tqdm.asyncio import tqdm_asyncio
 
 from .config import Settings
+from .core import config_normalizer
 from .core.config_processor import ConfigProcessor, ConfigResult
 from .core.utils import get_sort_key
-from .core import config_normalizer
 
 
 async def _test_config(proc: ConfigProcessor, cfg: str) -> ConfigResult:
@@ -80,7 +80,7 @@ async def retest_configs(
             await proc.tester.close()
 
 
-def load_configs(path: Path) -> List[str]:
+def load_configs_from_file(path: Path) -> List[str]:
     """
     Load raw or base64-encoded configuration strings from a file.
 
@@ -103,7 +103,7 @@ def load_configs(path: Path) -> List[str]:
     return [line.strip() for line in text.splitlines() if line.strip()]
 
 
-def filter_configs(configs: List[str], settings: Settings) -> List[str]:
+def filter_configs_by_protocol(configs: List[str], settings: Settings) -> List[str]:
     """
     Filter configurations based on the merge include/exclude protocol settings.
 
@@ -138,12 +138,39 @@ def filter_configs(configs: List[str], settings: Settings) -> List[str]:
     return filtered
 
 
-def save_results(
+def filter_results_by_ping(
+    results: List[ConfigResult], settings: Settings
+) -> List[ConfigResult]:
+    """Filter results based on maximum allowed ping."""
+    if settings.filtering.max_ping_ms is None:
+        return results
+    return [
+        r
+        for r in results
+        if r.ping_time is not None
+        and r.ping_time * 1000 <= settings.filtering.max_ping_ms
+    ]
+
+
+def process_results(
+    results: List[ConfigResult], settings: Settings
+) -> List[ConfigResult]:
+    """Sort and apply top-N filtering to the results."""
+    if settings.processing.enable_sorting:
+        results.sort(key=get_sort_key(settings.processing.sort_by))
+
+    if settings.processing.top_n > 0:
+        results = results[: settings.processing.top_n]
+
+    return results
+
+
+def save_retest_results(
     results: List[ConfigResult],
     settings: Settings,
 ) -> None:
     """
-    Sort, filter, and save the retested configurations to output files.
+    Save the retested configurations to output files.
 
     Args:
         results: A list of ConfigResult objects from the retesting process.
@@ -151,12 +178,6 @@ def save_results(
     """
     output_dir = Path(settings.output.output_dir)
     output_dir.mkdir(exist_ok=True)
-
-    if settings.processing.enable_sorting:
-        results.sort(key=get_sort_key(settings.processing.sort_by))
-
-    if settings.processing.top_n > 0:
-        results = results[: settings.processing.top_n]
 
     configs = [r.config for r in results]
     raw_path = output_dir / "vpn_retested_raw.txt"
@@ -200,14 +221,9 @@ async def run_retester(
         cfg: The application settings.
         input_file: The path to the subscription file to retest.
     """
-    configs = load_configs(input_file)
-    configs = filter_configs(configs, cfg)
+    configs = load_configs_from_file(input_file)
+    configs = filter_configs_by_protocol(configs, cfg)
     results = await retest_configs(configs, cfg)
-    if cfg.filtering.max_ping_ms is not None:
-        results = [
-            r
-            for r in results
-            if r.ping_time is not None
-            and r.ping_time * 1000 <= cfg.filtering.max_ping_ms
-        ]
-    save_results(results, cfg)
+    results = filter_results_by_ping(results, cfg)
+    processed_results = process_results(results, cfg)
+    save_retest_results(processed_results, cfg)

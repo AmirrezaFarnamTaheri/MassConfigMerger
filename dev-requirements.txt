@@ -1,8 +1,0 @@
-# Test and development dependencies
-pytest
-pytest-asyncio
-types-PyYAML
-types-requests
-flake8
-mypy
-pre-commit
