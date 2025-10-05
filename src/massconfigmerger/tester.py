@@ -33,60 +33,62 @@ except Exception:  # pragma: no cover - optional dependency
 from .config import Settings
 
 
+import ipaddress
+
+
+def _is_ip_address(host: str) -> bool:
+    """Check if the given host is a valid IP address."""
+    try:
+        ipaddress.ip_address(host)
+        return True
+    except ValueError:
+        return False
+
+
 class NodeTester:
-    """
-    A utility class for testing node latency and performing GeoIP lookups.
+    """A utility class for testing node latency and performing GeoIP lookups."""
 
-    This class encapsulates the functionality needed to test network endpoints,
-    including asynchronous DNS resolution with caching, TCP connection testing,
-    and country lookups based on IP address.
-    """
-
-    _geoip_reader: Optional["Reader"]
+    _resolver: Optional[AsyncResolver]
+    _geoip_reader: Optional[Reader]
 
     def __init__(self, config: Settings) -> None:
-        """
-        Initialize the NodeTester.
-
-        Args:
-            config: The application settings object.
-        """
+        """Initialize the NodeTester."""
         self.config = config
         self.dns_cache: dict[str, str] = {}
-        self.resolver: Optional[AsyncResolver] = None
-        self._geoip_reader: Optional["Reader"] = None
+        self._resolver = None
+        self._geoip_reader = None
 
-    async def _resolve_host(self, host: str) -> str:
-        """
-        Resolve a hostname to an IP address, with caching.
-
-        This method first checks a local cache for the resolved IP. If not
-        found, it attempts to resolve the hostname using an asynchronous DNS
-        resolver (`aiodns`) if available, falling back to the standard library's
-        blocking `getaddrinfo` executed in a thread pool.
-
-        Args:
-            host: The hostname to resolve.
-
-        Returns:
-            The resolved IP address as a string, or the original host if
-            resolution fails.
-        """
-        if host in self.dns_cache:
-            return self.dns_cache[host]
-
-        if re.match(r"^[0-9.]+$", host):
-            return host
-
-        if "aiodns" in sys.modules and AsyncResolver is not None and self.resolver is None:
+    def _get_resolver(self) -> Optional[AsyncResolver]:
+        """Lazily initialize and return the asynchronous DNS resolver."""
+        if self._resolver is None and "aiodns" in sys.modules and AsyncResolver:
             try:
-                self.resolver = AsyncResolver()
+                self._resolver = AsyncResolver()
             except Exception as exc:  # pragma: no cover - env specific
                 logging.debug("AsyncResolver init failed: %s", exc)
+        return self._resolver
 
-        if self.resolver is not None:
+    def _get_geoip_reader(self) -> Optional[Reader]:
+        """Lazily initialize and return the GeoIP database reader."""
+        if self._geoip_reader is None and self.config.processing.geoip_db and Reader:
             try:
-                result = await self.resolver.resolve(host)
+                self._geoip_reader = Reader(str(self.config.processing.geoip_db))
+            except (OSError, ValueError) as exc:
+                logging.error("GeoIP reader init failed: %s", exc)
+                # Avoid retrying initialization by setting a placeholder
+                self._geoip_reader = None
+        return self._geoip_reader
+
+    async def _resolve_host(self, host: str) -> str:
+        """Resolve a hostname to an IP address, with caching."""
+        if host in self.dns_cache:
+            return self.dns_cache[host]
+        if _is_ip_address(host):
+            return host
+
+        resolver = self._get_resolver()
+        if resolver:
+            try:
+                result = await resolver.resolve(host)
                 if result:
                     ip = result[0]["host"]
                     self.dns_cache[host] = ip
@@ -101,25 +103,10 @@ class NodeTester:
             return ip
         except (OSError, socket.gaierror) as exc:
             logging.debug("Standard DNS lookup failed for %s: %s", host, exc)
-
-        return host
+            return host
 
     async def test_connection(self, host: str, port: int) -> Optional[float]:
-        """
-        Test a TCP connection to a given host and port, returning the latency.
-
-        If `enable_url_testing` is disabled in the settings, this method will
-        return immediately. Otherwise, it attempts to establish a TCP
-        connection and measures the time it takes.
-
-        Args:
-            host: The server hostname or IP address.
-            port: The server port.
-
-        Returns:
-            The connection latency in seconds, or ``None`` if the connection
-            fails or is disabled.
-        """
+        """Test a TCP connection to a given host and port, returning the latency."""
         if not self.config.processing.enable_url_testing:
             return None
 
@@ -138,66 +125,37 @@ class NodeTester:
             return None
 
     async def lookup_country(self, host: str) -> Optional[str]:
-        """
-        Return the ISO country code for a host using the GeoIP database.
-
-        This method resolves the host to an IP address and then performs a
-        lookup in the GeoLite2 database specified in the settings. The GeoIP
-        database reader is initialized on the first call.
-
-        Args:
-            host: The hostname or IP address to look up.
-
-        Returns:
-            The ISO 3166-1 alpha-2 country code as a string, or ``None`` if
-            the lookup fails or the GeoIP database is not configured.
-        """
-        if not host or not self.config.processing.geoip_db or not Reader:
+        """Return the ISO country code for a host using the GeoIP database."""
+        if not host:
             return None
 
-        if self._geoip_reader is None:
-            try:
-                self._geoip_reader = Reader(self.config.processing.geoip_db)
-            except OSError as exc:
-                logging.debug("GeoIP reader init failed: %s", exc)
-                self._geoip_reader = None
-                return None
+        geoip_reader = self._get_geoip_reader()
+        if not geoip_reader:
+            return None
 
         try:
             ip = await self._resolve_host(host)
-            assert self._geoip_reader is not None
-            resp = self._geoip_reader.country(ip)
+            resp = geoip_reader.country(ip)
             return resp.country.iso_code
         except (OSError, socket.gaierror, AddressNotFoundError) as exc:
             logging.debug("GeoIP lookup failed for %s: %s", host, exc)
             return None
 
+    async def _close_resource(self, resource: object | None, name: str):
+        """Helper to gracefully close a resource."""
+        if resource:
+            try:
+                close = getattr(resource, "close", None)
+                if asyncio.iscoroutinefunction(close):
+                    await close()
+                elif callable(close):
+                    close()
+            except Exception as exc:  # pragma: no cover
+                logging.debug("%s close failed: %s", name, exc)
+
     async def close(self) -> None:
-        """
-        Gracefully close any open resources, such as the DNS resolver.
-
-        This method should be called after all testing is complete to ensure
-        that underlying connections and resources are properly released.
-        """
-        if self.resolver is not None:
-            try:
-                close = getattr(self.resolver, "close", None)
-                if asyncio.iscoroutinefunction(close):
-                    await close()  # type: ignore[misc]
-                elif callable(close):
-                    close()
-            except Exception as exc:  # pragma: no cover - env specific
-                logging.debug("Resolver close failed: %s", exc)
-            self.resolver = None
-
-        if self._geoip_reader is not None:
-            reader = self._geoip_reader
-            self._geoip_reader = None
-            try:
-                close = getattr(reader, "close", None)
-                if asyncio.iscoroutinefunction(close):
-                    await close()  # type: ignore[misc]
-                elif callable(close):
-                    close()
-            except Exception as exc:  # pragma: no cover - env specific
-                logging.debug("GeoIP reader close failed: %s", exc)
+        """Gracefully close any open resources."""
+        await self._close_resource(self._resolver, "Resolver")
+        self._resolver = None
+        await self._close_resource(self._geoip_reader, "GeoIP reader")
+        self._geoip_reader = None

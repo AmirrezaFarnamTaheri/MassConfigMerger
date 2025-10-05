@@ -161,7 +161,18 @@ def is_valid_config(link: str) -> bool:
             return False
         user_info, host_part = rest.split("@", 1)
         host = host_part.split("/", 1)[0]
-        if scheme == "ss" and ":" not in user_info:
+        if scheme == "ss":
+            try:
+                # Try decoding base64 first, as it's a common format for ss URIs
+                padded_user_info = user_info + "=" * (-len(user_info) % 4)
+                decoded_user_info = base64.urlsafe_b64decode(padded_user_info).decode()
+                # A valid decoded user info for ss should be in 'method:password' format
+                if ":" in decoded_user_info:
+                    return ":" in host
+            except (binascii.Error, UnicodeDecodeError):
+                # If it's not valid base64, check for 'method:password' in plain text
+                if ":" in user_info:
+                    return ":" in host
             return False
         return ":" in host
 

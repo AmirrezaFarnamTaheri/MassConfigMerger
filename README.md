@@ -14,6 +14,7 @@ graph TD
     A --> C[merge]
     A --> D[retest]
     A --> E[full]
+    A --> F[sources]
 ```
 
 This guide provides instructions for both basic usage and advanced automation.
@@ -107,6 +108,26 @@ This guide provides instructions for both basic usage and advanced automation.
     -   Use the link in `output/vpn_subscription_base64.txt` (unless `--no-base64` was used) or load `vpn_singbox.json` in clients like sing-box.
 
 > **Need more options?** Run `massconfigmerger --help` or `massconfigmerger <command> --help` for the full list of options.
+
+### Managing Sources
+
+The `sources` command provides a simple way to manage the `sources.txt` file from the command line.
+
+- **List all sources**:
+  ```bash
+  massconfigmerger sources list
+  ```
+
+- **Add a new source**:
+  ```bash
+  massconfigmerger sources add "http://example.com/new-source"
+  ```
+  The command will validate the URL format and check for duplicates before adding it.
+
+- **Remove a source**:
+  ```bash
+  massconfigmerger sources remove "http://example.com/new-source"
+  ```
 
 ## ✨ Features
 
