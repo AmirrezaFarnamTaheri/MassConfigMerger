@@ -33,24 +33,22 @@ class YamlConfigSettingsSource(PydanticBaseSettingsSource):
     def __init__(self, settings_cls: Type[BaseSettings], yaml_file: Path | None):
         super().__init__(settings_cls)
         self.yaml_file = yaml_file
+        self._data: dict[str, Any] | None = None
+        if self.yaml_file and self.yaml_file.exists():
+            try:
+                self._data = yaml.safe_load(self.yaml_file.read_text()) or {}
+            except (yaml.YAMLError, IOError):
+                self._data = {}
+        else:
+            self._data = {}
 
     def get_field_value(self, field: Any, field_name: str) -> tuple[Any, str] | None:
-        if not self.yaml_file or not self.yaml_file.exists():
+        if not self._data:
             return None
-        try:
-            yaml_data = yaml.safe_load(self.yaml_file.read_text()) or {}
-            field_value = yaml_data.get(field_name)
-            return field_value, field_name
-        except (yaml.YAMLError, IOError):
-            return None
+        return (self._data.get(field_name), field_name)
 
     def __call__(self) -> dict[str, Any]:
-        if not self.yaml_file or not self.yaml_file.exists():
-            return {}
-        try:
-            return yaml.safe_load(self.yaml_file.read_text()) or {}
-        except (yaml.YAMLError, IOError):
-            return {}
+        return dict(self._data or {})
 
 
 class TelegramSettings(BaseModel):
