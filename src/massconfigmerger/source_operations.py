@@ -126,4 +126,8 @@ def handle_remove_source(args: argparse.Namespace) -> None:
     if remove_source(Path(args.sources_file), normalized):
         print(f"Source removed: {normalized}")
     else:
-        print(f"Source not found: {normalized}")
+        # Also check for the original URL in case it was added without normalization
+        if remove_source(Path(args.sources_file), args.url):
+            print(f"Source removed: {args.url}")
+        else:
+            print(f"Source not found: {args.url}")
