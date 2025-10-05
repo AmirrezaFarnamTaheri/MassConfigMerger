@@ -22,23 +22,19 @@ from . import config_normalizer
 
 @dataclass
 class ConfigResult:
-    """Represents the outcome of a single VPN configuration test.
-
-    This data class stores all relevant information gathered during the
-    testing and processing of a VPN configuration link, including its
-    protocol, connectivity status, performance metrics, and geographical
-    information.
+    """
+    Data class for holding the result of processing a single VPN configuration.
 
     Attributes:
-        config: The original, unmodified VPN configuration link.
-        protocol: The detected protocol type (e.g., "VMess", "Trojan").
-        host: The resolved server hostname or IP address.
-        port: The server connection port.
-        ping_time: The connection latency in seconds. None if unreachable.
-        is_reachable: True if a TCP connection to the server was successful.
-        source_url: The original URL from which the configuration was fetched.
-        country: The two-letter ISO country code of the server's location.
-        reliability: A score from 0.0 to 1.0 indicating past connection success.
+        config: The original configuration string.
+        protocol: The detected protocol (e.g., "VMess", "Shadowsocks").
+        host: The server hostname or IP address.
+        port: The server port.
+        ping_time: The latency in seconds, or None if unreachable.
+        is_reachable: A boolean indicating if the server is connectable.
+        source_url: The URL from which the configuration was fetched.
+        country: The ISO 3166-1 alpha-2 country code of the server.
+        reliability: A score indicating the historical reliability of the proxy.
     """
 
     config: str

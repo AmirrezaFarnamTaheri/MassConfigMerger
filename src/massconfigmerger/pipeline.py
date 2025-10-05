@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Set
+from typing import List, Set
 
 from .config import Settings
 from .constants import CHANNELS_FILE, SOURCES_FILE

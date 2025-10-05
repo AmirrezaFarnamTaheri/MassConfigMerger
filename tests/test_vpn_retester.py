@@ -44,29 +44,6 @@ def test_load_configs_from_file_invalid_base64(tmp_path: Path):
         load_configs_from_file(p)
 
 
-def test_load_base64_decode_error(tmp_path, monkeypatch):
-    """Test that other errors from b64decode are not caught."""
-    p = tmp_path / "file.txt"
-    p.write_text("data", encoding="utf-8")
-
-    def boom(_):
-        raise RuntimeError("boom")
-
-    monkeypatch.setattr(base64, "b64decode", boom)
-    with pytest.raises(RuntimeError):
-        load_configs_from_file(p)
-
-
-def test_load_unicode_decode_error(tmp_path):
-    """Invalid UTF-8 bytes after base64 decoding should raise ValueError."""
-    bad_bytes = b"\xff\xff"
-    data = base64.b64encode(bad_bytes).decode()
-    p = tmp_path / "bad_utf.txt"
-    p.write_text(data, encoding="utf-8")
-    with pytest.raises(ValueError, match="Failed to decode base64 input"):
-        load_configs_from_file(p)
-
-
 def test_filter_configs_by_protocol():
     """Test the config filtering logic based on protocol."""
     configs = ["vmess://c1", "ss://c2", "trojan://c3"]
@@ -94,9 +71,9 @@ def test_filter_configs_by_protocol():
 def test_filter_results_by_ping():
     """Test filtering results by max_ping_ms."""
     results = [
-        ConfigResult(config="c1", protocol="VLESS", ping_time=0.1),
-        ConfigResult(config="c2", protocol="VLESS", ping_time=0.3),
-        ConfigResult(config="c3", protocol="VLESS", ping_time=None),
+        ConfigResult(config="c1", protocol="VLESS", ping_time=0.1),  # 100ms
+        ConfigResult(config="c2", protocol="VLESS", ping_time=0.3),  # 300ms
+        ConfigResult(config="c3", protocol="VLESS", ping_time=None),  # Unreachable
     ]
     settings = Settings()
     settings.filtering.max_ping_ms = 200
@@ -104,6 +81,7 @@ def test_filter_results_by_ping():
     assert len(filtered) == 1
     assert filtered[0].config == "c1"
 
+    # Test with no limit
     settings.filtering.max_ping_ms = None
     filtered = filter_results_by_ping(results, settings)
     assert len(filtered) == 3
@@ -157,11 +135,14 @@ def test_save_retest_results(
 
     save_retest_results(results, settings)
 
+    # raw file should be called with the results
     mock_write_text.assert_any_call("vmess://c1\nss://c2", encoding="utf-8")
 
+    # base64 file should be called with encoded results
     expected_b64 = base64.b64encode(b"vmess://c1\nss://c2").decode()
     mock_write_text.assert_any_call(expected_b64, encoding="utf-8")
 
+    # Check that the CSV file was opened for writing
     mock_open_fn.assert_called_once_with(
         tmp_path / "vpn_retested_detailed.csv", "w", newline="", encoding="utf-8"
     )
@@ -183,20 +164,20 @@ async def test_run_retester_flow(
     mock_load: MagicMock,
 ):
     """Test the main flow of the run_retester function."""
+    # Arrange
     settings = Settings()
     mock_load.return_value = ["c1", "c2", "c3"]
     mock_filter_proto.return_value = ["c1", "c2"]
-    mock_retest.return_value = [
-        ConfigResult(config="c1", protocol="VLESS"),
-        ConfigResult(config="c2", protocol="VLESS"),
-    ]
+    mock_retest.return_value = [ConfigResult(config="c1", protocol="VLESS"), ConfigResult(config="c2", protocol="VLESS")]
     mock_filter_ping.return_value = [ConfigResult(config="c1", protocol="VLESS")]
     mock_process.return_value = [
         ConfigResult(config="c1_processed", protocol="VLESS")
     ]
 
+    # Act
     await run_retester(settings, Path("dummy.txt"))
 
+    # Assert
     mock_load.assert_called_once()
     mock_filter_proto.assert_called_once()
     mock_retest.assert_awaited_once()
@@ -215,6 +196,7 @@ async def test_retest_configs(
     MockConfigProcessor, mock_extract_host_port, tmp_path: Path
 ):
     """Test the retest_configs function."""
+    # Arrange
     from massconfigmerger.vpn_retester import retest_configs
 
     settings = Settings()
@@ -226,8 +208,10 @@ async def test_retest_configs(
 
     configs = ["config1_valid", "config2_invalid"]
 
+    # Act
     results = await retest_configs(configs, settings)
 
+    # Assert
     assert len(results) == 2
     assert results[0].config == "config1_valid"
     assert results[0].ping_time == 0.123

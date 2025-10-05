@@ -12,16 +12,16 @@ def _parse_reality_opts(q: Dict[str, Any]) -> Dict[str, Any]:
     sid_q = q.get("sid") or q.get("short-id") or q.get("shortId") or q.get("short_id") or q.get("shortid")
     spider_q = q.get("spiderX") or q.get("spider-x") or q.get("spider_x")
 
-    pbk = sanitize_str(pbk_q[0]) if pbk_q is not None else None
-    sid = sanitize_str(sid_q[0]) if sid_q is not None else None
-    spider = sanitize_str(spider_q[0]) if spider_q is not None else None
+    pbk = sanitize_str(pbk_q[0]) if pbk_q else None
+    sid = sanitize_str(sid_q[0]) if sid_q else None
+    spider = sanitize_str(spider_q[0]) if spider_q else None
 
     opts = {}
-    if pbk is not None:
+    if pbk:
         opts["public-key"] = pbk
-    if sid is not None:
+    if sid:
         opts["short-id"] = sid
-    if spider is not None:
+    if spider:
         opts["spider-x"] = spider
 
     return opts, pbk, sid, spider
@@ -56,15 +56,15 @@ def parse(config: str, idx: int) -> Optional[Dict[str, Any]]:
     if net:
         proxy["network"] = sanitize_str(net[0])
     for key in ("host", "path", "sni", "alpn", "fp", "flow", "serviceName"):
-        if q.get(key) is not None:
+        if key in q:
             proxy[key] = sanitize_str(q[key][0])
 
     reality_opts, pbk, sid, spider = _parse_reality_opts(q)
-    if pbk is not None:
+    if pbk:
         proxy["pbk"] = pbk
-    if sid is not None:
+    if sid:
         proxy["sid"] = sid
-    if spider is not None:
+    if spider:
         proxy["spiderX"] = spider
     if reality_opts:
         proxy["reality-opts"] = reality_opts
@@ -98,15 +98,15 @@ def parse_reality(config: str, idx: int) -> Optional[Dict[str, Any]]:
         "tls": True,
     }
     for key in ("sni", "alpn", "fp", "serviceName", "flow", "host", "path"):
-        if q.get(key) is not None:
+        if key in q:
             proxy[key] = sanitize_str(q[key][0])
 
     reality_opts, pbk, sid, spider = _parse_reality_opts(q)
-    if pbk is not None:
+    if pbk:
         proxy["pbk"] = pbk
-    if sid is not None:
+    if sid:
         proxy["sid"] = sid
-    if spider is not None:
+    if spider:
         proxy["spiderX"] = spider
     if reality_opts:
         proxy["reality-opts"] = reality_opts
