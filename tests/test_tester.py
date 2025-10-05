@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+import logging
+import socket
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from massconfigmerger.config import Settings
-from massconfigmerger.tester import NodeTester
+from massconfigmerger.tester import NodeTester, _is_ip_address
 
 
 @pytest.mark.asyncio
@@ -20,7 +22,6 @@ async def test_node_tester_test_connection_success(
     settings.processing.enable_url_testing = True
     tester = NodeTester(settings)
 
-    # Make the resolver return the original host to isolate the connection logic
     mock_resolve_host.return_value = "example.com"
 
     mock_reader = AsyncMock()
@@ -49,7 +50,7 @@ async def test_node_tester_with_dns_resolve(
     tester = NodeTester(settings)
 
     mock_resolver = MockAsyncResolver.return_value
-    mock_resolver.resolve = AsyncMock(return_value=[{'host': '1.2.3.4'}])
+    mock_resolver.resolve = AsyncMock(return_value=[{"host": "1.2.3.4"}])
 
     mock_reader, mock_writer = AsyncMock(), AsyncMock()
     mock_writer.wait_closed = AsyncMock()
@@ -109,39 +110,46 @@ async def test_lookup_country_no_db():
 
 
 @pytest.mark.asyncio
+async def test_lookup_country_no_host():
+    """Test that lookup is skipped if host is empty."""
+    settings = Settings()
+    tester = NodeTester(settings)
+    country = await tester.lookup_country("")
+    assert country is None
+
+
+@pytest.mark.asyncio
 async def test_close():
     """Test the close method."""
     settings = Settings()
     tester = NodeTester(settings)
 
-    # Mock the private attributes that the close method targets
     mock_resolver = AsyncMock()
     tester._resolver = mock_resolver
 
     mock_geoip_reader = MagicMock()
     tester._geoip_reader = mock_geoip_reader
 
-    # Mock the helper method to isolate the close logic
-    with patch.object(tester, "_close_resource", new_callable=AsyncMock) as mock_close_resource:
+    with patch.object(
+        tester, "_close_resource", new_callable=AsyncMock
+    ) as mock_close_resource:
         await tester.close()
 
-        # Assert that the close helper was called for each resource
         mock_close_resource.assert_any_call(mock_resolver, "Resolver")
         mock_close_resource.assert_any_call(mock_geoip_reader, "GeoIP reader")
         assert mock_close_resource.call_count == 2
 
-        # Assert that the attributes are cleared
         assert tester._resolver is None
         assert tester._geoip_reader is None
 
 
-import socket
-import logging
-from massconfigmerger.tester import _is_ip_address
-
-def test_is_ip_address_invalid():
-    """Test that _is_ip_address returns False for an invalid IP."""
+def test_is_ip_address():
+    """Test the _is_ip_address helper function."""
+    assert _is_ip_address("1.2.3.4")
+    assert _is_ip_address("::1")
     assert not _is_ip_address("not-an-ip")
+    assert not _is_ip_address("example.com")
+
 
 @patch("massconfigmerger.tester.AsyncResolver", side_effect=Exception("Resolver Error"))
 def test_get_resolver_init_failure(MockAsyncResolver, caplog):
@@ -152,6 +160,7 @@ def test_get_resolver_init_failure(MockAsyncResolver, caplog):
     assert tester._get_resolver() is None
     assert "AsyncResolver init failed" in caplog.text
 
+
 @patch("massconfigmerger.tester.Reader", side_effect=OSError("GeoIP DB not found"))
 def test_get_geoip_reader_init_failure(MockReader, caplog):
     """Test that the GeoIP reader is not created if initialization fails."""
@@ -161,6 +170,7 @@ def test_get_geoip_reader_init_failure(MockReader, caplog):
     tester = NodeTester(settings)
     assert tester._get_geoip_reader() is None
     assert "GeoIP reader init failed" in caplog.text
+
 
 @pytest.mark.asyncio
 @patch("massconfigmerger.tester.AsyncResolver")
@@ -174,16 +184,25 @@ async def test_resolve_host_all_failures(MockAsyncResolver, caplog):
     mock_resolver.resolve.side_effect = Exception("Async DNS Error")
 
     with patch("asyncio.get_running_loop") as mock_loop:
-        mock_loop.return_value.getaddrinfo.side_effect = socket.gaierror("Standard DNS error")
+        mock_loop.return_value.getaddrinfo.side_effect = socket.gaierror(
+            "Standard DNS error"
+        )
         ip = await tester._resolve_host("example.com")
         assert ip == "example.com"
         assert "Async DNS resolve failed" in caplog.text
         assert "Standard DNS lookup failed" in caplog.text
 
+
 @pytest.mark.asyncio
-@patch("massconfigmerger.tester.NodeTester._resolve_host", new_callable=AsyncMock, return_value="1.2.3.4")
+@patch(
+    "massconfigmerger.tester.NodeTester._resolve_host",
+    new_callable=AsyncMock,
+    return_value="1.2.3.4",
+)
 @patch("asyncio.open_connection", side_effect=OSError("Connection failed"))
-async def test_test_connection_failure(mock_open_connection, mock_resolve_host, caplog):
+async def test_test_connection_failure(
+    mock_open_connection, mock_resolve_host, caplog
+):
     """Test that test_connection returns None on connection failure."""
     caplog.set_level(logging.DEBUG)
     settings = Settings()
@@ -192,13 +211,19 @@ async def test_test_connection_failure(mock_open_connection, mock_resolve_host, 
     assert latency is None
     assert "Connection test failed for example.com:443" in caplog.text
 
+
 @pytest.mark.asyncio
 @patch("massconfigmerger.tester.Reader")
-@patch("massconfigmerger.tester.NodeTester._resolve_host", new_callable=AsyncMock, return_value="1.2.3.4")
+@patch(
+    "massconfigmerger.tester.NodeTester._resolve_host",
+    new_callable=AsyncMock,
+    return_value="1.2.3.4",
+)
 async def test_lookup_country_geoip_error(mock_resolve_host, MockReader, caplog):
     """Test that lookup_country returns None if the GeoIP lookup fails."""
     caplog.set_level(logging.DEBUG)
     from massconfigmerger.tester import AddressNotFoundError
+
     settings = Settings()
     settings.processing.geoip_db = "dummy.mmdb"
     tester = NodeTester(settings)
@@ -209,6 +234,7 @@ async def test_lookup_country_geoip_error(mock_resolve_host, MockReader, caplog)
     country = await tester.lookup_country("example.com")
     assert country is None
     assert "GeoIP lookup failed" in caplog.text
+
 
 @pytest.mark.asyncio
 async def test_close_resource_failure(caplog):
@@ -223,6 +249,7 @@ async def test_close_resource_failure(caplog):
     await tester._close_resource(mock_resource, "TestResource")
     assert "TestResource close failed: Close error" in caplog.text
 
+
 @patch("massconfigmerger.tester.Reader", None)
 def test_geoip_not_installed():
     """Test that lookup_country returns None if geoip2 is not installed."""
@@ -230,6 +257,7 @@ def test_geoip_not_installed():
     settings.processing.geoip_db = "dummy.mmdb"
     tester = NodeTester(settings)
     assert tester._get_geoip_reader() is None
+
 
 @patch("massconfigmerger.tester.AsyncResolver", None)
 @pytest.mark.asyncio
@@ -239,9 +267,62 @@ async def test_aiodns_not_installed():
     tester = NodeTester(settings)
 
     with patch("asyncio.get_running_loop") as mock_loop:
-        mock_loop.return_value.getaddrinfo = AsyncMock(return_value=[
-            (None, None, None, None, ("1.2.3.4", 0))
-        ])
+        mock_loop.return_value.getaddrinfo = AsyncMock(
+            return_value=[(None, None, None, None, ("1.2.3.4", 0))]
+        )
         ip = await tester._resolve_host("example.com")
         assert ip == "1.2.3.4"
         mock_loop.return_value.getaddrinfo.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_lookup_country_no_reader(caplog):
+    """Test lookup_country when the GeoIP reader fails to initialize."""
+    caplog.set_level(logging.ERROR)
+    settings = Settings()
+    settings.processing.geoip_db = "dummy.mmdb"
+    tester = NodeTester(settings)
+
+    with patch("massconfigmerger.tester.Reader", side_effect=OSError("DB Error")):
+        country = await tester.lookup_country("example.com")
+        assert country is None
+        assert "GeoIP reader init failed: DB Error" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_close_async_resource():
+    """Test that _close_resource correctly awaits an async close method."""
+    settings = Settings()
+    tester = NodeTester(settings)
+
+    mock_resource = MagicMock()
+    mock_resource.close = AsyncMock()
+
+    await tester._close_resource(mock_resource, "AsyncTestResource")
+    mock_resource.close.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_close_handles_exception(caplog):
+    """Test that the main close method continues if one resource fails to close."""
+    caplog.set_level(logging.DEBUG)
+    settings = Settings()
+    tester = NodeTester(settings)
+
+    mock_resolver = MagicMock()
+    mock_resolver.close.side_effect = Exception("Resolver close failed")
+    tester._resolver = mock_resolver
+
+    mock_reader = MagicMock()
+    mock_reader.close.return_value = None
+    tester._geoip_reader = mock_reader
+
+    with patch.object(
+        tester, "_close_resource", wraps=tester._close_resource
+    ) as wrapped_close:
+        await tester.close()
+        assert wrapped_close.call_count == 2
+
+    assert "Resolver close failed" in caplog.text
+    assert tester._resolver is None
+    assert tester._geoip_reader is None

@@ -10,16 +10,19 @@ for the selected command.
 from __future__ import annotations
 
 import argparse
-import asyncio
 import sys
 from pathlib import Path
 from typing import Callable, Dict
 
-from . import pipeline, vpn_merger, vpn_retester, source_operations
-from .config import Settings
+from . import commands
+from .config import Settings, load_config
 from .constants import SOURCES_FILE
-from .core.config_loader import load_config
 from .core.utils import print_public_source_warning
+from .source_operations import (
+    handle_add_source,
+    handle_list_sources,
+    handle_remove_source,
+)
 
 
 def _add_shared_arguments(parser: argparse.ArgumentParser, *groups: str):
@@ -64,10 +67,11 @@ def _add_shared_arguments(parser: argparse.ArgumentParser, *groups: str):
         )
 
 
-def _add_fetch_arguments(parser: argparse.ArgumentParser):
-    """Add arguments for the 'fetch' command."""
-    _add_shared_arguments(parser, "network", "filter", "output")
-    group = parser.add_argument_group("fetch-specific arguments")
+def _add_fetch_specific_arguments(
+    parser: argparse.ArgumentParser, group_name: str = "fetch-specific arguments"
+):
+    """Add fetch-specific arguments to a parser under a named group."""
+    group = parser.add_argument_group(group_name)
     group.add_argument("--bot", action="store_true", help="Run in Telegram bot mode")
     group.add_argument(
         "--sources", default=str(SOURCES_FILE), help="Path to sources.txt"
@@ -98,13 +102,17 @@ def _add_fetch_arguments(parser: argparse.ArgumentParser):
     )
 
 
-def _add_merge_arguments(parser: argparse.ArgumentParser):
-    """Add arguments for the 'merge' command."""
-    _add_shared_arguments(parser, "network", "filter", "output")
-    group = parser.add_argument_group("merge-specific arguments")
-    group.add_argument(
-        "--sources", default=str(SOURCES_FILE), help="Path to sources.txt"
-    )
+def _add_merge_specific_arguments(
+    parser: argparse.ArgumentParser,
+    group_name: str = "merge-specific arguments",
+    add_sources: bool = True,
+):
+    """Add merge-specific arguments to a parser under a named group."""
+    group = parser.add_argument_group(group_name)
+    if add_sources:
+        group.add_argument(
+            "--sources", default=str(SOURCES_FILE), help="Path to sources.txt"
+        )
     group.add_argument(
         "--resume",
         dest="resume_file",
@@ -146,6 +154,18 @@ def _add_merge_arguments(parser: argparse.ArgumentParser):
         type=str,
         help="Write Quantumult X formatted proxy list to FILE",
     )
+
+
+def _add_fetch_arguments(parser: argparse.ArgumentParser):
+    """Add arguments for the 'fetch' command."""
+    _add_shared_arguments(parser, "network", "filter", "output")
+    _add_fetch_specific_arguments(parser)
+
+
+def _add_merge_arguments(parser: argparse.ArgumentParser):
+    """Add arguments for the 'merge' command."""
+    _add_shared_arguments(parser, "network", "filter", "output")
+    _add_merge_specific_arguments(parser)
 
 
 def _add_retest_arguments(parser: argparse.ArgumentParser):
@@ -193,83 +213,9 @@ def _add_retest_arguments(parser: argparse.ArgumentParser):
 
 def _add_full_arguments(parser: argparse.ArgumentParser):
     """Add arguments for the 'full' command."""
-    # The 'full' command combines fetch and merge operations.
     _add_shared_arguments(parser, "network", "filter", "output")
-
-    # Add fetch-related arguments
-    fetch_group = parser.add_argument_group("fetch arguments")
-    fetch_group.add_argument("--bot", action="store_true", help="Run in Telegram bot mode")
-    fetch_group.add_argument(
-        "--sources", default=str(SOURCES_FILE), help="Path to sources.txt"
-    )
-    fetch_group.add_argument("--channels", default="channels.txt", help="Path to channels.txt")
-    fetch_group.add_argument(
-        "--hours",
-        type=int,
-        default=24,
-        help="Hours of Telegram history to scan (default: %(default)s)",
-    )
-    fetch_group.add_argument(
-        "--failure-threshold",
-        type=int,
-        default=3,
-        help="Consecutive failures before pruning a source",
-    )
-    fetch_group.add_argument(
-        "--no-prune", action="store_true", help="Do not remove failing sources"
-    )
-    fetch_group.add_argument(
-        "--shuffle-sources", action="store_true", help="Process sources in random order"
-    )
-    fetch_group.add_argument(
-        "--fetch-protocols",
-        type=str,
-        help="Comma-separated protocols to fetch from sources",
-    )
-
-    # Add merge-related arguments
-    merge_group = parser.add_argument_group("merge arguments")
-    merge_group.add_argument(
-        "--resume",
-        dest="resume_file",
-        type=str,
-        help="Resume from an existing subscription file",
-    )
-    merge_group.add_argument(
-        "--no-sort",
-        dest="enable_sorting",
-        action="store_false",
-        help="Disable sorting by latency",
-    )
-    merge_group.add_argument(
-        "--top-n", type=int, default=0, help="Keep only the N fastest configs"
-    )
-    merge_group.add_argument(
-        "--include-protocols",
-        dest="merge_include_protocols",
-        type=str,
-        help="Comma-separated protocols to include in merged output",
-    )
-    merge_group.add_argument(
-        "--exclude-protocols",
-        dest="merge_exclude_protocols",
-        type=str,
-        help="Comma-separated protocols to exclude from merged output",
-    )
-    merge_group.add_argument(
-        "--output-surge",
-        dest="surge_file",
-        metavar="FILE",
-        type=str,
-        help="Write Surge formatted proxy list to FILE",
-    )
-    merge_group.add_argument(
-        "--output-qx",
-        dest="qx_file",
-        metavar="FILE",
-        type=str,
-        help="Write Quantumult X formatted proxy list to FILE",
-    )
+    _add_fetch_specific_arguments(parser, group_name="fetch arguments")
+    _add_merge_specific_arguments(parser, group_name="merge arguments", add_sources=False)
 
 
 def _add_sources_parser(subparsers: argparse._SubParsersAction):
@@ -299,7 +245,7 @@ def _add_sources_parser(subparsers: argparse._SubParsersAction):
 def build_parser() -> argparse.ArgumentParser:
     """Build the main `argparse` parser with all subcommands and arguments."""
     parser = argparse.ArgumentParser(
-        prog="massconfigmerger", description="Unified interface for Mass Config Merger"
+        prog="massconfigmerger", description="A tool for collecting and merging VPN configurations."
     )
     parser.add_argument("--config", default="config.yaml", help="Path to config.yaml")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -393,126 +339,19 @@ def _update_settings_from_args(cfg: Settings, args: argparse.Namespace):
         cfg.filtering.exclude_patterns.extend(arg_dict["exclude_patterns"])
 
 
-def _handle_sources_list(args: argparse.Namespace):
-    """Handler for the 'sources list' command."""
-    sources = source_operations.list_sources(Path(args.sources_file))
-    if sources:
-        for source in sources:
-            print(source)
-    else:
-        print("No sources found in the specified file.")
-
-
-import ipaddress
-import socket
-from urllib.parse import urlparse, urlunparse
-
-
-def _is_public_url(url: str) -> bool:
-    """Check if the URL points to a public, non-reserved IP address."""
-    try:
-        hostname = urlparse(url).hostname
-        if not hostname:
-            return False
-        ip = socket.gethostbyname(hostname)
-        return not ipaddress.ip_address(ip).is_private
-    except (socket.gaierror, ValueError):
-        return False
-
-
-def _handle_sources_add(args: argparse.Namespace):
-    """Handler for the 'sources add' command."""
-    parsed_url = urlparse(args.url)
-    if not (parsed_url.scheme in {"http", "https"} and parsed_url.netloc):
-        print(f"Invalid URL format: {args.url}")
-        return
-    if not _is_public_url(args.url):
-        print(f"URL does not point to a public IP address: {args.url}")
-        return
-
-    if source_operations.add_source(Path(args.sources_file), args.url):
-        print(f"Source added: {args.url}")
-    else:
-        print(f"Source already exists: {args.url}")
-
-
-def _handle_sources_remove(args: argparse.Namespace):
-    """Handler for the 'sources remove' command."""
-    parsed = urlparse(args.url)
-    if not (parsed.scheme in {"http", "https"} and parsed.netloc):
-        print(f"Invalid URL format: {args.url}")
-        return
-    # Normalize by removing fragments/query and ensuring lowercased scheme/host
-    normalized = urlunparse(
-        (parsed.scheme.lower(), parsed.netloc.lower(), parsed.path or "", "", "", "")
-    )
-    if source_operations.remove_source(Path(args.sources_file), normalized):
-        print(f"Source removed: {normalized}")
-    else:
-        print(f"Source not found: {normalized}")
-
-
-def _handle_fetch(args: argparse.Namespace, cfg: Settings):
-    """Handler for the 'fetch' command."""
-    asyncio.run(
-        pipeline.run_aggregation_pipeline(
-            cfg,
-            sources_file=Path(args.sources),
-            channels_file=Path(args.channels),
-            last_hours=args.hours,
-            failure_threshold=args.failure_threshold,
-            prune=not args.no_prune,
-        )
-    )
-
-
-def _handle_merge(args: argparse.Namespace, cfg: Settings):
-    """Handler for the 'merge' command."""
-    asyncio.run(
-        vpn_merger.run_merger(
-            cfg,
-            sources_file=Path(args.sources),
-            resume_file=Path(args.resume_file) if args.resume_file else None,
-        )
-    )
-
-
-def _handle_retest(args: argparse.Namespace, cfg: Settings):
-    """Handler for the 'retest' command."""
-    asyncio.run(vpn_retester.run_retester(cfg, input_file=Path(args.input)))
-
-
-def _handle_full(args: argparse.Namespace, cfg: Settings):
-    """Handler for the 'full' command."""
-    aggregator_output_dir, _ = asyncio.run(
-        pipeline.run_aggregation_pipeline(
-            cfg,
-            sources_file=Path(args.sources),
-            channels_file=Path(args.channels),
-            last_hours=args.hours,
-            failure_threshold=args.failure_threshold,
-            prune=not args.no_prune,
-        )
-    )
-    resume_file = aggregator_output_dir / "vpn_subscription_raw.txt"
-    asyncio.run(
-        vpn_merger.run_merger(
-            cfg, sources_file=Path(args.sources), resume_file=resume_file
-        )
-    )
 
 
 HANDLERS: Dict[str, Callable[..., None]] = {
-    "fetch": _handle_fetch,
-    "merge": _handle_merge,
-    "retest": _handle_retest,
-    "full": _handle_full,
+    "fetch": commands.handle_fetch,
+    "merge": commands.handle_merge,
+    "retest": commands.handle_retest,
+    "full": commands.handle_full,
 }
 
 SOURCES_HANDLERS: Dict[str, Callable[[argparse.Namespace], None]] = {
-    "list": _handle_sources_list,
-    "add": _handle_sources_add,
-    "remove": _handle_sources_remove,
+    "list": handle_list_sources,
+    "add": handle_add_source,
+    "remove": handle_remove_source,
 }
 
 

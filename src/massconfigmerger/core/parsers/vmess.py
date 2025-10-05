@@ -38,7 +38,12 @@ def parse(config: str, idx: int) -> Optional[Dict[str, Any]]:
             "alterId": int(data.get("aid", 0)),
             "cipher": sanitize_str(data.get("type", "auto")),
         }
-        if data.get("tls") or data.get("security"):
+        tls_val = data.get("tls")
+        if tls_val is not None:
+            if str(tls_val).lower() in ("tls", "true", "1"):
+                proxy["tls"] = True
+        tls_val = data.get("tls") or data.get("security")
+        if tls_val and str(tls_val).lower() in ("tls", "true", "1"):
             proxy["tls"] = True
         net = sanitize_str(data.get("net") or data.get("type"))
         if net in ("ws", "grpc"):
@@ -71,7 +76,7 @@ def parse(config: str, idx: int) -> Optional[Dict[str, Any]]:
             "alterId": int(q.get("aid", [0])[0]),
             "cipher": sanitize_str(q.get("type", ["auto"])[0]),
         }
-        if security:
+        if security and security[0].lower() not in ("none", "false", "0"):
             proxy["tls"] = True
         net = q.get("type") or q.get("mode")
         if net:

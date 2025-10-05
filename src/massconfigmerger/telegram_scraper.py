@@ -42,7 +42,7 @@ async def scrape_telegram_configs(
     with channels_path.open() as f:
         channels = [
             (
-                line.strip()[len(prefix) :]
+                line.strip()[len(prefix):]
                 if line.strip().startswith(prefix)
                 else line.strip()
             )

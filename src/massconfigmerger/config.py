@@ -9,16 +9,48 @@ sources, including YAML files and environment variables.
 """
 from __future__ import annotations
 
+import logging
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Type
+from typing import Any, Dict, List, Literal, Optional, Set, Type
 
+import yaml
 from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
+
+from .core.file_utils import find_project_root
+
+
+class YamlConfigSettingsSource(PydanticBaseSettingsSource):
+    """
+    A Pydantic settings source that loads variables from a YAML file.
+    """
+
+    def __init__(self, settings_cls: Type[BaseSettings], yaml_file: Path | None):
+        super().__init__(settings_cls)
+        self.yaml_file = yaml_file
+
+    def get_field_value(self, field: Any, field_name: str) -> tuple[Any, str] | None:
+        if not self.yaml_file or not self.yaml_file.exists():
+            return None
+        try:
+            yaml_data = yaml.safe_load(self.yaml_file.read_text()) or {}
+            field_value = yaml_data.get(field_name)
+            return field_value, field_name
+        except (yaml.YAMLError, IOError):
+            return None
+
+    def __call__(self) -> dict[str, Any]:
+        if not self.yaml_file or not self.yaml_file.exists():
+            return {}
+        try:
+            return yaml.safe_load(self.yaml_file.read_text()) or {}
+        except (yaml.YAMLError, IOError):
+            return {}
 
 
 class TelegramSettings(BaseModel):
@@ -218,11 +250,6 @@ class ProcessingSettings(BaseModel):
 class Settings(BaseSettings):
     """
     Main application configuration model.
-
-    This class acts as a container for all other settings models, providing a
-    single, unified object to access all configuration values. It is configured
-    to load settings from environment variables and, via `settings_customise_sources`,
-    from a YAML file.
     """
 
     telegram: TelegramSettings = Field(default_factory=TelegramSettings)
@@ -246,19 +273,6 @@ class Settings(BaseSettings):
         dotenv_settings: PydanticBaseSettingsSource,
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
-        """
-        Customize the settings sources to include support for a YAML file.
-
-        This class method is a hook provided by Pydantic to modify the order
-        and inclusion of settings sources. It dynamically imports and injects
-        `YamlConfigSettingsSource` into the list of sources, allowing settings
-        to be loaded from `config.yaml`.
-
-        Returns:
-            A tuple of settings sources, including the custom YAML source.
-        """
-        from .core.config_loader import YamlConfigSettingsSource
-
         config_file = init_settings.init_kwargs.get("config_file")
         return (
             init_settings,
@@ -267,3 +281,22 @@ class Settings(BaseSettings):
             YamlConfigSettingsSource(settings_cls, yaml_file=config_file),
             file_secret_settings,
         )
+
+
+def load_config(path: Path | None = None) -> Settings:
+    """
+    Load application settings from a YAML file and environment variables.
+    """
+    config_file = path
+    if config_file is None:
+        try:
+            project_root = find_project_root()
+            default_config_path = project_root / "config.yaml"
+            if default_config_path.exists():
+                config_file = default_config_path
+        except FileNotFoundError:
+            logging.warning(
+                "Could not find project root marker 'pyproject.toml'. "
+                "Default 'config.yaml' will not be loaded."
+            )
+    return Settings(config_file=config_file)
