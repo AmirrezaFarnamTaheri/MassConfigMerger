@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from massconfigmerger.config import Settings
-from massconfigmerger.core.config_processor import ConfigProcessor
+from massconfigmerger.core.config_processor import ConfigProcessor, ConfigResult
 from massconfigmerger.core.output_generator import OutputGenerator
 from massconfigmerger.core.source_manager import SourceManager
 
@@ -35,7 +35,8 @@ def settings():
 
 
 @pytest.mark.asyncio
-async def test_source_manager_fetch_sources(settings):
+@patch("massconfigmerger.core.source_manager.utils.choose_proxy", return_value=None)
+async def test_source_manager_fetch_sources(mock_choose_proxy, settings):
     """Test that the SourceManager can fetch and parse sources."""
     source_manager = SourceManager(settings)
     sources = ["http://example.com/sub1"]
@@ -53,7 +54,8 @@ async def test_source_manager_fetch_sources(settings):
 
 
 @pytest.mark.asyncio
-async def test_source_manager_check_and_update_sources(settings, tmp_path):
+@patch("massconfigmerger.core.source_manager.utils.choose_proxy", return_value=None)
+async def test_source_manager_check_and_update_sources(mock_choose_proxy, settings, tmp_path):
     """Test that the SourceManager can check and update sources."""
     source_manager = SourceManager(settings)
     sources_file = tmp_path / "sources.txt"
@@ -77,26 +79,39 @@ async def test_source_manager_check_and_update_sources(settings, tmp_path):
         assert "http://example.com/sub1" in valid_sources
         assert "http://example.com/sub2" not in valid_sources
 
+
 def test_config_processor_filter_configs(settings):
     """Test that the ConfigProcessor can filter configs."""
     config_processor = ConfigProcessor(settings)
     configs = {VALID_VMESS, VALID_VLESS, VALID_TROJAN}
-    filtered = config_processor.filter_configs(configs, protocols=["VMESS", "VLESS"])
+
+    # Test fetch rules
+    settings.filtering.fetch_protocols = ["VMESS", "VLESS"]
+    filtered = config_processor.filter_configs(configs, use_fetch_rules=True)
     assert VALID_VMESS in filtered
     assert VALID_VLESS in filtered
     assert VALID_TROJAN not in filtered
+
+    # Test merge rules
+    settings.filtering.merge_include_protocols = {"TROJAN"}
+    settings.filtering.merge_exclude_protocols = set()
+    filtered_merge = config_processor.filter_configs(configs, use_fetch_rules=False)
+    assert VALID_TROJAN in filtered_merge
+    assert VALID_VMESS not in filtered_merge
+
 
 @pytest.mark.asyncio
 async def test_config_processor_test_configs(settings):
     """Test that the ConfigProcessor can test configs."""
     config_processor = ConfigProcessor(settings)
-    configs = [VALID_VMESS]
+    configs = {VALID_VMESS}
     with patch.object(config_processor.tester, "test_connection", new_callable=AsyncMock) as mock_test:
         mock_test.return_value = 0.1  # 100ms ping
         results = await config_processor.test_configs(configs)
         assert len(results) == 1
-        assert results[0][0] == VALID_VMESS
-        assert results[0][1] == 0.1
+        assert results[0].config == VALID_VMESS
+        assert results[0].ping_time == 0.1
+        assert results[0].is_reachable is True
 
 
 def test_output_generator_write_outputs(settings, tmp_path):

@@ -1,40 +1,57 @@
-"""VPN Subscription Merger.
+"""Core logic for the VPN merger pipeline.
 
-This module provides a command line tool to merge and test VPN configurations
-from various sources.
+This module contains the `run_merger` function, which orchestrates the
+process of fetching configurations from sources, testing their connectivity,
+sorting them by performance, and writing the results to output files.
 """
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional, Callable, Any
 
 from .config import Settings
-from .core.config_processor import ConfigProcessor
+from .core.config_processor import ConfigProcessor, ConfigResult
 from .core.output_generator import OutputGenerator
 from .core.source_manager import SourceManager
+
+
+def _get_sort_key(sort_by: str) -> Callable[[ConfigResult], Any]:
+    """Return a sort key function based on the chosen metric.
+
+    The key always prioritizes reachability, placing unreachable configs last.
+
+    Args:
+        sort_by: The metric to sort by ('latency' or 'reliability').
+
+    Returns:
+        A function that can be used as a key for sorting `ConfigResult` objects.
+    """
+    if sort_by == "reliability":
+        # Sort by reachability, then by reliability (higher is better)
+        return lambda r: (not r.is_reachable, -r.reliability if r.reliability is not None else 0)
+    # Default to sorting by latency (lower is better)
+    return lambda r: (not r.is_reachable, r.ping_time if r.ping_time is not None else float("inf"))
 
 
 async def run_merger(
     cfg: Settings,
     sources_file: Path,
-    protocols: Optional[List[str]] = None,
     resume_file: Optional[Path] = None,
-    sort: bool = True,
-    top_n: int = 0,
 ) -> None:
     """
     Run the VPN merger pipeline.
 
+    This function orchestrates the entire merge process. It either fetches
+    configurations from the specified sources or resumes from an existing file,
+    then filters, tests, sorts, and writes the results to the configured
+    output directory.
+
     Args:
         cfg: The application settings.
-        sources_file: The path to the sources file.
-        protocols: A list of protocols to include.
-        resume_file: A file to resume from.
-        sort: Whether to sort the results by latency.
-        top_n: The number of top results to keep.
+        sources_file: The path to the file containing subscription sources.
+        resume_file: An optional path to a file to resume from.
     """
     source_manager = SourceManager(cfg)
     config_processor = ConfigProcessor(cfg)
@@ -49,18 +66,16 @@ async def run_merger(
                 sources = [line.strip() for line in f if line.strip()]
             configs = await source_manager.fetch_sources(sources)
 
-        filtered_configs = config_processor.filter_configs(configs, protocols)
+        filtered_configs = config_processor.filter_configs(configs)
         results = await config_processor.test_configs(filtered_configs)
 
-        if sort:
-            results.sort(
-                key=lambda x: (x[1] is None, x[1] if x[1] is not None else float("inf"))
-            )
+        if cfg.processing.enable_sorting:
+            results.sort(key=_get_sort_key(cfg.processing.sort_by))
 
-        if top_n > 0:
-            results = results[:top_n]
+        if cfg.processing.top_n > 0:
+            results = results[:cfg.processing.top_n]
 
-        final_configs = [c for c, _ in results]
+        final_configs = [r.config for r in results]
         output_dir = Path(cfg.output.output_dir)
         output_generator.write_outputs(final_configs, output_dir)
 

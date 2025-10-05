@@ -33,6 +33,8 @@ massconfigmerger = "massconfigmerger.cli:main"
 dev = [
     "pytest",
     "pytest-asyncio",
+    "pytest-cov",
+    "pyfakefs",
     "types-PyYAML",
     "types-requests",
     "flake8",

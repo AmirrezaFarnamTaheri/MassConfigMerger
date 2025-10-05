@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Set
 
 from tqdm.asyncio import tqdm_asyncio
 
@@ -24,6 +24,7 @@ class ConfigResult:
     is_reachable: bool = False
     source_url: str = ""
     country: Optional[str] = None
+    reliability: Optional[float] = None
 
 
 class ConfigProcessor:
@@ -34,48 +35,69 @@ class ConfigProcessor:
         self.settings = settings
 
     def filter_configs(
-        self, configs: Set[str], protocols: Optional[List[str]] = None
+        self, configs: Set[str], *, use_fetch_rules: bool = False
     ) -> Set[str]:
-        """Filter configurations based on protocol."""
-        if not protocols:
-            return configs
-
-        protocols_upper = {p.upper() for p in protocols}
-
-        filtered_configs = set()
-        for config in configs:
-            protocol = self.categorize_protocol(config).upper()
-            if protocol in protocols_upper:
-                filtered_configs.add(config)
-        return filtered_configs
-
-    async def _test_config(self, cfg: str) -> Tuple[str, Optional[float]]:
-        host, port = config_normalizer.extract_host_port(cfg)
-        if host and port:
-            ping = await self.tester.test_connection(host, port)
+        """Filter configurations based on protocol rules in settings."""
+        if use_fetch_rules:
+            # Use fetch_protocols for simple inclusion filtering.
+            include_protos = {p.upper() for p in self.settings.filtering.fetch_protocols}
+            if not include_protos:
+                return configs
+            return {
+                cfg for cfg in configs if self.categorize_protocol(cfg).upper() in include_protos
+            }
         else:
-            ping = None
-        return cfg, ping
+            # Use merge_include/exclude_protocols for more complex filtering.
+            include_protos = self.settings.filtering.merge_include_protocols
+            exclude_protos = self.settings.filtering.merge_exclude_protocols
+            if not include_protos and not exclude_protos:
+                return configs
+
+            filtered = set()
+            for cfg in configs:
+                proto = self.categorize_protocol(cfg).upper()
+                if include_protos and proto not in include_protos:
+                    continue
+                if exclude_protos and proto in exclude_protos:
+                    continue
+                filtered.add(cfg)
+            return filtered
+
+    async def _test_config(self, cfg: str) -> ConfigResult:
+        host, port = config_normalizer.extract_host_port(cfg)
+        ping_time = None
+        if host and port:
+            ping_time = await self.tester.test_connection(host, port)
+
+        return ConfigResult(
+            config=cfg,
+            protocol=self.categorize_protocol(cfg),
+            host=host,
+            port=port,
+            ping_time=ping_time,
+            is_reachable=ping_time is not None
+        )
 
     async def test_configs(
-        self, configs: List[str]
-    ) -> List[Tuple[str, Optional[float]]]:
+        self, configs: Set[str]
+    ) -> List[ConfigResult]:
         """Test a list of configurations for connectivity and latency."""
         semaphore = asyncio.Semaphore(self.settings.network.concurrent_limit)
 
-        async def safe_worker(cfg: str) -> Tuple[str, Optional[float]]:
+        async def safe_worker(cfg: str) -> Optional[ConfigResult]:
             async with semaphore:
                 try:
                     return await self._test_config(cfg)
                 except Exception as exc:
                     logging.debug("test_configs worker failed for %s: %s", cfg, exc)
-                    return cfg, None
+                    return None
 
         tasks = [asyncio.create_task(safe_worker(c)) for c in configs]
         try:
-            return await tqdm_asyncio.gather(
+            results = await tqdm_asyncio.gather(
                 *tasks, total=len(tasks), desc="Testing configs"
             )
+            return [res for res in results if res is not None]
         finally:
             if self.tester:
                 await self.tester.close()

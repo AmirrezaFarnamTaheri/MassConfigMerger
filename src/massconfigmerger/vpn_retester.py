@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Retest and sort an existing VPN subscription output."""
+"""Core logic for the VPN retesting pipeline.
+
+This module provides the `run_retester` function, which orchestrates the
+process of loading an existing subscription file, re-testing the connectivity
+of each configuration, and writing the updated results to new output files.
+"""
 
 import asyncio
 import base64
@@ -12,12 +17,12 @@ from tqdm.asyncio import tqdm_asyncio
 
 from .config import Settings
 from .core.config_processor import ConfigProcessor
-from .core.utils import print_public_source_warning
 
 
 async def _test_config(
     proc: ConfigProcessor, cfg: str
 ) -> Tuple[str, Optional[float]]:
+    """Test a single configuration and return its ping time."""
     host, port = proc.extract_host_port(cfg)
     if host and port:
         ping = await proc.test_connection(host, port)
@@ -29,6 +34,7 @@ async def _test_config(
 async def retest_configs(
     configs: List[str], settings: Settings
 ) -> List[Tuple[str, Optional[float]]]:
+    """Test a list of configurations concurrently."""
     proc = ConfigProcessor(settings)
     semaphore = asyncio.Semaphore(settings.network.concurrent_limit)
 
@@ -41,11 +47,21 @@ async def retest_configs(
         return await tqdm_asyncio.gather(*tasks, total=len(tasks), desc="Testing")
     finally:
         if proc.tester:
-             await proc.tester.close()
+            await proc.tester.close()
 
 
 def load_configs(path: Path) -> List[str]:
-    """Load raw or base64-encoded configuration strings from ``path``."""
+    """Load raw or base64-encoded configuration strings from a file.
+
+    Args:
+        path: The path to the input file.
+
+    Returns:
+        A list of configuration strings.
+
+    Raises:
+        ValueError: If the file content is not valid raw or base64-encoded text.
+    """
     text = path.read_text(encoding="utf-8").strip()
     if text and "://" not in text.splitlines()[0]:
         try:
@@ -57,17 +73,17 @@ def load_configs(path: Path) -> List[str]:
 
 
 def filter_configs(configs: List[str], settings: Settings) -> List[str]:
-    """Filter configs based on include/exclude protocol settings."""
-    if settings.filtering.include_protocols is None and settings.filtering.exclude_protocols is None:
+    """Filter configurations based on the merge include/exclude protocol settings."""
+    if settings.filtering.merge_include_protocols is None and settings.filtering.merge_exclude_protocols is None:
         return configs
 
     proc = ConfigProcessor(settings)
     filtered = []
     for cfg in configs:
         proto = proc.categorize_protocol(cfg).upper()
-        if settings.filtering.include_protocols and proto not in settings.filtering.include_protocols:
+        if settings.filtering.merge_include_protocols and proto not in settings.filtering.merge_include_protocols:
             continue
-        if settings.filtering.exclude_protocols and proto in settings.filtering.exclude_protocols:
+        if settings.filtering.merge_exclude_protocols and proto in settings.filtering.merge_exclude_protocols:
             continue
         filtered.append(cfg)
     return filtered
@@ -76,19 +92,23 @@ def filter_configs(configs: List[str], settings: Settings) -> List[str]:
 def save_results(
     results: List[Tuple[str, Optional[float]]],
     settings: Settings,
-    sort: bool,
-    top_n: int,
 ) -> None:
+    """Sort, filter, and save the retested configurations to output files.
+
+    Args:
+        results: A list of tuples containing the configuration string and its ping time.
+        settings: The application settings.
+    """
     output_dir = Path(settings.output.output_dir)
     output_dir.mkdir(exist_ok=True)
 
-    if sort:
+    if settings.processing.enable_sorting:
         results.sort(
             key=lambda x: (x[1] is None, x[1] if x[1] is not None else float("inf"))
         )
 
-    if top_n > 0:
-        results = results[:top_n]
+    if settings.processing.top_n > 0:
+        results = results[:settings.processing.top_n]
 
     configs = [c for c, _ in results]
     raw_path = output_dir / "vpn_retested_raw.txt"
@@ -116,8 +136,6 @@ def save_results(
 async def run_retester(
     cfg: Settings,
     input_file: Path,
-    sort: bool,
-    top_n: int,
 ):
     """Asynchronous runner for the retesting functionality."""
     configs = load_configs(input_file)
@@ -129,4 +147,4 @@ async def run_retester(
             for c, p in results
             if p is not None and p * 1000 <= cfg.filtering.max_ping_ms
         ]
-    save_results(results, cfg, sort, top_n)
+    save_results(results, cfg)

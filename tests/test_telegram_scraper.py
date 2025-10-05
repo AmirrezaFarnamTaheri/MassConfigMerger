@@ -1,85 +1,144 @@
 from __future__ import annotations
 
-import asyncio
-from datetime import datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from telethon import errors
+from telethon.tl.custom import Message as RealMessage
 
 from massconfigmerger.config import Settings
 from massconfigmerger.telegram_scraper import scrape_telegram_configs
 
 
-class FakeMessage:
-    """A fake class to mimic telethon's Message for testing."""
-    def __init__(self, text: str):
-        self.message = text
+@pytest.mark.asyncio
+async def test_scrape_telegram_no_credentials():
+    """Test that scraping is skipped if credentials are not set."""
+    settings = Settings()
+    settings.telegram.api_id = None
+    configs = await scrape_telegram_configs(settings, Path("channels.txt"), 24)
+    assert configs == set()
+
 
 @pytest.mark.asyncio
-async def test_scrape_with_subscription_link():
-    """Test that subscription links found in messages are fetched and parsed."""
-    settings = Settings()
-    settings.telegram.api_id = 123
-    settings.telegram.api_hash = "abc"
+async def test_scrape_telegram_no_channels_file(tmp_path: Path):
+    """Test that scraping is skipped if the channels file does not exist."""
+    settings = Settings(telegram={"api_id": 123, "api_hash": "abc"})
+    configs = await scrape_telegram_configs(settings, tmp_path / "nonexistent.txt", 24)
+    assert configs == set()
 
-    with patch("massconfigmerger.telegram_scraper.datetime") as mock_datetime, \
-         patch("massconfigmerger.telegram_scraper.TelegramClient") as MockTelegramClient, \
-         patch("pathlib.Path.open", mock_open(read_data="channel1")), \
-         patch("massconfigmerger.telegram_scraper.choose_proxy", return_value=None), \
-         patch("massconfigmerger.telegram_scraper.aiohttp.ClientSession"), \
-         patch("massconfigmerger.telegram_scraper.tqdm", new=lambda x, **kwargs: x), \
-         patch("massconfigmerger.telegram_scraper.Message", new=FakeMessage), \
-         patch("massconfigmerger.telegram_scraper.fetch_text", new_callable=AsyncMock) as mock_fetch_text:
 
-        mock_datetime.utcnow.return_value = datetime(2023, 1, 2)
+@pytest.mark.asyncio
+async def test_scrape_telegram_empty_channels_file(fs):
+    """Test that scraping is skipped if the channels file is empty."""
+    fs.create_file("channels.txt", contents="")
+    settings = Settings(telegram={"api_id": 123, "api_hash": "abc"})
+    configs = await scrape_telegram_configs(settings, Path("channels.txt"), 24)
+    assert configs == set()
 
-        mock_client = MockTelegramClient.return_value
-        mock_client.start = AsyncMock()
-        mock_client.disconnect = AsyncMock()
-        mock_client.is_connected.return_value = True
 
-        msg = FakeMessage("Check out this list: https://example.com/sub.txt")
+@pytest.mark.asyncio
+@patch("massconfigmerger.telegram_scraper.TelegramClient")
+@patch("massconfigmerger.telegram_scraper.aiohttp.ClientSession")
+async def test_scrape_telegram_success(
+    MockClientSession: MagicMock, MockTelegramClient: MagicMock, fs
+):
+    """Test the successful scraping of configs from Telegram."""
+    # Arrange
+    fs.create_file(
+        "channels.txt",
+        contents="t.me/channel1\nchannel2\n",
+    )
+    settings = Settings(telegram={"api_id": 123, "api_hash": "abc"})
 
-        async def message_iterator():
+    # Mock TelegramClient
+    mock_client = MockTelegramClient.return_value
+    mock_client.start = AsyncMock()
+    mock_client.is_connected.return_value = True
+    mock_client.disconnect = AsyncMock()
+
+    # Mock messages as an async iterator
+    async def message_generator(*args, **kwargs):
+        mock_msg1 = MagicMock(spec=RealMessage)
+        mock_msg1.message = "vless://config1"
+        mock_msg1.__class__ = RealMessage
+        mock_msg2 = MagicMock(spec=RealMessage)
+        mock_msg2.message = "Check this sub: https://example.com/sub"
+        mock_msg2.__class__ = RealMessage
+        for msg in [mock_msg1, mock_msg2]:
             yield msg
 
-        mock_client.iter_messages.return_value = message_iterator()
-        mock_fetch_text.return_value = "vless://sub-config-1"
+    mock_client.iter_messages.side_effect = [message_generator(), message_generator()]
 
-        configs = await scrape_telegram_configs(settings, Path("channels.txt"), 24)
+    # Mock aiohttp session and its context manager
+    mock_session = MockClientSession.return_value.__aenter__.return_value
+    mock_resp = AsyncMock()
+    mock_resp.status = 200
+    mock_resp.text = AsyncMock(return_value="trojan://config2")
+    mock_get_cm = AsyncMock()
+    mock_get_cm.__aenter__.return_value = mock_resp
+    mock_session.get = MagicMock(return_value=mock_get_cm)
 
-        assert "vless://sub-config-1" in configs
-        mock_fetch_text.assert_awaited_once()
+    # Act
+    configs = await scrape_telegram_configs(settings, Path("channels.txt"), 24)
+
+    # Assert
+    mock_client.start.assert_awaited_once()
+    assert mock_client.iter_messages.call_count == 2
+    assert "vless://config1" in configs
+    assert "trojan://config2" in configs
+    mock_client.disconnect.assert_awaited_once()
 
 
 @pytest.mark.asyncio
-async def test_scrape_with_rpc_error():
+@patch("massconfigmerger.telegram_scraper.TelegramClient")
+async def test_scrape_telegram_rpc_error(MockTelegramClient: MagicMock, fs):
     """Test that RPC errors during scraping are handled gracefully."""
-    settings = Settings()
-    settings.telegram.api_id = 123
-    settings.telegram.api_hash = "abc"
+    fs.create_file("channels.txt", contents="badchannel")
+    settings = Settings(telegram={"api_id": 123, "api_hash": "abc"})
 
-    with patch("massconfigmerger.telegram_scraper.datetime") as mock_datetime, \
-         patch("massconfigmerger.telegram_scraper.TelegramClient") as MockTelegramClient, \
-         patch("pathlib.Path.open", mock_open(read_data="channel1")), \
-         patch("massconfigmerger.telegram_scraper.choose_proxy", return_value=None), \
-         patch("massconfigmerger.telegram_scraper.aiohttp.ClientSession"), \
-         patch("massconfigmerger.telegram_scraper.tqdm", new=lambda x, **kwargs: x), \
-         patch("massconfigmerger.telegram_scraper.Message", new=FakeMessage):
+    mock_client = MockTelegramClient.return_value
+    mock_client.start = AsyncMock()
+    mock_client.is_connected.return_value = True
+    mock_client.disconnect = AsyncMock()
+    mock_client.iter_messages.side_effect = errors.RPCError(
+        request=None, message="Test Error"
+    )
 
-        mock_datetime.utcnow.return_value = datetime(2023, 1, 2)
+    # Act
+    configs = await scrape_telegram_configs(settings, Path("channels.txt"), 24)
 
-        mock_client = MockTelegramClient.return_value
-        mock_client.start = AsyncMock()
-        mock_client.disconnect = AsyncMock()
-        mock_client.is_connected.return_value = True
+    # Assert
+    assert configs == set()  # Should be empty as the scrape failed
+    mock_client.disconnect.assert_awaited_once()
 
-        # Correctly instantiate the RPCError with keyword arguments
-        mock_client.iter_messages.side_effect = errors.RPCError(request=None, message="Test Error", code=400)
 
-        configs = await scrape_telegram_configs(settings, Path("channels.txt"), 24)
+@pytest.mark.asyncio
+@patch("massconfigmerger.telegram_scraper.TelegramClient")
+async def test_scrape_telegram_proxy_conversion(MockTelegramClient: MagicMock, fs):
+    """Test that HTTP and SOCKS proxies are correctly converted for Telethon."""
+    fs.create_file("channels.txt", contents="channel1")
+    settings = Settings(telegram={"api_id": 123, "api_hash": "abc"})
 
-        assert configs == set()
-        mock_client.disconnect.assert_awaited_once()
+    # Mock client methods to avoid TypeErrors
+    mock_client = MockTelegramClient.return_value
+    mock_client.start = AsyncMock()
+    mock_client.is_connected.return_value = True
+    mock_client.disconnect = AsyncMock()
+    async def empty_iterator(*args, **kwargs):
+        if False:
+            yield
+    mock_client.iter_messages.return_value = empty_iterator()
+
+    # Test SOCKS5 proxy
+    settings.network.socks_proxy = "socks5://user:pass@host:1080"
+    await scrape_telegram_configs(settings, Path("channels.txt"), 24)
+    _, kwargs = MockTelegramClient.call_args
+    assert kwargs["proxy"] == ("socks5", "host", 1080, True, "user", "pass")
+
+    # Test HTTP proxy
+    settings.network.socks_proxy = None
+    settings.network.http_proxy = "http://user:pass@host:8080"
+    await scrape_telegram_configs(settings, Path("channels.txt"), 24)
+    _, kwargs = MockTelegramClient.call_args
+    assert kwargs["proxy"] == ("http", "host", 8080, True, "user", "pass")

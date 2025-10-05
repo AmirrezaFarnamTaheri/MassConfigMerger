@@ -2,26 +2,25 @@
 
 #### **Command-Line Arguments**
 
-Run `python vpn_merger.py --help` to see all options. Important flags include:
+Run `massconfigmerger <command> --help` to see all options for a specific command. Important flags include:
 
   * `--save-every N` - save intermediate files every `N` configs (default `100`, `0` to disable).
   * `--stop-after-found N` - stop once `N` unique configs are collected.
-  * `--no-url-test` - skip reachability testing for faster execution.
   * `--no-sort` - keep configs in the order retrieved without sorting.
   * `--top-n N` - keep only the best `N` configs after sorting.
   * `--tls-fragment TEXT` - only keep configs containing this TLS fragment.
-  * `--include-protocols LIST` - comma-separated protocols to include (e.g. `VLESS,Reality`).
+  * `--fetch-protocols LIST` - (fetch/full) comma-separated protocols to fetch from sources.
+  * `--include-protocols LIST` - (merge/retest) comma-separated protocols to include in the output.
     Valid protocol names: `VMESS`, `VLESS`, `SHADOWSOCKS`, `SHADOWSOCKSR`,
     `TROJAN`, `HYSTERIA2`, `HYSTERIA`, `TUIC`, `REALITY`, `NAIVE`, `JUICITY`,
     `WIREGUARD`, `SHADOWTLS`, `BROOK`, and `OTHER`.
-  * `--exclude-protocols LIST` - protocols to drop. By default `OTHER` is excluded; pass an empty string to keep everything.
+  * `--exclude-protocols LIST` - (merge/retest) protocols to drop from the output.
   * `--exclude-pattern REGEX` - skip configs matching this regular expression (repeatable).
   * `--include-pattern REGEX` - only keep configs matching this regular expression (repeatable).
-    These pattern flags also apply to `aggregator-tool`.
   * `--resume FILE` - load a previous output file before fetching new sources.
   * `--sources FILE` - read subscription URLs from a custom file (default `sources.txt`).
   * `--output-dir DIR` - specify where output files are stored.
-  * `--connect-timeout SEC` - adjust connection test timeout (sets `connect_timeout`).
+  * `--connect-timeout SEC` - adjust connection test timeout.
   * `--cumulative-batches` - make each batch cumulative instead of standalone.
   * `--no-strict-batch` - don't split strictly by `--save-every`, just trigger when exceeded.
   * `--shuffle-sources` - randomize source processing order.
@@ -51,19 +50,19 @@ If you have your own subscription links you'd like to merge, edit `sources.txt`:
 
 #### **Retesting an Existing Output**
 
-If you already generated a subscription file, run `python vpn_retester.py <path>` to check all servers again and sort them by current latency. The script accepts raw or base64 files and now exposes several tuning options:
+If you already generated a subscription file, run `massconfigmerger retest <path>` to check all servers again and sort them by current latency. The command accepts raw or base64 files and now exposes several tuning options:
 
 * `--concurrent-limit` limit how many tests run in parallel
-* `--connect-timeout` set the connection timeout in seconds (stored in `connect_timeout`)
+* `--connect-timeout` set the connection timeout in seconds
 * `--max-ping` drop configs slower than this ping (ms)
-* `--include-protocols` or `--exclude-protocols` filter by protocol (default drops `OTHER`)
+* `--include-protocols` or `--exclude-protocols` filter by protocol
 * `--output-dir` choose where results are written
 * `--no-base64` / `--no-csv` disable those outputs
 
 Example:
 
 ```bash
-python vpn_retester.py output/vpn_subscription_raw.txt \
+massconfigmerger retest output/vpn_subscription_raw.txt \
   --include-protocols VLESS,REALITY --max-ping 250 \
   --concurrent-limit 20 --connect-timeout 3 --output-dir retested --no-base64
 ```
@@ -114,4 +113,3 @@ pytest
 
 Failing to install the `dev` extras first will result in `ModuleNotFoundError`
 when the test suite tries to import `massconfigmerger`.
-

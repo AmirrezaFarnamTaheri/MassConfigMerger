@@ -36,41 +36,61 @@ class NodeTester:
         self.resolver: Optional[AsyncResolver] = None
         self._geoip_reader: Optional["Reader"] = None
 
+    async def _resolve_host(self, host: str) -> str:
+        """Resolve a hostname to an IP address, using a cache."""
+        if host in self.dns_cache:
+            return self.dns_cache[host]
+
+        # Return early if it's already an IP address
+        if re.match(r"^[0-9.]+$", host):
+            return host
+
+        # Initialize resolver if needed
+        if "aiodns" in sys.modules and AsyncResolver is not None and self.resolver is None:
+            try:
+                self.resolver = AsyncResolver()
+            except Exception as exc:  # pragma: no cover - env specific
+                logging.debug("AsyncResolver init failed: %s", exc)
+
+        # Use async resolver if available
+        if self.resolver is not None:
+            try:
+                result = await self.resolver.resolve(host)
+                if result:
+                    ip = result[0]["host"]
+                    self.dns_cache[host] = ip
+                    return ip
+            except Exception as exc:  # pragma: no cover - env specific
+                logging.debug("Async DNS resolve failed for %s: %s", host, exc)
+
+        # Fallback to standard blocking lookup
+        try:
+            info = await asyncio.get_running_loop().getaddrinfo(host, None)
+            ip = info[0][4][0]
+            self.dns_cache[host] = ip
+            return ip
+        except (OSError, socket.gaierror) as exc:
+            logging.debug("Standard DNS lookup failed for %s: %s", host, exc)
+
+        return host  # Fallback to the original host if all else fails
+
     async def test_connection(self, host: str, port: int) -> Optional[float]:
         """Return latency in seconds or ``None`` on failure."""
         if not self.config.processing.enable_url_testing:
             return None
 
-        start = time.time()
-        target = host
+        start_time = time.time()
         try:
-            if "aiodns" in sys.modules and AsyncResolver is not None:
-                if self.resolver is None:
-                    try:
-                        self.resolver = AsyncResolver()
-                    except Exception as exc:  # pragma: no cover - env specific
-                        logging.debug("AsyncResolver init failed: %s", exc)
-                        self.resolver = None
-                if self.resolver is not None:
-                    try:
-                        if host not in self.dns_cache:
-                            result = await self.resolver.resolve(host, port)
-                            if result:
-                                self.dns_cache[host] = result[0]["host"]
-                        target = self.dns_cache.get(host, host)
-                    except Exception as exc:  # pragma: no cover - env specific
-                        logging.debug("DNS resolve failed: %s", exc)
-                        target = host
-
+            target_ip = await self._resolve_host(host)
             _, writer = await asyncio.wait_for(
-                asyncio.open_connection(target, port),
+                asyncio.open_connection(target_ip, port),
                 timeout=self.config.network.connect_timeout,
             )
             writer.close()
             await writer.wait_closed()
-            return time.time() - start
+            return time.time() - start_time
         except (OSError, asyncio.TimeoutError) as exc:
-            logging.debug("Connection test failed: %s", exc)
+            logging.debug("Connection test failed for %s:%d: %s", host, port, exc)
             return None
 
     async def lookup_country(self, host: str) -> Optional[str]:
@@ -87,15 +107,12 @@ class NodeTester:
                 return None
 
         try:
-            ip = host
-            if not re.match(r"^[0-9.]+$", host):
-                info = await asyncio.get_running_loop().getaddrinfo(host, None)
-                ip = info[0][4][0]
+            ip = await self._resolve_host(host)
             assert self._geoip_reader is not None
             resp = self._geoip_reader.country(ip)
             return resp.country.iso_code
         except (OSError, socket.gaierror, AddressNotFoundError) as exc:
-            logging.debug("GeoIP lookup failed: %s", exc)
+            logging.debug("GeoIP lookup failed for %s: %s", host, exc)
             return None
 
     async def close(self) -> None:

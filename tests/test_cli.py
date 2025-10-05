@@ -30,7 +30,7 @@ def test_cli_full_command(mock_run_merger, mock_run_agg_pipeline, fs):
         "--top-n", "100",
         "--include-pattern", "US",
         "--include-pattern", "UK",
-        "--protocols", "vmess,ss",
+        "--fetch-protocols", "vmess,ss",
     ]
 
     # Act
@@ -50,7 +50,7 @@ def test_cli_full_command(mock_run_merger, mock_run_agg_pipeline, fs):
     assert called_settings.processing.top_n == 100
     assert "US" in called_settings.filtering.include_patterns
     assert "UK" in called_settings.filtering.include_patterns
-    assert called_settings.filtering.protocols == {"VMESS", "SS"}
+    assert called_settings.filtering.fetch_protocols == {"VMESS", "SS"}
 
 
 @patch("massconfigmerger.cli.pipeline.run_aggregation_pipeline", new_callable=AsyncMock)

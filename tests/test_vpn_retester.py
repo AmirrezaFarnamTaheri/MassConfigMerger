@@ -47,35 +47,38 @@ def test_filter_configs():
     settings = Settings()
 
     # Test include
-    settings.filtering.include_protocols = {"VMESS", "SHADOWSOCKS"}
-    settings.filtering.exclude_protocols = set()
+    settings.filtering.merge_include_protocols = {"VMESS", "SHADOWSOCKS"}
+    settings.filtering.merge_exclude_protocols = set()
     filtered = filter_configs(configs, settings)
     assert filtered == ["vmess://c1", "ss://c2"]
 
     # Test exclude
-    settings.filtering.include_protocols = set()
-    settings.filtering.exclude_protocols = {"SHADOWSOCKS"}
+    settings.filtering.merge_include_protocols = set()
+    settings.filtering.merge_exclude_protocols = {"SHADOWSOCKS"}
     filtered = filter_configs(configs, settings)
     assert filtered == ["vmess://c1", "trojan://c3"]
 
     # Test no filter
-    settings.filtering.include_protocols = None
-    settings.filtering.exclude_protocols = None
+    settings.filtering.merge_include_protocols = None
+    settings.filtering.merge_exclude_protocols = None
     filtered = filter_configs(configs, settings)
     assert filtered == configs
 
 
 @patch("massconfigmerger.vpn_retester.Path.write_text")
-def test_save_results(mock_write_text: MagicMock, tmp_path: Path):
+@patch("builtins.open", new_callable=mock_open)
+def test_save_results(mock_open: MagicMock, mock_write_text: MagicMock, tmp_path: Path):
     """Test the save_results function."""
     results = [("vmess://c1", 0.1), ("ss://c2", 0.3), ("trojan://c3", 0.2)]
     settings = Settings()
     settings.output.output_dir = str(tmp_path)
     settings.output.write_base64 = True
     settings.output.write_csv = True
+    settings.processing.enable_sorting = True
+    settings.processing.top_n = 2
 
     # Test with sorting and top_n
-    save_results(results, settings, sort=True, top_n=2)
+    save_results(results, settings)
 
     # raw file should be called with sorted, trimmed results
     mock_write_text.assert_any_call("vmess://c1\ntrojan://c3", encoding="utf-8")
@@ -84,9 +87,9 @@ def test_save_results(mock_write_text: MagicMock, tmp_path: Path):
     expected_b64 = base64.b64encode(b"vmess://c1\ntrojan://c3").decode()
     mock_write_text.assert_any_call(expected_b64, encoding="utf-8")
 
-    # CSV should also be written (mocked separately if needed, here we just check call count)
-    # 2 calls for raw/b64, plus the CSV write
-    assert mock_write_text.call_count == 2 # CSV uses open() directly
+    # Check that the CSV file was opened for writing
+    mock_open.assert_called_once_with(tmp_path / "vpn_retested_detailed.csv", "w", newline="", encoding="utf-8")
+
 
 @pytest.mark.asyncio
 @patch("massconfigmerger.vpn_retester.load_configs")
@@ -107,12 +110,12 @@ async def test_run_retester_flow(
     mock_load.return_value = ["vmess://c1", "ss://c2", "trojan://c3"]
     mock_filter.return_value = ["vmess://c1", "ss://c2"]
     mock_retest.return_value = [
-        ("vmess://c1", 0.1), # Will be kept
-        ("ss://c2", 0.3),    # Will be filtered by max_ping
+        ("vmess://c1", 0.1),  # Will be kept
+        ("ss://c2", 0.3),     # Will be filtered by max_ping
     ]
 
     # Act
-    await run_retester(settings, Path("dummy.txt"), sort=True, top_n=0)
+    await run_retester(settings, Path("dummy.txt"))
 
     # Assert
     mock_load.assert_called_once()
