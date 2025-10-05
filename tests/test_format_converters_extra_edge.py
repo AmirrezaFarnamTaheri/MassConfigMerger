@@ -1,5 +1,5 @@
 import textwrap
-from massconfigmerger.advanced_converters import generate_surge_conf, generate_qx_conf
+from massconfigmerger.format_converters_extra import generate_surge_conf, generate_qx_conf
 
 
 

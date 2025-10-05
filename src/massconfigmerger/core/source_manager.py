@@ -1,4 +1,12 @@
-"""Core components for fetching and managing configuration sources."""
+"""Core components for fetching and managing VPN configuration sources.
+
+This module defines the `SourceManager`, a class responsible for handling
+all aspects of fetching configuration data from web sources. This includes
+managing aiohttp client sessions, fetching content from multiple URLs
+concurrently, and a mechanism for checking the availability of sources
+and pruning those that consistently fail.
+"""
+from __future__ import annotations
 
 import asyncio
 import json
@@ -14,20 +22,36 @@ from ..config import Settings
 
 
 class SourceManager:
-    """Manages fetching and filtering of VPN configuration sources."""
+    """
+    Manages fetching, filtering, and maintaining VPN configuration sources.
+
+    This class encapsulates the logic for handling aiohttp sessions,
+    concurrently fetching data from a list of URLs, and performing
+    health checks on sources to prune failing ones.
+    """
 
     def __init__(self, settings: Settings):
         """
         Initialize the SourceManager.
 
         Args:
-            settings: The application settings.
+            settings: The application settings object, which provides
+                      networking and proxy configurations.
         """
         self.settings = settings
         self.session: aiohttp.ClientSession | None = None
 
     async def get_session(self) -> aiohttp.ClientSession:
-        """Get the aiohttp session, creating it if it doesn't exist."""
+        """
+        Get the aiohttp ClientSession, creating it if it doesn't exist.
+
+        This method ensures that a single session is reused for multiple
+        requests, which is more efficient. It configures the session with
+        the appropriate connector and proxy settings.
+
+        Returns:
+            An active aiohttp.ClientSession instance.
+        """
         if self.session is None or self.session.closed:
             proxy = utils.choose_proxy(self.settings)
             connector = aiohttp.TCPConnector(limit=self.settings.network.concurrent_limit)
@@ -35,19 +59,23 @@ class SourceManager:
         return self.session
 
     async def close_session(self) -> None:
-        """Close the aiohttp session if it exists."""
+        """Close the aiohttp session if it is open."""
         if self.session and not self.session.closed:
             await self.session.close()
 
     async def fetch_sources(self, sources: List[str]) -> Set[str]:
         """
-        Fetch configurations from a list of sources.
+        Fetch configurations from a list of source URLs.
+
+        This method concurrently fetches content from all provided URLs,
+        parses the text to extract configuration links, and returns a
+        unified set of all found configurations.
 
         Args:
-            sources: A list of source URLs.
+            sources: A list of source URLs to fetch.
 
         Returns:
-            A set of unique configuration links.
+            A set of unique configuration links found in the sources.
         """
         configs: Set[str] = set()
         semaphore = asyncio.Semaphore(self.settings.network.concurrent_limit)
@@ -87,13 +115,18 @@ class SourceManager:
         """
         Check the availability of sources and optionally prune failing ones.
 
+        This method reads a list of source URLs from a file, tests each one
+        for availability, and updates a failure count. If a source exceeds
+        the `max_failures` threshold, it is removed from the list.
+
         Args:
-            path: The path to the sources file.
-            max_failures: The maximum number of failures before pruning a source.
-            prune: Whether to prune failing sources.
+            path: The path to the file containing the source URLs.
+            max_failures: The maximum number of consecutive failures before
+                          a source is pruned.
+            prune: If True, remove failing sources from the file.
 
         Returns:
-            A list of available source URLs.
+            A list of source URLs that were found to be available.
         """
         if not path.exists():
             logging.warning("sources file not found: %s", path)

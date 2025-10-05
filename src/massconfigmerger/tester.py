@@ -1,3 +1,11 @@
+"""Network testing utilities for VPN nodes.
+
+This module provides the `NodeTester` class, which is a core component for
+verifying the connectivity and performance of VPN configurations. It includes
+methods for testing TCP connections, measuring latency, resolving hostnames
+with an asynchronous DNS resolver, and looking up the geographic location
+of servers using a GeoIP database.
+"""
 from __future__ import annotations
 
 import asyncio
@@ -26,33 +34,56 @@ from .config import Settings
 
 
 class NodeTester:
-    """Utility class for node latency testing and GeoIP lookup."""
+    """
+    A utility class for testing node latency and performing GeoIP lookups.
+
+    This class encapsulates the functionality needed to test network endpoints,
+    including asynchronous DNS resolution with caching, TCP connection testing,
+    and country lookups based on IP address.
+    """
 
     _geoip_reader: Optional["Reader"]
 
     def __init__(self, config: Settings) -> None:
+        """
+        Initialize the NodeTester.
+
+        Args:
+            config: The application settings object.
+        """
         self.config = config
         self.dns_cache: dict[str, str] = {}
         self.resolver: Optional[AsyncResolver] = None
         self._geoip_reader: Optional["Reader"] = None
 
     async def _resolve_host(self, host: str) -> str:
-        """Resolve a hostname to an IP address, using a cache."""
+        """
+        Resolve a hostname to an IP address, with caching.
+
+        This method first checks a local cache for the resolved IP. If not
+        found, it attempts to resolve the hostname using an asynchronous DNS
+        resolver (`aiodns`) if available, falling back to the standard library's
+        blocking `getaddrinfo` executed in a thread pool.
+
+        Args:
+            host: The hostname to resolve.
+
+        Returns:
+            The resolved IP address as a string, or the original host if
+            resolution fails.
+        """
         if host in self.dns_cache:
             return self.dns_cache[host]
 
-        # Return early if it's already an IP address
         if re.match(r"^[0-9.]+$", host):
             return host
 
-        # Initialize resolver if needed
         if "aiodns" in sys.modules and AsyncResolver is not None and self.resolver is None:
             try:
                 self.resolver = AsyncResolver()
             except Exception as exc:  # pragma: no cover - env specific
                 logging.debug("AsyncResolver init failed: %s", exc)
 
-        # Use async resolver if available
         if self.resolver is not None:
             try:
                 result = await self.resolver.resolve(host)
@@ -63,7 +94,6 @@ class NodeTester:
             except Exception as exc:  # pragma: no cover - env specific
                 logging.debug("Async DNS resolve failed for %s: %s", host, exc)
 
-        # Fallback to standard blocking lookup
         try:
             info = await asyncio.get_running_loop().getaddrinfo(host, None)
             ip = info[0][4][0]
@@ -72,10 +102,24 @@ class NodeTester:
         except (OSError, socket.gaierror) as exc:
             logging.debug("Standard DNS lookup failed for %s: %s", host, exc)
 
-        return host  # Fallback to the original host if all else fails
+        return host
 
     async def test_connection(self, host: str, port: int) -> Optional[float]:
-        """Return latency in seconds or ``None`` on failure."""
+        """
+        Test a TCP connection to a given host and port, returning the latency.
+
+        If `enable_url_testing` is disabled in the settings, this method will
+        return immediately. Otherwise, it attempts to establish a TCP
+        connection and measures the time it takes.
+
+        Args:
+            host: The server hostname or IP address.
+            port: The server port.
+
+        Returns:
+            The connection latency in seconds, or ``None`` if the connection
+            fails or is disabled.
+        """
         if not self.config.processing.enable_url_testing:
             return None
 
@@ -94,7 +138,20 @@ class NodeTester:
             return None
 
     async def lookup_country(self, host: str) -> Optional[str]:
-        """Return ISO country code for ``host`` if GeoIP database configured."""
+        """
+        Return the ISO country code for a host using the GeoIP database.
+
+        This method resolves the host to an IP address and then performs a
+        lookup in the GeoLite2 database specified in the settings. The GeoIP
+        database reader is initialized on the first call.
+
+        Args:
+            host: The hostname or IP address to look up.
+
+        Returns:
+            The ISO 3166-1 alpha-2 country code as a string, or ``None`` if
+            the lookup fails or the GeoIP database is not configured.
+        """
         if not host or not self.config.processing.geoip_db or not Reader:
             return None
 
@@ -116,7 +173,12 @@ class NodeTester:
             return None
 
     async def close(self) -> None:
-        """Close any resolver resources if initialized."""
+        """
+        Gracefully close any open resources, such as the DNS resolver.
+
+        This method should be called after all testing is complete to ensure
+        that underlying connections and resources are properly released.
+        """
         if self.resolver is not None:
             try:
                 close = getattr(self.resolver, "close", None)

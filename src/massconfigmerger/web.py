@@ -8,7 +8,7 @@ from pathlib import Path
 
 from flask import Flask, render_template_string, send_file
 
-from .config import load_config
+from .core.config_loader import load_config
 from .pipeline import run_aggregation_pipeline
 from .vpn_merger import run_merger as run_merger_pipeline
 from .constants import SOURCES_FILE

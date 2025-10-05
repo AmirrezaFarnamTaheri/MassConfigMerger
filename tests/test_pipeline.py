@@ -60,7 +60,7 @@ async def test_run_aggregation_pipeline_full_flow(
     mock_source_manager.fetch_sources.assert_awaited_once_with(["http://source1"])
     mock_scrape_telegram.assert_awaited_once_with(settings, channels_file, 12)
     mock_config_processor.filter_configs.assert_called_once_with(
-        {"vless://config1", "ss://config2"}, settings.filtering.fetch_protocols
+        {"vless://config1", "ss://config2"}, use_fetch_rules=True
     )
     mock_output_generator.write_outputs.assert_called_once_with(
         sorted(["vless://config1", "ss://config2"]), tmp_path
