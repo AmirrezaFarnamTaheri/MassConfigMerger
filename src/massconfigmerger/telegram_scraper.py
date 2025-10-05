@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Set
 
@@ -55,7 +55,7 @@ async def scrape_telegram_configs(
         logging.info("No channels specified in %s", channels_path)
         return set()
 
-    since = datetime.utcnow() - timedelta(hours=last_hours)
+    since = datetime.now(tz=timezone.utc) - timedelta(hours=last_hours)
     proxy = choose_proxy(cfg)
 
     # Convert aiohttp-style proxy to Telethon proxy if applicable
