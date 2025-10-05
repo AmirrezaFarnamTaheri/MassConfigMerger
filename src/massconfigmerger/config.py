@@ -22,11 +22,7 @@ from pydantic_settings import (
 
 
 class TelegramSettings(BaseModel):
-    """Settings for Telegram integration.
-
-    These settings are required for scraping configurations from Telegram
-    channels or running the application in Telegram bot mode.
-    """
+    """Settings for Telegram integration."""
 
     api_id: Optional[int] = Field(None, description="Your Telegram API ID from my.telegram.org.")
     api_hash: Optional[str] = Field(None, description="Your Telegram API hash from my.telegram.org.")
@@ -35,14 +31,14 @@ class TelegramSettings(BaseModel):
         default_factory=list,
         description="List of numeric Telegram user IDs allowed to interact with the bot.",
     )
-    session_path: str = Field(
+    session_path: Path = Field(
         "user.session", description="Path to the Telethon session file."
     )
 
     @field_validator("allowed_user_ids", mode="before")
     @classmethod
-    def _parse_allowed_ids(cls, value):
-        """Parse a string of user IDs into a list of integers."""
+    def _parse_allowed_ids(cls, value: Any) -> list[int]:
+        """Parse a string or int of user IDs into a list of integers."""
         if isinstance(value, str):
             try:
                 return [int(v) for v in re.split(r"[\s,]+", value.strip()) if v]
@@ -122,27 +118,20 @@ class FilteringSettings(BaseModel):
     tls_fragment: Optional[str] = Field(
         None, description="Filter configs to only include those with a specific TLS fragment."
     )
-    valid_prefixes: Tuple[str, ...] = Field(
-        default=(
-            "vmess://", "vless://", "reality://", "ss://", "ssr://", "trojan://", "hy2://",
-            "hysteria://", "hysteria2://", "tuic://", "shadowtls://", "wireguard://",
-            "socks://", "socks4://", "socks5://", "http://", "https://", "grpc://",
-            "ws://", "wss://", "tcp://", "kcp://", "quic://", "h2://",
-        ),
-        description="Tuple of valid URI prefixes used for initial parsing of VPN configs.",
-    )
 
 
 class OutputSettings(BaseModel):
     """Settings for controlling the generated output files and formats."""
 
-    output_dir: str = Field("output", description="Directory to save all output files.")
-    log_dir: str = Field("logs", description="Directory to save log files.")
-    log_file: Optional[str] = Field(
+    output_dir: Path = Field(
+        Path("output"), description="Directory to save all output files."
+    )
+    log_dir: Path = Field(Path("logs"), description="Directory to save log files.")
+    log_file: Optional[Path] = Field(
         None, description="Path to a specific file for logging, instead of a directory."
     )
-    history_file: str = Field(
-        "proxy_history.json",
+    history_file: Path = Field(
+        Path("proxy_history.json"),
         description="File to store proxy connection history for reliability scoring.",
     )
     write_base64: bool = Field(
@@ -159,13 +148,13 @@ class OutputSettings(BaseModel):
     write_clash_proxies: bool = Field(
         True, description="Whether to write a simple Clash proxies-only file."
     )
-    surge_file: Optional[str] = Field(
+    surge_file: Optional[Path] = Field(
         None, description="Filename for Surge output configuration."
     )
-    qx_file: Optional[str] = Field(
+    qx_file: Optional[Path] = Field(
         None, description="Filename for Quantumult X output configuration."
     )
-    xyz_file: Optional[str] = Field(
+    xyz_file: Optional[Path] = Field(
         None, description="Filename for XYZ format output configuration."
     )
     upload_gist: bool = Field(
@@ -215,10 +204,10 @@ class ProcessingSettings(BaseModel):
     )
     mux_concurrency: int = Field(8, description="Mux concurrency for supported URI configs.")
     smux_streams: int = Field(4, description="Smux streams for supported URI configs.")
-    geoip_db: Optional[str] = Field(
+    geoip_db: Optional[Path] = Field(
         None, description="Path to the GeoLite2 Country MMDB file for GeoIP lookups."
     )
-    resume_file: Optional[str] = Field(
+    resume_file: Optional[Path] = Field(
         None, description="Path to a raw or base64 subscription file to resume/retest."
     )
     max_retries: int = Field(

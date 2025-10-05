@@ -71,3 +71,68 @@ async def test_upload_files_to_gist_failure(MockSession, tmp_path: Path):
     # Assert that the correct exception is raised
     with pytest.raises(GistUploadError, match=r"Gist upload failed for .*: 400 Bad Request"):
         await upload_files_to_gist([f], "secret")
+
+
+@pytest.mark.asyncio
+async def test_upload_files_to_gist_no_token():
+    """Test that a ValueError is raised if no token is provided."""
+    with pytest.raises(ValueError, match="GitHub token is required"):
+        await upload_files_to_gist([], "")
+
+
+@pytest.mark.asyncio
+async def test_upload_files_to_gist_invalid_base_url():
+    """Test that a ValueError is raised for an invalid base_url."""
+    with pytest.raises(ValueError, match="Invalid base_url"):
+        await upload_files_to_gist([], "secret", base_url="ftp://invalid.com")
+
+
+@pytest.mark.asyncio
+async def test_upload_files_to_gist_file_not_found(tmp_path: Path):
+    """Test that an error is raised if a file does not exist."""
+    non_existent_file = tmp_path / "non_existent.txt"
+    with pytest.raises(GistUploadError, match="Gist upload source is not a file"):
+        await upload_files_to_gist([non_existent_file], "secret")
+
+
+@pytest.mark.asyncio
+@patch("massconfigmerger.gist_uploader.aiohttp.ClientSession")
+async def test_upload_files_to_gist_invalid_json_response(MockSession, tmp_path: Path):
+    """Test Gist upload with a non-JSON response."""
+    f = tmp_path / "test.txt"
+    f.write_text("data")
+
+    mock_resp = AsyncMock()
+    mock_resp.status = 201
+    mock_resp.json = AsyncMock(side_effect=asyncio.TimeoutError)  # Simulate JSON parsing failure
+    mock_resp.text = AsyncMock(return_value="not json")
+
+    mock_post_cm = AsyncMock()
+    mock_post_cm.__aenter__.return_value = mock_resp
+
+    mock_session = MockSession.return_value.__aenter__.return_value
+    mock_session.post = MagicMock(return_value=mock_post_cm)
+
+    with pytest.raises(GistUploadError, match="Failed to parse Gist response"):
+        await upload_files_to_gist([f], "secret")
+
+
+@pytest.mark.asyncio
+@patch("massconfigmerger.gist_uploader.aiohttp.ClientSession")
+async def test_upload_files_to_gist_unexpected_json_structure(MockSession, tmp_path: Path):
+    """Test Gist upload with an unexpected JSON structure in the response."""
+    f = tmp_path / "test.txt"
+    f.write_text("data")
+
+    mock_resp = AsyncMock()
+    mock_resp.status = 201
+    mock_resp.json = AsyncMock(return_value={"files": {"wrong_name": {}}})  # Missing raw_url key
+
+    mock_post_cm = AsyncMock()
+    mock_post_cm.__aenter__.return_value = mock_resp
+
+    mock_session = MockSession.return_value.__aenter__.return_value
+    mock_session.post = MagicMock(return_value=mock_post_cm)
+
+    with pytest.raises(GistUploadError, match="Unexpected Gist response"):
+        await upload_files_to_gist([f], "secret")

@@ -24,7 +24,7 @@ async def test_run_aggregation_pipeline_full_flow(
     """Test the full flow of the aggregation pipeline, including Telegram scraping."""
     # Arrange
     settings = Settings()
-    settings.output.output_dir = str(tmp_path)
+    settings.output.output_dir = tmp_path
 
     # Mock instances and their methods
     mock_source_manager = MockSourceManager.return_value

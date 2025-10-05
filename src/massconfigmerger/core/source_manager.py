@@ -186,6 +186,9 @@ class SourceManager:
                 with disabled_path.open("a") as f:
                     for url in removed:
                         f.write(f"{url}\n")
+                # Remove pruned sources from the failures dict
+                for url in removed:
+                    failures.pop(url, None)
 
         failures_path.write_text(json.dumps(failures, indent=2))
         logging.info("Valid sources: %d", len(valid_sources))
