@@ -6,7 +6,6 @@ for easy access.
 """
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Dict, List
 from urllib.parse import urlparse

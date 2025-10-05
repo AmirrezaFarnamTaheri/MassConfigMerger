@@ -24,13 +24,14 @@ from .core.file_utils import find_project_root
 
 
 class YamlConfigSettingsSource(PydanticBaseSettingsSource):
-    """A settings source that loads variables from a YAML file."""
+    """A Pydantic settings source that loads variables from a YAML file."""
 
     def __init__(self, settings_cls: Type[BaseSettings], yaml_file: Optional[Path]):
         super().__init__(settings_cls)
         self.yaml_file = yaml_file
 
     def get_field_value(self, field: Any, field_name: str) -> tuple[Any, str] | None:
+        """Get a value for a field from the YAML file."""
         if not self.yaml_file or not self.yaml_file.exists():
             return None
         try:
@@ -41,6 +42,7 @@ class YamlConfigSettingsSource(PydanticBaseSettingsSource):
             return None
 
     def __call__(self) -> dict[str, Any]:
+        """Load all settings from the YAML file."""
         if not self.yaml_file or not self.yaml_file.exists():
             return {}
         try:
@@ -50,7 +52,7 @@ class YamlConfigSettingsSource(PydanticBaseSettingsSource):
 
 
 class TelegramSettings(BaseModel):
-    """Settings for Telegram integration."""
+    """Settings for Telegram integration, including API credentials and bot behavior."""
 
     api_id: Optional[int] = Field(None, description="Your Telegram API ID.")
     api_hash: Optional[str] = Field(None, description="Your Telegram API hash.")
@@ -64,6 +66,7 @@ class TelegramSettings(BaseModel):
     @field_validator("allowed_user_ids", mode="before")
     @classmethod
     def _parse_allowed_ids(cls, value):
+        """Parse a string of user IDs into a list of integers."""
         if isinstance(value, str):
             try:
                 return [int(v) for v in re.split(r"[\s,]+", value.strip()) if v]
@@ -75,7 +78,7 @@ class TelegramSettings(BaseModel):
 
 
 class NetworkSettings(BaseModel):
-    """Settings related to network requests."""
+    """Settings related to network requests, including timeouts, proxies, and headers."""
 
     request_timeout: int = Field(10, description="Timeout for HTTP requests in seconds.")
     concurrent_limit: int = Field(20, description="Maximum number of concurrent HTTP requests.")
@@ -97,7 +100,7 @@ class NetworkSettings(BaseModel):
 
 
 class FilteringSettings(BaseModel):
-    """Settings for filtering configurations."""
+    """Settings for filtering configurations at different stages of the pipeline."""
 
     fetch_protocols: List[str] = Field(default_factory=list, description="List of VPN protocols to fetch from sources.")
     include_patterns: List[str] = Field(default_factory=list, description="List of regex patterns to include configs.")
@@ -123,7 +126,7 @@ class FilteringSettings(BaseModel):
 
 
 class OutputSettings(BaseModel):
-    """Settings for output files and formats."""
+    """Settings for controlling the output files and formats."""
 
     output_dir: str = Field("output", description="Directory to save output files.")
     log_dir: str = Field("logs", description="Directory to save log files.")
@@ -142,7 +145,7 @@ class OutputSettings(BaseModel):
 
 
 class ProcessingSettings(BaseModel):
-    """Settings for processing and sorting configurations."""
+    """Settings for processing, sorting, and testing configurations."""
 
     sort_by: Literal["latency", "reliability"] = Field("latency", description="Method for sorting configs ('latency' or 'reliability').")
     enable_sorting: bool = Field(True, description="Whether to sort configs by performance.")
@@ -162,7 +165,7 @@ class ProcessingSettings(BaseModel):
 
 
 class Settings(BaseSettings):
-    """Main application configuration."""
+    """Main application configuration, acting as a container for all other settings models."""
 
     telegram: TelegramSettings = Field(default_factory=TelegramSettings)
     network: NetworkSettings = Field(default_factory=NetworkSettings)
@@ -185,6 +188,7 @@ class Settings(BaseSettings):
         dotenv_settings: PydanticBaseSettingsSource,
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
+        """Customize the settings sources, adding support for a YAML file."""
         config_file = init_settings.init_kwargs.get("config_file")
         return (
             init_settings,
@@ -196,7 +200,17 @@ class Settings(BaseSettings):
 
 
 def load_config(path: Path | None = None) -> Settings:
-    """Load configuration from a file and environment variables."""
+    """Load configuration from a file and environment variables.
+
+    If a path is provided, it will be used. Otherwise, the function will search
+    for a `config.yaml` file in the project root.
+
+    Args:
+        path: An optional path to a YAML configuration file.
+
+    Returns:
+        A populated `Settings` object.
+    """
     config_file = path
     if config_file is None:
         try:

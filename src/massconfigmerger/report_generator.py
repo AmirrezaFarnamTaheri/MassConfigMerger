@@ -5,6 +5,7 @@ the outcome of a merger or retesting run.
 """
 from __future__ import annotations
 
+import html
 import json
 import time
 from datetime import datetime, timezone
@@ -53,9 +54,6 @@ def generate_json_report(
     )
     tmp_report.replace(report_file)
     return report_file
-
-
-import html
 
 
 def generate_html_report(

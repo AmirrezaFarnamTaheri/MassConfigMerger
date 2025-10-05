@@ -1,10 +1,17 @@
-"""Unified command-line interface for Mass Config Merger."""
+"""Unified command-line interface for Mass Config Merger.
+
+This module provides a single entry point (`main`) for the `massconfigmerger`
+command. It uses argparse to define subcommands for different operations like
+fetching, merging, and retesting configurations. It also handles loading the
+configuration from a file and overriding it with command-line arguments.
+"""
+from __future__ import annotations
 
 import sys
 import argparse
 import asyncio
 from pathlib import Path
-from typing import Dict, Any, List, Callable
+from typing import Dict, Callable
 
 from . import pipeline, vpn_merger, vpn_retester
 from .config import load_config, Settings
@@ -108,7 +115,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _update_settings_from_args(cfg: Settings, args: argparse.Namespace):
-    """Update settings from command-line arguments."""
+    """Update settings from command-line arguments.
+
+    This function iterates through the parsed command-line arguments and updates
+    the `Settings` object. It uses a data-driven approach, mapping argument
+    names to their corresponding sub-models in the configuration.
+
+    Args:
+        cfg: The `Settings` object to update.
+        args: The `argparse.Namespace` object containing the parsed arguments.
+    """
     arg_to_submodel = {
         "concurrent_limit": "network", "request_timeout": "network", "connect_timeout": "network",
         "fetch_protocols": "filtering", "include_patterns": "filtering", "exclude_patterns": "filtering",
@@ -143,6 +159,7 @@ def _update_settings_from_args(cfg: Settings, args: argparse.Namespace):
 
 
 def _handle_fetch(args: argparse.Namespace, cfg: Settings):
+    """Handle the 'fetch' command."""
     asyncio.run(
         pipeline.run_aggregation_pipeline(
             cfg,
@@ -156,6 +173,7 @@ def _handle_fetch(args: argparse.Namespace, cfg: Settings):
 
 
 def _handle_merge(args: argparse.Namespace, cfg: Settings):
+    """Handle the 'merge' command."""
     asyncio.run(
         vpn_merger.run_merger(
             cfg,
@@ -166,10 +184,12 @@ def _handle_merge(args: argparse.Namespace, cfg: Settings):
 
 
 def _handle_retest(args: argparse.Namespace, cfg: Settings):
+    """Handle the 'retest' command."""
     asyncio.run(vpn_retester.run_retester(cfg, input_file=Path(args.input)))
 
 
 def _handle_full(args: argparse.Namespace, cfg: Settings):
+    """Handle the 'full' command."""
     aggregator_output_dir, _ = asyncio.run(
         pipeline.run_aggregation_pipeline(
             cfg,
@@ -185,7 +205,14 @@ def _handle_full(args: argparse.Namespace, cfg: Settings):
 
 
 def main(argv: list[str] | None = None) -> None:
-    """Entry point for the massconfigmerger command."""
+    """Entry point for the massconfigmerger command.
+
+    Parses command-line arguments, loads the configuration, and calls the
+    appropriate handler for the specified subcommand.
+
+    Args:
+        argv: A list of command-line arguments, or None to use `sys.argv`.
+    """
     print_public_source_warning()
     if argv is None:
         argv = sys.argv[1:]

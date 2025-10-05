@@ -60,10 +60,14 @@ def parse(config: str, idx: int) -> Optional[Dict[str, Any]]:
             proxy[key] = sanitize_str(q[key][0])
 
     reality_opts, pbk, sid, spider = _parse_reality_opts(q)
-    if pbk: proxy["pbk"] = pbk
-    if sid: proxy["sid"] = sid
-    if spider: proxy["spiderX"] = spider
-    if reality_opts: proxy["reality-opts"] = reality_opts
+    if pbk:
+        proxy["pbk"] = pbk
+    if sid:
+        proxy["sid"] = sid
+    if spider:
+        proxy["spiderX"] = spider
+    if reality_opts:
+        proxy["reality-opts"] = reality_opts
 
     if "ws-headers" in q:
         proxy["ws-headers"] = sanitize_headers(q["ws-headers"][0])
@@ -98,10 +102,14 @@ def parse_reality(config: str, idx: int) -> Optional[Dict[str, Any]]:
             proxy[key] = sanitize_str(q[key][0])
 
     reality_opts, pbk, sid, spider = _parse_reality_opts(q)
-    if pbk: proxy["pbk"] = pbk
-    if sid: proxy["sid"] = sid
-    if spider: proxy["spiderX"] = spider
-    if reality_opts: proxy["reality-opts"] = reality_opts
+    if pbk:
+        proxy["pbk"] = pbk
+    if sid:
+        proxy["sid"] = sid
+    if spider:
+        proxy["spiderX"] = spider
+    if reality_opts:
+        proxy["reality-opts"] = reality_opts
 
     net = q.get("type") or q.get("mode")
     if net:

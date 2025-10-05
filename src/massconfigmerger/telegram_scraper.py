@@ -8,7 +8,6 @@ those messages.
 """
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -43,7 +42,7 @@ async def scrape_telegram_configs(
     with channels_path.open() as f:
         channels = [
             (
-                line.strip()[len(prefix) :]
+                line.strip()[len(prefix):]
                 if line.strip().startswith(prefix)
                 else line.strip()
             )

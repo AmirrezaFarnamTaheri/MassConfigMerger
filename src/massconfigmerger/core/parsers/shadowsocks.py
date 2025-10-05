@@ -49,7 +49,7 @@ def parse(config: str, idx: int) -> Optional[Dict[str, Any]]:
             server = sanitize_str(server_str)
             port = int(port_str)
         except (ValueError, IndexError):
-            return None # Invalid format
+            return None  # Invalid format
 
     if not all([server, port, method, password]):
         return None
