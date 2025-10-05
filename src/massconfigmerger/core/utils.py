@@ -150,7 +150,7 @@ def parse_configs_from_text(text: str) -> Set[str]:
 
 def choose_proxy(cfg: Settings) -> str | None:
     """Return SOCKS proxy if defined, otherwise HTTP proxy."""
-    return cfg.network.SOCKS_PROXY or cfg.network.HTTP_PROXY
+    return cfg.network.socks_proxy or cfg.network.http_proxy
 
 
 async def fetch_text(

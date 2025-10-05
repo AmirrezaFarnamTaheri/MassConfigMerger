@@ -33,8 +33,8 @@ def test_categorize_protocol(config_processor: ConfigProcessor):
     assert config_processor.categorize_protocol("unknown://...") == "Other"
 
 
-def test_filter_configs(config_processor: ConfigProcessor):
-    """Test the filter_configs method."""
+def test_filter_configs():
+    """Test the filter_configs method with various rules."""
     configs = {
         "vmess://config1",
         "vless://config2",
@@ -42,21 +42,42 @@ def test_filter_configs(config_processor: ConfigProcessor):
         "trojan://config4",
     }
 
-    # Test filtering for a subset of protocols
-    filtered = config_processor.filter_configs(configs, protocols=["VMess", "Shadowsocks"])
-    assert filtered == {"vmess://config1", "ss://config3"}
+    # 1. Test with fetch rules (simple inclusion)
+    settings_fetch = Settings()
+    settings_fetch.filtering.fetch_protocols = ["VMess", "Shadowsocks"]
+    processor_fetch = ConfigProcessor(settings_fetch)
+    filtered_fetch = processor_fetch.filter_configs(configs, use_fetch_rules=True)
+    assert filtered_fetch == {"vmess://config1", "ss://config3"}
 
-    # Test filtering with no protocol filter (should return all)
-    filtered_all = config_processor.filter_configs(configs)
-    assert filtered_all == configs
+    # Test case-insensitivity for fetch rules
+    settings_fetch_case = Settings()
+    settings_fetch_case.filtering.fetch_protocols = ["vmess", "shadowsocks"]
+    processor_fetch_case = ConfigProcessor(settings_fetch_case)
+    filtered_fetch_case = processor_fetch_case.filter_configs(configs, use_fetch_rules=True)
+    assert filtered_fetch_case == {"vmess://config1", "ss://config3"}
 
-    # Test with case-insensitivity
-    filtered_case = config_processor.filter_configs(configs, protocols=["vmess", "shadowsocks"])
-    assert filtered_case == {"vmess://config1", "ss://config3"}
+    # Test empty fetch protocols (should return all)
+    settings_fetch_empty = Settings()
+    settings_fetch_empty.filtering.fetch_protocols = []
+    processor_fetch_empty = ConfigProcessor(settings_fetch_empty)
+    filtered_fetch_empty = processor_fetch_empty.filter_configs(configs, use_fetch_rules=True)
+    assert filtered_fetch_empty == configs
 
-    # Test with an empty protocol list (should return all)
-    filtered_empty = config_processor.filter_configs(configs, protocols=[])
-    assert filtered_empty == configs
+    # 2. Test with merge rules (include/exclude)
+    settings_merge = Settings()
+    settings_merge.filtering.merge_include_protocols = {"VMESS", "VLESS"}
+    settings_merge.filtering.merge_exclude_protocols = {"VLESS"}  # exclude should win
+    processor_merge = ConfigProcessor(settings_merge)
+    filtered_merge = processor_merge.filter_configs(configs, use_fetch_rules=False)
+    assert filtered_merge == {"vmess://config1"}
+
+    # Test with no merge rules (should return all)
+    settings_merge_all = Settings()
+    settings_merge_all.filtering.merge_include_protocols = set()
+    settings_merge_all.filtering.merge_exclude_protocols = set()
+    processor_merge_all = ConfigProcessor(settings_merge_all)
+    filtered_merge_all = processor_merge_all.filter_configs(configs, use_fetch_rules=False)
+    assert filtered_merge_all == configs
 
 
 def test_apply_tuning(config_processor: ConfigProcessor):

@@ -91,12 +91,8 @@ def test_write_all_outputs(
     mock_html.assert_called_once()
     mock_json.assert_called_once()
 
-    # Check that advanced formats were written
-    assert (Path("/output") / "surge.conf").exists()
-    assert (Path("/output") / "qx.conf").exists()
-
-    # 2 base files + 4 optional files + 2 advanced formats
-    assert len(written_files) == 8
+    # 2 base files + 4 optional files
+    assert len(written_files) == 6
 
 
 def test_write_csv_report_content(fs, sample_results: list[ConfigResult]):

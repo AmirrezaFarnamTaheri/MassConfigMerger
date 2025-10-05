@@ -24,8 +24,8 @@ from massconfigmerger.config import Settings
 # Do not use proxies when running tests to avoid network issues with local
 # test servers.
 CONFIG = Settings()
-CONFIG.network.HTTP_PROXY = None
-CONFIG.network.SOCKS_PROXY = None
+CONFIG.network.http_proxy = None
+CONFIG.network.socks_proxy = None
 import pytest
 
 @pytest.fixture

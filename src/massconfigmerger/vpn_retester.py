@@ -58,16 +58,17 @@ def load_configs(path: Path) -> List[str]:
 
 def filter_configs(configs: List[str], settings: Settings) -> List[str]:
     """Filter configs based on include/exclude protocol settings."""
-    if settings.filtering.include_protocols is None and settings.filtering.exclude_protocols is None:
+    # Retester uses merge_..._protocols settings for filtering.
+    if settings.filtering.merge_include_protocols is None and settings.filtering.merge_exclude_protocols is None:
         return configs
 
     proc = ConfigProcessor(settings)
     filtered = []
     for cfg in configs:
         proto = proc.categorize_protocol(cfg).upper()
-        if settings.filtering.include_protocols and proto not in settings.filtering.include_protocols:
+        if settings.filtering.merge_include_protocols and proto not in settings.filtering.merge_include_protocols:
             continue
-        if settings.filtering.exclude_protocols and proto in settings.filtering.exclude_protocols:
+        if settings.filtering.merge_exclude_protocols and proto in settings.filtering.merge_exclude_protocols:
             continue
         filtered.append(cfg)
     return filtered
@@ -76,19 +77,17 @@ def filter_configs(configs: List[str], settings: Settings) -> List[str]:
 def save_results(
     results: List[Tuple[str, Optional[float]]],
     settings: Settings,
-    sort: bool,
-    top_n: int,
 ) -> None:
     output_dir = Path(settings.output.output_dir)
     output_dir.mkdir(exist_ok=True)
 
-    if sort:
+    if settings.processing.enable_sorting:
         results.sort(
             key=lambda x: (x[1] is None, x[1] if x[1] is not None else float("inf"))
         )
 
-    if top_n > 0:
-        results = results[:top_n]
+    if settings.processing.top_n > 0:
+        results = results[:settings.processing.top_n]
 
     configs = [c for c, _ in results]
     raw_path = output_dir / "vpn_retested_raw.txt"
@@ -116,8 +115,6 @@ def save_results(
 async def run_retester(
     cfg: Settings,
     input_file: Path,
-    sort: bool,
-    top_n: int,
 ):
     """Asynchronous runner for the retesting functionality."""
     configs = load_configs(input_file)
@@ -129,4 +126,4 @@ async def run_retester(
             for c, p in results
             if p is not None and p * 1000 <= cfg.filtering.max_ping_ms
         ]
-    save_results(results, cfg, sort, top_n)
+    save_results(results, cfg)

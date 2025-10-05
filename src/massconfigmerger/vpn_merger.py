@@ -20,10 +20,7 @@ from .core.source_manager import SourceManager
 async def run_merger(
     cfg: Settings,
     sources_file: Path,
-    protocols: Optional[List[str]] = None,
     resume_file: Optional[Path] = None,
-    sort: bool = True,
-    top_n: int = 0,
 ) -> None:
     """
     Run the VPN merger pipeline.
@@ -31,10 +28,7 @@ async def run_merger(
     Args:
         cfg: The application settings.
         sources_file: The path to the sources file.
-        protocols: A list of protocols to include.
         resume_file: A file to resume from.
-        sort: Whether to sort the results by latency.
-        top_n: The number of top results to keep.
     """
     source_manager = SourceManager(cfg)
     config_processor = ConfigProcessor(cfg)
@@ -49,18 +43,22 @@ async def run_merger(
                 sources = [line.strip() for line in f if line.strip()]
             configs = await source_manager.fetch_sources(sources)
 
-        filtered_configs = config_processor.filter_configs(configs, protocols)
+        filtered_configs = config_processor.filter_configs(configs)
         results = await config_processor.test_configs(filtered_configs)
 
-        if sort:
-            results.sort(
-                key=lambda x: (x[1] is None, x[1] if x[1] is not None else float("inf"))
-            )
+        if cfg.processing.enable_sorting:
+            # Sort by reachability first, then by the chosen metric
+            if cfg.processing.sort_by == "reliability":
+                # Assuming higher reliability score is better
+                sort_key = lambda r: (not r.is_reachable, -r.reliability if r.reliability is not None else 0)
+            else:  # Default to latency
+                sort_key = lambda r: (not r.is_reachable, r.ping_time if r.ping_time is not None else float("inf"))
+            results.sort(key=sort_key)
 
-        if top_n > 0:
-            results = results[:top_n]
+        if cfg.processing.top_n > 0:
+            results = results[:cfg.processing.top_n]
 
-        final_configs = [c for c, _ in results]
+        final_configs = [r.config for r in results]
         output_dir = Path(cfg.output.output_dir)
         output_generator.write_outputs(final_configs, output_dir)
 

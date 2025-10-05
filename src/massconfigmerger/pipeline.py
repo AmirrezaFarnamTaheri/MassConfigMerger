@@ -20,7 +20,6 @@ from .telegram_scraper import scrape_telegram_configs
 
 async def run_aggregation_pipeline(
     cfg: Settings,
-    protocols: Optional[List[str]] = None,
     sources_file: Path = SOURCES_FILE,
     channels_file: Path = CHANNELS_FILE,
     last_hours: int = 24,
@@ -36,7 +35,6 @@ async def run_aggregation_pipeline(
 
     Args:
         cfg: The application settings.
-        protocols: A list of protocols to filter for.
         sources_file: Path to the file containing web sources.
         channels_file: Path to the file containing Telegram channels.
         last_hours: How many hours of Telegram history to scan.
@@ -66,7 +64,7 @@ async def run_aggregation_pipeline(
             configs.update(telegram_configs)
 
         # Filter and process configs
-        filtered_configs = config_processor.filter_configs(configs, protocols)
+        filtered_configs = config_processor.filter_configs(configs, cfg.filtering.fetch_protocols)
         sorted_configs = sorted(list(filtered_configs))
 
         # Write output files

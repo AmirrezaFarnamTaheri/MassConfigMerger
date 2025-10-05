@@ -1,8 +1,11 @@
 ### 🔑 Protocol Types and Defaults
 
-Each server link is classified into a protocol type. Only the following
-protocol names are recognised by the merger and can be used with the
-`--include-protocols` and `--exclude-protocols` options:
+Each server link is classified into a protocol type. The application uses two sets of rules for filtering:
+
+1.  **Fetch Filtering**: When using the `fetch` or `full` command, the `--fetch-protocols` argument (or `fetch_protocols` in `config.yaml`) determines which protocols are collected from sources.
+2.  **Merge/Retest Filtering**: When using the `merge`, `full`, or `retest` command, the `--include-protocols` and `--exclude-protocols` arguments (or their `config.yaml` equivalents) filter the final list of configs before writing the output files.
+
+The following protocol names are recognized and can be used in these settings:
 
 - **VMess**
 - **VLESS**
@@ -19,9 +22,7 @@ protocol names are recognised by the merger and can be used with the
 - **ShadowTLS**
 - **Brook**
 
-Any unrecognised scheme is categorised as **Other**.
-
-Some VPN clients may not recognise every item in this list, and other clients might support additional protocols that are omitted here. Use `--include-protocols` if you need to expand it.
+Any unrecognized scheme is categorized as **Other**. By default, `Other` and `ShadowsocksR` are excluded from the final merged output.
 
 Protocol matching is **case-insensitive**, so links such as `VMESS://example` are treated the same as `vmess://example`.
 

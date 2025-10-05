@@ -8,27 +8,18 @@
 2. **Install the requirements:**
    ```bash
    pip install -r requirements.txt
-   # optional: install the package for CLI commands
+   # Install the package for CLI commands
    pip install -e .
    ```
-   Installing from PyPI works too (`pip install massconfigmerger`) and provides the `aggregator-tool`, `vpn-merger` and `vpn-retester` commands.
 3. **Run `massconfigmerger fetch`** to grab fresh configuration links:
    ```bash
    massconfigmerger fetch --hours 12
-   # or
-   aggregator-tool --hours 12
-   # or
-   python aggregator_tool.py --hours 12
    ```
    > **Quick start:** Run `massconfigmerger full --hours 12` to fetch and merge
    > everything in one step.
 4. **Run `massconfigmerger merge`** to test and merge all configs:
    ```bash
    massconfigmerger merge
-   # or
-   vpn-merger
-   # or
-   python vpn_merger.py
    ```
    Example output showing the new cumulative progress bar:
    ```
@@ -37,11 +28,7 @@
    ```
 5. **Retest existing results** anytime with `massconfigmerger retest`:
    ```bash
-   massconfigmerger retest
-   # or
-   vpn-retester
-   # or
-   python vpn_retester.py
+   massconfigmerger retest output/vpn_subscription_raw.txt
    ```
 6. Import the files in `output/` into your VPN client or share the base64 link.
 
@@ -49,18 +36,18 @@
 
 ```mermaid
 graph TD
-    A[Source lists] --> B[aggregator_tool.py]
+    A[Source lists] --> B[massconfigmerger fetch]
     B --> C[Deduplicate links]
-    C --> D[vpn_merger.py]
+    C --> D[massconfigmerger merge]
     D --> E[Test & sort]
-    E --> F[vpn_retester.py]
+    E --> F[massconfigmerger retest]
     F --> G[(Output files)]
 ```
 The pipeline works as follows:
-1. `aggregator_tool.py` collects subscription URLs from `sources.txt` and `channels.txt`.
+1. `massconfigmerger fetch` collects subscription URLs from `sources.txt` and `channels.txt`.
 2. Duplicate links are removed so each configuration is processed only once.
-3. `vpn_merger.py` downloads every config, tests connectivity and orders the servers by speed.
-4. `vpn_retester.py` can optionally re-check a previous run for up-to-date latency.
+3. `massconfigmerger merge` downloads every config, tests connectivity and orders the servers by speed.
+4. `massconfigmerger retest` can optionally re-check a previous run for up-to-date latency.
 5. All cleaned and sorted files are written to the `output/` folder, ready to import into your VPN client.
 
 
@@ -70,7 +57,7 @@ Build the image and run the merger without installing Python locally:
 
 ```bash
 docker build -t vpn-merger .
-docker run --rm vpn-merger
+docker run --rm vpn-merger massconfigmerger full
 ```
 
 ### Docker Compose
@@ -83,66 +70,44 @@ docker compose build
 docker compose up -d
 ```
 
-By default the `vpn_merger` service runs once a day. Start the optional
-`aggregator` service with:
+By default the `merger` service runs `massconfigmerger merge` once a day. Start the optional
+`aggregator` service to run `massconfigmerger full` periodically:
 
 ```bash
 docker compose --profile aggregator up -d
 ```
-To periodically retest existing results, start `vpn_retester` as well:
+To periodically retest existing results, start `retester` as well:
 
 ```bash
 docker compose --profile retester up -d
 ```
 
-Adjust `MERGE_INTERVAL` (default `86400`) and `AGGREGATE_INTERVAL` (default
-`43200`) in `docker-compose.yml` to change how frequently each script runs.
-
-### Docker Compose / Local Scheduling
-
-Use the included `docker-compose.yml` if you want the merger to run
-automatically on your own machine. It builds the Docker image and repeatedly
-executes `vpn_merger.py`, storing results in the `output/` directory that is
-mounted to your host.
-
-Start it with:
-
-```bash
-docker compose up -d
-```
-
-The container runs the script once a day by default. Set `MERGE_INTERVAL` and
-`AGGREGATE_INTERVAL` in `docker-compose.yml` to change how often the merger and
-aggregator run.
+Adjust `MERGE_INTERVAL` and `AGGREGATE_INTERVAL` in `docker-compose.yml` to change how frequently each script runs.
 
 ## ✨ Key Features & Use Cases
 
 | Feature | Description | Typical Use Case |
 | ------- | ----------- | ---------------- |
-| **Huge Source List** | `sources.txt` includes over 670 public subscription sources and is shared by all tools. | Get a massive selection of servers with a single command. |
+| **Huge Source List** | `sources.txt` includes over 670 public subscription sources. | Get a massive selection of servers with a single command. |
 | **Availability Testing** | Checks each source before downloading. | Skip dead links and save time. |
 | **Connectivity Testing** | Optional TCP checks measure real latency. | Prioritize servers that actually respond. |
 | **Smart Sorting** | Orders the final list by reachability and speed. | Quickly pick the best server in your VPN client. |
 | **Batch Saving** | Periodically saves intermediate results with `--save-every` (default `100`). | Useful on unreliable connections. |
 | **Graceful Interrupt** | Hit `Ctrl+C` to stop early and write any collected configs. | Safe exit without losing progress. |
-| **Protocol Filtering** | Use `--include-protocols` or `--exclude-protocols` to filter by protocol (defaults to the Hiddify list). | Keep only the protocols your client supports. |
+| **Protocol Filtering** | Use `--fetch-protocols` to filter during collection, and `--include-protocols` during merging. | Keep only the protocols your client supports. |
 | **Country Filtering** | Use `--include-country` or `--exclude-country` with a GeoIP database to select specific regions. | Limit servers to preferred countries. |
 | **TLS Fragment / Top N** | Use `--tls-fragment` or `--top-n` to trim the output. | Obscure SNI or keep only the fastest N entries. |
 | **MUX/SMUX Tuning** | `--mux` and `--smux` modify connection multiplexing. | Improve throughput with modern clients. |
 | **Resume from File** | `--resume` loads a previous raw/base64 output before fetching. | Continue a crashed run without starting over. |
 | **Custom Output Dir** | Use `--output-dir` to choose where files are saved. | Organize results anywhere you like. |
 | **Set Test Timeout** | Tune connection checks with `connect_timeout` or `--connect-timeout`. | Useful for slow or distant servers. |
-| **Disable Features** | Flags `--no-url-test`, `--no-sort`, `--no-base64` and `--no-csv` give full control. | Skip slow checks or extra files when not needed. |
+| **Disable Features** | Flags `--no-sort`, `--no-base64` and `--no-csv` give full control. | Skip slow checks or extra files when not needed. |
 | **Max Ping Filter** | Remove configs with latency above `--max-ping` ms. | Keep only fast servers for gaming or streaming. |
 | **Concurrent Limit / Retries** | Tweak network load with `--concurrent-limit` and `--max-retries`. | Prevent crashes on slow networks or strict hosts. |
 | **Logging to File** | Save all output to a file with `--log-file`. | Useful for headless servers or debugging. |
-| **Standalone or Cumulative Batches** | Use `--cumulative-batches` to keep growing files, otherwise each batch only contains new configs. | Flexible automation for heavy runs. |
-| **Strict Split** | Batches are strictly capped at `--save-every` by default. Add `--no-strict-batch` to simply trigger on size. | Control how incremental files are produced. |
-| **Shuffle Sources** | `--shuffle-sources` randomizes the source order. | Helpful when using `--stop-after-found` to avoid bias. |
-| **Sing-box JSON Output** | Every batch also produces `vpn_singbox.json`. | Import directly into modern clients like sing-box/Stash. |
-| **Clash YAML Output** | Generate `clash.yaml` (or `batch_*clash.yaml`) for Clash/Clash Meta users. | Works with any client supporting Clash configs. |
+| **Sing-box JSON Output** | Every run also produces `vpn_singbox.json`. | Import directly into modern clients like sing-box/Stash. |
+| **Clash YAML Output** | Generate `clash.yaml` for Clash/Clash Meta users. | Works with any client supporting Clash configs. |
 | **Surge & QX Output** | `--output-surge FILE` and `--output-qx FILE` create configs for Surge and Quantumult X. | Easily import into iOS clients. |
-| **Hiddify Optimised** | Default protocols match the Hiddify client. | Other clients may reject some entries. |
 
 ### 🔍 Feature Breakdown
 
@@ -168,7 +133,7 @@ aggregator run.
 
 **Protocol Filtering**
 
-> Use `--include-protocols` or `--exclude-protocols` to keep only certain technologies (e.g. just Reality) or remove unwanted ones (like Shadowsocks). By default the scripts remove any config detected as `Other`. Combine with `--tls-fragment` or `--top-n` for even finer control.
+> The `fetch` command uses `--fetch-protocols` to limit what is collected. The `merge` and `retest` commands use `--include-protocols` and `--exclude-protocols` to filter the final output. Combine with `--tls-fragment` or `--top-n` for even finer control.
 
 **Country Filtering**
 
@@ -200,20 +165,19 @@ Past test results are stored in `proxy_history.json`. Use them to order servers
 by stability:
 
 ```bash
-vpn-merger --sort-by reliability
+massconfigmerger merge --sort-by reliability
 ```
 Set a custom path with the `history_file` option in
 [`config.yaml.example`](../config.yaml.example).
-You can also pass `--history-file path.json` on the command line.
 
 ## 🔬 Deep Dive
 
 The script automates a simple but powerful process to create the best possible subscription link from public sources:
 
-1.  **📰 Gathers Sources**: It reads `sources.txt`, which contains over 670 public links where VPN configurations are shared.
+1.  **📰 Gathers Sources**: `massconfigmerger fetch` reads `sources.txt` and `channels.txt`.
 2.  **✅ Tests Source Availability**: It quickly checks each of these links to see which ones are currently online and accessible.
 3.  **📥 Fetches All Configs**: It visits every active link and downloads all the individual VPN server configurations (`VLESS://`, `VMess://`, etc.).
-4.  **⚡ Tests Server Performance**: This is the key step. It attempts a direct connection to each individual server to measure its real-world connection speed (latency/ping). Servers that are offline or too slow are discarded.
+4.  **⚡ Tests Server Performance**: `massconfigmerger merge` attempts a direct connection to each individual server to measure its real-world connection speed (latency/ping). Servers that are offline or too slow are discarded.
 5.  **🧹 Cleans and Sorts**: Finally, it removes any duplicate servers and sorts the remaining, working servers from **fastest to slowest**.
 6.  **📦 Generates Outputs**: It saves this final, sorted list into multiple formats, including the `base64` subscription file that you use in your app.
 7.  **📁 Optional Batch Saving**: With `--save-every` (default `100`), the script periodically saves intermediate results while it runs.
@@ -267,10 +231,10 @@ This is the best method. You will create a personal copy (a "fork") of this repo
 
 1.  Once the workflow is complete (it will have a green checkmark ✓), go back to the main page of your repository (the **`< > Code`** tab).
 2.  You will now see a new `output` folder. Click on it.
-3.  Click on the file named `vpn_subscription_base64.txt` (if you didn't use `--no-base64`).
+3.  Click on the file named `vpn_subscription_base64.txt`.
 4.  On the file view page, click the **`Raw`** button.
 5.  **This is your link\!** The URL in your browser's address bar is your permanent, auto-updating subscription link. Copy it. It will look like this:
-    `https://raw.githubusercontent.com/YOUR_USERNAME/CleanConfigs-SubMerger/main/output/vpn_subscription_base64.txt`
+    `https://raw.githubusercontent.com/YOUR_USERNAME/MassConfigMerger/main/output/vpn_subscription_base64.txt`
 
 This workflow runs automatically every day and commits the latest results to the `output/` folder so your link stays updated.
 
@@ -301,16 +265,16 @@ If you don't have it, download from [python.org](https://www.python.org/download
 In the same terminal, run:
 
 ```bash
-python vpn_merger.py
+massconfigmerger full
 ```
 
-After 5-15 minutes, the `output` folder will appear with your files. To use the output, upload the content of `vpn_subscription_base64.txt` (if created) somewhere (like a private [GitHub Gist](https://gist.github.com/)) and use that file's "Raw" URL.
+After 5-15 minutes, the `output` folder will appear with your files. To use the output, upload the content of `vpn_subscription_base64.txt` somewhere (like a private [GitHub Gist](https://gist.github.com/)) and use that file's "Raw" URL.
 
 ### Method 3: Using Google Colab (Easy, No Setup)
 
 1.  Go to [colab.research.google.com](https://colab.research.google.com) and click **`File`** -\> **`New notebook`**.
-2.  Copy the entire code from the `vpn_merger.py` file in this repository.
-3.  Paste it into the Colab cell and click the "Play" button (▶️).
+2.  In a cell, run `!pip install massconfigmerger`.
+3.  In a new cell, run `!massconfigmerger full`.
 4.  When it finishes, find the `output` folder in the file explorer on the left. Right-click the files to download them. (Like Method 2, you'll need to host the `base64.txt` file's content to get a usable link).
 
 -----
@@ -429,11 +393,10 @@ Users of **Clash** or **Clash Meta** can import the provided `clash.yaml` for a 
 Pass `--output-surge` or `--output-qx` to write files for these apps:
 
 ```bash
-python vpn_merger.py --output-surge surge.conf --output-qx quantumultx.conf
+massconfigmerger merge --output-surge surge.conf --output-qx quantumultx.conf
 ```
 
 The helpers used for this conversion live in
 [`src/massconfigmerger/advanced_converters.py`](../src/massconfigmerger/advanced_converters.py).
 
 -----
-

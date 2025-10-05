@@ -6,16 +6,23 @@ for easy access.
 """
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Dict, List
+from urllib.parse import urlparse
+
+import aiohttp
+
+
+class GistUploadError(Exception):
+    """Custom exception for Gist upload failures."""
+    pass
 
 
 async def upload_files_to_gist(
     paths: List[Path], token: str, *, base_url: str = "https://api.github.com"
 ) -> Dict[str, str]:
     """Upload files as separate private gists and return name->raw_url mapping."""
-    import aiohttp
-    from urllib.parse import urlparse
 
     if not token:
         raise ValueError("GitHub token is required to upload gists")
@@ -34,7 +41,7 @@ async def upload_files_to_gist(
     async with aiohttp.ClientSession(headers=headers, timeout=timeout) as session:
         for path in paths:
             if not path.exists() or not path.is_file():
-                raise RuntimeError(f"Gist upload source is not a file: {path}")
+                raise GistUploadError(f"Gist upload source is not a file: {path}")
             content = path.read_text(encoding="utf-8")
             payload = {
                 "files": {path.name: {"content": content}},
@@ -42,17 +49,18 @@ async def upload_files_to_gist(
                 "description": "MassConfigMerger output",
             }
             async with session.post(base, json=payload) as resp:
-                body = await resp.text()
                 if resp.status >= 400:
-                    raise RuntimeError(f"Gist upload failed for {path.name}: {resp.status} {body}")
+                    body = await resp.text()
+                    raise GistUploadError(f"Gist upload failed for {path.name}: {resp.status} {body}")
                 try:
-                    data = json.loads(body)
+                    data = await resp.json(content_type=None)
                 except Exception as e:
-                    raise RuntimeError(f"Failed to parse Gist response for {path.name}: {body}") from e
+                    body = await resp.text()
+                    raise GistUploadError(f"Failed to parse Gist response for {path.name}: {body}") from e
                 try:
                     raw = data["files"][path.name]["raw_url"]
-                except Exception:
-                    raise RuntimeError(f"Unexpected Gist response for {path.name}: {data}")
+                except (KeyError, TypeError):
+                    raise GistUploadError(f"Unexpected Gist response for {path.name}: {data}")
                 result[path.name] = raw
     return result
 

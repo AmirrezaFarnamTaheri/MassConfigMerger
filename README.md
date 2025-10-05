@@ -36,12 +36,12 @@ This guide is designed for **everyone**, from absolute beginners with no coding 
 
 > **How protocols are filtered**
 >
-> The `protocols` list in `config.yaml` controls which types of links are
-> collected by the `fetch` command.
+> The `fetch_protocols` list in `config.yaml` controls which types of links are
+> collected by the `fetch` command. You can override this with the `--fetch-protocols` argument.
 >
-> The `merge` command applies its own `include_protocols` list from `config.yaml` to drop any unwanted protocols before writing the final files. Adjust this list to match what your VPN client supports or to exclude protocols you don't trust.
+> The `merge` command uses `merge_include_protocols` and `merge_exclude_protocols` from `config.yaml` to filter the final list. Adjust this list to match what your VPN client supports.
 >
-> To keep only a subset you can run:
+> To keep only a subset during a merge, you can run:
 >
 > ```bash
 > massconfigmerger merge --include-protocols VLESS,VMESS

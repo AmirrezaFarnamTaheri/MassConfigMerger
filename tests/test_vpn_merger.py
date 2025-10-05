@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 import pytest
 
 from massconfigmerger.config import Settings
+from massconfigmerger.core.config_processor import ConfigResult
 from massconfigmerger.vpn_merger import run_merger
 
 
@@ -31,8 +32,8 @@ async def test_run_merger_from_sources(
     mock_config_processor.filter_configs.return_value = {"vless://config1", "ss://config2"}
     # Simulate test results: one success, one failure
     mock_config_processor.test_configs = AsyncMock(return_value=[
-        ("vless://config1", 0.1),
-        ("ss://config2", None),
+        ConfigResult(config="vless://config1", protocol="VLESS", ping_time=0.1, is_reachable=True),
+        ConfigResult(config="ss://config2", protocol="SHADOWSOCKS", ping_time=None, is_reachable=False),
     ])
     mock_source_manager.close_session = AsyncMock()
 
@@ -42,11 +43,11 @@ async def test_run_merger_from_sources(
     # Assert
     mock_source_manager.fetch_sources.assert_awaited_once_with(["http://source1"])
     mock_config_processor.filter_configs.assert_called_once_with(
-        {"vless://config1", "ss://config2"}, None
+        {"vless://config1", "ss://config2"}
     )
     mock_config_processor.test_configs.assert_awaited_once_with({"vless://config1", "ss://config2"})
 
-    # Verify that the final configs are sorted correctly (None pings last)
+    # Verify that the final configs are sorted correctly (reachable first)
     mock_output_generator.write_outputs.assert_called_once()
     final_configs = mock_output_generator.write_outputs.call_args[0][0]
     assert final_configs == ["vless://config1", "ss://config2"]
@@ -68,22 +69,25 @@ async def test_run_merger_with_resume(
     """Test the run_merger function when resuming from a file."""
     # Arrange
     settings = Settings()
+    settings.processing.top_n = 1  # Set top_n in settings
     mock_source_manager = MockSourceManager.return_value
     mock_config_processor = MockConfigProcessor.return_value
 
-    mock_config_processor.test_configs = AsyncMock(return_value=[("vless://resume1", 0.2)])
+    mock_config_processor.test_configs = AsyncMock(return_value=[
+        ConfigResult(config="vless://resume1", protocol="VLESS", ping_time=0.2, is_reachable=True)
+    ])
     mock_source_manager.close_session = AsyncMock()
 
     # Act
-    await run_merger(settings, Path("dummy_sources.txt"), resume_file=Path("resume.txt"), top_n=1)
+    await run_merger(settings, Path("dummy_sources.txt"), resume_file=Path("resume.txt"))
 
     # Assert
     # fetch_sources should not be called
-    MockSourceManager.return_value.fetch_sources.assert_not_called()
+    mock_source_manager.fetch_sources.assert_not_called()
 
     # filter_configs should be called with the configs from the resume file
     mock_config_processor.filter_configs.assert_called_once_with(
-        {"vless://resume1", "ss://resume2"}, None
+        {"vless://resume1", "ss://resume2"}
     )
 
     # Check that top_n logic was applied
