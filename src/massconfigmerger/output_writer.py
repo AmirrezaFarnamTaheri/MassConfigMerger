@@ -14,7 +14,7 @@ from typing import Any, Dict, List
 
 import yaml
 
-from .advanced_converters import generate_qx_conf, generate_surge_conf
+from .format_converters_extra import generate_qx_conf, generate_surge_conf
 from .clash_utils import config_to_clash_proxy
 from .config import Settings
 from .core.config_processor import ConfigResult

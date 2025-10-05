@@ -42,7 +42,7 @@ async def scrape_telegram_configs(
     with channels_path.open() as f:
         channels = [
             (
-                line.strip()[len(prefix):]
+                line.strip()[len(prefix) :]
                 if line.strip().startswith(prefix)
                 else line.strip()
             )
@@ -63,25 +63,43 @@ async def scrape_telegram_configs(
         # Expecting proxy like "http://host:port" or "socks5://host:port"
         try:
             from urllib.parse import urlparse
+
             pu = urlparse(proxy)
             if pu.scheme in ("socks5", "socks4"):
                 # Telethon expects (proxy_type, addr, port) or with auth
                 proxy_type = "socks5" if pu.scheme == "socks5" else "socks4"
-                telethon_proxy = (proxy_type, pu.hostname, pu.port, True, pu.username, pu.password)
+                telethon_proxy = (
+                    proxy_type,
+                    pu.hostname,
+                    pu.port,
+                    True,
+                    pu.username,
+                    pu.password,
+                )
             elif pu.scheme in ("http", "https"):
                 # HTTP proxies can be used with socks via PySocks as HTTP
-                telethon_proxy = ("http", pu.hostname, pu.port, True, pu.username, pu.password)
+                telethon_proxy = (
+                    "http",
+                    pu.hostname,
+                    pu.port,
+                    True,
+                    pu.username,
+                    pu.password,
+                )
         except Exception as e:
             logging.debug("Failed to adapt proxy for Telethon: %s", e)
 
     client = TelegramClient(
-        cfg.telegram.session_path, cfg.telegram.api_id, cfg.telegram.api_hash, proxy=telethon_proxy
+        cfg.telegram.session_path,
+        cfg.telegram.api_id,
+        cfg.telegram.api_hash,
+        proxy=telethon_proxy,
     )
     configs: Set[str] = set()
 
     try:
         await client.start()
-        async with aiohttp.ClientSession(proxy=proxy) as session:
+        async with aiohttp.ClientSession() as session:
             for channel in tqdm(channels, desc="Scraping Channels", unit="channel"):
                 try:
                     async for msg in client.iter_messages(channel, offset_date=since):
@@ -92,7 +110,7 @@ async def scrape_telegram_configs(
                                 text2 = await fetch_text(
                                     session,
                                     sub,
-                                    cfg.network.request_timeout,
+                                    timeout=cfg.network.request_timeout,
                                     retries=cfg.network.retry_attempts,
                                     base_delay=cfg.network.retry_base_delay,
                                     proxy=proxy,

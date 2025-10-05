@@ -1,17 +1,19 @@
-"""Main pipeline for aggregating and processing configurations.
+"""Main pipeline for aggregating VPN configurations from multiple sources.
 
 This module provides the primary `run_aggregation_pipeline` function, which
-orchestrates the entire process of fetching, filtering, and writing
-configurations from various sources.
+serves as the orchestrator for the entire 'fetch' operation. It coordinates
+the process of fetching configurations from web sources and Telegram channels,
+filtering them based on specified protocols, and writing the aggregated
+results to various output files.
 """
 from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Set
+from typing import List, Set
 
 from .config import Settings
-from .constants import SOURCES_FILE, CHANNELS_FILE
+from .constants import CHANNELS_FILE, SOURCES_FILE
 from .core.config_processor import ConfigProcessor
 from .core.output_generator import OutputGenerator
 from .core.source_manager import SourceManager
@@ -28,22 +30,28 @@ async def run_aggregation_pipeline(
     prune: bool = True,
 ) -> tuple[Path, list[Path]]:
     """
-    Run the full aggregation pipeline.
+    Run the full aggregation pipeline to fetch and process configurations.
 
-    This involves fetching configs from web sources and Telegram,
-    filtering them, and writing the results to output files.
+    This function coordinates the main steps of the aggregation process:
+    1.  Fetches configurations from web sources listed in `sources_file`.
+    2.  Optionally prunes failing web sources based on `failure_threshold`.
+    3.  Scrapes configurations from Telegram channels listed in `channels_file`.
+    4.  Filters the combined set of configurations based on the protocols
+        specified in the settings.
+    5.  Writes the final, sorted list of configurations to output files.
 
     Args:
-        cfg: The application settings.
-        sources_file: Path to the file containing web sources.
-        channels_file: Path to the file containing Telegram channels.
-        last_hours: How many hours of Telegram history to scan.
-        failure_threshold: Max failures before a web source is pruned.
-        prune: Whether to remove failing web sources.
+        cfg: The application settings object.
+        sources_file: The path to the file containing web source URLs.
+        channels_file: The path to the file containing Telegram channel names.
+        last_hours: The number of recent hours of Telegram history to scan.
+        failure_threshold: The maximum number of consecutive failures before a
+                           web source is considered for pruning.
+        prune: If True, remove failing web sources from the `sources_file`.
 
     Returns:
-        A tuple containing the output directory path and a list of
-        paths to the files that were written.
+        A tuple where the first element is the path to the output directory,
+        and the second element is a list of paths to the files that were written.
     """
     source_manager = SourceManager(cfg)
     config_processor = ConfigProcessor(cfg)
@@ -57,14 +65,16 @@ async def run_aggregation_pipeline(
         configs: Set[str] = await source_manager.fetch_sources(available_sources)
 
         # Scrape configs from Telegram if a channels file is provided
-        if channels_file:
+        if channels_file and channels_file.exists():
             telegram_configs = await scrape_telegram_configs(
                 cfg, channels_file, last_hours
             )
             configs.update(telegram_configs)
 
         # Filter and process configs
-        filtered_configs = config_processor.filter_configs(configs, cfg.filtering.fetch_protocols)
+        filtered_configs = config_processor.filter_configs(
+            configs, use_fetch_rules=True
+        )
         sorted_configs = sorted(list(filtered_configs))
 
         # Write output files
