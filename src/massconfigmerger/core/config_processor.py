@@ -139,23 +139,39 @@ class ConfigProcessor:
     async def _filter_malicious(
         self, results: List[ConfigResult]
     ) -> List[ConfigResult]:
-        """Filter out results with malicious IPs."""
+        """Filter out results with malicious IPs concurrently."""
         if (
             not self.settings.security.apivoid_api_key
             or self.settings.security.blocklist_detection_threshold <= 0
         ):
             return results
 
-        non_malicious = []
-        for result in results:
+        async def _check(result: ConfigResult) -> Optional[ConfigResult]:
+            """Check a single result for malicious IP, with error handling."""
             if not result.is_reachable or not result.host:
-                non_malicious.append(result)
-                continue
+                return result
 
-            ip = await self.tester.resolve_host(result.host)
-            if not await self.blocklist_checker.is_malicious(ip):
-                non_malicious.append(result)
-        return non_malicious
+            ip = None
+            try:
+                ip = await self.tester.resolve_host(result.host)
+            except Exception as exc:
+                logging.debug("Failed to resolve host %s: %s", result.host, exc)
+                return result  # Keep config if DNS fails
+
+            if not ip:
+                return result  # Keep config if host cannot be resolved
+
+            try:
+                if await self.blocklist_checker.is_malicious(ip):
+                    return None  # Discard if malicious
+                return result  # Keep if not malicious
+            except Exception as exc:
+                logging.debug("Blocklist check failed for %s: %s", ip, exc)
+                return result  # Keep config if blocklist check fails
+
+        tasks = [_check(r) for r in results]
+        checked_results = await asyncio.gather(*tasks)
+        return [res for res in checked_results if res is not None]
 
     async def test_configs(
         self, configs: Set[str], history: dict | None = None

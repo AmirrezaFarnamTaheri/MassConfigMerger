@@ -112,34 +112,41 @@ def report():
 
 
 @app.route("/history")
-def history():
+async def history():
     """Display the proxy history from the database."""
     cfg = load_cfg()
     db = Database(cfg.output.history_db_file)
 
-    async def get_history():
+    try:
         await db.connect()
         history_data = await db.get_proxy_history()
+    finally:
         await db.close()
-        return history_data
 
-    history_data = asyncio.run(get_history())
+    def _safe_ratio(stats: dict) -> float:
+        try:
+            succ = int(stats.get("successes", 0) or 0)
+            fail = int(stats.get("failures", 0) or 0)
+            total = succ + fail
+            return (succ / total) if total > 0 else 0.0
+        except (ValueError, TypeError):
+            return 0.0
 
     sorted_history = sorted(
         history_data.items(),
-        key=lambda item: (
-            item[1]["successes"] / (item[1]["successes"] + item[1]["failures"])
-            if (item[1]["successes"] + item[1]["failures"]) > 0
-            else 0
-        ),
+        key=lambda item: _safe_ratio(item[1]),
         reverse=True,
     )
 
     for _, stats in sorted_history:
-        if stats["last_tested"]:
-            stats["last_tested"] = datetime.fromtimestamp(
-                int(stats["last_tested"])
-            ).strftime("%Y-%m-%d %H:%M:%S")
+        ts = stats.get("last_tested")
+        if ts:
+            try:
+                stats["last_tested"] = datetime.fromtimestamp(int(ts)).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+            except (ValueError, TypeError, OSError):
+                stats["last_tested"] = "N/A"
         else:
             stats["last_tested"] = "N/A"
 
@@ -170,11 +177,14 @@ def history():
             {% for key, stats in history %}
             <tr>
                 <td>{{ key }}</td>
-                <td>{{ stats.successes }}</td>
-                <td>{{ stats.failures }}</td>
+                <td>{{ stats.get("successes", "N/A") }}</td>
+                <td>{{ stats.get("failures", "N/A") }}</td>
                 <td>
-                    {% if (stats.successes + stats.failures) > 0 %}
-                        {{ "%.2f"|format(stats.successes * 100 / (stats.successes + stats.failures)) }}%
+                    {% set succ = stats.get("successes", 0) or 0 %}
+                    {% set fail = stats.get("failures", 0) or 0 %}
+                    {% set total = succ + fail %}
+                    {% if total > 0 %}
+                        {{ "%.2f"|format(succ * 100 / total) }}%
                     {% else %}
                         0.00%
                     {% endif %}

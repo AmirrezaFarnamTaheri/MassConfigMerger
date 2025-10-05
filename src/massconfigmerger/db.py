@@ -7,10 +7,12 @@ from typing import Dict, Optional
 
 class Database:
     def __init__(self, db_path: Path):
-        self.db_path = db_path
+        self.db_path = db_path.resolve()
         self.conn: Optional[aiosqlite.Connection] = None
 
     async def connect(self):
+        if not self.db_path.parent.is_dir():
+            raise ValueError(f"Database directory not found: {self.db_path.parent}")
         self.conn = await aiosqlite.connect(self.db_path)
         await self.conn.execute(
             """
@@ -47,22 +49,21 @@ class Database:
         if not self.conn:
             await self.connect()
 
-        cursor = await self.conn.execute("SELECT successes, failures FROM proxy_history WHERE key = ?", (key,))
-        row = await cursor.fetchone()
-
-        if row:
-            successes, failures = row
-            if success:
-                successes += 1
-            else:
-                failures += 1
-            await self.conn.execute(
-                "UPDATE proxy_history SET successes = ?, failures = ?, last_tested = strftime('%s', 'now') WHERE key = ?",
-                (successes, failures, key),
-            )
+        if success:
+            sql = """
+                INSERT INTO proxy_history (key, successes, failures, last_tested)
+                VALUES (?, 1, 0, strftime('%s', 'now'))
+                ON CONFLICT(key) DO UPDATE SET
+                    successes = successes + 1,
+                    last_tested = strftime('%s', 'now');
+            """
         else:
-            await self.conn.execute(
-                "INSERT INTO proxy_history (key, successes, failures, last_tested) VALUES (?, ?, ?, strftime('%s', 'now'))",
-                (key, 1 if success else 0, 1 if not success else 0),
-            )
+            sql = """
+                INSERT INTO proxy_history (key, successes, failures, last_tested)
+                VALUES (?, 0, 1, strftime('%s', 'now'))
+                ON CONFLICT(key) DO UPDATE SET
+                    failures = failures + 1,
+                    last_tested = strftime('%s', 'now');
+            """
+        await self.conn.execute(sql, (key,))
         await self.conn.commit()
