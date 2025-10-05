@@ -11,7 +11,7 @@ from massconfigmerger.config import Settings
 
 
 @patch("massconfigmerger.commands.pipeline.run_aggregation_pipeline", new_callable=AsyncMock)
-@patch("massconfigmerger.commands.vpn_merger.run_merger")
+@patch("massconfigmerger.commands.vpn_merger.run_merger", new_callable=AsyncMock)
 def test_cli_full_command(mock_run_merger, mock_run_agg_pipeline, fs):
     """Test the 'full' command and its argument parsing."""
     mock_run_agg_pipeline.return_value = (Path("fake_output"), [])
@@ -27,14 +27,16 @@ def test_cli_full_command(mock_run_merger, mock_run_agg_pipeline, fs):
         "--no-sort",
         "--top-n", "100",
         "--include-pattern", "US",
-        "--include-pattern", "UK",
+        "--exclude-pattern", "RU",
         "--fetch-protocols", "vmess,ss",
+        "--include-protocols", "VLESS,TROJAN",
+        "--exclude-protocols", "SHADOWSOCKS",
     ]
 
     main(cli_args)
 
     mock_run_agg_pipeline.assert_awaited_once()
-    mock_run_merger.assert_called_once()
+    mock_run_merger.assert_awaited_once()
 
     agg_args, _ = mock_run_agg_pipeline.call_args
     called_settings: Settings = agg_args[0]
@@ -44,8 +46,10 @@ def test_cli_full_command(mock_run_merger, mock_run_agg_pipeline, fs):
     assert called_settings.processing.enable_sorting is False
     assert called_settings.processing.top_n == 100
     assert "US" in called_settings.filtering.include_patterns
-    assert "UK" in called_settings.filtering.include_patterns
+    assert "RU" in called_settings.filtering.exclude_patterns
     assert set(called_settings.filtering.fetch_protocols) == {"VMESS", "SS"}
+    assert called_settings.filtering.merge_include_protocols == {"VLESS", "TROJAN"}
+    assert called_settings.filtering.merge_exclude_protocols == {"SHADOWSOCKS"}
 
 
 @patch("massconfigmerger.commands.pipeline.run_aggregation_pipeline", new_callable=AsyncMock)
@@ -64,7 +68,7 @@ def test_cli_merge_command(mock_run_merger, fs):
     fs.create_file("sources.txt")
     main(["merge", "--resume", "my_configs.txt"])
     mock_run_merger.assert_awaited_once()
-    _, kwargs = mock_run_merger.call_args
+    _args, kwargs = mock_run_merger.call_args
     assert kwargs["resume_file"] == Path("my_configs.txt")
 
 
@@ -94,3 +98,34 @@ def test_cli_config_not_found(mock_load_config, fs):
     cfg_instance = args[1]
     assert isinstance(cfg_instance, Settings)
     assert cfg_instance.network.concurrent_limit == 20
+
+
+def test_cli_sources_list_command(fs):
+    """Test the 'sources list' command."""
+    fs.create_file("sources.txt")
+    mock_handler = MagicMock()
+    with patch.dict("massconfigmerger.cli.SOURCES_HANDLERS", {"list": mock_handler}):
+        main(["sources", "--sources-file", "sources.txt", "list"])
+    mock_handler.assert_called_once()
+
+
+def test_cli_sources_add_command(fs):
+    """Test the 'sources add' command."""
+    fs.create_file("sources.txt")
+    mock_handler = MagicMock()
+    with patch.dict("massconfigmerger.cli.SOURCES_HANDLERS", {"add": mock_handler}):
+        main(["sources", "--sources-file", "sources.txt", "add", "http://example.com/source"])
+    mock_handler.assert_called_once()
+    args = mock_handler.call_args[0][0]
+    assert args.url == "http://example.com/source"
+
+
+def test_cli_sources_remove_command(fs):
+    """Test the 'sources remove' command."""
+    fs.create_file("sources.txt", contents="http://example.com/source\n")
+    mock_handler = MagicMock()
+    with patch.dict("massconfigmerger.cli.SOURCES_HANDLERS", {"remove": mock_handler}):
+        main(["sources", "--sources-file", "sources.txt", "remove", "http://example.com/source"])
+    mock_handler.assert_called_once()
+    args = mock_handler.call_args[0][0]
+    assert args.url == "http://example.com/source"

@@ -66,7 +66,7 @@ filtering:
 output:
   output_dir: "output"
   log_dir: "logs"
-  history_file: "proxy_history.json"
+  history_db_file: "proxy_history.db"
   write_base64: true
   write_singbox: true
   write_clash: true

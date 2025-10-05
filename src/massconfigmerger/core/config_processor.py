@@ -112,12 +112,18 @@ class ConfigProcessor:
                 filtered.add(cfg)
             return filtered
 
-    async def _test_config(self, cfg: str) -> ConfigResult:
+    async def _test_config(self, cfg: str, history: dict) -> ConfigResult:
         """Test a single configuration and return a ConfigResult."""
         host, port = config_normalizer.extract_host_port(cfg)
         ping_time = None
         if host and port:
             ping_time = await self.tester.test_connection(host, port)
+
+        key = f"{host}:{port}"
+        stats = history.get(key)
+        reliability = None
+        if stats and (stats["successes"] + stats["failures"]) > 0:
+            reliability = stats["successes"] / (stats["successes"] + stats["failures"])
 
         return ConfigResult(
             config=cfg,
@@ -125,11 +131,12 @@ class ConfigProcessor:
             host=host,
             port=port,
             ping_time=ping_time,
-            is_reachable=ping_time is not None
+            is_reachable=ping_time is not None,
+            reliability=reliability,
         )
 
     async def test_configs(
-        self, configs: Set[str]
+        self, configs: Set[str], history: dict | None = None
     ) -> List[ConfigResult]:
         """
         Test a list of configurations for connectivity and latency.
@@ -139,16 +146,19 @@ class ConfigProcessor:
 
         Args:
             configs: A set of configuration strings to test.
+            history: The proxy history from the database.
 
         Returns:
             A list of `ConfigResult` objects for the tested configurations.
         """
+        if history is None:
+            history = {}
         semaphore = asyncio.Semaphore(self.settings.network.concurrent_limit)
 
         async def safe_worker(cfg: str) -> Optional[ConfigResult]:
             async with semaphore:
                 try:
-                    return await self._test_config(cfg)
+                    return await self._test_config(cfg, history)
                 except Exception as exc:
                     logging.debug("test_configs worker failed for %s: %s", cfg, exc)
                     return None

@@ -160,9 +160,9 @@ class OutputSettings(BaseModel):
     log_file: Optional[Path] = Field(
         None, description="Path to a specific file for logging, instead of a directory."
     )
-    history_file: Path = Field(
-        Path("proxy_history.json"),
-        description="File to store proxy connection history for reliability scoring.",
+    history_db_file: Path = Field(
+        Path("proxy_history.db"),
+        description="SQLite database file to store proxy connection history for reliability scoring.",
     )
     write_base64: bool = Field(
         True, description="Whether to write a base64-encoded subscription file."

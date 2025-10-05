@@ -270,7 +270,7 @@ If your network requires using an HTTP or SOCKS proxy, you can provide the setti
 
 ### Sorting by Reliability
 
-Use `massconfigmerger merge --sort-by reliability` to rank servers by past success rates recorded in `proxy_history.json`.
+Use `massconfigmerger merge --sort-by reliability` to rank servers by past success rates recorded in `proxy_history.db`.
 
 ### Regex Filtering
 

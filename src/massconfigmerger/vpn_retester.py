@@ -21,15 +21,19 @@ from .config import Settings
 from .core import config_normalizer
 from .core.config_processor import ConfigProcessor, ConfigResult
 from .core.utils import get_sort_key
+from .db import Database
 
 
-async def _test_config(proc: ConfigProcessor, cfg: str) -> ConfigResult:
+async def _test_config(
+    proc: ConfigProcessor, cfg: str, history: dict
+) -> ConfigResult:
     """
     Test a single configuration and return a ConfigResult object.
 
     Args:
         proc: The ConfigProcessor instance to use for testing.
         cfg: The configuration string to test.
+        history: The proxy history from the database.
 
     Returns:
         A ConfigResult object containing the test results.
@@ -41,6 +45,12 @@ async def _test_config(proc: ConfigProcessor, cfg: str) -> ConfigResult:
             proc.test_connection(host, port), proc.lookup_country(host)
         )
 
+    key = f"{host}:{port}"
+    stats = history.get(key)
+    reliability = None
+    if stats and (stats["successes"] + stats["failures"]) > 0:
+        reliability = stats["successes"] / (stats["successes"] + stats["failures"])
+
     return ConfigResult(
         config=cfg,
         is_reachable=ping is not None,
@@ -49,11 +59,12 @@ async def _test_config(proc: ConfigProcessor, cfg: str) -> ConfigResult:
         host=host,
         port=port,
         country=country,
+        reliability=reliability,
     )
 
 
 async def retest_configs(
-    configs: List[str], settings: Settings
+    configs: List[str], settings: Settings, history: dict
 ) -> List[ConfigResult]:
     """
     Test a list of configurations concurrently for connectivity and latency.
@@ -61,6 +72,7 @@ async def retest_configs(
     Args:
         configs: A list of configuration strings to test.
         settings: The application settings.
+        history: The proxy history from the database.
 
     Returns:
         A list of ConfigResult objects with the test results.
@@ -70,7 +82,7 @@ async def retest_configs(
 
     async def worker(cfg: str) -> ConfigResult:
         async with semaphore:
-            return await _test_config(proc, cfg)
+            return await _test_config(proc, cfg, history)
 
     tasks = [asyncio.create_task(worker(c)) for c in configs]
     try:
@@ -221,9 +233,22 @@ async def run_retester(
         cfg: The application settings.
         input_file: The path to the subscription file to retest.
     """
-    configs = load_configs_from_file(input_file)
-    configs = filter_configs_by_protocol(configs, cfg)
-    results = await retest_configs(configs, cfg)
-    results = filter_results_by_ping(results, cfg)
-    processed_results = process_results(results, cfg)
-    save_retest_results(processed_results, cfg)
+    db = Database(cfg.output.history_db_file)
+    await db.connect()
+    history = await db.get_proxy_history()
+
+    try:
+        configs = load_configs_from_file(input_file)
+        configs = filter_configs_by_protocol(configs, cfg)
+        results = await retest_configs(configs, cfg, history)
+        results = filter_results_by_ping(results, cfg)
+        processed_results = process_results(results, cfg)
+        save_retest_results(processed_results, cfg)
+
+        # Update history
+        for result in processed_results:
+            if result.host and result.port:
+                key = f"{result.host}:{result.port}"
+                await db.update_proxy_history(key, result.is_reachable)
+    finally:
+        await db.close()

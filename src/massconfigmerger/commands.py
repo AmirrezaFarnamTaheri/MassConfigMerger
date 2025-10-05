@@ -37,9 +37,6 @@ def handle_merge(args: argparse.Namespace, cfg: Settings) -> None:
             resume_file=Path(args.resume_file) if args.resume_file else None,
         )
     )
-    else:
-        # Ensure we block until completion when already inside an event loop
-        loop.run_until_complete(_run())
 
 
 def handle_retest(args: argparse.Namespace, cfg: Settings) -> None:
