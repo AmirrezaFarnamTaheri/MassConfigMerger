@@ -63,17 +63,17 @@ async def run_merger(
         filtered_configs = config_processor.filter_configs(configs)
         results = await config_processor.test_configs(filtered_configs, history)
 
+        # Update history for all tested proxies before sorting and trimming
+        for result in results:
+            if result.host and result.port:
+                key = f"{result.host}:{result.port}"
+                await db.update_proxy_history(key, result.is_reachable)
+
         if cfg.processing.enable_sorting:
             results.sort(key=get_sort_key(cfg.processing.sort_by))
 
         if cfg.processing.top_n > 0:
             results = results[: cfg.processing.top_n]
-
-        # Update history
-        for result in results:
-            if result.host and result.port:
-                key = f"{result.host}:{result.port}"
-                await db.update_proxy_history(key, result.is_reachable)
 
         final_configs = [r.config for r in results]
         output_dir = Path(cfg.output.output_dir)

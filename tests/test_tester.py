@@ -20,8 +20,8 @@ async def test_node_tester_test_connection_success(
     settings.processing.enable_url_testing = True
     tester = NodeTester(settings)
 
-    # Make the resolver return the original host to isolate the connection logic
-    mock_resolve_host.return_value = "example.com"
+    # Make the resolver return a valid IP to isolate the connection logic
+    mock_resolve_host.return_value = "1.2.3.4"
 
     mock_reader = AsyncMock()
     mock_writer = MagicMock(spec=asyncio.StreamWriter)
@@ -32,7 +32,7 @@ async def test_node_tester_test_connection_success(
 
     assert latency is not None and latency > 0
     mock_resolve_host.assert_awaited_once_with("example.com")
-    mock_open_connection.assert_awaited_once_with("example.com", 443)
+    mock_open_connection.assert_awaited_once_with("1.2.3.4", 443)
     mock_writer.close.assert_called_once()
     mock_writer.wait_closed.assert_awaited_once()
 
@@ -165,7 +165,7 @@ def test_get_geoip_reader_init_failure(MockReader, caplog):
 @pytest.mark.asyncio
 @patch("massconfigmerger.tester.AsyncResolver")
 async def test_resolve_host_all_failures(MockAsyncResolver, caplog):
-    """Test resolve_host returns the original host if all lookups fail."""
+    """Test resolve_host returns None if all lookups fail."""
     caplog.set_level(logging.DEBUG)
     settings = Settings()
     tester = NodeTester(settings)
@@ -174,9 +174,11 @@ async def test_resolve_host_all_failures(MockAsyncResolver, caplog):
     mock_resolver.resolve.side_effect = Exception("Async DNS Error")
 
     with patch("asyncio.get_running_loop") as mock_loop:
-        mock_loop.return_value.getaddrinfo.side_effect = socket.gaierror("Standard DNS error")
+        mock_loop.return_value.getaddrinfo.side_effect = socket.gaierror(
+            "Standard DNS error"
+        )
         ip = await tester.resolve_host("example.com")
-        assert ip == "example.com"
+        assert ip is None
         assert "Async DNS resolve failed" in caplog.text
         assert "Standard DNS lookup failed" in caplog.text
 
