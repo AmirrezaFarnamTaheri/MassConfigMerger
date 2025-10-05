@@ -30,17 +30,13 @@ def handle_fetch(args: argparse.Namespace, cfg: Settings) -> None:
 
 def handle_merge(args: argparse.Namespace, cfg: Settings) -> None:
     """Handler for the 'merge' command."""
-    async def _run():
-        await vpn_merger.run_merger(
+    asyncio.run(
+        vpn_merger.run_merger(
             cfg,
             sources_file=Path(args.sources),
             resume_file=Path(args.resume_file) if args.resume_file else None,
         )
-
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        asyncio.run(_run())
+    )
     else:
         # Ensure we block until completion when already inside an event loop
         loop.run_until_complete(_run())
