@@ -10,7 +10,7 @@ from massconfigmerger.tester import NodeTester
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.tester.NodeTester._resolve_host", new_callable=AsyncMock)
+@patch("massconfigmerger.tester.NodeTester.resolve_host", new_callable=AsyncMock)
 @patch("asyncio.open_connection")
 async def test_node_tester_test_connection_success(
     mock_open_connection: MagicMock, mock_resolve_host: AsyncMock
@@ -77,7 +77,7 @@ async def test_node_tester_disabled():
 
 @pytest.mark.asyncio
 @patch("massconfigmerger.tester.Reader")
-@patch("massconfigmerger.tester.NodeTester._resolve_host", new_callable=AsyncMock)
+@patch("massconfigmerger.tester.NodeTester.resolve_host", new_callable=AsyncMock)
 async def test_lookup_country_success(
     mock_resolve_host: AsyncMock, MockReader: MagicMock
 ):
@@ -165,7 +165,7 @@ def test_get_geoip_reader_init_failure(MockReader, caplog):
 @pytest.mark.asyncio
 @patch("massconfigmerger.tester.AsyncResolver")
 async def test_resolve_host_all_failures(MockAsyncResolver, caplog):
-    """Test _resolve_host returns the original host if all lookups fail."""
+    """Test resolve_host returns the original host if all lookups fail."""
     caplog.set_level(logging.DEBUG)
     settings = Settings()
     tester = NodeTester(settings)
@@ -175,13 +175,13 @@ async def test_resolve_host_all_failures(MockAsyncResolver, caplog):
 
     with patch("asyncio.get_running_loop") as mock_loop:
         mock_loop.return_value.getaddrinfo.side_effect = socket.gaierror("Standard DNS error")
-        ip = await tester._resolve_host("example.com")
+        ip = await tester.resolve_host("example.com")
         assert ip == "example.com"
         assert "Async DNS resolve failed" in caplog.text
         assert "Standard DNS lookup failed" in caplog.text
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.tester.NodeTester._resolve_host", new_callable=AsyncMock, return_value="1.2.3.4")
+@patch("massconfigmerger.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value="1.2.3.4")
 @patch("asyncio.open_connection", side_effect=OSError("Connection failed"))
 async def test_test_connection_failure(mock_open_connection, mock_resolve_host, caplog):
     """Test that test_connection returns None on connection failure."""
@@ -194,7 +194,7 @@ async def test_test_connection_failure(mock_open_connection, mock_resolve_host, 
 
 @pytest.mark.asyncio
 @patch("massconfigmerger.tester.Reader")
-@patch("massconfigmerger.tester.NodeTester._resolve_host", new_callable=AsyncMock, return_value="1.2.3.4")
+@patch("massconfigmerger.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value="1.2.3.4")
 async def test_lookup_country_geoip_error(mock_resolve_host, MockReader, caplog):
     """Test that lookup_country returns None if the GeoIP lookup fails."""
     caplog.set_level(logging.DEBUG)
@@ -234,7 +234,7 @@ def test_geoip_not_installed():
 @patch("massconfigmerger.tester.AsyncResolver", None)
 @pytest.mark.asyncio
 async def test_aiodns_not_installed():
-    """Test that _resolve_host uses standard DNS if aiodns is not installed."""
+    """Test that resolve_host uses standard DNS if aiodns is not installed."""
     settings = Settings()
     tester = NodeTester(settings)
 
@@ -242,6 +242,6 @@ async def test_aiodns_not_installed():
         mock_loop.return_value.getaddrinfo = AsyncMock(return_value=[
             (None, None, None, None, ("1.2.3.4", 0))
         ])
-        ip = await tester._resolve_host("example.com")
+        ip = await tester.resolve_host("example.com")
         assert ip == "1.2.3.4"
         mock_loop.return_value.getaddrinfo.assert_awaited_once()

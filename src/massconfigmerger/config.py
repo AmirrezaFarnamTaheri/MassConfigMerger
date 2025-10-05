@@ -195,6 +195,18 @@ class OutputSettings(BaseModel):
     )
 
 
+class SecuritySettings(BaseModel):
+    """Settings for security-related features like blocklist checking."""
+
+    apivoid_api_key: Optional[str] = Field(
+        None, description="API key for APIVoid IP Reputation API."
+    )
+    blocklist_detection_threshold: int = Field(
+        1,
+        description="Number of blacklist detections required to consider an IP malicious. 0 to disable.",
+    )
+
+
 class ProcessingSettings(BaseModel):
     """Settings for controlling the processing, sorting, and testing of configurations."""
 
@@ -255,6 +267,7 @@ class Settings(BaseSettings):
     filtering: FilteringSettings = Field(default_factory=FilteringSettings)
     output: OutputSettings = Field(default_factory=OutputSettings)
     processing: ProcessingSettings = Field(default_factory=ProcessingSettings)
+    security: SecuritySettings = Field(default_factory=SecuritySettings)
 
     config_file: Optional[Path] = Field(default=None, exclude=True)
 

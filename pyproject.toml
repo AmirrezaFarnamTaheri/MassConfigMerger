@@ -23,7 +23,8 @@ dependencies = [
     "pydantic>=2",
     "pydantic-settings",
     "tqdm",
-    "flask"
+    "flask",
+    "aiosqlite"
 ]
 
 [project.scripts]

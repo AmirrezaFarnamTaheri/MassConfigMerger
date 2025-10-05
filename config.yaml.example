@@ -88,3 +88,10 @@ processing:
   geoip_db: null # e.g., "/path/to/GeoLite2-Country.mmdb"
   resume_file: null
   max_retries: 3
+
+# Settings for security features
+security:
+  # API key for APIVoid IP Reputation API. Get a free key at https://www.apivoid.com/
+  apivoid_api_key: null
+  # Number of blacklist detections required to consider an IP malicious. 0 to disable.
+  blocklist_detection_threshold: 1

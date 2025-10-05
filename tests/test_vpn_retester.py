@@ -149,6 +149,7 @@ def test_save_retest_results(
 
 
 @pytest.mark.asyncio
+@patch("massconfigmerger.vpn_retester.Database")
 @patch("massconfigmerger.vpn_retester.load_configs_from_file")
 @patch("massconfigmerger.vpn_retester.filter_configs_by_protocol")
 @patch("massconfigmerger.vpn_retester.retest_configs")
@@ -162,31 +163,58 @@ async def test_run_retester_flow(
     mock_retest: AsyncMock,
     mock_filter_proto: MagicMock,
     mock_load: MagicMock,
+    mock_db: MagicMock,
 ):
     """Test the main flow of the run_retester function."""
     # Arrange
     settings = Settings()
+    mock_db_instance = mock_db.return_value
+    mock_db_instance.connect = AsyncMock()
+    mock_db_instance.get_proxy_history = AsyncMock(return_value={})
+    mock_db_instance.close = AsyncMock()
+    mock_db_instance.update_proxy_history = AsyncMock()
+
     mock_load.return_value = ["c1", "c2", "c3"]
     mock_filter_proto.return_value = ["c1", "c2"]
-    mock_retest.return_value = [ConfigResult(config="c1", protocol="VLESS"), ConfigResult(config="c2", protocol="VLESS")]
-    mock_filter_ping.return_value = [ConfigResult(config="c1", protocol="VLESS")]
+    mock_retest.return_value = [
+        ConfigResult(
+            config="c1", protocol="VLESS", is_reachable=True, host="h1", port=1
+        ),
+        ConfigResult(
+            config="c2", protocol="VLESS", is_reachable=False, host="h2", port=2
+        ),
+    ]
+    mock_filter_ping.return_value = [
+        ConfigResult(config="c1", protocol="VLESS", is_reachable=True, host="h1", port=1)
+    ]
     mock_process.return_value = [
-        ConfigResult(config="c1_processed", protocol="VLESS")
+        ConfigResult(
+            config="c1_processed",
+            protocol="VLESS",
+            is_reachable=True,
+            host="h1",
+            port=1,
+        )
     ]
 
     # Act
     await run_retester(settings, Path("dummy.txt"))
 
     # Assert
+    mock_db_instance.connect.assert_awaited_once()
     mock_load.assert_called_once()
     mock_filter_proto.assert_called_once()
-    mock_retest.assert_awaited_once()
+    mock_retest.assert_awaited_once_with(
+        ["c1", "c2"], settings, {}
+    )
     mock_filter_ping.assert_called_once()
     mock_process.assert_called_once()
     mock_save.assert_called_once()
     final_results = mock_save.call_args[0][0]
     assert len(final_results) == 1
     assert final_results[0].config == "c1_processed"
+    mock_db_instance.update_proxy_history.assert_awaited()
+    mock_db_instance.close.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -209,7 +237,7 @@ async def test_retest_configs(
     configs = ["config1_valid", "config2_invalid"]
 
     # Act
-    results = await retest_configs(configs, settings)
+    results = await retest_configs(configs, settings, history={})
 
     # Assert
     assert len(results) == 2
