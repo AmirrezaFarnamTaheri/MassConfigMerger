@@ -17,7 +17,7 @@ from typing import Callable, Dict
 from . import cli_args, commands
 try:
     from .config import Settings, load_config
-except Exception:
+except ImportError:
     from .config import Settings  # fallback
     def load_config(path=None):
         import logging
