@@ -15,7 +15,14 @@ from pathlib import Path
 from typing import Callable, Dict
 
 from . import cli_args, commands
-from .config import Settings, load_config
+try:
+    from .config import Settings, load_config
+except Exception:
+    from .config import Settings  # fallback
+    def load_config(path=None):
+        import logging
+        logging.warning("Falling back to default Settings; load_config unavailable.")
+        return Settings(config_file=path)
 from .core.utils import print_public_source_warning
 from .source_operations import (
     handle_add_source,
