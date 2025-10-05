@@ -86,9 +86,10 @@ class SourceManager:
                 text = await utils.fetch_text(
                     session,
                     url,
-                    self.settings.network.request_timeout,
+                    timeout=self.settings.network.request_timeout,
                     retries=self.settings.network.retry_attempts,
                     base_delay=self.settings.network.retry_base_delay,
+                    proxy=proxy,
                 )
             if not text:
                 logging.warning("Failed to fetch %s", url)
@@ -151,9 +152,10 @@ class SourceManager:
                 text = await utils.fetch_text(
                     session,
                     url,
-                    self.settings.network.request_timeout,
+                    timeout=self.settings.network.request_timeout,
                     retries=self.settings.network.retry_attempts,
                     base_delay=self.settings.network.retry_base_delay,
+                    proxy=proxy,
                 )
             return url, bool(text and utils.parse_configs_from_text(text))
 
@@ -177,13 +179,13 @@ class SourceManager:
             remaining = [u for u in sources if u not in removed]
             with path.open("w") as f:
                 for url in remaining:
-                    f.write(f"{url}\\n")
+                    f.write(f"{url}\n")
 
             if removed:
                 disabled_path = path.with_name("sources_disabled.txt")
                 with disabled_path.open("a") as f:
                     for url in removed:
-                        f.write(f"{url}\\n")
+                        f.write(f"{url}\n")
 
         failures_path.write_text(json.dumps(failures, indent=2))
         logging.info("Valid sources: %d", len(valid_sources))
