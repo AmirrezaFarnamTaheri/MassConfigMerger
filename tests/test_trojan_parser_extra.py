@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from massconfigmerger.core.parsers.trojan import parse
+from massconfigmerger.core.parsers.trojan import TrojanParser
 
 
 def test_parse_trojan_minimal_config():
     """Test parsing a minimal Trojan config link without optional query parameters."""
     config = "trojan://password@example.com:443#MinimalTrojan"
 
-    result = parse(config, 0)
+    parser = TrojanParser(config, 0)
+    result = parser.parse()
 
     assert result is not None
     assert result["name"] == "MinimalTrojan"
@@ -35,7 +36,8 @@ def test_parse_trojan_full_config():
         "&ws-headers=eyJIb3N0IjogImV4YW1wbGUuY29tIn0"  # {"Host": "example.com"}
     )
 
-    result = parse(config, 1)
+    parser = TrojanParser(config, 1)
+    result = parser.parse()
 
     assert result is not None
     assert result["sni"] == "sni.host"

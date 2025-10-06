@@ -60,15 +60,15 @@ def test_create_semantic_hash_failures(config: str):
     """Test that create_semantic_hash still produces a hash on parsing failures."""
     # The function should not raise an exception and should return a valid hash.
     # The exact hash value is not important, only that one is generated.
-    assert isinstance(create_semantic_hash(config), str)
-    assert len(create_semantic_hash(config)) == 16
+    assert isinstance(create_semantic_hash(config, 0), str)
+    assert len(create_semantic_hash(config, 0)) == 16
 
 
 def test_create_semantic_hash_no_host_port():
     """Test create_semantic_hash when host and port cannot be extracted."""
     config = "vless://some-id@?type=ws"
     # When host/port can't be found, it should hash the normalized config string
-    assert create_semantic_hash(config) is not None
+    assert create_semantic_hash(config, 0) is not None
 
 
 def test_apply_tuning_invalid_uri():
@@ -84,8 +84,8 @@ def test_apply_tuning_invalid_uri():
 def test_create_semantic_hash_trojan_no_user_pass():
     """Test create_semantic_hash for a trojan link with no user/pass."""
     config = "trojan://example.com:443"
-    h1 = create_semantic_hash(config)
-    h2 = create_semantic_hash("trojan://password@example.com:443")
+    h1 = create_semantic_hash(config, 0)
+    h2 = create_semantic_hash("trojan://password@example.com:443", 0)
     assert h1 is not None
     assert h1 != h2
 
@@ -111,31 +111,31 @@ def test_create_semantic_hash_oversized_payload():
     """Test create_semantic_hash with oversized base64 payloads."""
     # VLESS/VMess - identifier should be None
     oversized_vless = "vless://" + "a" * 5000
-    assert create_semantic_hash(oversized_vless, max_decode_size=1024) is not None
+    assert create_semantic_hash(oversized_vless, 0, max_decode_size=1024) is not None
 
     # SS - identifier should be None
     oversized_ss = "ss://" + "a" * 5000 + "@host:port"
-    assert create_semantic_hash(oversized_ss, max_decode_size=1024) is not None
+    assert create_semantic_hash(oversized_ss, 0, max_decode_size=1024) is not None
 
 
 def test_create_semantic_hash_trojan_user_and_pass():
     """Test create_semantic_hash for a trojan with user and password."""
     config = "trojan://user:pass@example.com:443"
-    h = create_semantic_hash(config)
+    h = create_semantic_hash(config, 0)
     assert h is not None
 
 
 def test_create_semantic_hash_trojan_only_pass():
     """Test create_semantic_hash for a trojan with only a password."""
     config = "trojan://:pass@example.com:443"
-    h = create_semantic_hash(config)
+    h = create_semantic_hash(config, 0)
     assert h is not None
 
 
 def test_create_semantic_hash_ss_user_pass():
     """Test create_semantic_hash for a non-standard ss link with user:pass."""
     config = "ss://user:pass@example.com:123"
-    h = create_semantic_hash(config)
+    h = create_semantic_hash(config, 0)
     assert h is not None
 
 

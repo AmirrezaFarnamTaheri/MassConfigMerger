@@ -55,6 +55,7 @@ class NodeTester:
         """Initialize the NodeTester."""
         self.config = config
         self.dns_cache: dict[str, str] = {}
+        self.geoip_cache: dict[str, str] = {}
 
     def _get_resolver(self) -> Optional[AsyncResolver]:
         """Lazily initialize and return the asynchronous DNS resolver."""
@@ -123,25 +124,46 @@ class NodeTester:
             logging.debug("Connection test failed for %s:%d: %s", host, port, exc)
             return None
 
-    async def lookup_country(self, host: str) -> Optional[str]:
-        """Return the ISO country code for a host using the GeoIP database."""
+    async def lookup_geo_data(self, host: str) -> tuple[Optional[str], Optional[str], Optional[float], Optional[float]]:
+        """
+        Return the geo-data for a host using the GeoIP database.
+
+        Returns a tuple of (country, isp, latitude, longitude).
+        """
         if not host:
-            return None
+            return None, None, None, None
+        if host in self.geoip_cache:
+            return self.geoip_cache[host]
 
         geoip_reader = self._get_geoip_reader()
         if not geoip_reader:
-            return None
+            return None, None, None, None
 
         try:
             ip = await self.resolve_host(host)
             if not ip or not is_ip_address(ip):
                 logging.debug("Skipping GeoIP lookup; unresolved host: %s", host)
-                return None
-            resp = geoip_reader.country(ip)
-            return resp.country.iso_code
+                return None, None, None, None
+
+            # Use city() for more detailed data, fallback to country()
+            if hasattr(geoip_reader, "city"):
+                resp = geoip_reader.city(ip)
+                country = resp.country.iso_code
+                isp = resp.traits.isp
+                latitude = resp.location.latitude
+                longitude = resp.location.longitude
+            else:
+                resp = geoip_reader.country(ip)
+                country = resp.country.iso_code
+                isp, latitude, longitude = None, None, None
+
+            geo_data = (country, isp, latitude, longitude)
+            if any(geo_data):
+                self.geoip_cache[host] = geo_data
+            return geo_data
         except (OSError, socket.gaierror, AddressNotFoundError) as exc:
             logging.debug("GeoIP lookup failed for %s: %s", host, exc)
-            return None
+            return None, None, None, None
 
     async def _close_resource(self, resource: object | None, name: str):
         """Helper to gracefully close a resource."""

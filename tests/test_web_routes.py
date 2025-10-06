@@ -104,6 +104,13 @@ def test_index_route(client):
     assert b"MassConfigMerger Dashboard" in response.data
 
 
+def test_health_check_route(client):
+    """Test the /health route."""
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json == {"status": "ok"}
+
+
 @patch("massconfigmerger.web.Database")
 def test_history_route_success(MockDatabase, client, fs):
     """Test the /history route with successful data retrieval."""

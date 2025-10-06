@@ -57,6 +57,8 @@ def test_yaml_config_source_invalid_yaml(tmp_path: Path):
 
 def test_load_config_no_project_root(monkeypatch):
     """Test load_config when find_project_root raises FileNotFoundError."""
+    from massconfigmerger.constants import CONFIG_FILE_NAME
+
     monkeypatch.setattr(
         "massconfigmerger.config.find_project_root",
         lambda: (_ for _ in ()).throw(FileNotFoundError),
@@ -66,7 +68,8 @@ def test_load_config_no_project_root(monkeypatch):
         assert isinstance(settings, Settings)
         mock_warning.assert_called_once_with(
             "Could not find project root marker 'pyproject.toml'. "
-            "Default 'config.yaml' will not be loaded."
+            "Default '%s' will not be loaded.",
+            CONFIG_FILE_NAME,
         )
 
 

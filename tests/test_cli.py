@@ -10,15 +10,12 @@ from massconfigmerger.cli import main, build_parser, _update_settings_from_args
 from massconfigmerger.config import Settings
 
 
-@patch("massconfigmerger.commands.pipeline.run_aggregation_pipeline", new_callable=AsyncMock)
-@patch("massconfigmerger.commands.vpn_merger.run_merger", new_callable=AsyncMock)
-def test_cli_full_command(mock_run_merger, mock_run_agg_pipeline, fs):
+@patch("massconfigmerger.commands.services.run_full_pipeline", new_callable=AsyncMock)
+def test_cli_full_command(mock_run_full_pipeline, fs):
     """Test the 'full' command and its argument parsing."""
-    mock_run_agg_pipeline.return_value = (Path("fake_output"), [])
     fs.create_file("config.yaml")
     fs.create_file("sources.txt")
     fs.create_file("channels.txt")
-    fs.create_file("fake_output/vpn_subscription_raw.txt")
 
     cli_args = [
         "full",
@@ -35,11 +32,10 @@ def test_cli_full_command(mock_run_merger, mock_run_agg_pipeline, fs):
 
     main(cli_args)
 
-    mock_run_agg_pipeline.assert_awaited_once()
-    mock_run_merger.assert_awaited_once()
+    mock_run_full_pipeline.assert_awaited_once()
 
-    agg_args, _ = mock_run_agg_pipeline.call_args
-    called_settings: Settings = agg_args[0]
+    _args, kwargs = mock_run_full_pipeline.call_args
+    called_settings: Settings = _args[0]
 
     assert called_settings.network.concurrent_limit == 50
     assert called_settings.network.request_timeout == 25
@@ -52,34 +48,34 @@ def test_cli_full_command(mock_run_merger, mock_run_agg_pipeline, fs):
     assert called_settings.filtering.merge_exclude_protocols == {"SHADOWSOCKS"}
 
 
-@patch("massconfigmerger.commands.pipeline.run_aggregation_pipeline", new_callable=AsyncMock)
-def test_cli_fetch_command(mock_run_agg_pipeline, fs):
+@patch("massconfigmerger.commands.services.run_fetch_pipeline", new_callable=AsyncMock)
+def test_cli_fetch_command(mock_run_fetch_pipeline, fs):
     """Test the 'fetch' command."""
     fs.create_file("config.yaml")
     fs.create_file("sources.txt")
     main(["fetch"])
-    mock_run_agg_pipeline.assert_awaited_once()
+    mock_run_fetch_pipeline.assert_awaited_once()
 
 
-@patch("massconfigmerger.commands.vpn_merger.run_merger", new_callable=AsyncMock)
-def test_cli_merge_command(mock_run_merger, fs):
+@patch("massconfigmerger.commands.services.run_merge_pipeline", new_callable=AsyncMock)
+def test_cli_merge_command(mock_run_merge_pipeline, fs):
     """Test the 'merge' command."""
     fs.create_file("config.yaml")
     fs.create_file("sources.txt")
     main(["merge", "--resume", "my_configs.txt"])
-    mock_run_merger.assert_awaited_once()
-    _args, kwargs = mock_run_merger.call_args
+    mock_run_merge_pipeline.assert_awaited_once()
+    _args, kwargs = mock_run_merge_pipeline.call_args
     assert kwargs["resume_file"] == Path("my_configs.txt")
 
 
-@patch("massconfigmerger.commands.vpn_retester.run_retester", new_callable=AsyncMock)
-def test_cli_retest_command(mock_run_retester, fs):
+@patch("massconfigmerger.commands.services.run_retest_pipeline", new_callable=AsyncMock)
+def test_cli_retest_command(mock_run_retest_pipeline, fs):
     """Test the 'retest' command."""
     fs.create_file("config.yaml")
     fs.create_file("my_configs.txt")
     main(["retest", "my_configs.txt"])
-    mock_run_retester.assert_awaited_once()
-    _, kwargs = mock_run_retester.call_args
+    mock_run_retest_pipeline.assert_awaited_once()
+    _args, kwargs = mock_run_retest_pipeline.call_args
     assert kwargs["input_file"] == Path("my_configs.txt")
 
 
@@ -100,38 +96,34 @@ def test_cli_config_not_found(mock_load_config, fs):
     assert cfg_instance.network.concurrent_limit == 20
 
 
-def test_cli_sources_list_command(fs):
+@patch("massconfigmerger.services.list_sources")
+def test_cli_sources_list_command(mock_list_sources, fs):
     """Test the 'sources list' command."""
     fs.create_file("sources.txt")
-    mock_handler = MagicMock()
-    with patch.dict("massconfigmerger.cli.SOURCES_HANDLERS", {"list": mock_handler}):
+    with patch("massconfigmerger.cli.services.list_sources", mock_list_sources):
         main(["sources", "--sources-file", "sources.txt", "list"])
-    mock_handler.assert_called_once()
+    mock_list_sources.assert_called_once_with(Path("sources.txt"))
 
 
-def test_cli_sources_add_command(fs):
+@patch("massconfigmerger.services.add_new_source")
+def test_cli_sources_add_command(mock_add_source, fs):
     """Test the 'sources add' command."""
     fs.create_file("sources.txt")
-    mock_handler = MagicMock()
-    with patch.dict("massconfigmerger.cli.SOURCES_HANDLERS", {"add": mock_handler}):
+    with patch("massconfigmerger.cli.services.add_new_source", mock_add_source):
         main(["sources", "--sources-file", "sources.txt", "add", "http://example.com/source"])
-    mock_handler.assert_called_once()
-    args = mock_handler.call_args[0][0]
-    assert args.url == "http://example.com/source"
+    mock_add_source.assert_called_once_with(Path("sources.txt"), "http://example.com/source")
 
 
 from massconfigmerger.cli import _parse_protocol_list, _parse_protocol_set
 
 
-def test_cli_sources_remove_command(fs):
+@patch("massconfigmerger.services.remove_existing_source")
+def test_cli_sources_remove_command(mock_remove_source, fs):
     """Test the 'sources remove' command."""
     fs.create_file("sources.txt", contents="http://example.com/source\n")
-    mock_handler = MagicMock()
-    with patch.dict("massconfigmerger.cli.SOURCES_HANDLERS", {"remove": mock_handler}):
+    with patch("massconfigmerger.cli.services.remove_existing_source", mock_remove_source):
         main(["sources", "--sources-file", "sources.txt", "remove", "http://example.com/source"])
-    mock_handler.assert_called_once()
-    args = mock_handler.call_args[0][0]
-    assert args.url == "http://example.com/source"
+    mock_remove_source.assert_called_once_with(Path("sources.txt"), "http://example.com/source")
 
 
 def test_parse_protocol_list_with_list_input():
@@ -182,13 +174,15 @@ def test_main_entrypoint(mock_load_config, mock_handle_fetch, fs):
     assert isinstance(args[1], Settings)
 
 
-def test_cli_sources_unknown_command(fs):
+@patch("massconfigmerger.services.remove_existing_source")
+@patch("massconfigmerger.services.add_new_source")
+@patch("massconfigmerger.services.list_sources")
+def test_cli_sources_unknown_command(mock_list, mock_add, mock_remove, fs):
     """Test the 'sources' command with an unknown subcommand."""
     fs.create_file("sources.txt")
-    mock_list = MagicMock()
-    mock_add = MagicMock()
-    mock_remove = MagicMock()
-    with patch.dict("massconfigmerger.cli.SOURCES_HANDLERS", {"list": mock_list, "add": mock_add, "remove": mock_remove}):
+    with patch("massconfigmerger.cli.services.list_sources", mock_list), \
+         patch("massconfigmerger.cli.services.add_new_source", mock_add), \
+         patch("massconfigmerger.cli.services.remove_existing_source", mock_remove):
         with pytest.raises(SystemExit):
             main(["sources", "--sources-file", "sources.txt", "unknown"])
     mock_list.assert_not_called()

@@ -12,15 +12,17 @@ import base64
 import binascii
 import json
 import logging
+import math
 import random
 import re
-from typing import Any, Callable, Set
+from typing import Any, Callable, Optional, Set
 from urllib.parse import urlparse
 
 import aiohttp
 
 from ..config import Settings
 from ..constants import BASE64_RE, MAX_DECODE_SIZE, PROTOCOL_RE
+from ..exceptions import NetworkError
 from .config_processor import ConfigResult
 
 _warning_printed = False
@@ -29,29 +31,45 @@ _warning_printed = False
 URL_PATTERN = re.compile(r'https?://[^\s<>"]+|www\.[^\s<>"]+')
 
 
-def get_sort_key(sort_by: str) -> Callable[[ConfigResult], Any]:
+def haversine_distance(
+    lat1: float, lon1: float, lat2: float, lon2: float
+) -> float:
+    """Calculate the great-circle distance between two points on the earth."""
+    R = 6371  # Radius of earth in kilometers
+    dLat = math.radians(lat2 - lat1)
+    dLon = math.radians(lon2 - lon1)
+    a = (math.sin(dLat / 2) * math.sin(dLat / 2) +
+         math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) *
+         math.sin(dLon / 2) * math.sin(dLon / 2))
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+
+def get_sort_key(
+    settings: Settings,
+) -> Callable[[ConfigResult], Any]:
     """
     Return a sort key function for sorting ConfigResult objects.
-
-    This function generates a key for Python's `sort` or `sorted` functions
-    based on the desired metric. The sorting always prioritizes reachability,
-    ensuring that unreachable configurations are placed at the end of the list.
-
-    Args:
-        sort_by: The metric to sort by. Supported values are 'latency'
-                 and 'reliability'.
-
-    Returns:
-        A callable that takes a `ConfigResult` object and returns a
-        sortable tuple.
     """
+    sort_by = settings.processing.sort_by
     if sort_by == "reliability":
-        # Sort by reachability (False comes first), then by reliability (higher is better)
         return lambda r: (
             not r.is_reachable,
             -r.reliability if r.reliability is not None else 0,
         )
-    # Default to sorting by latency (lower is better)
+    if sort_by == "proximity":
+        user_lat = settings.processing.proximity_latitude
+        user_lon = settings.processing.proximity_longitude
+        if user_lat is None or user_lon is None:
+            raise ValueError("Proximity sorting requires user latitude and longitude.")
+
+        return lambda r: (
+            not r.is_reachable,
+            haversine_distance(user_lat, user_lon, r.latitude, r.longitude)
+            if r.latitude is not None and r.longitude is not None
+            else float("inf"),
+        )
+    # Default to latency
     return lambda r: (
         not r.is_reachable,
         r.ping_time if r.ping_time is not None else float("inf"),
@@ -264,7 +282,7 @@ async def fetch_text(
     base_delay: float = 1.0,
     jitter: float = 0.1,
     proxy: str | None = None,
-) -> str | None:
+) -> str:
     """
     Fetch text content from a URL with retries and exponential backoff.
 
@@ -282,14 +300,15 @@ async def fetch_text(
         proxy: The proxy URL to use for the request.
 
     Returns:
-        The text content of the response, or None if the request fails
-        after all retries.
+        The text content of the response.
+    Raises:
+        NetworkError: If the request fails after all retries.
     """
     parsed = urlparse(url)
     if not parsed.scheme or not parsed.netloc:
-        logging.debug("fetch_text invalid url: %s", url)
-        return None
+        raise NetworkError(f"Invalid URL for fetch_text: {url}")
 
+    last_exc = None
     attempt = 0
     while attempt < retries:
         try:
@@ -299,17 +318,35 @@ async def fetch_text(
                 if resp.status == 200:
                     return await resp.text(errors="ignore")
                 if 400 <= resp.status < 500 and resp.status != 429:
-                    logging.debug(
-                        "fetch_text non-retry status %s on %s", resp.status, url
+                    raise NetworkError(
+                        f"Non-retryable client error for {url}: {resp.status}"
                     )
-                    return None
+                last_exc = aiohttp.ClientResponseError(
+                    resp.request_info,
+                    resp.history,
+                    status=resp.status,
+                    message=await resp.text(),
+                    headers=resp.headers,
+                )
         except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
             logging.debug("fetch_text error on %s: %s", url, exc)
+            last_exc = exc
 
         attempt += 1
         if attempt >= retries:
             break
-        delay = base_delay * 2 ** (attempt - 1)
-        await asyncio.sleep(delay + random.uniform(0, jitter))
 
-    return None
+        # Exponential backoff with jitter
+        backoff = base_delay * (2 ** (attempt - 1))
+        sleep_duration = backoff + (backoff * random.uniform(0, jitter))
+
+        logging.debug(
+            "Attempt %d/%d failed for %s. Retrying in %.2f seconds...",
+            attempt,
+            retries,
+            url,
+            sleep_duration,
+        )
+        await asyncio.sleep(sleep_duration)
+
+    raise NetworkError(f"Failed to fetch {url} after {retries} retries.") from last_exc

@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from .config import Settings
+from .constants import HTML_REPORT_FILE_NAME, JSON_REPORT_FILE_NAME
 from .core.config_processor import ConfigResult
 
 
@@ -25,7 +26,7 @@ def generate_json_report(
     prefix: str = "",
 ) -> Path:
     """Generate a detailed JSON report."""
-    report_file = output_dir / f"{prefix}vpn_report.json"
+    report_file = output_dir / f"{prefix}{JSON_REPORT_FILE_NAME}"
     report = {
         "generation_info": {
             "timestamp_utc": datetime.now(timezone.utc).isoformat(),
@@ -77,7 +78,7 @@ def generate_html_report(
     footer = "</table></body></html>"
     html_content = header + "".join(rows) + footer
 
-    html_file = output_dir / f"{prefix}vpn_report.html"
+    html_file = output_dir / f"{prefix}{HTML_REPORT_FILE_NAME}"
     tmp_html = html_file.with_suffix(".tmp")
     tmp_html.write_text(html_content, encoding="utf-8")
     tmp_html.replace(html_file)

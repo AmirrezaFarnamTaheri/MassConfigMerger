@@ -15,9 +15,11 @@ from massconfigmerger.vpn_merger import run_merger
 @patch("massconfigmerger.vpn_merger.SourceManager")
 @patch("massconfigmerger.vpn_merger.ConfigProcessor")
 @patch("massconfigmerger.vpn_merger.OutputGenerator")
+@patch("massconfigmerger.vpn_merger.pipeline.test_configs", new_callable=AsyncMock)
 @patch("pathlib.Path.open", new_callable=mock_open, read_data="http://source1")
 async def test_run_merger_from_sources(
     mock_open_file: MagicMock,
+    mock_test_configs: AsyncMock,
     MockOutputGenerator: MagicMock,
     MockConfigProcessor: MagicMock,
     MockSourceManager: MagicMock,
@@ -29,7 +31,6 @@ async def test_run_merger_from_sources(
     mock_db = MockDatabase.return_value
     mock_db.connect = AsyncMock()
     mock_db.get_proxy_history = AsyncMock(return_value={})
-    mock_db.update_proxy_history = AsyncMock()
     mock_db.close = AsyncMock()
 
     mock_source_manager = MockSourceManager.return_value
@@ -44,30 +45,29 @@ async def test_run_merger_from_sources(
         "ss://config2",
     }
     # Simulate test results: one success, one failure
-    mock_config_processor.test_configs = AsyncMock(
-        return_value=[
-            ConfigResult(
-                config="vless://config1",
-                protocol="VLESS",
-                ping_time=0.1,
-                is_reachable=True,
-                host="host1",
-                port=443,
-            ),
-            ConfigResult(
-                config="ss://config2",
-                protocol="SHADOWSOCKS",
-                ping_time=None,
-                is_reachable=False,
-                host="host2",
-                port=443,
-            ),
-        ]
-    )
+    mock_test_configs.return_value = [
+        ConfigResult(
+            config="vless://config1",
+            protocol="VLESS",
+            ping_time=0.1,
+            is_reachable=True,
+            host="host1",
+            port=443,
+        ),
+        ConfigResult(
+            config="ss://config2",
+            protocol="SHADOWSOCKS",
+            ping_time=None,
+            is_reachable=False,
+            host="host2",
+            port=443,
+        ),
+    ]
     mock_source_manager.close_session = AsyncMock()
 
-    # Act
-    await run_merger(settings, Path("sources.txt"))
+    with patch("massconfigmerger.processing.pipeline.sort_and_trim_results", side_effect=lambda r, c: sorted(r, key=lambda x: not x.is_reachable)):
+        # Act
+        await run_merger(settings, Path("sources.txt"))
 
     # Assert
     mock_db.connect.assert_awaited_once()
@@ -75,10 +75,9 @@ async def test_run_merger_from_sources(
     mock_config_processor.filter_configs.assert_called_once_with(
         {"vless://config1", "ss://config2"}
     )
-    mock_config_processor.test_configs.assert_awaited_once_with(
-        {"vless://config1", "ss://config2"}, {}
+    mock_test_configs.assert_awaited_once_with(
+        list({"vless://config1", "ss://config2"}), settings, {}, mock_db
     )
-    mock_db.update_proxy_history.assert_awaited()
     # Verify that the final configs are sorted correctly (reachable first)
     mock_output_generator.write_outputs.assert_called_once()
     final_configs = mock_output_generator.write_outputs.call_args[0][0]
@@ -93,11 +92,13 @@ async def test_run_merger_from_sources(
 @patch("massconfigmerger.vpn_merger.SourceManager")
 @patch("massconfigmerger.vpn_merger.ConfigProcessor")
 @patch("massconfigmerger.vpn_merger.OutputGenerator")
+@patch("massconfigmerger.vpn_merger.pipeline.test_configs", new_callable=AsyncMock)
 @patch(
     "pathlib.Path.open", new_callable=mock_open, read_data="vless://resume1\nss://resume2"
 )
 async def test_run_merger_with_resume(
     mock_open_file: MagicMock,
+    mock_test_configs: AsyncMock,
     MockOutputGenerator: MagicMock,
     MockConfigProcessor: MagicMock,
     MockSourceManager: MagicMock,
@@ -110,7 +111,6 @@ async def test_run_merger_with_resume(
     mock_db = MockDatabase.return_value
     mock_db.connect = AsyncMock()
     mock_db.get_proxy_history = AsyncMock(return_value={})
-    mock_db.update_proxy_history = AsyncMock()
     mock_db.close = AsyncMock()
 
     mock_source_manager = MockSourceManager.return_value
@@ -120,22 +120,29 @@ async def test_run_merger_with_resume(
         "ss://resume2",
     }
 
-    mock_config_processor.test_configs = AsyncMock(
-        return_value=[
-            ConfigResult(
-                config="vless://resume1",
-                protocol="VLESS",
-                ping_time=0.2,
-                is_reachable=True,
-                host="host1",
-                port=443,
-            )
-        ]
-    )
+    mock_test_configs.return_value = [
+        ConfigResult(
+            config="vless://resume1",
+            protocol="VLESS",
+            ping_time=0.2,
+            is_reachable=True,
+            host="host1",
+            port=443,
+        ),
+        ConfigResult(
+            config="ss://resume2",
+            protocol="SHADOWSOCKS",
+            ping_time=0.3,
+            is_reachable=True,
+            host="host2",
+            port=443,
+        ),
+    ]
     mock_source_manager.close_session = AsyncMock()
 
     # Act
-    await run_merger(settings, Path("dummy_sources.txt"), resume_file=Path("resume.txt"))
+    with patch("massconfigmerger.processing.pipeline.sort_and_trim_results", side_effect=lambda r, c: sorted(r, key=lambda x: not x.is_reachable)[:c.processing.top_n or None]):
+        await run_merger(settings, Path("dummy_sources.txt"), resume_file=Path("resume.txt"))
 
     # Assert
     mock_db.connect.assert_awaited_once()
@@ -146,8 +153,8 @@ async def test_run_merger_with_resume(
     mock_config_processor.filter_configs.assert_called_once_with(
         {"vless://resume1", "ss://resume2"}
     )
-    mock_config_processor.test_configs.assert_awaited_once_with(
-        {"vless://resume1", "ss://resume2"}, {}
+    mock_test_configs.assert_awaited_once_with(
+        list({"vless://resume1", "ss://resume2"}), settings, {}, mock_db
     )
 
     # Check that top_n logic was applied

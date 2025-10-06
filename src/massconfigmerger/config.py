@@ -22,6 +22,7 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+from .constants import CONFIG_FILE_NAME, HISTORY_DB_FILE_NAME
 from .core.file_utils import find_project_root
 
 
@@ -86,11 +87,18 @@ class NetworkSettings(BaseModel):
     concurrent_limit: int = Field(
         20, description="Maximum number of concurrent HTTP requests."
     )
+    connection_limit: int = Field(
+        100,
+        description="Maximum number of simultaneous TCP connections in the pool. 0 for unlimited.",
+    )
     retry_attempts: int = Field(
         3, description="Number of retry attempts for failed HTTP requests."
     )
     retry_base_delay: float = Field(
         1.0, description="Base delay for exponential backoff between retries."
+    )
+    retry_jitter: float = Field(
+        0.5, description="Amount of random jitter to apply to retry delays (0 to 1)."
     )
     connect_timeout: float = Field(
         3.0, description="Connection timeout for testing individual VPN configs in seconds."
@@ -142,6 +150,12 @@ class FilteringSettings(BaseModel):
     exclude_countries: Optional[Set[str]] = Field(
         None, description="Set of ISO country codes to exclude (e.g., {'IR', 'CN'}). Requires GeoIP."
     )
+    include_isps: Optional[Set[str]] = Field(
+        None, description="Set of ISP names to include (e.g., {'Google', 'Amazon'}). Requires GeoIP."
+    )
+    exclude_isps: Optional[Set[str]] = Field(
+        None, description="Set of ISP names to exclude. Requires GeoIP."
+    )
     max_ping_ms: Optional[int] = Field(
         1000, description="Maximum acceptable ping in milliseconds for a config to be included."
     )
@@ -161,7 +175,7 @@ class OutputSettings(BaseModel):
         None, description="Path to a specific file for logging, instead of a directory."
     )
     history_db_file: Path = Field(
-        Path("proxy_history.db"),
+        Path(HISTORY_DB_FILE_NAME),
         description="SQLite database file to store proxy connection history for reliability scoring.",
     )
     write_base64: bool = Field(
@@ -210,9 +224,15 @@ class SecuritySettings(BaseModel):
 class ProcessingSettings(BaseModel):
     """Settings for controlling the processing, sorting, and testing of configurations."""
 
-    sort_by: Literal["latency", "reliability"] = Field(
+    sort_by: Literal["latency", "reliability", "proximity"] = Field(
         "latency",
-        description="Method for sorting configs ('latency' or 'reliability').",
+        description="Method for sorting configs ('latency', 'reliability', or 'proximity').",
+    )
+    proximity_latitude: Optional[float] = Field(
+        None, description="Latitude for proximity sorting."
+    )
+    proximity_longitude: Optional[float] = Field(
+        None, description="Longitude for proximity sorting."
     )
     enable_sorting: bool = Field(
         True, description="Whether to sort configs by performance."
@@ -302,12 +322,13 @@ def load_config(path: Path | None = None) -> Settings:
     if config_file is None:
         try:
             project_root = find_project_root()
-            default_config_path = project_root / "config.yaml"
+            default_config_path = project_root / CONFIG_FILE_NAME
             if default_config_path.exists():
                 config_file = default_config_path
         except FileNotFoundError:
             logging.warning(
                 "Could not find project root marker 'pyproject.toml'. "
-                "Default 'config.yaml' will not be loaded."
+                "Default '%s' will not be loaded.",
+                CONFIG_FILE_NAME,
             )
     return Settings(config_file=config_file)

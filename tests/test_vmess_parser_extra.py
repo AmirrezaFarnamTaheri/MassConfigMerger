@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import base64
 import json
-from massconfigmerger.core.parsers.vmess import parse
+
+from massconfigmerger.core.parsers.vmess import VmessParser
 
 
 def test_parse_vmess_with_security_key():
@@ -20,7 +21,8 @@ def test_parse_vmess_with_security_key():
     encoded_data = base64.b64encode(json.dumps(vmess_data).encode()).decode()
     config = f"vmess://{encoded_data}"
 
-    result = parse(config, 0)
+    parser = VmessParser(config, 0)
+    result = parser.parse()
 
     assert result is not None
     assert result["tls"] is True
@@ -44,7 +46,8 @@ def test_parse_vmess_with_ws_opts():
     encoded_data = base64.b64encode(json.dumps(vmess_data).encode()).decode()
     config = f"vmess://{encoded_data}"
 
-    result = parse(config, 0)
+    parser = VmessParser(config, 0)
+    result = parser.parse()
 
     assert result is not None
     assert result.get("ws-headers") is not None
@@ -54,7 +57,8 @@ def test_parse_vmess_with_ws_opts():
 def test_parse_vmess_fallback_with_security():
     """Test the fallback vmess parser with the 'security' query parameter."""
     config = "vmess://uuid@example.com:443?security=tls#FallbackSecurity"
-    result = parse(config, 0)
+    parser = VmessParser(config, 0)
+    result = parser.parse()
 
     assert result is not None
     assert result["tls"] is True
@@ -63,7 +67,8 @@ def test_parse_vmess_fallback_with_security():
 def test_parse_vmess_fallback_with_mode():
     """Test the fallback vmess parser with the 'mode' query parameter."""
     config = "vmess://uuid@example.com:80?mode=ws#FallbackMode"
-    result = parse(config, 0)
+    parser = VmessParser(config, 0)
+    result = parser.parse()
 
     assert result is not None
     assert result["network"] == "ws"

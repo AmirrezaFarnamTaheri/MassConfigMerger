@@ -26,3 +26,21 @@ VALID_URL_PREFIXES = (
     "socks://", "socks4://", "socks5://", "http://", "https://", "grpc://",
     "ws://", "wss://", "tcp://", "kcp://", "quic://", "h2://",
 )
+
+# Default file names
+CONFIG_FILE_NAME = "config.yaml"
+SOURCES_FAILURES_FILE_SUFFIX = ".failures.json"
+SOURCES_DISABLED_FILE_NAME = "sources_disabled.txt"
+RAW_SUBSCRIPTION_FILE_NAME = "vpn_subscription_raw.txt"
+BASE64_SUBSCRIPTION_FILE_NAME = "vpn_subscription_base64.txt"
+CLASH_PROXIES_FILE_NAME = "vpn_clash_proxies.yaml"
+CLASH_CONFIG_FILE_NAME = "clash.yaml"
+SINGBOX_CONFIG_FILE_NAME = "vpn_singbox.json"
+JSON_REPORT_FILE_NAME = "vpn_report.json"
+HTML_REPORT_FILE_NAME = "vpn_report.html"
+CSV_REPORT_FILE_NAME = "vpn_detailed.csv"
+RETESTED_RAW_FILE_NAME = "vpn_retested_raw.txt"
+RETESTED_BASE64_FILE_NAME = "vpn_retested_base64.txt"
+RETESTED_CSV_FILE_NAME = "vpn_retested_detailed.csv"
+UPLOAD_LINKS_FILE_NAME = "upload_links.txt"
+HISTORY_DB_FILE_NAME = "proxy_history.db"

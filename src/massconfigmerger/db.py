@@ -44,27 +44,41 @@ class Database:
             }
         return history
 
-    async def update_proxy_history(self, key: str, success: bool):
+    async def add_proxy_history_batch(self, batch: list[tuple[str, bool]]):
+        """
+        Update proxy history in a batch.
+
+        Args:
+            batch: A list of tuples, where each tuple contains
+                   (key, success_status).
+        """
         if not self.conn:
             await self.connect()
 
-        if success:
-            sql = """
-                INSERT INTO proxy_history (key, successes, failures, last_tested)
-                VALUES (?, 1, 0, strftime('%s', 'now'))
-                ON CONFLICT(key) DO UPDATE SET
-                    successes = successes + 1,
-                    last_tested = strftime('%s', 'now');
-            """
-        else:
-            sql = """
-                INSERT INTO proxy_history (key, successes, failures, last_tested)
-                VALUES (?, 0, 1, strftime('%s', 'now'))
-                ON CONFLICT(key) DO UPDATE SET
-                    failures = failures + 1,
-                    last_tested = strftime('%s', 'now');
-            """
-        await self.conn.execute(sql, (key,))
-        await self.conn.commit()
+        successes = [(key,) for key, success in batch if success]
+        failures = [(key,) for key, success in batch if not success]
 
-# End of file
+        async with self.conn.cursor() as cursor:
+            if successes:
+                await cursor.executemany(
+                    """
+                    INSERT INTO proxy_history (key, successes, failures, last_tested)
+                    VALUES (?, 1, 0, strftime('%s', 'now'))
+                    ON CONFLICT(key) DO UPDATE SET
+                        successes = successes + 1,
+                        last_tested = strftime('%s', 'now');
+                    """,
+                    successes,
+                )
+            if failures:
+                await cursor.executemany(
+                    """
+                    INSERT INTO proxy_history (key, successes, failures, last_tested)
+                    VALUES (?, 0, 1, strftime('%s', 'now'))
+                    ON CONFLICT(key) DO UPDATE SET
+                        failures = failures + 1,
+                        last_tested = strftime('%s', 'now');
+                    """,
+                    failures,
+                )
+        await self.conn.commit()

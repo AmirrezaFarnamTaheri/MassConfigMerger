@@ -3,7 +3,11 @@ from __future__ import annotations
 
 import argparse
 
-from .constants import SOURCES_FILE
+from .constants import (
+    BASE64_SUBSCRIPTION_FILE_NAME,
+    CHANNELS_FILE,
+    SOURCES_FILE,
+)
 
 
 def add_shared_arguments(parser: argparse.ArgumentParser, *groups: str):
@@ -30,6 +34,18 @@ def add_shared_arguments(parser: argparse.ArgumentParser, *groups: str):
             action="append",
             help="Regular expression for configs to skip",
         )
+        group.add_argument(
+            "--include-isps",
+            dest="include_isps",
+            type=str,
+            help="Comma-separated list of ISPs to include",
+        )
+        group.add_argument(
+            "--exclude-isps",
+            dest="exclude_isps",
+            type=str,
+            help="Comma-separated list of ISPs to exclude",
+        )
     if "output" in groups:
         group = parser.add_argument_group("output arguments")
         group.add_argument(
@@ -39,7 +55,7 @@ def add_shared_arguments(parser: argparse.ArgumentParser, *groups: str):
             "--no-base64",
             dest="write_base64",
             action="store_false",
-            help="Skip vpn_subscription_base64.txt",
+            help=f"Skip {BASE64_SUBSCRIPTION_FILE_NAME}",
         )
         group.add_argument(
             "--upload-gist",
@@ -55,9 +71,11 @@ def add_fetch_specific_arguments(
     group = parser.add_argument_group(group_name)
     group.add_argument("--bot", action="store_true", help="Run in Telegram bot mode")
     group.add_argument(
-        "--sources", default=str(SOURCES_FILE), help="Path to sources.txt"
+        "--sources", default=str(SOURCES_FILE), help=f"Path to {SOURCES_FILE.name}"
     )
-    group.add_argument("--channels", default="channels.txt", help="Path to channels.txt")
+    group.add_argument(
+        "--channels", default=str(CHANNELS_FILE), help=f"Path to {CHANNELS_FILE.name}"
+    )
     group.add_argument(
         "--hours",
         type=int,
@@ -92,7 +110,7 @@ def add_merge_specific_arguments(
     group = parser.add_argument_group(group_name)
     if add_sources:
         group.add_argument(
-            "--sources", default=str(SOURCES_FILE), help="Path to sources.txt"
+            "--sources", default=str(SOURCES_FILE), help=f"Path to {SOURCES_FILE.name}"
         )
     group.add_argument(
         "--resume",
@@ -108,6 +126,25 @@ def add_merge_specific_arguments(
     )
     group.add_argument(
         "--top-n", type=int, default=0, help="Keep only the N fastest configs"
+    )
+    group.add_argument(
+        "--sort-by",
+        dest="sort_by",
+        type=str,
+        choices=["latency", "reliability", "proximity"],
+        help="Sort by latency, reliability, or proximity",
+    )
+    group.add_argument(
+        "--proximity-latitude",
+        dest="proximity_latitude",
+        type=float,
+        help="Your latitude for proximity sorting",
+    )
+    group.add_argument(
+        "--proximity-longitude",
+        dest="proximity_longitude",
+        type=float,
+        help="Your longitude for proximity sorting",
     )
     group.add_argument(
         "--include-protocols",

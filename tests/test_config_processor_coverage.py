@@ -138,40 +138,40 @@ def test_create_semantic_hash():
     """Test the create_semantic_hash method for various protocols."""
     # VLESS link
     vless_link = "vless://d9bda552-3c67-4d7a-b1a8-2c8c1a7e8a9f@example.com:443?encryption=none&security=tls&type=ws&host=example.com&path=/#VLESS-Test"
-    vless_hash = config_normalizer.create_semantic_hash(vless_link)
+    vless_hash = config_normalizer.create_semantic_hash(vless_link, 0)
 
     # Same VLESS link with different fragment should have the same hash
     vless_link_2 = "vless://d9bda552-3c67-4d7a-b1a8-2c8c1a7e8a9f@example.com:443?encryption=none&security=tls&type=ws&host=example.com&path=/#VLESS-Test-Different-Fragment"
-    vless_hash_2 = config_normalizer.create_semantic_hash(vless_link_2)
+    vless_hash_2 = config_normalizer.create_semantic_hash(vless_link_2, 0)
     assert vless_hash == vless_hash_2
 
     # VLESS with different UUID should have a different hash
     vless_link_3 = "vless://e9bda552-3c67-4d7a-b1a8-2c8c1a7e8a9f@example.com:443?encryption=none&security=tls&type=ws&host=example.com&path=/#VLESS-Test"
-    vless_hash_3 = config_normalizer.create_semantic_hash(vless_link_3)
+    vless_hash_3 = config_normalizer.create_semantic_hash(vless_link_3, 0)
     assert vless_hash != vless_hash_3
 
     # Trojan link
     trojan_link = "trojan://password@trojan.com:443#Trojan-Test"
-    trojan_hash = config_normalizer.create_semantic_hash(trojan_link)
+    trojan_hash = config_normalizer.create_semantic_hash(trojan_link, 0)
 
     # Same Trojan with different fragment
     trojan_link_2 = "trojan://password@trojan.com:443#Trojan-Test-2"
-    trojan_hash_2 = config_normalizer.create_semantic_hash(trojan_link_2)
+    trojan_hash_2 = config_normalizer.create_semantic_hash(trojan_link_2, 0)
     assert trojan_hash == trojan_hash_2
 
     # SS link (base64 encoded user info)
     ss_b64 = base64.b64encode(b"aes-256-gcm:password").decode()
     ss_link = f"ss://{ss_b64}@ss.com:8888#SS-Test"
-    ss_hash = config_normalizer.create_semantic_hash(ss_link)
+    ss_hash = config_normalizer.create_semantic_hash(ss_link, 0)
 
     # Same SS link with different fragment
     ss_link_2 = f"ss://{ss_b64}@ss.com:8888#SS-Test-2"
-    ss_hash_2 = config_normalizer.create_semantic_hash(ss_link_2)
+    ss_hash_2 = config_normalizer.create_semantic_hash(ss_link_2, 0)
     assert ss_hash == ss_hash_2
 
     # A config with no host/port should still produce a hash
     no_host_link = "vless://d9bda552-3c67-4d7a-b1a8-2c8c1a7e8a9f@:?path=/#NoHost"
-    no_host_hash = config_normalizer.create_semantic_hash(no_host_link)
+    no_host_hash = config_normalizer.create_semantic_hash(no_host_link, 0)
     assert isinstance(no_host_hash, str)
 
 

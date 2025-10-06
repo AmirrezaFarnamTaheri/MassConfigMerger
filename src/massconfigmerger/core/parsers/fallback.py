@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
-from .common import sanitize_str
+from .common import BaseParser
 
 
 def parse(config: str, idx: int, scheme: str) -> Optional[Dict[str, Any]]:
@@ -19,7 +19,7 @@ def parse(config: str, idx: int, scheme: str) -> Optional[Dict[str, Any]]:
         A dictionary representing the Clash proxy, or None if parsing fails.
     """
     p = urlparse(config)
-    name = sanitize_str(p.fragment or f"{scheme}-{idx}")
+    name = BaseParser.sanitize_str(p.fragment or f"{scheme}-{idx}")
     if not p.hostname or not p.port:
         return None
 
@@ -29,6 +29,6 @@ def parse(config: str, idx: int, scheme: str) -> Optional[Dict[str, Any]]:
     return {
         "name": name,
         "type": typ,
-        "server": sanitize_str(p.hostname),
+        "server": BaseParser.sanitize_str(p.hostname),
         "port": p.port,
     }

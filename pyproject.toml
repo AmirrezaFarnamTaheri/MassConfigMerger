@@ -45,6 +45,7 @@ dev = [
 ]
 web = [
     "Flask",
+    "prometheus_client",
 ]
 
 [tool.setuptools.packages.find]

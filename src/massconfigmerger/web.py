@@ -7,17 +7,25 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from flask import Flask, render_template_string, send_file
+from flask import Flask, Response, jsonify, render_template_string, send_file
+from prometheus_client import make_wsgi_app
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 from .config import load_config
-from .constants import SOURCES_FILE
+from .constants import (
+    CONFIG_FILE_NAME,
+    HTML_REPORT_FILE_NAME,
+    JSON_REPORT_FILE_NAME,
+    RAW_SUBSCRIPTION_FILE_NAME,
+    SOURCES_FILE,
+)
 from .db import Database
 from .pipeline import run_aggregation_pipeline
 from .vpn_merger import run_merger as run_merger_pipeline
 
 app = Flask(__name__)
 
-CONFIG_PATH = Path("config.yaml")
+CONFIG_PATH = Path(CONFIG_FILE_NAME)
 
 
 def load_cfg():
@@ -63,11 +71,19 @@ def index():
             <li><a href="/merge" class="action-btn">Run Merge</a></li>
             <li><a href="/report" class="report-link">View Latest Report</a></li>
             <li><a href="/history" class="report-link">View Proxy History</a></li>
+            <li><a href="/metrics" class="report-link">View Metrics</a></li>
+            <li><a href="/health" class="report-link">Health Check</a></li>
         </ul>
     </body>
     </html>
     """
     return render_template_string(template)
+
+
+@app.route("/health")
+def health_check():
+    """Return a simple health check response."""
+    return jsonify({"status": "ok"})
 
 
 @app.route("/aggregate")
@@ -84,7 +100,7 @@ def aggregate() -> dict:
 def merge() -> dict:
     """Run the VPN merger using the latest aggregated results."""
     cfg = load_cfg()
-    resume_file = Path(cfg.output.output_dir) / "vpn_subscription_raw.txt"
+    resume_file = Path(cfg.output.output_dir) / RAW_SUBSCRIPTION_FILE_NAME
     if not resume_file.exists():
         return {"error": f"Resume file not found: {resume_file}"}, 404
 
@@ -98,10 +114,10 @@ def merge() -> dict:
 def report():
     """Display the HTML or JSON report."""
     cfg = load_cfg()
-    html_report = Path(cfg.output.output_dir) / "vpn_report.html"
+    html_report = Path(cfg.output.output_dir) / HTML_REPORT_FILE_NAME
     if html_report.exists():
         return send_file(html_report)
-    json_report = Path(cfg.output.output_dir) / "vpn_report.json"
+    json_report = Path(cfg.output.output_dir) / JSON_REPORT_FILE_NAME
     if not json_report.exists():
         return "Report not found", 404
     data = json.loads(json_report.read_text())
@@ -201,10 +217,10 @@ async def history():
 
 def main() -> None:
     """Run the Flask development server."""
+    # Add prometheus wsgi middleware to route /metrics requests
+    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
     app.run(host="0.0.0.0", port=8080)
 
 
 if __name__ == "__main__":
     main()
-
-# End of file
