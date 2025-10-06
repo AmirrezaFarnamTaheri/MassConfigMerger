@@ -379,21 +379,21 @@ def is_safe_url(url: str) -> bool:
         if not hostname or hostname in BLOCKED_HOSTS:
             return False
 
-        # Resolve hostname to all associated IPs and validate each.
         try:
             addrinfos = socket.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP)
         except socket.gaierror:
             return False
 
-        for family, _, _, _, sockaddr in addrinfos:
+        has_safe_ip = False
+        for _, _, _, _, sockaddr in addrinfos:
             ip_str = sockaddr[0] if isinstance(sockaddr, tuple) else None
             if not ip_str:
                 continue
             try:
                 ip = ipaddress.ip_address(ip_str)
             except ValueError:
-                return False
-            # Reject loopback, link-local, private, multicast, unspecified
+                # Skip unparseable entries instead of failing the whole URL
+                continue
             if (
                 ip.is_loopback
                 or ip.is_link_local
@@ -401,7 +401,9 @@ def is_safe_url(url: str) -> bool:
                 or ip.is_multicast
                 or ip.is_unspecified
             ):
-                return False
+                continue
+            has_safe_ip = True
+
+        return has_safe_ip
     except Exception:
         return False
-    return True
