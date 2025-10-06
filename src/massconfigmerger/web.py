@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from flask import Flask, Response, jsonify, render_template_string, send_file
+from flask import Flask, jsonify, render_template_string, send_file
 from prometheus_client import make_wsgi_app
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
@@ -19,6 +19,8 @@ from .constants import (
     RAW_SUBSCRIPTION_FILE_NAME,
     SOURCES_FILE,
 )
+from .core.file_utils import find_project_root
+from .core.file_utils import find_project_root
 from .db import Database
 from .pipeline import run_aggregation_pipeline
 from .vpn_merger import run_merger as run_merger_pipeline
@@ -100,7 +102,9 @@ def aggregate() -> dict:
 def merge() -> dict:
     """Run the VPN merger using the latest aggregated results."""
     cfg = load_cfg()
-    resume_file = Path(cfg.output.output_dir) / RAW_SUBSCRIPTION_FILE_NAME
+    project_root = find_project_root()
+    output_dir = project_root / cfg.output.output_dir
+    resume_file = output_dir / RAW_SUBSCRIPTION_FILE_NAME
     if not resume_file.exists():
         return {"error": f"Resume file not found: {resume_file}"}, 404
 
@@ -114,10 +118,12 @@ def merge() -> dict:
 def report():
     """Display the HTML or JSON report."""
     cfg = load_cfg()
-    html_report = Path(cfg.output.output_dir) / HTML_REPORT_FILE_NAME
+    project_root = find_project_root()
+    output_dir = project_root / cfg.output.output_dir
+    html_report = output_dir / HTML_REPORT_FILE_NAME
     if html_report.exists():
         return send_file(html_report)
-    json_report = Path(cfg.output.output_dir) / JSON_REPORT_FILE_NAME
+    json_report = output_dir / JSON_REPORT_FILE_NAME
     if not json_report.exists():
         return "Report not found", 404
     data = json.loads(json_report.read_text())
@@ -131,7 +137,9 @@ def report():
 async def history():
     """Display the proxy history from the database."""
     cfg = load_cfg()
-    db = Database(cfg.output.history_db_file)
+    project_root = find_project_root()
+    db_path = project_root / cfg.output.history_db_file
+    db = Database(db_path)
 
     try:
         await db.connect()
@@ -196,8 +204,8 @@ async def history():
                 <td>{{ stats.get("successes", "N/A") }}</td>
                 <td>{{ stats.get("failures", "N/A") }}</td>
                 <td>
-                    {% set succ = stats.get("successes", 0) or 0 %}
-                    {% set fail = stats.get("failures", 0) or 0 %}
+                    {% set succ = (stats.get("successes", 0) or 0) | int %}
+                    {% set fail = (stats.get("failures", 0) or 0) | int %}
                     {% set total = succ + fail %}
                     {% if total > 0 %}
                         {{ "%.2f"|format(succ * 100 / total) }}%

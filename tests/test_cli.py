@@ -188,3 +188,15 @@ def test_cli_sources_unknown_command(mock_list, mock_add, mock_remove, fs):
     mock_list.assert_not_called()
     mock_add.assert_not_called()
     mock_remove.assert_not_called()
+
+
+def test_parse_protocol_list_empty_input():
+    """Test _parse_protocol_list with empty and None inputs."""
+    assert _parse_protocol_list(None) == []
+    assert _parse_protocol_list("") == []
+
+
+def test_parse_protocol_set_empty_input():
+    """Test _parse_protocol_set with empty and None inputs."""
+    assert _parse_protocol_set(None) == set()
+    assert _parse_protocol_set("") == set()
