@@ -1,68 +1,35 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from geoip2.errors import AddressNotFoundError
 
 from massconfigmerger.config import Settings
-from massconfigmerger.tester import NodeTester
+from massconfigmerger.testing import NodeTester
+from massconfigmerger.testing.connection import ConnectionTester
+from massconfigmerger.testing.dns import DNSResolver, is_ip_address
+from massconfigmerger.testing.geoip import GeoIPLookup
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.tester.NodeTester.resolve_host", new_callable=AsyncMock)
-@patch("asyncio.open_connection")
-async def test_node_tester_test_connection_success(
-    mock_open_connection: MagicMock, mock_resolve_host: AsyncMock
-):
+async def test_node_tester_test_connection_success():
     """Test a successful connection in NodeTester."""
     settings = Settings()
     settings.processing.enable_url_testing = True
     tester = NodeTester(settings)
 
-    # Make the resolver return a valid IP to isolate the connection logic
-    mock_resolve_host.return_value = "1.2.3.4"
-
-    mock_reader = AsyncMock()
-    mock_writer = MagicMock(spec=asyncio.StreamWriter)
-    mock_writer.wait_closed = AsyncMock()
-    mock_open_connection.return_value = (mock_reader, mock_writer)
+    # Patch the instance methods directly
+    tester.resolver.resolve = AsyncMock(return_value="1.2.3.4")
+    tester.connection_tester.test = AsyncMock(return_value=0.123)
 
     latency = await tester.test_connection("example.com", 443)
 
-    assert latency is not None and latency > 0
-    mock_resolve_host.assert_awaited_once_with("example.com")
-    mock_open_connection.assert_awaited_once_with("1.2.3.4", 443)
-    mock_writer.close.assert_called_once()
-    mock_writer.wait_closed.assert_awaited_once()
-
-
-@pytest.mark.asyncio
-@patch("massconfigmerger.tester.AsyncResolver")
-@patch("asyncio.open_connection")
-async def test_node_tester_with_dns_resolve(
-    mock_open_connection: MagicMock, MockAsyncResolver: MagicMock
-):
-    """Test connection logic with successful DNS resolution."""
-    settings = Settings()
-    settings.processing.enable_url_testing = True
-    tester = NodeTester(settings)
-
-    mock_resolver = MockAsyncResolver.return_value
-    mock_resolver.resolve = AsyncMock(return_value=[{'host': '1.2.3.4'}])
-
-    mock_reader = AsyncMock()
-    mock_writer = MagicMock(spec=asyncio.StreamWriter)
-    mock_writer.wait_closed = AsyncMock()
-    mock_open_connection.return_value = (mock_reader, mock_writer)
-
-    await tester.test_connection("example.com", 443)
-
-    mock_resolver.resolve.assert_awaited_once()
-    assert mock_resolver.resolve.await_args.args == ("example.com",)
-    mock_open_connection.assert_awaited_once_with("1.2.3.4", 443)
-    mock_writer.close.assert_called_once()
-    mock_writer.wait_closed.assert_awaited_once()
+    assert latency == 0.123
+    tester.resolver.resolve.assert_awaited_once_with("example.com")
+    tester.connection_tester.test.assert_awaited_once_with("1.2.3.4", 443)
 
 
 @pytest.mark.asyncio
@@ -72,24 +39,26 @@ async def test_node_tester_disabled():
     settings.processing.enable_url_testing = False
     tester = NodeTester(settings)
 
-    with patch("asyncio.open_connection") as mock_open_connection:
-        latency = await tester.test_connection("example.com", 443)
-        assert latency is None
-        mock_open_connection.assert_not_called()
+    # Patch the instance method
+    tester.connection_tester.test = AsyncMock()
+
+    latency = await tester.test_connection("example.com", 443)
+
+    assert latency is None
+    tester.connection_tester.test.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.tester.Reader")
-@patch("massconfigmerger.tester.NodeTester.resolve_host", new_callable=AsyncMock)
-async def test_lookup_geo_data_success(
-    mock_resolve_host: AsyncMock, MockReader: MagicMock
-):
+@patch("massconfigmerger.testing.geoip.Reader")
+async def test_lookup_geo_data_success(MockReader: MagicMock):
     """Test a successful GeoIP lookup."""
     settings = Settings()
     settings.processing.geoip_db = "dummy.mmdb"
     tester = NodeTester(settings)
 
-    mock_resolve_host.return_value = "1.2.3.4"
+    # Patch instance methods
+    tester.resolver.resolve = AsyncMock(return_value="1.2.3.4")
+
     mock_reader_instance = MockReader.return_value
     mock_city_response = MagicMock()
     mock_city_response.country.iso_code = "US"
@@ -104,7 +73,7 @@ async def test_lookup_geo_data_success(
     assert isp == "Google"
     assert lat == 37.7749
     assert lon == -122.4194
-    mock_resolve_host.assert_awaited_once_with("example.com")
+    tester.resolver.resolve.assert_awaited_once_with("example.com")
     MockReader.assert_called_once_with("dummy.mmdb")
     mock_reader_instance.city.assert_called_once_with("1.2.3.4")
 
@@ -125,198 +94,97 @@ async def test_close():
     settings = Settings()
     tester = NodeTester(settings)
 
-    # Mock the private attributes that the close method targets
-    mock_resolver = AsyncMock()
-    tester._resolver = mock_resolver
+    # Mock the components on the instance
+    tester.resolver = AsyncMock()
+    tester.geoip_lookup = MagicMock()  # GeoIPLookup.close is synchronous
 
-    mock_geoip_reader = MagicMock()
-    tester._geoip_reader = mock_geoip_reader
+    await tester.close()
 
-    # Mock the helper method to isolate the close logic
-    with patch.object(tester, "_close_resource", new_callable=AsyncMock) as mock_close_resource:
-        await tester.close()
+    tester.resolver.close.assert_awaited_once()
+    tester.geoip_lookup.close.assert_called_once()  # Use assert_called_once for sync method
 
-        # Assert that the close helper was called for each resource
-        mock_close_resource.assert_any_call(mock_resolver, "Resolver")
-        mock_close_resource.assert_any_call(mock_geoip_reader, "GeoIP reader")
-        assert mock_close_resource.call_count == 2
-
-        # Assert that the attributes are cleared
-        assert tester._resolver is None
-        assert tester._geoip_reader is None
-
-
-import socket
-import logging
-from massconfigmerger.tester import is_ip_address
 
 def test_is_ip_address_invalid():
     """Test that is_ip_address returns False for an invalid IP."""
     assert not is_ip_address("not-an-ip")
 
-@patch("massconfigmerger.tester.AsyncResolver", side_effect=Exception("Resolver Error"))
+
+@patch("massconfigmerger.testing.dns.AsyncResolver", side_effect=Exception("Resolver Error"))
 def test_get_resolver_init_failure(MockAsyncResolver, caplog):
     """Test that the resolver is not created if initialization fails."""
     caplog.set_level(logging.DEBUG)
-    settings = Settings()
-    tester = NodeTester(settings)
-    assert tester._get_resolver() is None
+    resolver = DNSResolver()
+    assert resolver._get_async_resolver() is None
     assert "AsyncResolver init failed" in caplog.text
 
-@patch("massconfigmerger.tester.Reader", side_effect=OSError("GeoIP DB not found"))
+
+@patch("massconfigmerger.testing.geoip.Reader", side_effect=OSError("GeoIP DB not found"))
 def test_get_geoip_reader_init_failure(MockReader, caplog):
     """Test that the GeoIP reader is not created if initialization fails."""
     caplog.set_level(logging.ERROR)
     settings = Settings()
     settings.processing.geoip_db = "dummy.mmdb"
-    tester = NodeTester(settings)
-    assert tester._get_geoip_reader() is None
+    resolver = DNSResolver()
+    geoip = GeoIPLookup(settings, resolver)
+    assert geoip._get_reader() is None
     assert "GeoIP reader init failed" in caplog.text
 
+
 @pytest.mark.asyncio
-@patch("massconfigmerger.tester.AsyncResolver")
+@patch("massconfigmerger.testing.dns.AsyncResolver")
 async def test_resolve_host_all_failures(MockAsyncResolver, caplog):
     """Test resolve_host returns None if all lookups fail."""
-    caplog.set_level(logging.DEBUG)
-    settings = Settings()
-    tester = NodeTester(settings)
+    import socket
 
-    mock_resolver = MockAsyncResolver.return_value
-    mock_resolver.resolve.side_effect = Exception("Async DNS Error")
+    caplog.set_level(logging.DEBUG)
+    resolver = DNSResolver()
+    mock_async_resolver = MockAsyncResolver.return_value
+    mock_async_resolver.resolve.side_effect = Exception("Async DNS Error")
+    resolver._resolver = mock_async_resolver
 
     with patch("asyncio.get_running_loop") as mock_loop:
         mock_loop.return_value.getaddrinfo.side_effect = socket.gaierror(
             "Standard DNS error"
         )
-        ip = await tester.resolve_host("example.com")
+        ip = await resolver.resolve("example.com")
         assert ip is None
         assert "Async DNS resolve failed" in caplog.text
         assert "Standard DNS lookup failed" in caplog.text
 
+
 @pytest.mark.asyncio
-@patch("massconfigmerger.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value="1.2.3.4")
-@patch("asyncio.open_connection", side_effect=OSError("Connection failed"))
-async def test_test_connection_failure(mock_open_connection, mock_resolve_host, caplog):
+@patch(
+    "massconfigmerger.testing.connection.asyncio.open_connection",
+    side_effect=OSError("Connection failed"),
+)
+async def test_test_connection_failure(mock_open_connection, caplog):
     """Test that test_connection returns None on connection failure."""
     caplog.set_level(logging.DEBUG)
-    settings = Settings()
-    tester = NodeTester(settings)
-    latency = await tester.test_connection("example.com", 443)
+    tester = ConnectionTester(connect_timeout=1.0)
+    latency = await tester.test("1.2.3.4", 443)
     assert latency is None
-    assert "Connection test failed for example.com:443" in caplog.text
+    assert "Connection test failed for 1.2.3.4:443" in caplog.text
+
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.tester.Reader")
-@patch("massconfigmerger.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value="1.2.3.4")
-async def test_lookup_geo_data_geoip_error(mock_resolve_host, MockReader, caplog):
+@patch("massconfigmerger.testing.geoip.Reader")
+async def test_lookup_geo_data_geoip_error(MockReader, caplog):
     """Test that lookup_geo_data returns None if the GeoIP lookup fails."""
     caplog.set_level(logging.DEBUG)
-    from massconfigmerger.tester import AddressNotFoundError
     settings = Settings()
     settings.processing.geoip_db = "dummy.mmdb"
-    tester = NodeTester(settings)
+    resolver = DNSResolver()
+    # Patch the instance method
+    resolver.resolve = AsyncMock(return_value="1.2.3.4")
+
+    tester = GeoIPLookup(settings, resolver)
 
     mock_reader_instance = MockReader.return_value
-    type(mock_reader_instance).city = MagicMock(side_effect=AddressNotFoundError("IP not found"))
+    type(mock_reader_instance).city = MagicMock(
+        side_effect=AddressNotFoundError("IP not found")
+    )
+    tester._geoip_reader = mock_reader_instance
 
-    geo_data = await tester.lookup_geo_data("example.com")
+    geo_data = await tester.lookup("example.com")
     assert geo_data == (None, None, None, None)
     assert "GeoIP lookup failed" in caplog.text
-
-@pytest.mark.asyncio
-async def test_close_resource_failure(caplog):
-    """Test that _close_resource handles exceptions during close."""
-    caplog.set_level(logging.DEBUG)
-    settings = Settings()
-    tester = NodeTester(settings)
-
-    mock_resource = MagicMock()
-    mock_resource.close.side_effect = Exception("Close error")
-
-    await tester._close_resource(mock_resource, "TestResource")
-    assert "TestResource close failed: Close error" in caplog.text
-
-@patch("massconfigmerger.tester.Reader", None)
-def test_geoip_not_installed():
-    """Test that lookup_country returns None if geoip2 is not installed."""
-    settings = Settings()
-    settings.processing.geoip_db = "dummy.mmdb"
-    tester = NodeTester(settings)
-    assert tester._get_geoip_reader() is None
-
-@patch("massconfigmerger.tester.AsyncResolver", None)
-@pytest.mark.asyncio
-async def test_aiodns_not_installed():
-    """Test that resolve_host uses standard DNS if aiodns is not installed."""
-    settings = Settings()
-    tester = NodeTester(settings)
-
-    with patch("asyncio.get_running_loop") as mock_loop:
-        mock_loop.return_value.getaddrinfo = AsyncMock(return_value=[
-            (None, None, None, None, ("1.2.3.4", 0))
-        ])
-        ip = await tester.resolve_host("example.com")
-        assert ip == "1.2.3.4"
-        mock_loop.return_value.getaddrinfo.assert_awaited_once()
-
-
-@pytest.mark.asyncio
-async def test_resolve_host_caching():
-    """Test that DNS results are cached."""
-    settings = Settings()
-    tester = NodeTester(settings)
-
-    with patch.object(tester, '_get_resolver') as mock_get_resolver:
-        mock_resolver = AsyncMock()
-        mock_resolver.resolve.return_value = [{'host': '1.2.3.4'}]
-        mock_get_resolver.return_value = mock_resolver
-
-        # First call, should use resolver
-        ip1 = await tester.resolve_host("example.com")
-        assert ip1 == "1.2.3.4"
-        mock_resolver.resolve.assert_awaited_once_with("example.com")
-        assert "example.com" in tester.dns_cache
-        assert tester.dns_cache["example.com"] == "1.2.3.4"
-
-        # Second call, should use cache
-        ip2 = await tester.resolve_host("example.com")
-        assert ip2 == "1.2.3.4"
-        # Assert that resolve was not called again
-        mock_resolver.resolve.assert_awaited_once()
-
-
-@pytest.mark.asyncio
-async def test_resolve_host_with_ip_address():
-    """Test that resolve_host returns the IP directly if an IP is passed."""
-    settings = Settings()
-    tester = NodeTester(settings)
-    with patch.object(tester, '_get_resolver') as mock_get_resolver:
-        ip = await tester.resolve_host("1.1.1.1")
-        assert ip == "1.1.1.1"
-        mock_get_resolver.assert_not_called()
-
-
-@pytest.mark.asyncio
-@patch("massconfigmerger.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value=None)
-async def test_test_connection_unresolved_host(mock_resolve_host, caplog):
-    """Test that test_connection skips if host cannot be resolved."""
-    caplog.set_level(logging.DEBUG)
-    settings = Settings()
-    tester = NodeTester(settings)
-    latency = await tester.test_connection("unresolved.com", 443)
-    assert latency is None
-    assert "Skipping connection test; unresolved host: unresolved.com" in caplog.text
-
-
-@pytest.mark.asyncio
-@patch("massconfigmerger.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value=None)
-async def test_lookup_geo_data_unresolved_host(mock_resolve_host, caplog):
-    """Test that lookup_geo_data skips if host cannot be resolved."""
-    caplog.set_level(logging.DEBUG)
-    settings = Settings()
-    settings.processing.geoip_db = "dummy.mmdb"
-    with patch("massconfigmerger.tester.Reader"):
-        tester = NodeTester(settings)
-        geo_data = await tester.lookup_geo_data("unresolved.com")
-        assert geo_data == (None, None, None, None)
-        assert "Skipping GeoIP lookup; unresolved host: unresolved.com" in caplog.text

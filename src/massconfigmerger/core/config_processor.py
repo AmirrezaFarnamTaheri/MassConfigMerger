@@ -19,7 +19,7 @@ from tqdm.asyncio import tqdm_asyncio
 from .. import metrics
 from ..config import Settings
 from ..db import Database
-from ..tester import BlocklistChecker, NodeTester
+from ..testing import BlocklistChecker, NodeTester
 from . import config_normalizer
 
 

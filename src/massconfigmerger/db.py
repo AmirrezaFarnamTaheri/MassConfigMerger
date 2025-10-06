@@ -1,15 +1,22 @@
 from __future__ import annotations
 
-import aiosqlite
+import asyncio
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
+
+import aiosqlite
+
 
 class Database:
+    """A class to manage the SQLite database for proxy history."""
+
     def __init__(self, db_path: Path):
+        """Initialize the Database."""
         self.db_path = db_path.resolve()
         self.conn: Optional[aiosqlite.Connection] = None
 
-    async def connect(self):
+    async def connect(self) -> None:
+        """Establish a connection to the database and create tables if they don't exist."""
         if not self.db_path.parent.is_dir():
             raise ValueError(f"Database directory not found: {self.db_path.parent}")
         self.conn = await aiosqlite.connect(self.db_path)
@@ -25,60 +32,71 @@ class Database:
         )
         await self.conn.commit()
 
-    async def close(self):
+    async def close(self) -> None:
+        """Close the database connection."""
         if self.conn:
             await self.conn.close()
+            self.conn = None
+
+    async def _ensure_connected(self) -> None:
+        """Ensure the database connection is active."""
+        if not self.conn:
+            await self.connect()
+
+    async def execute(self, sql: str, params: tuple = ()) -> aiosqlite.Cursor:
+        """Execute a SQL query with parameters."""
+        await self._ensure_connected()
+        return await self.conn.execute(sql, params)
+
+    async def executemany(self, sql: str, params: list) -> aiosqlite.Cursor:
+        """Execute a SQL query for many parameter sets."""
+        await self._ensure_connected()
+        return await self.conn.executemany(sql, params)
+
+    async def commit(self) -> None:
+        """Commit the current transaction."""
+        if self.conn:
+            await self.conn.commit()
 
     async def get_proxy_history(self) -> Dict[str, Dict[str, int]]:
-        if not self.conn:
-            await self.connect()
-
-        cursor = await self.conn.execute("SELECT key, successes, failures, last_tested FROM proxy_history")
+        """Fetch the entire proxy history from the database."""
+        cursor = await self.execute("SELECT key, successes, failures, last_tested FROM proxy_history")
         rows = await cursor.fetchall()
-        history = {}
-        for row in rows:
-            history[row[0]] = {
-                "successes": row[1],
-                "failures": row[2],
-                "last_tested": row[3],
-            }
-        return history
+        return {
+            row[0]: {"successes": row[1], "failures": row[2], "last_tested": row[3]}
+            for row in rows
+        }
 
-    async def add_proxy_history_batch(self, batch: list[tuple[str, bool]]):
-        """
-        Update proxy history in a batch.
+    async def record_proxy(self, key: str, success: bool) -> None:
+        """Record a single proxy test result."""
+        if success:
+            sql = """
+                INSERT INTO proxy_history (key, successes, failures, last_tested)
+                VALUES (?, 1, 0, strftime('%s', 'now'))
+                ON CONFLICT(key) DO UPDATE SET
+                    successes = successes + 1,
+                    last_tested = strftime('%s', 'now');
+            """
+        else:
+            sql = """
+                INSERT INTO proxy_history (key, successes, failures, last_tested)
+                VALUES (?, 0, 1, strftime('%s', 'now'))
+                ON CONFLICT(key) DO UPDATE SET
+                    failures = failures + 1,
+                    last_tested = strftime('%s', 'now');
+            """
+        await self.execute(sql, (key,))
+        await self.commit()
 
-        Args:
-            batch: A list of tuples, where each tuple contains
-                   (key, success_status).
-        """
-        if not self.conn:
-            await self.connect()
+    async def add_proxy_history_batch(self, batch: List[tuple[str, bool]]):
+        """Update proxy history in a batch."""
+        tasks = [self.record_proxy(key, success) for key, success in batch]
+        await asyncio.gather(*tasks)
 
-        successes = [(key,) for key, success in batch if success]
-        failures = [(key,) for key, success in batch if not success]
-
-        async with self.conn.cursor() as cursor:
-            if successes:
-                await cursor.executemany(
-                    """
-                    INSERT INTO proxy_history (key, successes, failures, last_tested)
-                    VALUES (?, 1, 0, strftime('%s', 'now'))
-                    ON CONFLICT(key) DO UPDATE SET
-                        successes = successes + 1,
-                        last_tested = strftime('%s', 'now');
-                    """,
-                    successes,
-                )
-            if failures:
-                await cursor.executemany(
-                    """
-                    INSERT INTO proxy_history (key, successes, failures, last_tested)
-                    VALUES (?, 0, 1, strftime('%s', 'now'))
-                    ON CONFLICT(key) DO UPDATE SET
-                        failures = failures + 1,
-                        last_tested = strftime('%s', 'now');
-                    """,
-                    failures,
-                )
-        await self.conn.commit()
+    async def prune_old_records(self, days: int) -> int:
+        """Prune records that have not been tested in a given number of days."""
+        threshold = days * 86400  # Convert days to seconds
+        sql = "DELETE FROM proxy_history WHERE (strftime('%s', 'now') - last_tested) > ?"
+        cursor = await self.execute(sql, (threshold,))
+        await self.commit()
+        return cursor.rowcount

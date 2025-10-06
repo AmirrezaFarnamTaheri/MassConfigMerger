@@ -27,10 +27,11 @@ async def test_db_connect_and_close(db_path: Path):
     await db.conn.execute("SELECT 1")
 
     await db.close()
+    assert db.conn is None
 
-    # After closing, the connection object becomes unusable.
-    # Trying to use it should raise a ValueError.
-    with pytest.raises(ValueError, match="no active connection"):
+    # After closing, the connection object is None.
+    # Trying to use it should raise an AttributeError.
+    with pytest.raises(AttributeError):
         await db.conn.execute("SELECT 1")
 
 

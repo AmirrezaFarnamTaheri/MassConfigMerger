@@ -60,10 +60,10 @@ def test_load_config_no_project_root(monkeypatch):
     from massconfigmerger.constants import CONFIG_FILE_NAME
 
     monkeypatch.setattr(
-        "massconfigmerger.config.find_project_root",
+        "massconfigmerger.config.loader.find_project_root",
         lambda: (_ for _ in ()).throw(FileNotFoundError),
     )
-    with patch("massconfigmerger.config.logging.warning") as mock_warning:
+    with patch("massconfigmerger.config.loader.logging.warning") as mock_warning:
         settings = load_config()
         assert isinstance(settings, Settings)
         mock_warning.assert_called_once_with(

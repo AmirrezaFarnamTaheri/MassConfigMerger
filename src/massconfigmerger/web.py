@@ -11,7 +11,7 @@ from flask import Flask, Response, jsonify, render_template_string, send_file
 from prometheus_client import make_wsgi_app
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
-from .config import load_config
+from .config.loader import load_config
 from .constants import (
     CONFIG_FILE_NAME,
     HTML_REPORT_FILE_NAME,

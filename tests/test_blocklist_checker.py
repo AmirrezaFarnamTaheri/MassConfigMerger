@@ -6,7 +6,7 @@ import pytest
 from aiohttp import ClientError
 
 from massconfigmerger.config import Settings
-from massconfigmerger.tester import BlocklistChecker
+from massconfigmerger.testing import BlocklistChecker
 
 
 @pytest.fixture

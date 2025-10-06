@@ -14,6 +14,7 @@ import logging
 import time
 from pathlib import Path
 from typing import Dict, List, Set
+from urllib.parse import urlparse
 
 import aiohttp
 from tqdm import tqdm
@@ -22,6 +23,26 @@ from .. import constants, metrics
 from ..config import Settings
 from ..exceptions import NetworkError
 from . import utils
+
+
+ALLOWED_SCHEMES = ("http", "https")
+BLOCKED_HOSTS = ("localhost", "127.0.0.1", "0.0.0.0", "169.254.169.254")
+
+
+def validate_url(url: str) -> bool:
+    """Check if a URL is valid and allowed."""
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ALLOWED_SCHEMES:
+            logging.debug("Blocked URL scheme: %s", parsed.scheme)
+            return False
+        if parsed.hostname in BLOCKED_HOSTS:
+            logging.debug("Blocked hostname: %s", parsed.hostname)
+            return False
+        return True
+    except (ValueError, AttributeError):
+        logging.debug("Failed to parse URL: %s", url)
+        return False
 
 
 class SourceManager:
@@ -102,6 +123,13 @@ class SourceManager:
         session = await self.get_session()
         proxy = utils.choose_proxy(self.settings)
 
+        valid_sources = [s for s in sources if validate_url(s)]
+        if len(valid_sources) != len(sources):
+            logging.warning(
+                "Removed %d invalid or blocked URLs from source list.",
+                len(sources) - len(valid_sources),
+            )
+
         async def fetch_one(url: str) -> Set[str]:
             circuit_state = self._get_circuit_state(url)
             metrics.SOURCES_FETCHED_TOTAL.inc()
@@ -148,7 +176,7 @@ class SourceManager:
                 logging.warning("Failed to fetch %s: %s", url, e)
                 return set()
 
-        tasks = [asyncio.create_task(fetch_one(u)) for u in sources]
+        tasks = [asyncio.create_task(fetch_one(u)) for u in valid_sources]
         for task in tqdm(
             asyncio.as_completed(tasks),
             total=len(tasks),
@@ -191,7 +219,7 @@ class SourceManager:
             failures = {}
 
         with path.open() as f:
-            sources = [line.strip() for line in f if line.strip()]
+            sources = [line.strip() for line in f if line.strip() and validate_url(line.strip())]
 
         valid_sources: List[str] = []
         removed: List[str] = []
