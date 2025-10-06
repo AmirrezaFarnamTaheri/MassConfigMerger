@@ -194,15 +194,9 @@ class OutputSettings(BaseModel):
         if v is None:
             return None
 
-        path_str = str(v)
-        p = Path(path_str)
+        p = Path(str(v))
         if p.is_absolute() or ".." in p.parts or p.drive:
-            raise ValueError(
-                f"Path cannot be absolute, contain '..', or specify a drive: {path_str}"
-            )
-
-        return p
-            )
+            raise ValueError("Path cannot be absolute or contain '..'")
 
         return p
 
