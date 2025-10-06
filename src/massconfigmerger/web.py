@@ -204,8 +204,8 @@ async def history():
                 <td>{{ stats.get("successes", "N/A") }}</td>
                 <td>{{ stats.get("failures", "N/A") }}</td>
                 <td>
-                    {% set succ = (stats.get("successes", 0) or 0) | int %}
-                    {% set fail = (stats.get("failures", 0) or 0) | int %}
+                    {% set succ = stats.get("successes", 0) | int %}
+                    {% set fail = stats.get("failures", 0) | int %}
                     {% set total = succ + fail %}
                     {% if total > 0 %}
                         {{ "%.2f"|format(succ * 100 / total) }}%
