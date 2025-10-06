@@ -202,6 +202,9 @@ class OutputSettings(BaseModel):
             )
 
         return p
+            )
+
+        return p
 
     history_db_file: Path = Field(
         Path(HISTORY_DB_FILE_NAME),
