@@ -9,9 +9,9 @@ of servers using a GeoIP database.
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import json
 import logging
-import re
 import socket
 import sys
 import time
@@ -36,10 +36,7 @@ except Exception:  # pragma: no cover - optional dependency
 from .config import Settings
 
 
-import ipaddress
-
-
-def _is_ip_address(host: str) -> bool:
+def is_ip_address(host: str) -> bool:
     """Check if the given host is a valid IP address."""
     try:
         ipaddress.ip_address(host)
@@ -51,22 +48,20 @@ def _is_ip_address(host: str) -> bool:
 class NodeTester:
     """A utility class for testing node latency and performing GeoIP lookups."""
 
-    _resolver: Optional[AsyncResolver]
-    _geoip_reader: Optional[Reader]
+    _resolver: Optional[AsyncResolver] = None
+    _geoip_reader: Optional[Reader] = None
 
     def __init__(self, config: Settings) -> None:
         """Initialize the NodeTester."""
         self.config = config
         self.dns_cache: dict[str, str] = {}
-        self._resolver = None
-        self._geoip_reader = None
 
     def _get_resolver(self) -> Optional[AsyncResolver]:
         """Lazily initialize and return the asynchronous DNS resolver."""
         if self._resolver is None and "aiodns" in sys.modules and AsyncResolver:
             try:
                 self._resolver = AsyncResolver()
-            except Exception as exc:  # pragma: no cover - env specific
+            except Exception as exc:
                 logging.debug("AsyncResolver init failed: %s", exc)
         return self._resolver
 
@@ -77,15 +72,13 @@ class NodeTester:
                 self._geoip_reader = Reader(str(self.config.processing.geoip_db))
             except (OSError, ValueError) as exc:
                 logging.error("GeoIP reader init failed: %s", exc)
-                # Avoid retrying initialization by setting a placeholder
-                self._geoip_reader = None
         return self._geoip_reader
 
     async def resolve_host(self, host: str) -> Optional[str]:
         """Resolve a hostname to an IP address, with caching. Returns None on failure."""
         if host in self.dns_cache:
             return self.dns_cache[host]
-        if _is_ip_address(host):
+        if is_ip_address(host):
             return host
 
         resolver = self._get_resolver()
@@ -96,7 +89,7 @@ class NodeTester:
                     ip = result[0]["host"]
                     self.dns_cache[host] = ip
                     return ip
-            except Exception as exc:  # pragma: no cover - env specific
+            except Exception as exc:
                 logging.debug("Async DNS resolve failed for %s: %s", host, exc)
 
         try:
@@ -116,7 +109,7 @@ class NodeTester:
         start_time = time.time()
         try:
             target_ip = await self.resolve_host(host)
-            if not target_ip or not _is_ip_address(target_ip):
+            if not target_ip or not is_ip_address(target_ip):
                 logging.debug("Skipping connection test; unresolved host: %s", host)
                 return None
             _, writer = await asyncio.wait_for(
@@ -141,7 +134,7 @@ class NodeTester:
 
         try:
             ip = await self.resolve_host(host)
-            if not ip or not _is_ip_address(ip):
+            if not ip or not is_ip_address(ip):
                 logging.debug("Skipping GeoIP lookup; unresolved host: %s", host)
                 return None
             resp = geoip_reader.country(ip)
@@ -159,7 +152,7 @@ class NodeTester:
                     await close()
                 elif callable(close):
                     close()
-            except Exception as exc:  # pragma: no cover
+            except Exception as exc:
                 logging.debug("%s close failed: %s", name, exc)
 
     async def close(self) -> None:
@@ -173,9 +166,10 @@ class NodeTester:
 class BlocklistChecker:
     """A utility for checking IPs against a blocklist."""
 
+    _session: Optional[aiohttp.ClientSession] = None
+
     def __init__(self, config: Settings):
         self.config = config
-        self._session: aiohttp.ClientSession | None = None
 
     async def get_session(self) -> aiohttp.ClientSession:
         """Get or create the aiohttp client session."""
@@ -197,7 +191,7 @@ class BlocklistChecker:
         ):
             return False
 
-        if not ip_address or not _is_ip_address(ip_address):
+        if not ip_address or not is_ip_address(ip_address):
             return False
 
         session = await self.get_session()
@@ -259,3 +253,5 @@ class BlocklistChecker:
         """Close the aiohttp client session."""
         if self._session and not self._session.closed:
             await self._session.close()
+
+# End of file

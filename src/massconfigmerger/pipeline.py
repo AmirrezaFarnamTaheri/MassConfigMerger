@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import List, Set
+from typing import Set
 
 from .config import Settings
 from .constants import CHANNELS_FILE, SOURCES_FILE
@@ -60,7 +60,16 @@ async def run_aggregation_pipeline(
     failure_threshold: int = 3,
     prune: bool = True,
 ) -> tuple[Path, list[Path]]:
-    """Run the full aggregation pipeline to fetch and process configurations."""
+    """
+    Run the full aggregation pipeline to fetch and process configurations.
+
+    This function orchestrates the entire 'fetch' operation, which includes:
+    1.  Fetching configurations from web sources.
+    2.  Scraping configurations from Telegram channels.
+    3.  Combining and filtering the configurations based on the fetch-stage
+        protocol rules.
+    4.  Writing the aggregated results to the output directory.
+    """
     source_manager = SourceManager(cfg)
     config_processor = ConfigProcessor(cfg)
     output_generator = OutputGenerator(cfg)

@@ -51,7 +51,8 @@ async def test_node_tester_with_dns_resolve(
     mock_resolver = MockAsyncResolver.return_value
     mock_resolver.resolve = AsyncMock(return_value=[{'host': '1.2.3.4'}])
 
-    mock_reader, mock_writer = AsyncMock(), AsyncMock()
+    mock_reader = AsyncMock()
+    mock_writer = MagicMock(spec=asyncio.StreamWriter)
     mock_writer.wait_closed = AsyncMock()
     mock_open_connection.return_value = (mock_reader, mock_writer)
 
@@ -60,6 +61,8 @@ async def test_node_tester_with_dns_resolve(
     mock_resolver.resolve.assert_awaited_once()
     assert mock_resolver.resolve.await_args.args == ("example.com",)
     mock_open_connection.assert_awaited_once_with("1.2.3.4", 443)
+    mock_writer.close.assert_called_once()
+    mock_writer.wait_closed.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -137,11 +140,11 @@ async def test_close():
 
 import socket
 import logging
-from massconfigmerger.tester import _is_ip_address
+from massconfigmerger.tester import is_ip_address
 
 def test_is_ip_address_invalid():
-    """Test that _is_ip_address returns False for an invalid IP."""
-    assert not _is_ip_address("not-an-ip")
+    """Test that is_ip_address returns False for an invalid IP."""
+    assert not is_ip_address("not-an-ip")
 
 @patch("massconfigmerger.tester.AsyncResolver", side_effect=Exception("Resolver Error"))
 def test_get_resolver_init_failure(MockAsyncResolver, caplog):
@@ -247,3 +250,65 @@ async def test_aiodns_not_installed():
         ip = await tester.resolve_host("example.com")
         assert ip == "1.2.3.4"
         mock_loop.return_value.getaddrinfo.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_resolve_host_caching():
+    """Test that DNS results are cached."""
+    settings = Settings()
+    tester = NodeTester(settings)
+
+    with patch.object(tester, '_get_resolver') as mock_get_resolver:
+        mock_resolver = AsyncMock()
+        mock_resolver.resolve.return_value = [{'host': '1.2.3.4'}]
+        mock_get_resolver.return_value = mock_resolver
+
+        # First call, should use resolver
+        ip1 = await tester.resolve_host("example.com")
+        assert ip1 == "1.2.3.4"
+        mock_resolver.resolve.assert_awaited_once_with("example.com")
+        assert "example.com" in tester.dns_cache
+        assert tester.dns_cache["example.com"] == "1.2.3.4"
+
+        # Second call, should use cache
+        ip2 = await tester.resolve_host("example.com")
+        assert ip2 == "1.2.3.4"
+        # Assert that resolve was not called again
+        mock_resolver.resolve.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_resolve_host_with_ip_address():
+    """Test that resolve_host returns the IP directly if an IP is passed."""
+    settings = Settings()
+    tester = NodeTester(settings)
+    with patch.object(tester, '_get_resolver') as mock_get_resolver:
+        ip = await tester.resolve_host("1.1.1.1")
+        assert ip == "1.1.1.1"
+        mock_get_resolver.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("massconfigmerger.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value=None)
+async def test_test_connection_unresolved_host(mock_resolve_host, caplog):
+    """Test that test_connection skips if host cannot be resolved."""
+    caplog.set_level(logging.DEBUG)
+    settings = Settings()
+    tester = NodeTester(settings)
+    latency = await tester.test_connection("unresolved.com", 443)
+    assert latency is None
+    assert "Skipping connection test; unresolved host: unresolved.com" in caplog.text
+
+
+@pytest.mark.asyncio
+@patch("massconfigmerger.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value=None)
+async def test_lookup_country_unresolved_host(mock_resolve_host, caplog):
+    """Test that lookup_country skips if host cannot be resolved."""
+    caplog.set_level(logging.DEBUG)
+    settings = Settings()
+    settings.processing.geoip_db = "dummy.mmdb"
+    with patch("massconfigmerger.tester.Reader"):
+        tester = NodeTester(settings)
+        country = await tester.lookup_country("unresolved.com")
+        assert country is None
+        assert "Skipping GeoIP lookup; unresolved host: unresolved.com" in caplog.text

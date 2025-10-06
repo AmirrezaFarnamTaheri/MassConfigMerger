@@ -38,5 +38,8 @@ def sanitize_headers(headers_data: Any) -> Any:
             sanitize_str(k): sanitize_str(v)
             for k, v in headers.items()
         }
+    if isinstance(headers, str) and ":" in headers:
+        key, value = headers.split(":", 1)
+        return {sanitize_str(key): sanitize_str(value)}
 
     return sanitize_str(headers)

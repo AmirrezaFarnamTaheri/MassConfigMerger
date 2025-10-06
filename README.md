@@ -17,7 +17,7 @@ graph TD
     A --> F[sources]
 ```
 
-This guide provides instructions for both basic usage and advanced automation.
+This guide provides instructions for both basic usage and automation.
 
 **Security Note**: All VPN servers collected by this tool come from public lists. Operators are unknown and may log or even alter your traffic. Avoid using them for banking or other sensitive tasks. See the [Important Security & Privacy Disclaimer](docs/tutorial.md#-important-security--privacy-disclaimer) for best practices.
 
@@ -129,31 +129,31 @@ The `sources` command provides a simple way to manage the `sources.txt` file fro
   massconfigmerger sources remove "http://example.com/new-source"
   ```
 
-## ✨ Features
+## Features
 
-- **Multi-Source Fetching**: Fetches VPN configurations from web sources and Telegram channels.
-- **Protocol Support**: Parses a wide variety of protocols, including VMess, VLESS, Trojan, and Shadowsocks.
-- **Performance Testing**: Tests the connectivity and latency of each server.
-- **Filtering**: Allows filtering of configurations by protocol, country, or regex patterns.
-- **Latency-Based Sorting**: Ranks the merged configurations by latency.
-- **Multiple Output Formats**: Generates subscription files for various clients, including raw text, base64, Clash, and Sing-Box.
-- **Reporting**: Creates CSV and JSON reports for analysis.
-- **Command-Line Interface**: Provides control over all fetching, merging, and testing operations.
-- **Web Interface**: Includes a basic Flask web server to trigger operations remotely.
-- **Automation Support**: Can be automated for periodic runs using the included Docker Compose setup.
+- Fetches VPN configurations from web sources and Telegram channels.
+- Parses a wide variety of protocols, including VMess, VLESS, Trojan, and Shadowsocks.
+- Tests the connectivity and latency of each server.
+- Filters configurations by protocol, country, or regex patterns.
+- Ranks the merged configurations by latency.
+- Generates subscription files for various clients, including raw text, base64, Clash, and Sing-Box.
+- Creates CSV and JSON reports for analysis.
+- Provides a command-line interface for all fetching, merging, and testing operations.
+- Includes a basic Flask web server to trigger operations remotely.
+- Can be automated for periodic runs using the included Docker Compose setup.
 
-## 📖 Table of Contents
+## Table of Contents
 
 - [Quick Start](#-quick-start)
 - [Full Tutorial](docs/tutorial.md)
-- [Protocol Deep Dive](docs/protocol-deep-dive.md)
-- [Advanced Troubleshooting](docs/advanced-troubleshooting.md)
+- [Protocol Details](docs/protocol-deep-dive.md)
+- [Troubleshooting](docs/advanced-troubleshooting.md)
 - [Source List](#source-list)
-- [📂 Understanding the Output Files](#-understanding-the-output-files)
+- [Output Files](#output-files)
 - [Additional Features](#additional-features)
 - [FAQ](#faq)
 
-## 📂 Understanding the Output Files
+## Output Files
 
 | File Name                              | Purpose                                                                                                  |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------- |
@@ -189,7 +189,7 @@ python3 -m http.server -d output 8000
 ```
 Then import `http://<your-ip>:8000/surge.conf` or `http://<your-ip>:8000/quantumultx.conf` in the respective app.
 
-You can also call the converters directly from [`src/massconfigmerger/format_converters_extra.py`](src/massconfigmerger/format_converters_extra.py):
+You can also call the converters directly from `src/massconfigmerger/format_converters_extra.py`:
 
 ```python
 from massconfigmerger.format_converters_extra import (
@@ -266,27 +266,27 @@ If your network requires using an HTTP or SOCKS proxy, you can provide the setti
 1. **Environment variables** – export `HTTP_PROXY` or `SOCKS_PROXY`.
 2. **Configuration file** – set the `http_proxy` or `socks_proxy` fields in `config.yaml`.
 
-## Advanced Features
+## Additional Features
 
 ### Sorting by Reliability
 
-Use `massconfigmerger merge --sort-by reliability` to rank servers by past success rates recorded in `proxy_history.db`.
+Use `massconfigmerger merge --sort-by reliability` to rank servers by past success rates recorded in `proxy_history.db`. This provides a way to prioritize servers that have been historically more reliable.
 
 ### Regex Filtering
 
-Use `--include-pattern` and `--exclude-pattern` to filter configs that match a regular expression.
+Use `--include-pattern` and `--exclude-pattern` to filter configs that match a regular expression. This is useful for selecting or excluding servers based on their names or other attributes.
 
 ### GitHub Gist Upload
 
-Use `--upload-gist` to automatically upload the generated files to a private GitHub Gist.
+Use `--upload-gist` to automatically upload the generated files to a private GitHub Gist. This is a convenient way to share your subscription files across devices.
 
 ### Included Source List
 
-The `sources.txt` file collects links from hundreds of projects across GitHub and Telegram.
+The `sources.txt` file collects links from hundreds of projects across GitHub and Telegram. You can add your own sources to this file or use the `sources` command to manage them.
 
 ### Handling Failing Sources
 
-Each time a URL in `sources.txt` cannot be fetched, its failure count is stored in `sources.failures.json`. When a source reaches a configurable failure threshold, it is removed from `sources.txt`.
+Each time a URL in `sources.txt` cannot be fetched, its failure count is stored in `sources.failures.json`. When a source reaches a configurable failure threshold, it is removed from `sources.txt`. This helps to keep the source list clean and efficient.
 
 ## FAQ
 

@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import List, Optional, Set
 
 from tqdm.asyncio import tqdm_asyncio
@@ -18,6 +19,41 @@ from tqdm.asyncio import tqdm_asyncio
 from ..config import Settings
 from ..tester import BlocklistChecker, NodeTester
 from . import config_normalizer
+
+
+@lru_cache(maxsize=None)
+def categorize_protocol(config: str) -> str:
+    """
+    Categorize a configuration by its protocol type.
+
+    Args:
+        config: The configuration string.
+
+    Returns:
+        A string representing the detected protocol (e.g., "VMess").
+    """
+    protocol_map = {
+        "vmess://": "VMess",
+        "vless://": "VLESS",
+        "ss://": "Shadowsocks",
+        "ssr://": "ShadowsocksR",
+        "trojan://": "Trojan",
+        "hy2://": "Hysteria2",
+        "hysteria2://": "Hysteria2",
+        "hysteria://": "Hysteria",
+        "tuic://": "TUIC",
+        "reality://": "Reality",
+        "naive://": "Naive",
+        "juicity://": "Juicity",
+        "wireguard://": "WireGuard",
+        "shadowtls://": "ShadowTLS",
+        "brook://": "Brook",
+    }
+    config_lower = config.lower()
+    for prefix, protocol in protocol_map.items():
+        if config_lower.startswith(prefix):
+            return protocol
+    return "Other"
 
 
 @dataclass
@@ -94,7 +130,7 @@ class ConfigProcessor:
             if not include_protos:
                 return configs
             return {
-                cfg for cfg in configs if self.categorize_protocol(cfg).upper() in include_protos
+                cfg for cfg in configs if categorize_protocol(cfg).upper() in include_protos
             }
         else:
             # Use merge_include/exclude_protocols for more complex filtering.
@@ -105,7 +141,7 @@ class ConfigProcessor:
 
             filtered = set()
             for cfg in configs:
-                proto = self.categorize_protocol(cfg).upper()
+                proto = categorize_protocol(cfg).upper()
                 if include_protos and proto not in include_protos:
                     continue
                 if exclude_protos and proto in exclude_protos:
@@ -128,7 +164,7 @@ class ConfigProcessor:
 
         return ConfigResult(
             config=cfg,
-            protocol=self.categorize_protocol(cfg),
+            protocol=categorize_protocol(cfg),
             host=host,
             port=port,
             ping_time=ping_time,
@@ -250,39 +286,6 @@ class ConfigProcessor:
             The ISO 3166-1 alpha-2 country code, or None if not found.
         """
         return await self.tester.lookup_country(host)
-
-    def categorize_protocol(self, config: str) -> str:
-        """
-        Categorize a configuration by its protocol type.
-
-        Args:
-            config: The configuration string.
-
-        Returns:
-            A string representing the detected protocol (e.g., "VMess").
-        """
-        protocol_map = {
-            "vmess://": "VMess",
-            "vless://": "VLESS",
-            "ss://": "Shadowsocks",
-            "ssr://": "ShadowsocksR",
-            "trojan://": "Trojan",
-            "hy2://": "Hysteria2",
-            "hysteria2://": "Hysteria2",
-            "hysteria://": "Hysteria",
-            "tuic://": "TUIC",
-            "reality://": "Reality",
-            "naive://": "Naive",
-            "juicity://": "Juicity",
-            "wireguard://": "WireGuard",
-            "shadowtls://": "ShadowTLS",
-            "brook://": "Brook",
-        }
-        config_lower = config.lower()
-        for prefix, protocol in protocol_map.items():
-            if config_lower.startswith(prefix):
-                return protocol
-        return "Other"
 
     def apply_tuning(self, config: str) -> str:
         """

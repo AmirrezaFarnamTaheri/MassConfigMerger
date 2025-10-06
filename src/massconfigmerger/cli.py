@@ -14,15 +14,10 @@ import sys
 from pathlib import Path
 from typing import Callable, Dict
 
+from pydantic import BaseModel
+
 from . import cli_args, commands
-try:
-    from .config import Settings, load_config
-except ImportError:
-    from .config import Settings  # fallback
-    def load_config(path=None):
-        import logging
-        logging.warning("Falling back to default Settings; load_config unavailable.")
-        return Settings(config_file=path)
+from .config import Settings, load_config
 from .core.utils import print_public_source_warning
 from .source_operations import (
     handle_add_source,
@@ -85,47 +80,32 @@ def _update_settings_from_args(cfg: Settings, args: argparse.Namespace):
     """Update the `Settings` object with values from parsed CLI arguments."""
     arg_dict = {k: v for k, v in vars(args).items() if v is not None}
 
-    # Direct mapping from arg name to (group, attribute)
-    MAPPING = {
-        "concurrent_limit": ("network", "concurrent_limit"),
-        "request_timeout": ("network", "request_timeout"),
-        "connect_timeout": ("network", "connect_timeout"),
-        "max_ping_ms": ("filtering", "max_ping_ms"),
-        "output_dir": ("output", "output_dir"),
-        "surge_file": ("output", "surge_file"),
-        "qx_file": ("output", "qx_file"),
-        "write_base64": ("output", "write_base64"),
-        "write_csv": ("output", "write_csv"),
-        "upload_gist": ("output", "upload_gist"),
-        "top_n": ("processing", "top_n"),
-        "shuffle_sources": ("processing", "shuffle_sources"),
-        "resume_file": ("processing", "resume_file"),
-        "enable_sorting": ("processing", "enable_sorting"),
-    }
-
-    for arg_name, (group, attr) in MAPPING.items():
-        if (value := arg_dict.get(arg_name)) is not None:
-            setattr(getattr(cfg, group), attr, value)
-
-    # Arguments requiring special parsing
-    if "fetch_protocols" in arg_dict:
-        cfg.filtering.fetch_protocols = _parse_protocol_list(
-            arg_dict["fetch_protocols"]
-        )
-    if "merge_include_protocols" in arg_dict:
-        cfg.filtering.merge_include_protocols = _parse_protocol_set(
-            arg_dict["merge_include_protocols"]
-        )
-    if "merge_exclude_protocols" in arg_dict:
-        cfg.filtering.merge_exclude_protocols = _parse_protocol_set(
-            arg_dict["merge_exclude_protocols"]
-        )
-
     # Arguments that are lists and need to be extended
-    if "include_patterns" in arg_dict:
-        cfg.filtering.include_patterns.extend(arg_dict["include_patterns"])
-    if "exclude_patterns" in arg_dict:
-        cfg.filtering.exclude_patterns.extend(arg_dict["exclude_patterns"])
+    list_extend_fields = {"include_patterns", "exclude_patterns"}
+
+    for group_name, group_settings in Settings.model_fields.items():
+        if not hasattr(cfg, group_name):
+            continue
+
+        group = getattr(cfg, group_name)
+        if not isinstance(group, BaseModel):
+            continue
+
+        for field_name in group.__class__.model_fields:
+            if field_name in arg_dict:
+                value = arg_dict[field_name]
+
+                if field_name in list_extend_fields:
+                    getattr(group, field_name).extend(value)
+                    continue
+
+                if "protocols" in field_name:
+                    if isinstance(getattr(group, field_name), set):
+                        value = _parse_protocol_set(value)
+                    else:
+                        value = _parse_protocol_list(value)
+
+                setattr(group, field_name, value)
 
 
 HANDLERS: Dict[str, Callable[..., None]] = {

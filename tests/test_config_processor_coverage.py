@@ -4,7 +4,7 @@ import base64
 import pytest
 from massconfigmerger.config import Settings
 from massconfigmerger.core import config_normalizer
-from massconfigmerger.core.config_processor import ConfigProcessor
+from massconfigmerger.core.config_processor import ConfigProcessor, categorize_protocol
 
 
 @pytest.fixture
@@ -13,24 +13,24 @@ def config_processor() -> ConfigProcessor:
     return ConfigProcessor(Settings())
 
 
-def test_categorize_protocol(config_processor: ConfigProcessor):
-    """Test the categorize_protocol method."""
-    assert config_processor.categorize_protocol("vmess://...") == "VMess"
-    assert config_processor.categorize_protocol("vless://...") == "VLESS"
-    assert config_processor.categorize_protocol("ss://...") == "Shadowsocks"
-    assert config_processor.categorize_protocol("ssr://...") == "ShadowsocksR"
-    assert config_processor.categorize_protocol("trojan://...") == "Trojan"
-    assert config_processor.categorize_protocol("hy2://...") == "Hysteria2"
-    assert config_processor.categorize_protocol("hysteria2://...") == "Hysteria2"
-    assert config_processor.categorize_protocol("hysteria://...") == "Hysteria"
-    assert config_processor.categorize_protocol("tuic://...") == "TUIC"
-    assert config_processor.categorize_protocol("reality://...") == "Reality"
-    assert config_processor.categorize_protocol("naive://...") == "Naive"
-    assert config_processor.categorize_protocol("juicity://...") == "Juicity"
-    assert config_processor.categorize_protocol("wireguard://...") == "WireGuard"
-    assert config_processor.categorize_protocol("shadowtls://...") == "ShadowTLS"
-    assert config_processor.categorize_protocol("brook://...") == "Brook"
-    assert config_processor.categorize_protocol("unknown://...") == "Other"
+def test_categorize_protocol():
+    """Test the categorize_protocol function."""
+    assert categorize_protocol("vmess://...") == "VMess"
+    assert categorize_protocol("vless://...") == "VLESS"
+    assert categorize_protocol("ss://...") == "Shadowsocks"
+    assert categorize_protocol("ssr://...") == "ShadowsocksR"
+    assert categorize_protocol("trojan://...") == "Trojan"
+    assert categorize_protocol("hy2://...") == "Hysteria2"
+    assert categorize_protocol("hysteria2://...") == "Hysteria2"
+    assert categorize_protocol("hysteria://...") == "Hysteria"
+    assert categorize_protocol("tuic://...") == "TUIC"
+    assert categorize_protocol("reality://...") == "Reality"
+    assert categorize_protocol("naive://...") == "Naive"
+    assert categorize_protocol("juicity://...") == "Juicity"
+    assert categorize_protocol("wireguard://...") == "WireGuard"
+    assert categorize_protocol("shadowtls://...") == "ShadowTLS"
+    assert categorize_protocol("brook://...") == "Brook"
+    assert categorize_protocol("unknown://...") == "Other"
 
 
 def test_filter_configs():
@@ -173,3 +173,75 @@ def test_create_semantic_hash():
     no_host_link = "vless://d9bda552-3c67-4d7a-b1a8-2c8c1a7e8a9f@:?path=/#NoHost"
     no_host_hash = config_normalizer.create_semantic_hash(no_host_link)
     assert isinstance(no_host_hash, str)
+
+
+from unittest.mock import AsyncMock, patch
+import logging
+import asyncio
+
+from massconfigmerger.core.config_processor import ConfigResult
+
+
+@pytest.mark.asyncio
+async def test_filter_malicious_disabled(config_processor: ConfigProcessor):
+    """Test that _filter_malicious returns all results if the check is disabled."""
+    config_processor.settings.security.apivoid_api_key = None
+    results = [ConfigResult(config="c1", protocol="p1", is_reachable=True, host="h1")]
+
+    filtered = await config_processor._filter_malicious(results)
+
+    assert filtered == results
+
+
+@pytest.mark.asyncio
+async def test_filter_malicious_dns_failure(config_processor: ConfigProcessor, caplog):
+    """Test that _filter_malicious keeps a config if DNS resolution fails."""
+    config_processor.settings.security.apivoid_api_key = "test-key"
+    config_processor.tester.resolve_host = AsyncMock(side_effect=Exception("DNS Error"))
+    results = [ConfigResult(config="c1", protocol="p1", is_reachable=True, host="h1")]
+
+    with caplog.at_level(logging.DEBUG):
+        filtered = await config_processor._filter_malicious(results)
+
+    assert filtered == results
+    assert "Failed to resolve host h1: DNS Error" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_filter_malicious_check_failure(config_processor: ConfigProcessor, caplog):
+    """Test that _filter_malicious keeps a config if the blocklist check fails."""
+    config_processor.settings.security.apivoid_api_key = "test-key"
+    config_processor.tester.resolve_host = AsyncMock(return_value="1.2.3.4")
+    config_processor.blocklist_checker.is_malicious = AsyncMock(side_effect=Exception("API Error"))
+    results = [ConfigResult(config="c1", protocol="p1", is_reachable=True, host="h1")]
+
+    with caplog.at_level(logging.DEBUG):
+        filtered = await config_processor._filter_malicious(results)
+
+    assert filtered == results
+    assert "Blocklist check failed for 1.2.3.4: API Error" in caplog.text
+
+
+@pytest.mark.asyncio
+@patch("massconfigmerger.core.config_processor.tqdm_asyncio")
+async def test_test_configs_worker_failure(mock_tqdm, config_processor: ConfigProcessor, caplog):
+    """Test that test_configs handles exceptions within the worker."""
+    async def gather_side_effect(*tasks, **kwargs):
+        return await asyncio.gather(*tasks)
+
+    mock_tqdm.gather = AsyncMock(side_effect=gather_side_effect)
+
+    config_processor._test_config = AsyncMock(side_effect=Exception("Worker failed"))
+    config_processor.tester.close = AsyncMock()
+    config_processor.blocklist_checker.close = AsyncMock()
+
+    configs = {"vless://config1"}
+
+    with caplog.at_level(logging.DEBUG):
+        results = await config_processor.test_configs(configs)
+
+    assert results == []
+    assert "test_configs worker failed for vless://config1: Worker failed" in caplog.text
+
+    config_processor.tester.close.assert_awaited_once()
+    config_processor.blocklist_checker.close.assert_awaited_once()

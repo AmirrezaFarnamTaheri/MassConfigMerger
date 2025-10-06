@@ -15,7 +15,12 @@ from .config import Settings
 
 
 def handle_fetch(args: argparse.Namespace, cfg: Settings) -> None:
-    """Handler for the 'fetch' command."""
+    """
+    Handler for the 'fetch' command.
+
+    This function initiates the aggregation pipeline to collect VPN configurations
+    from web sources and Telegram channels.
+    """
     asyncio.run(
         pipeline.run_aggregation_pipeline(
             cfg,
@@ -29,7 +34,12 @@ def handle_fetch(args: argparse.Namespace, cfg: Settings) -> None:
 
 
 def handle_merge(args: argparse.Namespace, cfg: Settings) -> None:
-    """Handler for the 'merge' command."""
+    """
+    Handler for the 'merge' command.
+
+    This function runs the VPN merger to test, sort, and merge configurations
+    into a final subscription link.
+    """
     asyncio.run(
         vpn_merger.run_merger(
             cfg,
@@ -40,12 +50,22 @@ def handle_merge(args: argparse.Namespace, cfg: Settings) -> None:
 
 
 def handle_retest(args: argparse.Namespace, cfg: Settings) -> None:
-    """Handler for the 'retest' command."""
+    """
+    Handler for the 'retest' command.
+
+    This function re-tests an existing subscription file to update the
+    connectivity and latency information for each server.
+    """
     asyncio.run(vpn_retester.run_retester(cfg, input_file=Path(args.input)))
 
 
 def handle_full(args: argparse.Namespace, cfg: Settings) -> None:
-    """Handler for the 'full' command."""
+    """
+    Handler for the 'full' command.
+
+    This function runs the full pipeline, which includes fetching configurations,
+    and then merging and testing them.
+    """
     aggregator_output_dir, _ = asyncio.run(
         pipeline.run_aggregation_pipeline(
             cfg,
