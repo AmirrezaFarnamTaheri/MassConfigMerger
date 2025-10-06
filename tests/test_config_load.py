@@ -1,6 +1,6 @@
 import yaml
 from pathlib import Path
-from massconfigmerger.config import load_config
+from massconfigmerger.core.config_loader import load_config
 
 def test_load_defaults(tmp_path):
     """Test that default settings are loaded correctly."""
