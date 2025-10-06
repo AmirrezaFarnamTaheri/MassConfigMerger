@@ -16,14 +16,10 @@ from typing import Callable, Dict
 
 from pydantic import BaseModel
 
-from . import cli_args, commands
+from . import cli_args, commands, services
 from .config import Settings, load_config
+from .constants import CONFIG_FILE_NAME
 from .core.utils import print_public_source_warning
-from .source_operations import (
-    handle_add_source,
-    handle_list_sources,
-    handle_remove_source,
-)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -31,7 +27,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="massconfigmerger", description="A tool for collecting and merging VPN configurations."
     )
-    parser.add_argument("--config", default="config.yaml", help="Path to config.yaml")
+    parser.add_argument(
+        "--config", default=CONFIG_FILE_NAME, help=f"Path to {CONFIG_FILE_NAME}"
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # Fetch command
@@ -115,12 +113,6 @@ HANDLERS: Dict[str, Callable[..., None]] = {
     "full": commands.handle_full,
 }
 
-SOURCES_HANDLERS: Dict[str, Callable[[argparse.Namespace], None]] = {
-    "list": handle_list_sources,
-    "add": handle_add_source,
-    "remove": handle_remove_source,
-}
-
 
 def main(argv: list[str] | None = None) -> None:
     """Main entry point for the `massconfigmerger` command."""
@@ -129,8 +121,13 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv or sys.argv[1:])
 
     if args.command == "sources":
-        if command_handler := SOURCES_HANDLERS.get(args.sources_command):
-            command_handler(args)
+        sources_file = Path(args.sources_file)
+        if args.sources_command == "list":
+            services.list_sources(sources_file)
+        elif args.sources_command == "add":
+            services.add_new_source(sources_file, args.url)
+        elif args.sources_command == "remove":
+            services.remove_existing_source(sources_file, args.url)
         return
 
     try:

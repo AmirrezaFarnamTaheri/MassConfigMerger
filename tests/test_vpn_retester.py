@@ -8,11 +8,13 @@ import pytest
 
 from massconfigmerger.config import Settings
 from massconfigmerger.core.config_processor import ConfigResult
+from massconfigmerger.processing.pipeline import (
+    filter_results_by_ping,
+    sort_and_trim_results,
+)
 from massconfigmerger.vpn_retester import (
     filter_configs_by_protocol,
-    filter_results_by_ping,
     load_configs_from_file,
-    process_results,
     run_retester,
     save_retest_results,
 )
@@ -87,7 +89,7 @@ def test_filter_results_by_ping():
     assert len(filtered) == 3
 
 
-def test_process_results():
+def test_sort_and_trim_results():
     """Test sorting and top-N filtering of results."""
     results = [
         ConfigResult(config="c1", protocol="VLESS", ping_time=0.3),
@@ -99,18 +101,18 @@ def test_process_results():
     # Test sorting
     settings.processing.enable_sorting = True
     settings.processing.top_n = 0
-    processed = process_results(results.copy(), settings)
+    processed = sort_and_trim_results(results.copy(), settings)
     assert [r.config for r in processed] == ["c2", "c3", "c1"]
 
     # Test top-N with sorting
     settings.processing.top_n = 2
-    processed = process_results(results.copy(), settings)
+    processed = sort_and_trim_results(results.copy(), settings)
     assert [r.config for r in processed] == ["c2", "c3"]
 
     # Test disabled sorting
     settings.processing.enable_sorting = False
     settings.processing.top_n = 0  # Reset top_n
-    processed = process_results(results.copy(), settings)
+    processed = sort_and_trim_results(results.copy(), settings)
     assert [r.config for r in processed] == ["c1", "c2", "c3"]
 
 
@@ -152,15 +154,15 @@ def test_save_retest_results(
 @patch("massconfigmerger.vpn_retester.Database")
 @patch("massconfigmerger.vpn_retester.load_configs_from_file")
 @patch("massconfigmerger.vpn_retester.filter_configs_by_protocol")
-@patch("massconfigmerger.vpn_retester.retest_configs")
-@patch("massconfigmerger.vpn_retester.filter_results_by_ping")
-@patch("massconfigmerger.vpn_retester.process_results")
+@patch("massconfigmerger.vpn_retester.pipeline.test_configs")
+@patch("massconfigmerger.vpn_retester.pipeline.filter_results_by_ping")
+@patch("massconfigmerger.vpn_retester.pipeline.sort_and_trim_results")
 @patch("massconfigmerger.vpn_retester.save_retest_results")
 async def test_run_retester_flow(
     mock_save: MagicMock,
-    mock_process: MagicMock,
+    mock_sort: MagicMock,
     mock_filter_ping: MagicMock,
-    mock_retest: AsyncMock,
+    mock_test: AsyncMock,
     mock_filter_proto: MagicMock,
     mock_load: MagicMock,
     mock_db: MagicMock,
@@ -176,7 +178,7 @@ async def test_run_retester_flow(
 
     mock_load.return_value = ["c1", "c2", "c3"]
     mock_filter_proto.return_value = ["c1", "c2"]
-    mock_retest.return_value = [
+    mock_test.return_value = [
         ConfigResult(
             config="c1", protocol="VLESS", is_reachable=True, host="h1", port=1
         ),
@@ -187,7 +189,7 @@ async def test_run_retester_flow(
     mock_filter_ping.return_value = [
         ConfigResult(config="c1", protocol="VLESS", is_reachable=True, host="h1", port=1)
     ]
-    mock_process.return_value = [
+    mock_sort.return_value = [
         ConfigResult(
             config="c1_processed",
             protocol="VLESS",
@@ -204,11 +206,11 @@ async def test_run_retester_flow(
     mock_db_instance.connect.assert_awaited_once()
     mock_load.assert_called_once()
     mock_filter_proto.assert_called_once()
-    mock_retest.assert_awaited_once_with(
+    mock_test.assert_awaited_once_with(
         ["c1", "c2"], settings, {}
     )
     mock_filter_ping.assert_called_once()
-    mock_process.assert_called_once()
+    mock_sort.assert_called_once()
     mock_save.assert_called_once()
     final_results = mock_save.call_args[0][0]
     assert len(final_results) == 1
@@ -216,36 +218,3 @@ async def test_run_retester_flow(
     mock_db_instance.update_proxy_history.assert_awaited()
     mock_db_instance.close.assert_awaited_once()
 
-
-@pytest.mark.asyncio
-@patch("massconfigmerger.vpn_retester.config_normalizer.extract_host_port")
-@patch("massconfigmerger.vpn_retester.ConfigProcessor")
-async def test_retest_configs(
-    MockConfigProcessor, mock_extract_host_port, tmp_path: Path
-):
-    """Test the retest_configs function."""
-    # Arrange
-    from massconfigmerger.vpn_retester import retest_configs
-
-    settings = Settings()
-    mock_proc = MockConfigProcessor.return_value
-    mock_extract_host_port.side_effect = [("host1", 1234), (None, None)]
-    mock_proc.test_connection = AsyncMock(return_value=0.123)
-    mock_proc.lookup_country = AsyncMock(return_value="US")
-    mock_proc.tester.close = AsyncMock()
-
-    configs = ["config1_valid", "config2_invalid"]
-
-    # Act
-    results = await retest_configs(configs, settings, history={})
-
-    # Assert
-    assert len(results) == 2
-    assert results[0].config == "config1_valid"
-    assert results[0].ping_time == 0.123
-    assert results[0].is_reachable is True
-    assert results[1].config == "config2_invalid"
-    assert results[1].ping_time is None
-    assert results[1].is_reachable is False
-    mock_proc.test_connection.assert_awaited_once_with("host1", 1234)
-    mock_proc.tester.close.assert_awaited_once()

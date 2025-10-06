@@ -12,6 +12,8 @@ from urllib.parse import urlparse
 
 import aiohttp
 
+from .constants import UPLOAD_LINKS_FILE_NAME
+
 
 class GistUploadError(Exception):
     """Custom exception for Gist upload failures."""
@@ -67,7 +69,7 @@ async def upload_files_to_gist(
 def write_upload_links(links: Dict[str, str], output_dir: Path) -> Path:
     """Write uploaded file links to output_dir/upload_links.txt and return the path."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    dest = output_dir / "upload_links.txt"
+    dest = output_dir / UPLOAD_LINKS_FILE_NAME
     tmp = dest.with_suffix(".tmp")
     tmp.write_text("\n".join(f"{k}: {v}" for k, v in links.items()), encoding="utf-8")
     tmp.replace(dest)

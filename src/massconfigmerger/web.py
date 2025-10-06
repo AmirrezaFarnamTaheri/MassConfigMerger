@@ -10,14 +10,20 @@ from pathlib import Path
 from flask import Flask, render_template_string, send_file
 
 from .config import load_config
-from .constants import SOURCES_FILE
+from .constants import (
+    CONFIG_FILE_NAME,
+    HTML_REPORT_FILE_NAME,
+    JSON_REPORT_FILE_NAME,
+    RAW_SUBSCRIPTION_FILE_NAME,
+    SOURCES_FILE,
+)
 from .db import Database
 from .pipeline import run_aggregation_pipeline
 from .vpn_merger import run_merger as run_merger_pipeline
 
 app = Flask(__name__)
 
-CONFIG_PATH = Path("config.yaml")
+CONFIG_PATH = Path(CONFIG_FILE_NAME)
 
 
 def load_cfg():
@@ -84,7 +90,7 @@ def aggregate() -> dict:
 def merge() -> dict:
     """Run the VPN merger using the latest aggregated results."""
     cfg = load_cfg()
-    resume_file = Path(cfg.output.output_dir) / "vpn_subscription_raw.txt"
+    resume_file = Path(cfg.output.output_dir) / RAW_SUBSCRIPTION_FILE_NAME
     if not resume_file.exists():
         return {"error": f"Resume file not found: {resume_file}"}, 404
 
@@ -98,10 +104,10 @@ def merge() -> dict:
 def report():
     """Display the HTML or JSON report."""
     cfg = load_cfg()
-    html_report = Path(cfg.output.output_dir) / "vpn_report.html"
+    html_report = Path(cfg.output.output_dir) / HTML_REPORT_FILE_NAME
     if html_report.exists():
         return send_file(html_report)
-    json_report = Path(cfg.output.output_dir) / "vpn_report.json"
+    json_report = Path(cfg.output.output_dir) / JSON_REPORT_FILE_NAME
     if not json_report.exists():
         return "Report not found", 404
     data = json.loads(json_report.read_text())

@@ -22,6 +22,7 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+from .constants import CONFIG_FILE_NAME, HISTORY_DB_FILE_NAME
 from .core.file_utils import find_project_root
 
 
@@ -161,7 +162,7 @@ class OutputSettings(BaseModel):
         None, description="Path to a specific file for logging, instead of a directory."
     )
     history_db_file: Path = Field(
-        Path("proxy_history.db"),
+        Path(HISTORY_DB_FILE_NAME),
         description="SQLite database file to store proxy connection history for reliability scoring.",
     )
     write_base64: bool = Field(
@@ -302,12 +303,13 @@ def load_config(path: Path | None = None) -> Settings:
     if config_file is None:
         try:
             project_root = find_project_root()
-            default_config_path = project_root / "config.yaml"
+            default_config_path = project_root / CONFIG_FILE_NAME
             if default_config_path.exists():
                 config_file = default_config_path
         except FileNotFoundError:
             logging.warning(
                 "Could not find project root marker 'pyproject.toml'. "
-                "Default 'config.yaml' will not be loaded."
+                "Default '%s' will not be loaded.",
+                CONFIG_FILE_NAME,
             )
     return Settings(config_file=config_file)

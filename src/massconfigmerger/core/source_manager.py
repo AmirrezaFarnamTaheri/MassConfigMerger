@@ -17,8 +17,9 @@ from typing import List, Set
 import aiohttp
 from tqdm import tqdm
 
-from . import utils
+from .. import constants
 from ..config import Settings
+from . import utils
 
 
 class SourceManager:
@@ -132,7 +133,7 @@ class SourceManager:
             logging.warning("sources file not found: %s", path)
             return []
 
-        failures_path = path.with_suffix(".failures.json")
+        failures_path = path.with_suffix(constants.SOURCES_FAILURES_FILE_SUFFIX)
         try:
             failures = json.loads(failures_path.read_text())
         except (OSError, json.JSONDecodeError):
@@ -182,7 +183,7 @@ class SourceManager:
                     f.write(f"{url}\n")
 
             if removed:
-                disabled_path = path.with_name("sources_disabled.txt")
+                disabled_path = path.with_name(constants.SOURCES_DISABLED_FILE_NAME)
                 with disabled_path.open("a") as f:
                     for url in removed:
                         f.write(f"{url}\n")
