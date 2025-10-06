@@ -37,8 +37,8 @@ class TuicParser(BaseParser):
             "server": self.sanitize_str(p.hostname),
             "port": p.port,
         }
-        uuid = self.sanitize_str(p.username or q.get("uuid", [None])[0])
-        passwd = self.sanitize_str(p.password or q.get("password", [None])[0])
+        uuid = self.sanitize_str(q.get("uuid", [None])[0] or p.username)
+        passwd = self.sanitize_str(q.get("password", [None])[0] or p.password)
         if uuid:
             proxy["uuid"] = uuid
         if passwd:
@@ -62,7 +62,10 @@ class TuicParser(BaseParser):
         """
         p = urlparse(self.config_uri)
         q = parse_qs(p.query)
+        passwd_q = q.get("password", [None])[0]
+        if passwd_q:
+            return self.sanitize_str(passwd_q)
         uuid = self.sanitize_str(p.username or q.get("uuid", [None])[0])
         if uuid:
             return uuid
-        return self.sanitize_str(p.password or q.get("password", [None])[0])
+        return self.sanitize_str(p.password)

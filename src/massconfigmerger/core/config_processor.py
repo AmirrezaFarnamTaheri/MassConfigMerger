@@ -244,23 +244,14 @@ class ConfigProcessor:
             )
             results = [res for res in results if res is not None]
             return await self._filter_malicious(results)
+        except Exception as exc:
+            logging.debug("An error occurred during config testing: %s", exc)
+            return []
         finally:
             if self.tester:
                 await self.tester.close()
             if self.blocklist_checker:
                 await self.blocklist_checker.close()
-
-    def create_semantic_hash(self, config: str) -> str:
-        """
-        Create a semantic hash for a configuration for intelligent deduplication.
-
-        Args:
-            config: The configuration string.
-
-        Returns:
-            A hash representing the semantic content of the configuration.
-        """
-        return config_normalizer.create_semantic_hash(config)
 
     async def test_connection(self, host: str, port: int) -> Optional[float]:
         """

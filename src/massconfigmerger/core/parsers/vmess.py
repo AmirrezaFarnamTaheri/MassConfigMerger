@@ -106,4 +106,4 @@ class VmessParser(BaseParser):
             return self.sanitize_str(data.get("id") or data.get("uuid"))
         except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError):
             p = urlparse(self.config_uri)
-            return self.sanitize_str(p.username)
+            return self.sanitize_str(p.username or "")
