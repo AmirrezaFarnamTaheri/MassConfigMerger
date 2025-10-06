@@ -195,10 +195,13 @@ class OutputSettings(BaseModel):
             return None
 
         path_str = str(v)
-        if Path(path_str).is_absolute() or ".." in Path(path_str).parts:
-            raise ValueError(f"Path cannot be absolute or contain '..': {path_str}")
+        p = Path(path_str)
+        if p.is_absolute() or ".." in p.parts or p.drive:
+            raise ValueError(
+                f"Path cannot be absolute, contain '..', or specify a drive: {path_str}"
+            )
 
-        return Path(path_str)
+        return p
 
     history_db_file: Path = Field(
         Path(HISTORY_DB_FILE_NAME),
