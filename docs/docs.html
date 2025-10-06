@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - MassConfigMerger</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/docs.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <i class="fas fa-network-wired"></i>
+                <span>MassConfigMerger</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="docs.html" class="active">Documentation</a></li>
+                <li><a href="quickstart.html">Quick Start</a></li>
+                <li><a href="roadmap.html">Roadmap</a></li>
+                <li><a href="api.html">API</a></li>
+                <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger" class="github-btn">
+                    <i class="fab fa-github"></i> GitHub
+                </a></li>
+            </ul>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="docs-sidebar">
+            <div class="sidebar-section">
+                <h3>Getting Started</h3>
+                <ul>
+                    <li><a href="#introduction">Introduction</a></li>
+                    <li><a href="#security">Security Note</a></li>
+                    <li><a href="#installation">Installation</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Usage</h3>
+                <ul>
+                    <li><a href="#usage-cli">CLI Commands</a></li>
+                    <li><a href="#usage-config">Configuration</a></li>
+                    <li><a href="#usage-filtering">Filtering</a></li>
+                    <li><a href="#usage-sources">Managing Sources</a></li>
+                    <li><a href="#usage-output">Output Files</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Advanced Features</h3>
+                <ul>
+                    <li><a href="#adv-telegram">Telegram Bot</a></li>
+                    <li><a href="#adv-docker">Docker Automation</a></li>
+                    <li><a href="#adv-web">Web Interface</a></li>
+                    <li><a href="#adv-reliability">Reliability Sorting</a></li>
+                    <li><a href="#adv-gist">Gist Upload</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Development</h3>
+                <ul>
+                    <li><a href="#dev-testing">Testing</a></li>
+                    <li><a href="#dev-contributing">Contributing</a></li>
+                </ul>
+            </div>
+             <div class="sidebar-section">
+                <h3>Misc</h3>
+                <ul>
+                    <li><a href="#faq">FAQ</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <main class="docs-content">
+            <div class="docs-header">
+                <h1>Full Documentation</h1>
+                <p class="lead">A comprehensive guide to MassConfigMerger</p>
+            </div>
+
+            <section id="introduction" class="docs-section">
+                <h2><i class="fas fa-info-circle"></i> Introduction</h2>
+                <p>MassConfigMerger is a toolchain for collecting, testing, and merging free VPN configuration links from public sources. This project provides a command-line tool to automatically fetch VPN configurations, test their connectivity, and merge them into a single, performance-sorted subscription link.</p>
+            </section>
+
+            <section id="security" class="docs-section">
+                <h2><i class="fas fa-shield-alt"></i> Security Note</h2>
+                <div class="alert alert-warning">
+                    <strong>Disclaimer:</strong> All VPN servers collected by this tool come from public lists. Operators are unknown and may log or even alter your traffic. Avoid using them for banking or other sensitive tasks.
+                </div>
+                <ul class="checklist">
+                    <li>Nodes come from public sources with unknown operators.</li>
+                    <li>Avoid using for banking or sensitive work.</li>
+                    <li>Traffic may be logged or modified.</li>
+                    <li>Best for casual browsing or bypassing blocks, not as a secure VPN.</li>
+                    <li>Use at your own risk.</li>
+                </ul>
+            </section>
+
+            <section id="installation" class="docs-section">
+                <h2><i class="fas fa-download"></i> Installation</h2>
+                <p>You need Python 3.8 or newer. You can install MassConfigMerger using one of the following methods:</p>
+
+                <h3>Method 1: pip (Recommended)</h3>
+                <div class="code-block"><pre><code>pip install massconfigmerger</code></pre></div>
+
+                <h3>Method 2: Docker</h3>
+                <div class="code-block"><pre><code>docker pull massconfigmerger/massconfigmerger:latest</code></pre></div>
+
+                <h3>Method 3: From Source</h3>
+                <div class="code-block"><pre><code>git clone https://github.com/AmirrezaFarnamTaheri/MassConfigMerger.git
+cd MassConfigMerger
+pip install -e .[dev]</code></pre></div>
+            </section>
+
+            <section id="usage-cli" class="docs-section">
+                <h2><i class="fas fa-terminal"></i> CLI Commands</h2>
+                <p>The main command is <code>massconfigmerger</code>, which has several subcommands:</p>
+                <ul>
+                    <li><code>fetch</code>: Gathers configurations from sources.</li>
+                    <li><code>merge</code>: Tests and merges configurations.</li>
+                    <li><code>retest</code>: Retests an existing list of configurations.</li>
+                    <li><code>full</code>: Runs fetch and merge sequentially.</li>
+                    <li><code>sources</code>: Manages the list of sources.</li>
+                </ul>
+                <p>For more help, run <code>massconfigmerger &lt;command&gt; --help</code>.</p>
+            </section>
+
+            <section id="usage-config" class="docs-section">
+                <h2><i class="fas fa-cog"></i> Configuration</h2>
+                <p>Copy <code>config.yaml.example</code> to <code>config.yaml</code> and customize it. You can override settings with environment variables (e.g., <code>MASSCONFIGMERGER_NETWORK__CONCURRENT_LIMIT=50</code>).</p>
+            </section>
+
+            <section id="usage-filtering" class="docs-section">
+                <h2><i class="fas fa-filter"></i> Filtering</h2>
+                <p>You can filter by protocol, country, or regex patterns.</p>
+                <div class="code-block"><pre><code># Filter by protocol
+massconfigmerger merge --include-protocols VMESS,VLESS
+
+# Filter by country
+massconfigmerger merge --geoip-db GeoLite2-Country.mmdb --include-country US,CA
+
+# Filter by regex
+massconfigmerger merge --include-pattern "premium|vip"</code></pre></div>
+            </section>
+
+            <section id="usage-sources" class="docs-section">
+                <h2><i class="fas fa-list-ul"></i> Managing Sources</h2>
+                <div class="code-block"><pre><code># List all sources
+massconfigmerger sources list
+
+# Add a new source
+massconfigmerger sources add "http://example.com/new-source"
+
+# Remove a source
+massconfigmerger sources remove "http://example.com/new-source"</code></pre></div>
+            </section>
+
+            <section id="usage-output" class="docs-section">
+                <h2><i class="fas fa-file-export"></i> Output Files</h2>
+                <table class="docs-table">
+                    <thead><tr><th>File Name</th><th>Purpose</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>vpn_subscription_base64.txt</code></td><td>Base64-encoded file for direct import.</td></tr>
+                        <tr><td><code>vpn_subscription_raw.txt</code></td><td>Plain text list of all VPN configuration links.</td></tr>
+                        <tr><td><code>vpn_detailed.csv</code></td><td>Spreadsheet with detailed info about each server.</td></tr>
+                        <tr><td><code>vpn_report.json</code></td><td>Report with all stats and configurations in JSON format.</td></tr>
+                        <tr><td><code>vpn_singbox.json</code></td><td>Outbound objects for sing-box/Stash.</td></tr>
+                        <tr><td><code>clash.yaml</code></td><td>A Clash configuration.</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="adv-telegram" class="docs-section">
+                <h2><i class="fab fa-telegram-plane"></i> Telegram Bot</h2>
+                <p>Set <code>telegram_api_id</code>, <code>telegram_api_hash</code>, and <code>telegram_bot_token</code> in <code>config.yaml</code> to enable the bot interface. Run with <code>massconfigmerger fetch --bot</code>.</p>
+            </section>
+
+            <section id="adv-docker" class="docs-section">
+                <h2><i class="fab fa-docker"></i> Docker Automation</h2>
+                <p>The included <code>docker-compose.yml</code> automates running the scripts. Start with <code>docker-compose up -d</code>.</p>
+            </section>
+
+            <section id="adv-web" class="docs-section">
+                <h2><i class="fas fa-globe"></i> Web Interface</h2>
+                <p>Install with <code>pip install massconfigmerger[web]</code> and run with <code>python -m massconfigmerger.web</code>.</p>
+            </section>
+
+            <section id="adv-reliability" class="docs-section">
+                <h2><i class="fas fa-chart-line"></i> Reliability Sorting</h2>
+                <p>Use <code>massconfigmerger merge --sort-by reliability</code> to rank servers by past success rates.</p>
+            </section>
+
+            <section id="adv-gist" class="docs-section">
+                <h2><i class="fab fa-github"></i> Gist Upload</h2>
+                <p>Use <code>--upload-gist</code> to automatically upload the generated files to a private GitHub Gist.</p>
+            </section>
+
+            <section id="dev-testing" class="docs-section">
+                <h2><i class="fas fa-vial"></i> Testing</h2>
+                <p>Install dev dependencies with <code>pip install -e .[dev]</code> and run tests with <code>pytest</code>.</p>
+            </section>
+
+            <section id="dev-contributing" class="docs-section">
+                <h2><i class="fas fa-code-branch"></i> Contributing</h2>
+                <p>See <code>CONTRIBUTING.md</code> for contribution guidelines.</p>
+            </section>
+
+            <section id="faq" class="docs-section">
+                <h2><i class="fas fa-question-circle"></i> FAQ</h2>
+                <div class="troubleshooting-item">
+                    <h3>Why does the script take so long?</h3>
+                    <p>The merger checks hundreds of servers. Reduce the number of sources or use a smaller <code>--concurrent-limit</code>. Skipping tests with <code>--no-url-test</code> can also speed up runs.</p>
+                </div>
+                <div class="troubleshooting-item">
+                    <h3>There is no output directory</h3>
+                    <p>Ensure you ran the script in this repository and watch for errors. Results are saved in the <code>output/</code> folder or the location given by <code>--output-dir</code>.</p>
+                </div>
+                <div class="troubleshooting-item">
+                    <h3>GeoIP lookup errors</h3>
+                    <p>Install the <code>geoip2</code> package and download the free GeoLite2 database from MaxMind. Pass <code>--geoip-db /path/to/GeoLite2-Country.mmdb</code> to enable country filtering.</p>
+                </div>
+            </section>
+
+            <div class="docs-navigation">
+                <a href="quickstart.html" class="prev-page"><i class="fas fa-arrow-left"></i> Quick Start</a>
+                <a href="roadmap.html" class="next-page">Roadmap <i class="fas fa-arrow-right"></i></a>
+            </div>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <h4>MassConfigMerger</h4>
+                    <p>High-performance VPN configuration aggregator and merger.</p>
+                    <div class="social-links">
+                        <a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger"><i class="fab fa-github"></i></a>
+                    </div>
+                </div>
+                <div class="footer-col">
+                    <h4>Documentation</h4>
+                    <ul>
+                        <li><a href="quickstart.html">Quick Start</a></li>
+                        <li><a href="docs.html">Full Documentation</a></li>
+                        <li><a href="api.html">API Reference</a></li>
+                        <li><a href="roadmap.html">Roadmap</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/issues">Report Issues</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/discussions">Discussions</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/blob/main/CONTRIBUTING.md">Contributing</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/blob/main/CHANGELOG.md">Changelog</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Support</h4>
+                    <ul>
+                        <li><a href="docs.html#faq">Troubleshooting</a></li>
+                        <li><a href="#">Community</a></li>
+                        <li><a href="#">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 MassConfigMerger. Released under MIT License.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+    <script src="js/docs.js"></script>
+</body>
+</html>
