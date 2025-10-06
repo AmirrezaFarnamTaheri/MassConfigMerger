@@ -45,7 +45,9 @@ dev = [
     "pip-audit",
 ]
 web = [
-    "Flask"
+    "Flask",
+    "prometheus_client",
+    "asgiref"
 ]
 
 [tool.setuptools.packages.find]

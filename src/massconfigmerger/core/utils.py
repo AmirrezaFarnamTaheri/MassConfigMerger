@@ -15,6 +15,8 @@ import logging
 import math
 import random
 import re
+import socket
+from ipaddress import ip_address
 from typing import Any, Callable, Optional, Set
 from urllib.parse import urlparse
 
@@ -297,7 +299,8 @@ async def fetch_text(
 
     This function makes an HTTP GET request to the specified URL. If the
     request fails or returns a server-side error, it will retry with an
-    exponentially increasing delay.
+    exponentially increasing delay. This function includes SSRF protection
+    by resolving the hostname to a safe IP address before connecting.
 
     Args:
         session: The aiohttp client session to use for the request.
@@ -311,18 +314,55 @@ async def fetch_text(
     Returns:
         The text content of the response.
     Raises:
-        NetworkError: If the request fails after all retries.
+        NetworkError: If the request fails after all retries or if SSRF checks fail.
     """
     parsed = urlparse(url)
     if not parsed.scheme or not parsed.netloc:
         raise NetworkError(f"Invalid URL for fetch_text: {url}")
+
+    # --- SSRF Mitigation ---
+    hostname = parsed.hostname
+    if not hostname or hostname in BLOCKED_HOSTS:
+        raise NetworkError(f"Blocked or invalid hostname for security reasons: {hostname}")
+    if parsed.scheme not in SAFE_URL_SCHEMES:
+        raise NetworkError(f"Invalid URL scheme: {parsed.scheme}")
+
+    # Resolve hostname to IP addresses
+    try:
+        loop = asyncio.get_running_loop()
+        addrinfos = await loop.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP)
+    except socket.gaierror as e:
+        raise NetworkError(f"DNS resolution failed for {hostname}") from e
+
+    # Find the first public IP address
+    safe_ip = None
+    for _, _, _, _, sockaddr in addrinfos:
+        ip = ip_address(sockaddr[0])
+        if not (
+            ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_unspecified
+        ):
+            safe_ip = str(ip)
+            break
+
+    if not safe_ip:
+        raise NetworkError(f"No safe, public IP address found for {hostname}")
+
+    # Reconstruct the URL with the resolved IP and set the Host header
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    path = parsed.path or "/"
+    request_url = parsed._replace(netloc=f"{safe_ip}:{port}", path=path).geturl()
+    request_headers = {"Host": hostname}
+    # --- End SSRF Mitigation ---
 
     last_exc = None
     attempt = 0
     while attempt < retries:
         try:
             async with session.get(
-                url, timeout=aiohttp.ClientTimeout(total=timeout), proxy=proxy
+                request_url,
+                timeout=aiohttp.ClientTimeout(total=timeout),
+                proxy=proxy,
+                headers=request_headers,
             ) as resp:
                 if resp.status == 200:
                     return await resp.text(errors="ignore")

@@ -10,6 +10,7 @@ from pathlib import Path
 from flask import Flask, jsonify, render_template_string, send_file
 from prometheus_client import make_wsgi_app
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
+import nest_asyncio
 
 from .config import load_config
 from .constants import (
@@ -20,7 +21,6 @@ from .constants import (
     SOURCES_FILE,
 )
 from .core.file_utils import find_project_root
-from .core.file_utils import find_project_root
 from .db import Database
 from .pipeline import run_aggregation_pipeline
 from .vpn_merger import run_merger as run_merger_pipeline
@@ -28,6 +28,14 @@ from .vpn_merger import run_merger as run_merger_pipeline
 app = Flask(__name__)
 
 CONFIG_PATH = Path(CONFIG_FILE_NAME)
+
+
+def _get_root() -> Path:
+    """Get project root or fall back to CWD if not in a project env."""
+    try:
+        return find_project_root()
+    except FileNotFoundError:
+        return Path.cwd()
 
 
 def load_cfg():
@@ -101,8 +109,9 @@ def aggregate() -> dict:
 @app.route("/merge")
 def merge() -> dict:
     """Run the VPN merger using the latest aggregated results."""
+    nest_asyncio.apply()
     cfg = load_cfg()
-    project_root = find_project_root()
+    project_root = _get_root()
     output_dir = project_root / cfg.output.output_dir
     resume_file = output_dir / RAW_SUBSCRIPTION_FILE_NAME
     if not resume_file.exists():
@@ -118,7 +127,7 @@ def merge() -> dict:
 def report():
     """Display the HTML or JSON report."""
     cfg = load_cfg()
-    project_root = find_project_root()
+    project_root = _get_root()
     output_dir = project_root / cfg.output.output_dir
     html_report = output_dir / HTML_REPORT_FILE_NAME
     if html_report.exists():
@@ -134,18 +143,21 @@ def report():
 
 
 @app.route("/history")
-async def history():
+def history():
     """Display the proxy history from the database."""
     cfg = load_cfg()
-    project_root = find_project_root()
+    project_root = _get_root()
     db_path = project_root / cfg.output.history_db_file
-    db = Database(db_path)
 
-    try:
-        await db.connect()
-        history_data = await db.get_proxy_history()
-    finally:
-        await db.close()
+    async def _fetch_history():
+        db = Database(db_path)
+        try:
+            await db.connect()
+            return await db.get_proxy_history()
+        finally:
+            await db.close()
+
+    history_data = asyncio.run(_fetch_history())
 
     def _safe_ratio(stats: dict) -> float:
         try:

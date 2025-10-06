@@ -194,11 +194,16 @@ class OutputSettings(BaseModel):
         if v is None:
             return None
 
-        path_str = str(v)
-        if Path(path_str).is_absolute() or ".." in Path(path_str).parts:
+        # Normalize input
+        path_str = str(v).strip()
+        p = Path(path_str)
+
+        # Reject absolute paths and parent traversal anywhere in parts
+        if p.is_absolute() or ".." in p.parts:
             raise ValueError(f"Path cannot be absolute or contain '..': {path_str}")
 
-        return Path(path_str)
+        # Allow drive letters if not absolute (e.g., 'C:folder' on Windows)
+        return p
 
     history_db_file: Path = Field(
         Path(HISTORY_DB_FILE_NAME),
