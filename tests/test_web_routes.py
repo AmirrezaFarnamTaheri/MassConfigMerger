@@ -218,3 +218,17 @@ def test_aggregate_route_exception(mock_load_config, mock_run_pipeline, client, 
 
     with pytest.raises(Exception, match="Test exception"):
         client.get("/aggregate")
+
+
+def test_report_route_no_project_root(client, fs):
+    """Test the /report route when pyproject.toml is not found."""
+    # Do not create pyproject.toml to simulate a non-project environment
+    fs.create_file("config.yaml", contents="output:\n  output_dir: 'fake_output'")
+    fs.create_dir("fake_output")
+    fs.create_file("fake_output/vpn_report.html", contents=b"<h1>HTML Report</h1>")
+
+    # The application should fall back to the current working directory
+    response = client.get("/report")
+
+    assert response.status_code == 200
+    assert response.data == b"<h1>HTML Report</h1>"

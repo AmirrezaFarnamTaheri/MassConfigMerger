@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import pytest
 import asyncio
-from unittest.mock import AsyncMock, patch
+import socket
+from unittest.mock import AsyncMock, patch, MagicMock
 
 import aiohttp
+from massconfigmerger.exceptions import NetworkError
 from massconfigmerger.config import Settings
 from massconfigmerger.core.config_processor import ConfigResult
 from massconfigmerger.core.utils import (
@@ -97,9 +99,86 @@ async def test_fetch_text_retry_logic():
     ]
 
     # Use a small delay for testing
-    result = await fetch_text(
-        mock_session, "http://example.com", timeout=10, retries=2, base_delay=0.01, jitter=0.1
-    )
+    with patch("asyncio.get_running_loop") as mock_get_loop:
+        mock_get_loop.return_value.getaddrinfo = AsyncMock(return_value=[
+            (socket.AF_INET, socket.SOCK_STREAM, 6, '', ('8.8.8.8', 0))
+        ])
+        result = await fetch_text(
+            mock_session, "http://example.com", timeout=10, retries=2, base_delay=0.01, jitter=0.1
+        )
 
     assert result == "success"
     assert mock_session.get.call_count == 2
+
+
+@pytest.fixture
+def mock_session():
+    """Fixture for a mocked aiohttp ClientSession."""
+    session = MagicMock(spec=aiohttp.ClientSession)
+
+    mock_response = AsyncMock()
+    mock_response.status = 200
+    mock_response.text.return_value = "Success"
+
+    async_cm = AsyncMock()
+    async_cm.__aenter__.return_value = mock_response
+    session.get.return_value = async_cm
+
+    return session
+
+
+@pytest.mark.asyncio
+@patch("asyncio.get_running_loop")
+async def test_fetch_text_ssrf_safe_ip(mock_get_loop, mock_session):
+    """Test fetch_text with a URL that resolves to a safe IP."""
+    mock_get_loop.return_value.getaddrinfo = AsyncMock(return_value=[
+        (socket.AF_INET, socket.SOCK_STREAM, 6, '', ('8.8.8.8', 0))
+    ])
+
+    url = "http://safe.example.com"
+    await fetch_text(mock_session, url)
+
+    mock_session.get.assert_called_once()
+    call_args, call_kwargs = mock_session.get.call_args
+    assert call_args[0] == "http://8.8.8.8:80/"
+    assert call_kwargs["headers"] == {"Host": "safe.example.com"}
+
+
+@pytest.mark.asyncio
+async def test_fetch_text_ssrf_blocked_host(mock_session):
+    """Test that fetch_text blocks requests to localhost."""
+    url = "http://localhost/secret"
+    with pytest.raises(NetworkError, match="Blocked or invalid hostname"):
+        await fetch_text(mock_session, url)
+
+
+@pytest.mark.asyncio
+@patch("asyncio.get_running_loop")
+async def test_fetch_text_ssrf_private_ip(mock_get_loop, mock_session):
+    """Test that fetch_text blocks URLs resolving to private IPs."""
+    mock_get_loop.return_value.getaddrinfo = AsyncMock(return_value=[
+        (socket.AF_INET, socket.SOCK_STREAM, 6, '', ('192.168.1.1', 0))
+    ])
+
+    url = "http://private.example.com"
+    with pytest.raises(NetworkError, match="No safe, public IP address found"):
+        await fetch_text(mock_session, url)
+
+
+@pytest.mark.asyncio
+@patch("asyncio.get_running_loop")
+async def test_fetch_text_ssrf_dns_failure(mock_get_loop, mock_session):
+    """Test that fetch_text handles DNS resolution failures."""
+    mock_get_loop.return_value.getaddrinfo = AsyncMock(side_effect=socket.gaierror)
+
+    url = "http://nonexistent.domain.xyz"
+    with pytest.raises(NetworkError, match="DNS resolution failed"):
+        await fetch_text(mock_session, url)
+
+
+@pytest.mark.asyncio
+async def test_fetch_text_invalid_url_scheme(mock_session):
+    """Test that fetch_text rejects invalid URL schemes."""
+    url = "ftp://example.com/resource"
+    with pytest.raises(NetworkError, match="Invalid URL scheme"):
+        await fetch_text(mock_session, url)
