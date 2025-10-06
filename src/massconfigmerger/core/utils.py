@@ -361,25 +361,47 @@ async def fetch_text(
     raise NetworkError(f"Failed to fetch {url} after {retries} retries.") from last_exc
 
 
+import ipaddress
+import socket
+
 def is_safe_url(url: str) -> bool:
     """
     Check if a URL is safe to fetch.
 
-    This function validates the URL scheme against a whitelist and checks
-    the hostname against a blacklist of reserved or local addresses.
-
-    Args:
-        url: The URL to validate.
-
-    Returns:
-        True if the URL is safe, False otherwise.
+    Validates scheme and hostname and prevents DNS rebinding by resolving
+    the hostname to IPs and rejecting loopback, link-local, and private ranges.
     """
     try:
         parsed = urlparse(url)
         if parsed.scheme not in SAFE_URL_SCHEMES:
             return False
-        if not parsed.hostname or parsed.hostname in BLOCKED_HOSTS:
+        hostname = parsed.hostname
+        if not hostname or hostname in BLOCKED_HOSTS:
             return False
-    except (ValueError, AttributeError):
+
+        # Resolve hostname to all associated IPs and validate each.
+        try:
+            addrinfos = socket.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP)
+        except socket.gaierror:
+            return False
+
+        for family, _, _, _, sockaddr in addrinfos:
+            ip_str = sockaddr[0] if isinstance(sockaddr, tuple) else None
+            if not ip_str:
+                continue
+            try:
+                ip = ipaddress.ip_address(ip_str)
+            except ValueError:
+                return False
+            # Reject loopback, link-local, private, multicast, unspecified
+            if (
+                ip.is_loopback
+                or ip.is_link_local
+                or ip.is_private
+                or ip.is_multicast
+                or ip.is_unspecified
+            ):
+                return False
+    except Exception:
         return False
     return True
