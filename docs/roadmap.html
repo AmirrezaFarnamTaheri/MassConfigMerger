@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roadmap - MassConfigMerger</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/docs.css">
+    <style>
+        .roadmap-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        .roadmap-phase {
+            background: var(--dark-surface);
+            border-radius: 1rem;
+            padding: 2rem;
+            border-left: 4px solid var(--primary-color);
+        }
+        .roadmap-phase h2 {
+            border-bottom: none;
+            margin-bottom: 1rem;
+        }
+        .roadmap-phase .status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 99px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 1rem;
+        }
+        .status-completed { background: var(--success-color); color: white; }
+        .status-inprogress { background: var(--accent-color); color: var(--dark-bg); }
+        .status-planned { background: var(--dark-border); color: var(--text-secondary); }
+        .feature-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        .feature-list li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .feature-list li i {
+            color: var(--success-color);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <i class="fas fa-network-wired"></i>
+                <span>MassConfigMerger</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="docs.html">Documentation</a></li>
+                <li><a href="quickstart.html">Quick Start</a></li>
+                <li><a href="roadmap.html" class="active">Roadmap</a></li>
+                <li><a href="api.html">API</a></li>
+                <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger" class="github-btn">
+                    <i class="fab fa-github"></i> GitHub
+                </a></li>
+            </ul>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <main class="docs-content" style="max-width: 1000px;">
+            <div class="docs-header">
+                <h1>Project Roadmap</h1>
+                <p class="lead">Our vision for the future of MassConfigMerger. This is a living document and may change based on community feedback.</p>
+            </div>
+
+            <div class="roadmap-container">
+                <div class="roadmap-phase">
+                    <h2>Phase 1: Core Functionality <span class="status status-completed">Completed</span></h2>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check-circle"></i> CLI for fetching, merging, and testing</li>
+                        <li><i class="fas fa-check-circle"></i> Support for multiple protocols (VMess, VLESS, etc.)</li>
+                        <li><i class="fas fa-check-circle"></i> Output generation for Clash and Sing-Box</li>
+                        <li><i class="fas fa-check-circle"></i> Basic filtering (protocol, country)</li>
+                        <li><i class="fas fa-check-circle"></i> Docker support</li>
+                    </ul>
+                </div>
+
+                <div class="roadmap-phase">
+                    <h2>Phase 2: Enhancements & Reliability <span class="status status-inprogress">In Progress</span></h2>
+                     <ul class="feature-list">
+                        <li><i class="fas fa-check-circle"></i> Advanced testing (bandwidth, packet loss, jitter)</li>
+                        <li><i class="fas fa-check-circle"></i> Enhanced security checks (IP reputation, certificate validation)</li>
+                        <li><i class="fas fa-check-circle"></i> Historical performance tracking and reliability sorting</li>
+                        <li><i class="fas fa-check-circle"></i> Web interface for monitoring and control</li>
+                        <li><i class="fas fa-check-circle"></i> Improved documentation and GitHub Pages site</li>
+                    </ul>
+                </div>
+
+                <div class="roadmap-phase">
+                    <h2>Phase 3: Extensibility & Usability <span class="status status-planned">Planned</span></h2>
+                     <ul class="feature-list">
+                        <li><i class="far fa-circle"></i> Plugin system for custom parsers and output formats</li>
+                        <li><i class="far fa-circle"></i> Interactive TUI (Text-based User Interface)</li>
+                        <li><i class="far fa-circle"></i> REST API for programmatic control</li>
+                        <li><i class="far fa-circle"></i> Advanced filtering with complex expressions</li>
+                        <li><i class="far fa-circle"></i> Support for more VPN clients and protocols</li>
+                    </ul>
+                </div>
+
+                 <div class="roadmap-phase">
+                    <h2>Phase 4: Ecosystem Integration <span class="status status-planned">Planned</span></h2>
+                     <ul class="feature-list">
+                        <li><i class="far fa-circle"></i> Prometheus exporter for metrics</li>
+                        <li><i class="far fa-circle"></i> Kubernetes deployment manifests (Helm chart)</li>
+                        <li><i class="far fa-circle"></i> Integration with notification services (Pushover, etc.)</li>
+                        <li><i class="far fa-circle"></i> Official Python SDK for developers</li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <h4>MassConfigMerger</h4>
+                    <p>High-performance VPN configuration aggregator and merger.</p>
+                    <div class="social-links">
+                        <a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger"><i class="fab fa-github"></i></a>
+                    </div>
+                </div>
+                <div class="footer-col">
+                    <h4>Documentation</h4>
+                    <ul>
+                        <li><a href="quickstart.html">Quick Start</a></li>
+                        <li><a href="docs.html">Full Documentation</a></li>
+                        <li><a href="api.html">API Reference</a></li>
+                        <li><a href="roadmap.html">Roadmap</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/issues">Report Issues</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/discussions">Discussions</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/blob/main/CONTRIBUTING.md">Contributing</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/blob/main/CHANGELOG.md">Changelog</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Support</h4>
+                    <ul>
+                        <li><a href="docs.html#faq">Troubleshooting</a></li>
+                        <li><a href="#">Community</a></li>
+                        <li><a href="#">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 MassConfigMerger. Released under MIT License.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+    <script src="js/docs.js"></script>
+</body>
+</html>
