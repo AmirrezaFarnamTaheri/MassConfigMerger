@@ -19,7 +19,11 @@ from tqdm.asyncio import tqdm_asyncio
 
 from .config import Settings
 from .core import config_normalizer
-from .core.config_processor import ConfigProcessor, ConfigResult
+from .core.config_processor import (
+    ConfigProcessor,
+    ConfigResult,
+    categorize_protocol,
+)
 from .core.utils import get_sort_key
 from .db import Database
 
@@ -55,7 +59,7 @@ async def _test_config(
         config=cfg,
         is_reachable=ping is not None,
         ping_time=ping,
-        protocol=proc.categorize_protocol(cfg),
+        protocol=categorize_protocol(cfg),
         host=host,
         port=port,
         country=country,
@@ -132,10 +136,9 @@ def filter_configs_by_protocol(configs: List[str], settings: Settings) -> List[s
     ):
         return configs
 
-    proc = ConfigProcessor(settings)
     filtered = []
     for cfg in configs:
-        proto = proc.categorize_protocol(cfg).upper()
+        proto = categorize_protocol(cfg).upper()
         if (
             settings.filtering.merge_include_protocols
             and proto not in settings.filtering.merge_include_protocols

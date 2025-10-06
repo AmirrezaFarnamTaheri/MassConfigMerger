@@ -95,3 +95,63 @@ def test_main_run(mock_run):
     from massconfigmerger.web import main
     main()
     mock_run.assert_called_once_with(host="0.0.0.0", port=8080)
+
+
+def test_index_route(client):
+    """Test the index route."""
+    response = client.get("/")
+    assert response.status_code == 200
+    assert b"MassConfigMerger Dashboard" in response.data
+
+
+@patch("massconfigmerger.web.Database")
+def test_history_route_success(MockDatabase, client, fs):
+    """Test the /history route with successful data retrieval."""
+    fs.create_file("config.yaml", contents="output:\n  history_db_file: 'fake.db'")
+
+    mock_db_instance = MockDatabase.return_value
+    mock_db_instance.connect = AsyncMock()
+    mock_db_instance.close = AsyncMock()
+    mock_db_instance.get_proxy_history = AsyncMock(return_value={
+        "proxy1": {"successes": 10, "failures": 0, "last_tested": 1672531200},
+        "proxy2": {"successes": 5, "failures": 5, "last_tested": "1672531201"},
+        "proxy3": {"successes": 0, "failures": 10, "last_tested": "invalid-ts"},
+        "proxy4": {"successes": 1, "failures": 0},
+    })
+
+    response = client.get("/history")
+
+    assert response.status_code == 200
+    data = response.data.decode()
+
+    # Check that the data is sorted by reliability
+    p1 = data.find("proxy1")
+    p2 = data.find("proxy2")
+    p3 = data.find("proxy3")
+    p4 = data.find("proxy4")
+    assert -1 < p1 < p4 < p2 < p3
+
+    # Check for correct data rendering
+    assert "100.00%" in data
+    assert '2023-01-01 00:00:00' in data
+    assert "50.00%" in data
+    assert "0.00%" in data
+    assert "N/A" in data
+
+    mock_db_instance.connect.assert_awaited_once()
+    mock_db_instance.get_proxy_history.assert_awaited_once()
+    mock_db_instance.close.assert_awaited_once()
+
+
+@patch("massconfigmerger.web.Database")
+def test_history_route_empty(MockDatabase, client, fs):
+    """Test the /history route with no data."""
+    fs.create_file("config.yaml", contents="output:\n  history_db_file: 'fake.db'")
+    mock_db_instance = MockDatabase.return_value
+    mock_db_instance.connect = AsyncMock()
+    mock_db_instance.close = AsyncMock()
+    mock_db_instance.get_proxy_history = AsyncMock(return_value={})
+
+    response = client.get("/history")
+    assert response.status_code == 200
+    assert response.data.count(b"<tr>") == 1

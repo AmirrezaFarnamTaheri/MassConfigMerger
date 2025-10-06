@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock, AsyncMock
 
 import pytest
 from massconfigmerger.config import Settings
-from massconfigmerger.tester import NodeTester, _is_ip_address
+from massconfigmerger.tester import NodeTester, is_ip_address
 
 
 @pytest.mark.asyncio

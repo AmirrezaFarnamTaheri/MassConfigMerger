@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Any, List, Optional, Set
 
 from .config import Settings
 from .core.config_processor import ConfigProcessor
@@ -18,6 +18,45 @@ from .core.output_generator import OutputGenerator
 from .core.source_manager import SourceManager
 from .core.utils import get_sort_key
 from .db import Database
+
+
+async def _load_configs(
+    source_manager: SourceManager,
+    sources_file: Path,
+    resume_file: Optional[Path] = None,
+) -> Set[str]:
+    """Load configurations from a resume file or fetch from sources."""
+    if resume_file:
+        logging.info("Resuming from file: %s", resume_file)
+        with resume_file.open() as f:
+            return {line.strip() for line in f if line.strip()}
+
+    logging.info("Fetching configurations from sources file: %s", sources_file)
+    with sources_file.open() as f:
+        sources = [line.strip() for line in f if line.strip()]
+    return await source_manager.fetch_sources(sources)
+
+
+async def _update_proxy_history(db: Database, results: List[Any]) -> None:
+    """Update proxy history in the database based on test results."""
+    logging.debug("Updating proxy history for %d results.", len(results))
+    for result in results:
+        if result.host and result.port:
+            key = f"{result.host}:{result.port}"
+            await db.update_proxy_history(key, result.is_reachable)
+
+
+def _sort_and_trim_results(results: List[Any], cfg: Settings) -> List[Any]:
+    """Sort and trim the list of results based on configuration."""
+    if cfg.processing.enable_sorting:
+        logging.debug("Sorting results by %s.", cfg.processing.sort_by)
+        results.sort(key=get_sort_key(cfg.processing.sort_by))
+
+    if cfg.processing.top_n > 0:
+        logging.info("Trimming results to top %d.", cfg.processing.top_n)
+        results = results[: cfg.processing.top_n]
+
+    return results
 
 
 async def run_merger(
@@ -51,36 +90,29 @@ async def run_merger(
     await db.connect()
 
     try:
-        if resume_file:
-            with resume_file.open() as f:
-                configs = {line.strip() for line in f if line.strip()}
-        else:
-            with sources_file.open() as f:
-                sources = [line.strip() for line in f if line.strip()]
-            configs = await source_manager.fetch_sources(sources)
+        # 1. Load configurations
+        configs = await _load_configs(source_manager, sources_file, resume_file)
 
+        # 2. Process and test
         history = await db.get_proxy_history()
         filtered_configs = config_processor.filter_configs(configs)
         results = await config_processor.test_configs(filtered_configs, history)
 
-        # Update history for all tested proxies before sorting and trimming
-        for result in results:
-            if result.host and result.port:
-                key = f"{result.host}:{result.port}"
-                await db.update_proxy_history(key, result.is_reachable)
+        # 3. Update proxy history
+        await _update_proxy_history(db, results)
 
-        if cfg.processing.enable_sorting:
-            results.sort(key=get_sort_key(cfg.processing.sort_by))
+        # 4. Sort and trim results
+        sorted_results = _sort_and_trim_results(results, cfg)
 
-        if cfg.processing.top_n > 0:
-            results = results[: cfg.processing.top_n]
-
-        final_configs = [r.config for r in results]
+        # 5. Write final output
+        final_configs = [r.config for r in sorted_results]
         output_dir = Path(cfg.output.output_dir)
         output_generator.write_outputs(final_configs, output_dir)
 
-        logging.info("Merge complete. Found %d configs.", len(final_configs))
+        logging.info("Merge complete. Found %d final configs.", len(final_configs))
 
     finally:
         await source_manager.close_session()
         await db.close()
+
+# End of file

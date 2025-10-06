@@ -88,3 +88,59 @@ def test_create_semantic_hash_trojan_no_user_pass():
     h2 = create_semantic_hash("trojan://password@example.com:443")
     assert h1 is not None
     assert h1 != h2
+
+
+def test_extract_host_port_vless_fallback():
+    """Test extract_host_port fallback for a VLESS URI that isn't base64."""
+    config = "vless://uuid@example.com:443?encryption=none#test"
+    host, port = extract_host_port(config)
+    assert host == "example.com"
+    assert port == 443
+
+
+def test_extract_host_port_ssr_not_enough_parts():
+    """Test extract_host_port for SSR with not enough parts after decoding."""
+    # This base64 decodes to "hostonly"
+    config = "ssr://aG9zdG9ubHk="
+    host, port = extract_host_port(config)
+    assert host is None
+    assert port is None
+
+
+def test_create_semantic_hash_oversized_payload():
+    """Test create_semantic_hash with oversized base64 payloads."""
+    # VLESS/VMess - identifier should be None
+    oversized_vless = "vless://" + "a" * 5000
+    assert create_semantic_hash(oversized_vless, max_decode_size=1024) is not None
+
+    # SS - identifier should be None
+    oversized_ss = "ss://" + "a" * 5000 + "@host:port"
+    assert create_semantic_hash(oversized_ss, max_decode_size=1024) is not None
+
+
+def test_create_semantic_hash_trojan_user_and_pass():
+    """Test create_semantic_hash for a trojan with user and password."""
+    config = "trojan://user:pass@example.com:443"
+    h = create_semantic_hash(config)
+    assert h is not None
+
+
+def test_create_semantic_hash_trojan_only_pass():
+    """Test create_semantic_hash for a trojan with only a password."""
+    config = "trojan://:pass@example.com:443"
+    h = create_semantic_hash(config)
+    assert h is not None
+
+
+def test_create_semantic_hash_ss_user_pass():
+    """Test create_semantic_hash for a non-standard ss link with user:pass."""
+    config = "ss://user:pass@example.com:123"
+    h = create_semantic_hash(config)
+    assert h is not None
+
+
+def test_apply_tuning_no_double_slash():
+    """Test apply_tuning with a config that has no double slash."""
+    config = "trojan:password@example.com:443"
+    tuned = apply_tuning(config, Settings())
+    assert tuned == config

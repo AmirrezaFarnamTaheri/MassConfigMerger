@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import aiosqlite
-import asyncio
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -67,3 +66,5 @@ class Database:
             """
         await self.conn.execute(sql, (key,))
         await self.conn.commit()
+
+# End of file

@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import argparse
+import socket
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
 from massconfigmerger.source_operations import (
+    _is_public_url,
     add_source,
     handle_add_source,
     handle_list_sources,
@@ -138,3 +140,65 @@ def test_handle_remove_source_not_found(sources_file: Path, capsys):
     handle_remove_source(args)
     captured = capsys.readouterr()
     assert f"Source not found: {url}" in captured.out
+
+
+@patch("socket.gethostbyname")
+def test_is_public_url(mock_gethostbyname):
+    """Test the _is_public_url function with various scenarios."""
+    # Public IP
+    mock_gethostbyname.return_value = "8.8.8.8"
+    assert _is_public_url("http://google.com") is True
+
+    # Private IP
+    mock_gethostbyname.return_value = "192.168.1.1"
+    assert _is_public_url("http://private-router") is False
+
+    # GAI error
+    mock_gethostbyname.side_effect = socket.gaierror
+    assert _is_public_url("http://invalid-host") is False
+
+    # No hostname
+    assert _is_public_url("/just/a/path") is False
+
+
+def test_handle_add_source_invalid_url(capsys):
+    """Test handle_add_source with an invalid URL format."""
+    args = argparse.Namespace(url="not-a-url")
+    handle_add_source(args)
+    captured = capsys.readouterr()
+    assert "Invalid URL format" in captured.out
+
+
+def test_handle_remove_source_invalid_url(capsys):
+    """Test handle_remove_source with an invalid URL format."""
+    args = argparse.Namespace(url="not-a-url")
+    handle_remove_source(args)
+    captured = capsys.readouterr()
+    assert "Invalid URL format" in captured.out
+
+
+def test_handle_remove_source_normalized_no_path(sources_file: Path, capsys):
+    """Test removing a URL with no path using a non-normalized equivalent."""
+    url_to_remove = "HTTP://SOURCE1.COM#fragment"
+    args = argparse.Namespace(sources_file=str(sources_file), url=url_to_remove)
+
+    handle_remove_source(args)
+    captured = capsys.readouterr()
+
+    assert "Source removed: http://source1.com" in captured.out
+    assert "http://source1.com" not in list_sources(sources_file)
+
+
+def test_handle_remove_source_normalized_with_path(sources_file: Path, capsys):
+    """Test removing a URL with a path using a non-normalized equivalent."""
+    url_in_file = "http://source2.com/path"
+    add_source(sources_file, url_in_file)
+
+    url_to_remove = "HTTP://SOURCE2.COM/path?q=1#frag"
+    args = argparse.Namespace(sources_file=str(sources_file), url=url_to_remove)
+
+    handle_remove_source(args)
+    captured = capsys.readouterr()
+
+    assert f"Source removed: {url_in_file}" in captured.out
+    assert url_in_file not in list_sources(sources_file)

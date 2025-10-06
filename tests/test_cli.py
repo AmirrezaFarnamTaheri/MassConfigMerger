@@ -120,6 +120,9 @@ def test_cli_sources_add_command(fs):
     assert args.url == "http://example.com/source"
 
 
+from massconfigmerger.cli import _parse_protocol_list, _parse_protocol_set
+
+
 def test_cli_sources_remove_command(fs):
     """Test the 'sources remove' command."""
     fs.create_file("sources.txt", contents="http://example.com/source\n")
@@ -129,3 +132,65 @@ def test_cli_sources_remove_command(fs):
     mock_handler.assert_called_once()
     args = mock_handler.call_args[0][0]
     assert args.url == "http://example.com/source"
+
+
+def test_parse_protocol_list_with_list_input():
+    """Test _parse_protocol_list with a list input."""
+    protocols = ["VLESS", " trojan ", " ss"]
+    parsed = _parse_protocol_list(protocols)
+    assert parsed == ["VLESS", "TROJAN", "SS"]
+
+
+def test_parse_protocol_set_with_list_input():
+    """Test _parse_protocol_set with a list input."""
+    protocols = ["VLESS", " trojan ", " ss", "VLESS"]
+    parsed = _parse_protocol_set(protocols)
+    assert parsed == {"VLESS", "TROJAN", "SS"}
+
+
+@patch("massconfigmerger.cli.load_config", side_effect=ValueError("Invalid config"))
+def test_cli_config_value_error(mock_load_config, capsys, fs):
+    """Test that default Settings are used when the config file is invalid."""
+    fs.create_file("sources.txt")
+    fs.create_file("channels.txt")
+    mock_handler = MagicMock()
+
+    with patch.dict("massconfigmerger.cli.HANDLERS", {"full": mock_handler}):
+        main(["full"])
+
+    mock_handler.assert_called_once()
+    captured = capsys.readouterr()
+    assert "Config file not found" in captured.out
+
+
+@patch("massconfigmerger.commands.handle_fetch")
+@patch("massconfigmerger.cli.load_config")
+def test_main_entrypoint(mock_load_config, mock_handle_fetch, fs):
+    """Test that the main entry point calls main()."""
+    import argparse
+    import runpy
+
+    fs.create_file("config.yaml")
+    mock_load_config.return_value = Settings()
+
+    with patch("sys.argv", ["massconfigmerger", "fetch"]):
+        runpy.run_module("massconfigmerger.cli", run_name="__main__")
+
+    mock_handle_fetch.assert_called_once()
+    args, kwargs = mock_handle_fetch.call_args
+    assert isinstance(args[0], argparse.Namespace)
+    assert isinstance(args[1], Settings)
+
+
+def test_cli_sources_unknown_command(fs):
+    """Test the 'sources' command with an unknown subcommand."""
+    fs.create_file("sources.txt")
+    mock_list = MagicMock()
+    mock_add = MagicMock()
+    mock_remove = MagicMock()
+    with patch.dict("massconfigmerger.cli.SOURCES_HANDLERS", {"list": mock_list, "add": mock_add, "remove": mock_remove}):
+        with pytest.raises(SystemExit):
+            main(["sources", "--sources-file", "sources.txt", "unknown"])
+    mock_list.assert_not_called()
+    mock_add.assert_not_called()
+    mock_remove.assert_not_called()
