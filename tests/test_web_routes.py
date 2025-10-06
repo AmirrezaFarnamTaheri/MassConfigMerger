@@ -11,7 +11,10 @@ from massconfigmerger.web import app
 @pytest.fixture
 def client():
     """Create a test client for the Flask app."""
+    from werkzeug.middleware.dispatcher import DispatcherMiddleware
+    from prometheus_client import make_wsgi_app
     app.config["TESTING"] = True
+    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
     with app.test_client() as client:
         yield client
 
@@ -36,7 +39,9 @@ def test_aggregate_route(mock_load_config, mock_run_pipeline, client, fs):
 @patch("massconfigmerger.web.run_merger_pipeline", new_callable=AsyncMock)
 def test_merge_route_success(mock_run_merger, client, fs):
     """Test the /merge route when the resume file exists."""
+    fs.create_file("pyproject.toml")
     fs.create_file("config.yaml", contents="output:\n  output_dir: 'fake_output'")
+    fs.create_dir("fake_output")
     fs.create_file("fake_output/vpn_subscription_raw.txt")
 
     response = client.get("/merge")
@@ -48,7 +53,9 @@ def test_merge_route_success(mock_run_merger, client, fs):
 
 def test_merge_route_no_resume_file(client, fs):
     """Test the /merge route when the resume file is missing."""
+    fs.create_file("pyproject.toml")
     fs.create_file("config.yaml", contents="output:\n  output_dir: 'fake_output'")
+    fs.create_dir("fake_output")
 
     response = client.get("/merge")
 
@@ -58,8 +65,10 @@ def test_merge_route_no_resume_file(client, fs):
 
 def test_report_route_html(client, fs):
     """Test the /report route when an HTML report exists."""
-    fs.create_file("config.yaml", contents="output:\n  output_dir: '/app/fake_output'")
-    fs.create_file("/app/fake_output/vpn_report.html", contents=b"<h1>HTML Report</h1>")
+    fs.create_file("pyproject.toml")
+    fs.create_file("config.yaml", contents="output:\n  output_dir: 'fake_output'")
+    fs.create_dir("fake_output")
+    fs.create_file("fake_output/vpn_report.html", contents=b"<h1>HTML Report</h1>")
 
     response = client.get("/report")
 
@@ -69,8 +78,10 @@ def test_report_route_html(client, fs):
 
 def test_report_route_json(client, fs):
     """Test the /report route when only a JSON report exists."""
-    fs.create_file("config.yaml", contents="output:\n  output_dir: '/app/fake_output'")
-    fs.create_file("/app/fake_output/vpn_report.json", contents='{"key": "value"}')
+    fs.create_file("pyproject.toml")
+    fs.create_file("config.yaml", contents="output:\n  output_dir: 'fake_output'")
+    fs.create_dir("fake_output")
+    fs.create_file("fake_output/vpn_report.json", contents='{"key": "value"}')
 
     response = client.get("/report")
 
@@ -81,7 +92,9 @@ def test_report_route_json(client, fs):
 
 def test_report_route_not_found(client, fs):
     """Test the /report route when no report is found."""
-    fs.create_file("config.yaml", contents="output:\n  output_dir: '/app/fake_output'")
+    fs.create_file("pyproject.toml")
+    fs.create_file("config.yaml", contents="output:\n  output_dir: 'fake_output'")
+    fs.create_dir("fake_output")
 
     response = client.get("/report")
 
@@ -114,7 +127,10 @@ def test_health_check_route(client):
 @patch("massconfigmerger.web.Database")
 def test_history_route_success(MockDatabase, client, fs):
     """Test the /history route with successful data retrieval."""
+    fs.create_file("pyproject.toml")
     fs.create_file("config.yaml", contents="output:\n  history_db_file: 'fake.db'")
+    fs.create_dir("output")
+
 
     mock_db_instance = MockDatabase.return_value
     mock_db_instance.connect = AsyncMock()
@@ -153,7 +169,9 @@ def test_history_route_success(MockDatabase, client, fs):
 @patch("massconfigmerger.web.Database")
 def test_history_route_empty(MockDatabase, client, fs):
     """Test the /history route with no data."""
+    fs.create_file("pyproject.toml")
     fs.create_file("config.yaml", contents="output:\n  history_db_file: 'fake.db'")
+    fs.create_dir("output")
     mock_db_instance = MockDatabase.return_value
     mock_db_instance.connect = AsyncMock()
     mock_db_instance.close = AsyncMock()
@@ -162,3 +180,41 @@ def test_history_route_empty(MockDatabase, client, fs):
     response = client.get("/history")
     assert response.status_code == 200
     assert response.data.count(b"<tr>") == 1
+
+
+@patch("massconfigmerger.web.Database")
+def test_history_route_bad_data(MockDatabase, client, fs):
+    """Test the /history route with malformed data in the database."""
+    fs.create_file("pyproject.toml")
+    fs.create_file("config.yaml", contents="output:\n  history_db_file: 'fake.db'")
+    fs.create_dir("output")
+
+    mock_db_instance = MockDatabase.return_value
+    mock_db_instance.connect = AsyncMock()
+    mock_db_instance.close = AsyncMock()
+    mock_db_instance.get_proxy_history = AsyncMock(return_value={
+        "proxy1": {"successes": "not-a-number", "failures": 1},
+    })
+
+    response = client.get("/history")
+    assert response.status_code == 200
+    # Check that it gracefully handles the bad data and shows 0.00%
+    assert b"0.00%" in response.data
+
+
+def test_metrics_route(client):
+    """Test the /metrics route."""
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    assert b"python_info" in response.data
+
+
+@patch("massconfigmerger.web.run_aggregation_pipeline", new_callable=AsyncMock)
+@patch("massconfigmerger.web.load_config")
+def test_aggregate_route_exception(mock_load_config, mock_run_pipeline, client, fs):
+    """Test the /aggregate route when an exception occurs."""
+    fs.create_file("config.yaml")
+    mock_run_pipeline.side_effect = Exception("Test exception")
+
+    with pytest.raises(Exception, match="Test exception"):
+        client.get("/aggregate")

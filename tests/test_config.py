@@ -96,3 +96,45 @@ def test_load_config_finds_default_config(fs):
 
     settings = load_config()
     assert settings.network.request_timeout == 99
+
+
+@pytest.mark.parametrize(
+    "path_field, malicious_path",
+    [
+        ("output_dir", "/etc/passwd"),
+        ("output_dir", "../../../../etc/passwd"),
+        ("log_dir", "/var/log"),
+        ("log_dir", "../../var/log"),
+        ("history_db_file", "/root/.bash_history"),
+        ("history_db_file", "../.bash_history"),
+        ("surge_file", "/tmp/test.conf"),
+        ("qx_file", "../../../tmp/test.conf"),
+    ],
+)
+def test_output_settings_path_traversal_prevention(path_field, malicious_path):
+    """Test that path traversal attempts are blocked in OutputSettings."""
+    from massconfigmerger.config import OutputSettings
+
+    with pytest.raises(ValidationError) as exc_info:
+        OutputSettings(**{path_field: malicious_path})
+
+    assert "Path cannot be absolute or contain '..'" in str(exc_info.value)
+
+
+def test_output_settings_valid_paths():
+    """Test that valid relative paths are accepted in OutputSettings."""
+    from massconfigmerger.config import OutputSettings
+
+    try:
+        settings = OutputSettings(
+            output_dir="my_output",
+            log_dir="my_logs",
+            history_db_file="data/history.db",
+            surge_file="surge.conf",
+        )
+        assert settings.output_dir == Path("my_output")
+        assert settings.log_dir == Path("my_logs")
+        assert settings.history_db_file == Path("data/history.db")
+        assert settings.surge_file == Path("surge.conf")
+    except ValidationError as e:
+        pytest.fail(f"Valid paths raised a ValidationError unexpectedly: {e}")

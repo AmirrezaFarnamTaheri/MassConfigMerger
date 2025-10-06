@@ -25,6 +25,15 @@ from ..constants import BASE64_RE, MAX_DECODE_SIZE, PROTOCOL_RE
 from ..exceptions import NetworkError
 from .config_processor import ConfigResult
 
+SAFE_URL_SCHEMES = ("http", "https")
+BLOCKED_HOSTS = (
+    "localhost",
+    "127.0.0.1",
+    "::1",
+    "0.0.0.0",
+    "169.254.169.254",
+    "metadata.google.internal",
+)
 _warning_printed = False
 
 # Pre-compile regex for extracting subscription URLs for performance.
@@ -350,3 +359,27 @@ async def fetch_text(
         await asyncio.sleep(sleep_duration)
 
     raise NetworkError(f"Failed to fetch {url} after {retries} retries.") from last_exc
+
+
+def is_safe_url(url: str) -> bool:
+    """
+    Check if a URL is safe to fetch.
+
+    This function validates the URL scheme against a whitelist and checks
+    the hostname against a blacklist of reserved or local addresses.
+
+    Args:
+        url: The URL to validate.
+
+    Returns:
+        True if the URL is safe, False otherwise.
+    """
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in SAFE_URL_SCHEMES:
+            return False
+        if not parsed.hostname or parsed.hostname in BLOCKED_HOSTS:
+            return False
+    except (ValueError, AttributeError):
+        return False
+    return True
