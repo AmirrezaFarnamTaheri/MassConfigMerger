@@ -372,11 +372,15 @@ def is_safe_url(url: str) -> bool:
     the hostname to IPs and rejecting loopback, link-local, and private ranges.
     """
     try:
-        parsed = urlparse(url)
+        parsed = urlparse((url or "").strip())
         if parsed.scheme not in SAFE_URL_SCHEMES:
             return False
         hostname = parsed.hostname
-        if not hostname or hostname in BLOCKED_HOSTS:
+        if not hostname:
+            return False
+        # Normalize hostname: strip trailing dot and lowercase
+        hostname = hostname.rstrip(".").lower()
+        if hostname in BLOCKED_HOSTS:
             return False
 
         try:
@@ -385,14 +389,18 @@ def is_safe_url(url: str) -> bool:
             return False
 
         has_safe_ip = False
-        for _, _, _, _, sockaddr in addrinfos:
-            ip_str = sockaddr[0] if isinstance(sockaddr, tuple) else None
+        for info in addrinfos:
+            # info: (family, type, proto, canonname, sockaddr)
+            sockaddr = info[4]
+            # sockaddr can be (ip, port) for IPv4 or (ip, port, flow, scope) for IPv6
+            ip_str = None
+            if isinstance(sockaddr, tuple) and len(sockaddr) >= 1:
+                ip_str = sockaddr[0]
             if not ip_str:
                 continue
             try:
                 ip = ipaddress.ip_address(ip_str)
             except ValueError:
-                # Skip unparseable entries instead of failing the whole URL
                 continue
             if (
                 ip.is_loopback
