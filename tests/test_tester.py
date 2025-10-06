@@ -81,34 +81,42 @@ async def test_node_tester_disabled():
 @pytest.mark.asyncio
 @patch("massconfigmerger.tester.Reader")
 @patch("massconfigmerger.tester.NodeTester.resolve_host", new_callable=AsyncMock)
-async def test_lookup_country_success(
+async def test_lookup_geo_data_success(
     mock_resolve_host: AsyncMock, MockReader: MagicMock
 ):
-    """Test a successful GeoIP country lookup."""
+    """Test a successful GeoIP lookup."""
     settings = Settings()
     settings.processing.geoip_db = "dummy.mmdb"
     tester = NodeTester(settings)
 
     mock_resolve_host.return_value = "1.2.3.4"
     mock_reader_instance = MockReader.return_value
-    mock_reader_instance.country.return_value.country.iso_code = "US"
+    mock_city_response = MagicMock()
+    mock_city_response.country.iso_code = "US"
+    mock_city_response.traits.isp = "Google"
+    mock_city_response.location.latitude = 37.7749
+    mock_city_response.location.longitude = -122.4194
+    type(mock_reader_instance).city = MagicMock(return_value=mock_city_response)
 
-    country = await tester.lookup_country("example.com")
+    country, isp, lat, lon = await tester.lookup_geo_data("example.com")
 
     assert country == "US"
+    assert isp == "Google"
+    assert lat == 37.7749
+    assert lon == -122.4194
     mock_resolve_host.assert_awaited_once_with("example.com")
     MockReader.assert_called_once_with("dummy.mmdb")
-    mock_reader_instance.country.assert_called_once_with("1.2.3.4")
+    mock_reader_instance.city.assert_called_once_with("1.2.3.4")
 
 
 @pytest.mark.asyncio
-async def test_lookup_country_no_db():
+async def test_lookup_geo_data_no_db():
     """Test that lookup is skipped if no GeoIP DB is configured."""
     settings = Settings()
     settings.processing.geoip_db = None
     tester = NodeTester(settings)
-    country = await tester.lookup_country("example.com")
-    assert country is None
+    geo_data = await tester.lookup_geo_data("example.com")
+    assert geo_data == (None, None, None, None)
 
 
 @pytest.mark.asyncio
@@ -200,8 +208,8 @@ async def test_test_connection_failure(mock_open_connection, mock_resolve_host, 
 @pytest.mark.asyncio
 @patch("massconfigmerger.tester.Reader")
 @patch("massconfigmerger.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value="1.2.3.4")
-async def test_lookup_country_geoip_error(mock_resolve_host, MockReader, caplog):
-    """Test that lookup_country returns None if the GeoIP lookup fails."""
+async def test_lookup_geo_data_geoip_error(mock_resolve_host, MockReader, caplog):
+    """Test that lookup_geo_data returns None if the GeoIP lookup fails."""
     caplog.set_level(logging.DEBUG)
     from massconfigmerger.tester import AddressNotFoundError
     settings = Settings()
@@ -209,10 +217,10 @@ async def test_lookup_country_geoip_error(mock_resolve_host, MockReader, caplog)
     tester = NodeTester(settings)
 
     mock_reader_instance = MockReader.return_value
-    mock_reader_instance.country.side_effect = AddressNotFoundError("IP not found")
+    type(mock_reader_instance).city = MagicMock(side_effect=AddressNotFoundError("IP not found"))
 
-    country = await tester.lookup_country("example.com")
-    assert country is None
+    geo_data = await tester.lookup_geo_data("example.com")
+    assert geo_data == (None, None, None, None)
     assert "GeoIP lookup failed" in caplog.text
 
 @pytest.mark.asyncio
@@ -302,13 +310,13 @@ async def test_test_connection_unresolved_host(mock_resolve_host, caplog):
 
 @pytest.mark.asyncio
 @patch("massconfigmerger.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value=None)
-async def test_lookup_country_unresolved_host(mock_resolve_host, caplog):
-    """Test that lookup_country skips if host cannot be resolved."""
+async def test_lookup_geo_data_unresolved_host(mock_resolve_host, caplog):
+    """Test that lookup_geo_data skips if host cannot be resolved."""
     caplog.set_level(logging.DEBUG)
     settings = Settings()
     settings.processing.geoip_db = "dummy.mmdb"
     with patch("massconfigmerger.tester.Reader"):
         tester = NodeTester(settings)
-        country = await tester.lookup_country("unresolved.com")
-        assert country is None
+        geo_data = await tester.lookup_geo_data("unresolved.com")
+        assert geo_data == (None, None, None, None)
         assert "Skipping GeoIP lookup; unresolved host: unresolved.com" in caplog.text

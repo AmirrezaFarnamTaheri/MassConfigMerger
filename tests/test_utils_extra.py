@@ -17,7 +17,9 @@ from massconfigmerger.core.utils import (
 
 def test_get_sort_key_reliability_none():
     """Test get_sort_key with reliability=None."""
-    key_func = get_sort_key("reliability")
+    settings = Settings()
+    settings.processing.sort_by = "reliability"
+    key_func = get_sort_key(settings)
     result = ConfigResult(
         config="vless://test", protocol="VLESS", is_reachable=True, reliability=None
     )

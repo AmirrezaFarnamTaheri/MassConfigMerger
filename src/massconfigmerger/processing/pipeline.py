@@ -31,7 +31,7 @@ def sort_and_trim_results(
     """Sort and trim the list of results based on configuration."""
     if cfg.processing.enable_sorting:
         logging.debug("Sorting results by %s.", cfg.processing.sort_by)
-        results.sort(key=get_sort_key(cfg.processing.sort_by))
+        results.sort(key=get_sort_key(cfg))
 
     if cfg.processing.top_n > 0:
         logging.info("Trimming results to top %d.", cfg.processing.top_n)

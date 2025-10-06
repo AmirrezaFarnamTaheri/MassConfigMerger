@@ -143,6 +143,12 @@ class FilteringSettings(BaseModel):
     exclude_countries: Optional[Set[str]] = Field(
         None, description="Set of ISO country codes to exclude (e.g., {'IR', 'CN'}). Requires GeoIP."
     )
+    include_isps: Optional[Set[str]] = Field(
+        None, description="Set of ISP names to include (e.g., {'Google', 'Amazon'}). Requires GeoIP."
+    )
+    exclude_isps: Optional[Set[str]] = Field(
+        None, description="Set of ISP names to exclude. Requires GeoIP."
+    )
     max_ping_ms: Optional[int] = Field(
         1000, description="Maximum acceptable ping in milliseconds for a config to be included."
     )
@@ -211,9 +217,15 @@ class SecuritySettings(BaseModel):
 class ProcessingSettings(BaseModel):
     """Settings for controlling the processing, sorting, and testing of configurations."""
 
-    sort_by: Literal["latency", "reliability"] = Field(
+    sort_by: Literal["latency", "reliability", "proximity"] = Field(
         "latency",
-        description="Method for sorting configs ('latency' or 'reliability').",
+        description="Method for sorting configs ('latency', 'reliability', or 'proximity').",
+    )
+    proximity_latitude: Optional[float] = Field(
+        None, description="Latitude for proximity sorting."
+    )
+    proximity_longitude: Optional[float] = Field(
+        None, description="Longitude for proximity sorting."
     )
     enable_sorting: bool = Field(
         True, description="Whether to sort configs by performance."

@@ -9,12 +9,12 @@ from massconfigmerger.tester import NodeTester, is_ip_address
 
 
 @pytest.mark.asyncio
-async def test_lookup_country_empty_host():
-    """Test lookup_country with an empty host string."""
+async def test_lookup_geo_data_empty_host():
+    """Test lookup_geo_data with an empty host string."""
     settings = Settings()
     tester = NodeTester(settings)
-    result = await tester.lookup_country("")
-    assert result is None
+    result = await tester.lookup_geo_data("")
+    assert result == (None, None, None, None)
 
 
 @patch("massconfigmerger.tester.Reader", side_effect=ValueError("Test ValueError"))

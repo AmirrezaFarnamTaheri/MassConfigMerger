@@ -34,6 +34,18 @@ def add_shared_arguments(parser: argparse.ArgumentParser, *groups: str):
             action="append",
             help="Regular expression for configs to skip",
         )
+        group.add_argument(
+            "--include-isps",
+            dest="include_isps",
+            type=str,
+            help="Comma-separated list of ISPs to include",
+        )
+        group.add_argument(
+            "--exclude-isps",
+            dest="exclude_isps",
+            type=str,
+            help="Comma-separated list of ISPs to exclude",
+        )
     if "output" in groups:
         group = parser.add_argument_group("output arguments")
         group.add_argument(
@@ -114,6 +126,25 @@ def add_merge_specific_arguments(
     )
     group.add_argument(
         "--top-n", type=int, default=0, help="Keep only the N fastest configs"
+    )
+    group.add_argument(
+        "--sort-by",
+        dest="sort_by",
+        type=str,
+        choices=["latency", "reliability", "proximity"],
+        help="Sort by latency, reliability, or proximity",
+    )
+    group.add_argument(
+        "--proximity-latitude",
+        dest="proximity_latitude",
+        type=float,
+        help="Your latitude for proximity sorting",
+    )
+    group.add_argument(
+        "--proximity-longitude",
+        dest="proximity_longitude",
+        type=float,
+        help="Your longitude for proximity sorting",
     )
     group.add_argument(
         "--include-protocols",

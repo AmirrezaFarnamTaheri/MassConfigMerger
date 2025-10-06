@@ -81,6 +81,9 @@ class ConfigResult:
     is_reachable: bool = False
     source_url: str = ""
     country: Optional[str] = None
+    isp: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     reliability: Optional[float] = None
 
 
@@ -149,13 +152,48 @@ class ConfigProcessor:
                 filtered.add(cfg)
             return filtered
 
+    def _filter_by_isp(self, results: List[ConfigResult]) -> List[ConfigResult]:
+        """Filter results based on ISP include/exclude lists."""
+        include = self.settings.filtering.include_isps
+        exclude = self.settings.filtering.exclude_isps
+
+        if not include and not exclude:
+            return results
+
+        # Normalize filter lists to lowercase for case-insensitive matching
+        include_lower = {i.lower() for i in include} if include else set()
+        exclude_lower = {e.lower() for e in exclude} if exclude else set()
+
+        def is_match(result: ConfigResult) -> bool:
+            if not result.isp:
+                # Keep configs without ISP info if we are only excluding
+                return not include
+
+            isp_lower = result.isp.lower()
+
+            if include_lower and not any(i in isp_lower for i in include_lower):
+                return False
+
+            if exclude_lower and any(e in isp_lower for e in exclude_lower):
+                return False
+
+            return True
+
+        return [res for res in results if is_match(res)]
+
     async def _test_config(self, cfg: str, history: dict) -> ConfigResult:
         """Test a single configuration and return a ConfigResult."""
         host, port = config_normalizer.extract_host_port(cfg)
         ping_time = None
         if host and port:
-            ping_time = await self.tester.test_connection(host, port)
+            ping_time, geo_data = await asyncio.gather(
+                self.tester.test_connection(host, port),
+                self.tester.lookup_geo_data(host),
+            )
+        else:
+            ping_time, geo_data = None, (None, None, None, None)
 
+        country, isp, latitude, longitude = geo_data
         key = f"{host}:{port}"
         stats = history.get(key)
         reliability = None
@@ -169,6 +207,10 @@ class ConfigProcessor:
             port=port,
             ping_time=ping_time,
             is_reachable=ping_time is not None,
+            country=country,
+            isp=isp,
+            latitude=latitude,
+            longitude=longitude,
             reliability=reliability,
         )
 
@@ -243,6 +285,7 @@ class ConfigProcessor:
                 *tasks, total=len(tasks), desc="Testing configs"
             )
             results = [res for res in results if res is not None]
+            results = self._filter_by_isp(results)
             return await self._filter_malicious(results)
         except Exception as exc:
             logging.debug("An error occurred during config testing: %s", exc)
@@ -266,17 +309,17 @@ class ConfigProcessor:
         """
         return await self.tester.test_connection(host, port)
 
-    async def lookup_country(self, host: str) -> Optional[str]:
+    async def lookup_geo_data(self, host: str) -> tuple:
         """
-        Return the ISO country code for a host using the NodeTester.
+        Return the geo-data for a host using the NodeTester.
 
         Args:
             host: The server hostname or IP address.
 
         Returns:
-            The ISO 3166-1 alpha-2 country code, or None if not found.
+            A tuple containing country, ISP, latitude, and longitude.
         """
-        return await self.tester.lookup_country(host)
+        return await self.tester.lookup_geo_data(host)
 
     def apply_tuning(self, config: str) -> str:
         """

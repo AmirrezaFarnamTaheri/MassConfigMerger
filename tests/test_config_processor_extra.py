@@ -52,16 +52,16 @@ async def test_test_connection_wrapper():
 
 
 @pytest.mark.asyncio
-async def test_lookup_country_wrapper():
-    """Test the lookup_country wrapper method."""
+async def test_lookup_geo_data_wrapper():
+    """Test the lookup_geo_data wrapper method."""
     settings = Settings()
     processor = ConfigProcessor(settings)
 
-    with patch.object(processor.tester, "lookup_country", new_callable=AsyncMock) as mock_lookup:
-        mock_lookup.return_value = "US"
-        result = await processor.lookup_country("example.com")
+    with patch.object(processor.tester, "lookup_geo_data", new_callable=AsyncMock) as mock_lookup:
+        mock_lookup.return_value = ("US", "Google", 37.7749, -122.4194)
+        result = await processor.lookup_geo_data("example.com")
         mock_lookup.assert_awaited_once_with("example.com")
-        assert result == "US"
+        assert result == ("US", "Google", 37.7749, -122.4194)
 
 
 def test_apply_tuning_wrapper():

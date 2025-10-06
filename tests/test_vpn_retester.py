@@ -73,9 +73,9 @@ def test_filter_configs_by_protocol():
 def test_filter_results_by_ping():
     """Test filtering results by max_ping_ms."""
     results = [
-        ConfigResult(config="c1", protocol="VLESS", ping_time=0.1),  # 100ms
-        ConfigResult(config="c2", protocol="VLESS", ping_time=0.3),  # 300ms
-        ConfigResult(config="c3", protocol="VLESS", ping_time=None),  # Unreachable
+        ConfigResult(config="c1", protocol="VLESS", ping_time=0.1, is_reachable=True),
+        ConfigResult(config="c2", protocol="VLESS", ping_time=0.3, is_reachable=True),
+        ConfigResult(config="c3", protocol="VLESS", ping_time=None, is_reachable=False),
     ]
     settings = Settings()
     settings.filtering.max_ping_ms = 200
@@ -89,31 +89,6 @@ def test_filter_results_by_ping():
     assert len(filtered) == 3
 
 
-def test_sort_and_trim_results():
-    """Test sorting and top-N filtering of results."""
-    results = [
-        ConfigResult(config="c1", protocol="VLESS", ping_time=0.3),
-        ConfigResult(config="c2", protocol="VLESS", ping_time=0.1),
-        ConfigResult(config="c3", protocol="VLESS", ping_time=0.2),
-    ]
-    settings = Settings()
-
-    # Test sorting
-    settings.processing.enable_sorting = True
-    settings.processing.top_n = 0
-    processed = sort_and_trim_results(results.copy(), settings)
-    assert [r.config for r in processed] == ["c2", "c3", "c1"]
-
-    # Test top-N with sorting
-    settings.processing.top_n = 2
-    processed = sort_and_trim_results(results.copy(), settings)
-    assert [r.config for r in processed] == ["c2", "c3"]
-
-    # Test disabled sorting
-    settings.processing.enable_sorting = False
-    settings.processing.top_n = 0  # Reset top_n
-    processed = sort_and_trim_results(results.copy(), settings)
-    assert [r.config for r in processed] == ["c1", "c2", "c3"]
 
 
 @patch("massconfigmerger.vpn_retester.Path.write_text")

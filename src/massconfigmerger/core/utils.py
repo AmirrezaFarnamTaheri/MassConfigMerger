@@ -12,9 +12,10 @@ import base64
 import binascii
 import json
 import logging
+import math
 import random
 import re
-from typing import Any, Callable, Set
+from typing import Any, Callable, Optional, Set
 from urllib.parse import urlparse
 
 import aiohttp
@@ -30,29 +31,45 @@ _warning_printed = False
 URL_PATTERN = re.compile(r'https?://[^\s<>"]+|www\.[^\s<>"]+')
 
 
-def get_sort_key(sort_by: str) -> Callable[[ConfigResult], Any]:
+def haversine_distance(
+    lat1: float, lon1: float, lat2: float, lon2: float
+) -> float:
+    """Calculate the great-circle distance between two points on the earth."""
+    R = 6371  # Radius of earth in kilometers
+    dLat = math.radians(lat2 - lat1)
+    dLon = math.radians(lon2 - lon1)
+    a = (math.sin(dLat / 2) * math.sin(dLat / 2) +
+         math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) *
+         math.sin(dLon / 2) * math.sin(dLon / 2))
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+
+def get_sort_key(
+    settings: Settings,
+) -> Callable[[ConfigResult], Any]:
     """
     Return a sort key function for sorting ConfigResult objects.
-
-    This function generates a key for Python's `sort` or `sorted` functions
-    based on the desired metric. The sorting always prioritizes reachability,
-    ensuring that unreachable configurations are placed at the end of the list.
-
-    Args:
-        sort_by: The metric to sort by. Supported values are 'latency'
-                 and 'reliability'.
-
-    Returns:
-        A callable that takes a `ConfigResult` object and returns a
-        sortable tuple.
     """
+    sort_by = settings.processing.sort_by
     if sort_by == "reliability":
-        # Sort by reachability (False comes first), then by reliability (higher is better)
         return lambda r: (
             not r.is_reachable,
             -r.reliability if r.reliability is not None else 0,
         )
-    # Default to sorting by latency (lower is better)
+    if sort_by == "proximity":
+        user_lat = settings.processing.proximity_latitude
+        user_lon = settings.processing.proximity_longitude
+        if user_lat is None or user_lon is None:
+            raise ValueError("Proximity sorting requires user latitude and longitude.")
+
+        return lambda r: (
+            not r.is_reachable,
+            haversine_distance(user_lat, user_lon, r.latitude, r.longitude)
+            if r.latitude is not None and r.longitude is not None
+            else float("inf"),
+        )
+    # Default to latency
     return lambda r: (
         not r.is_reachable,
         r.ping_time if r.ping_time is not None else float("inf"),
