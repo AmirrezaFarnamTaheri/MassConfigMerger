@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import pytest
-from massconfigmerger.core.parsers.vless import parse, parse_reality, _parse_reality_opts
+
+from massconfigmerger.core.parsers.vless import VlessParser
 
 
 @pytest.mark.parametrize(
@@ -27,28 +28,32 @@ from massconfigmerger.core.parsers.vless import parse, parse_reality, _parse_rea
 )
 def test_parse_reality_opts_aliases(query_params, expected_key, expected_value):
     """Test that all aliases for reality options are correctly parsed."""
-    opts, _, _, _ = _parse_reality_opts(query_params)
+    parser = VlessParser("", 0)
+    opts, _, _, _ = parser._parse_reality_opts(query_params)
     assert opts[expected_key] == expected_value
 
 
 def test_parse_vless_empty_fragment():
     """Test parsing a VLESS config with an empty fragment uses the default name."""
     config = "vless://uuid@example.com:443#"
-    result = parse(config, 123)
+    parser = VlessParser(config, 123)
+    result = parser.parse()
     assert result["name"] == "vless-123"
 
 
 def test_parse_reality_empty_fragment():
     """Test parsing a Reality config with an empty fragment uses the default name."""
     config = "reality://uuid@example.com:443#"
-    result = parse_reality(config, 456)
+    parser = VlessParser(config, 456)
+    result = parser.parse()
     assert result["name"] == "reality-456"
 
 
 def test_parse_vless_minimal_config():
     """Test parsing a minimal VLESS config link."""
     config = "vless://uuid@example.com:443#MinimalVLESS"
-    result = parse(config, 0)
+    parser = VlessParser(config, 0)
+    result = parser.parse()
 
     assert result is not None
     assert result["name"] == "MinimalVLESS"
@@ -60,7 +65,8 @@ def test_parse_vless_minimal_config():
 def test_parse_reality_minimal_config():
     """Test parsing a minimal Reality config link."""
     config = "reality://uuid@example.com:443#MinimalReality"
-    result = parse_reality(config, 0)
+    parser = VlessParser(config, 0)
+    result = parser.parse()
 
     assert result is not None
     assert result["name"] == "MinimalReality"
@@ -72,7 +78,8 @@ def test_parse_reality_minimal_config():
 def test_parse_vless_with_mode_for_network():
     """Test that 'mode' can be used as an alias for 'type' for network."""
     config = "vless://uuid@example.com:443?mode=ws#VLESS-ws"
-    result = parse(config, 0)
+    parser = VlessParser(config, 0)
+    result = parser.parse()
     assert result is not None
     assert result["network"] == "ws"
 
@@ -80,7 +87,8 @@ def test_parse_vless_with_mode_for_network():
 def test_parse_reality_with_mode_for_network():
     """Test that 'mode' can be used as an alias for 'type' for network in reality links."""
     config = "reality://uuid@example.com:443?mode=grpc#Reality-grpc"
-    result = parse_reality(config, 0)
+    parser = VlessParser(config, 0)
+    result = parser.parse()
     assert result is not None
     assert result["network"] == "grpc"
 
@@ -92,7 +100,8 @@ def test_parse_vless_all_params():
         "&sni=sni.com&alpn=h2&fp=chrome&flow=xtls-rprx-vision&serviceName=my-service"
         "&ws-headers=Host:header.com#VLESS-Full"
     )
-    result = parse(config, 0)
+    parser = VlessParser(config, 0)
+    result = parser.parse()
     assert result["tls"] is True
     assert result["network"] == "ws"
     assert result["host"] == "host.com"
@@ -113,7 +122,8 @@ def test_parse_reality_all_params():
         "&publicKey=pbk&shortId=sid&spiderX=spider"
         "&ws-headers=Host:header.com#Reality-Full"
     )
-    result = parse_reality(config, 0)
+    parser = VlessParser(config, 0)
+    result = parser.parse()
     assert result["tls"] is True
     assert result["network"] == "grpc"
     assert result["host"] == "host.com"
@@ -138,17 +148,20 @@ def test_parse_vless_missing_parts():
     """Test parsing VLESS URLs with missing components."""
     # No user
     config_no_user = "vless://@example.com:443#NoUser"
-    result_no_user = parse(config_no_user, 0)
+    parser = VlessParser(config_no_user, 0)
+    result_no_user = parser.parse()
     assert result_no_user["uuid"] == ""
 
     # No host
     config_no_host = "vless://uuid@:443#NoHost"
-    result_no_host = parse(config_no_host, 0)
+    parser = VlessParser(config_no_host, 0)
+    result_no_host = parser.parse()
     assert result_no_host["server"] == ""
 
     # No port
     config_no_port = "vless://uuid@example.com#NoPort"
-    result_no_port = parse(config_no_port, 0)
+    parser = VlessParser(config_no_port, 0)
+    result_no_port = parser.parse()
     assert result_no_port["port"] == 0
 
 
@@ -156,15 +169,18 @@ def test_parse_reality_missing_parts():
     """Test parsing Reality URLs with missing components."""
     # No user
     config_no_user = "reality://@example.com:443#NoUser"
-    result_no_user = parse_reality(config_no_user, 0)
+    parser = VlessParser(config_no_user, 0)
+    result_no_user = parser.parse()
     assert result_no_user["uuid"] == ""
 
     # No host
     config_no_host = "reality://uuid@:443#NoHost"
-    result_no_host = parse_reality(config_no_host, 0)
+    parser = VlessParser(config_no_host, 0)
+    result_no_host = parser.parse()
     assert result_no_host["server"] == ""
 
     # No port
     config_no_port = "reality://uuid@example.com#NoPort"
-    result_no_port = parse_reality(config_no_port, 0)
+    parser = VlessParser(config_no_port, 0)
+    result_no_port = parser.parse()
     assert result_no_port["port"] == 0

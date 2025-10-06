@@ -55,6 +55,7 @@ class NodeTester:
         """Initialize the NodeTester."""
         self.config = config
         self.dns_cache: dict[str, str] = {}
+        self.geoip_cache: dict[str, str] = {}
 
     def _get_resolver(self) -> Optional[AsyncResolver]:
         """Lazily initialize and return the asynchronous DNS resolver."""
@@ -127,6 +128,8 @@ class NodeTester:
         """Return the ISO country code for a host using the GeoIP database."""
         if not host:
             return None
+        if host in self.geoip_cache:
+            return self.geoip_cache[host]
 
         geoip_reader = self._get_geoip_reader()
         if not geoip_reader:
@@ -138,7 +141,10 @@ class NodeTester:
                 logging.debug("Skipping GeoIP lookup; unresolved host: %s", host)
                 return None
             resp = geoip_reader.country(ip)
-            return resp.country.iso_code
+            country_code = resp.country.iso_code
+            if country_code:
+                self.geoip_cache[host] = country_code
+            return country_code
         except (OSError, socket.gaierror, AddressNotFoundError) as exc:
             logging.debug("GeoIP lookup failed for %s: %s", host, exc)
             return None

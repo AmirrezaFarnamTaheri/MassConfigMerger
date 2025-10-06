@@ -73,8 +73,8 @@ def test_normalize_url(config, expected_normalized):
 )
 def test_create_semantic_hash_protocols(config1, config2, should_be_equal):
     """Test semantic hashing for various protocols."""
-    hash1 = config_normalizer.create_semantic_hash(config1)
-    hash2 = config_normalizer.create_semantic_hash(config2)
+    hash1 = config_normalizer.create_semantic_hash(config1, 0)
+    hash2 = config_normalizer.create_semantic_hash(config2, 0)
     if should_be_equal:
         assert hash1 == hash2
     else:

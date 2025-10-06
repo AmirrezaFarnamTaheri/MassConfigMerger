@@ -11,8 +11,9 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 from pathlib import Path
-from typing import List, Set
+from typing import Dict, List, Set
 
 import aiohttp
 from tqdm import tqdm
@@ -41,6 +42,13 @@ class SourceManager:
         """
         self.settings = settings
         self.session: aiohttp.ClientSession | None = None
+        # Circuit Breaker state
+        self._circuit_states: Dict[str, str] = {}  # "CLOSED", "OPEN", "HALF_OPEN"
+        self._failure_counts: Dict[str, int] = {}
+        self._last_failure_time: Dict[str, float] = {}
+        # Circuit Breaker parameters
+        self.FAILURE_THRESHOLD = 3
+        self.RETRY_TIMEOUT = 60  # 60 seconds
 
     async def get_session(self) -> aiohttp.ClientSession:
         """
@@ -63,6 +71,15 @@ class SourceManager:
         if self.session and not self.session.closed:
             await self.session.close()
 
+    def _get_circuit_state(self, url: str) -> str:
+        """Get the current state of the circuit for a given URL."""
+        state = self._circuit_states.get(url, "CLOSED")
+        if state == "OPEN":
+            if time.time() - self._last_failure_time.get(url, 0) > self.RETRY_TIMEOUT:
+                self._circuit_states[url] = "HALF_OPEN"
+                return "HALF_OPEN"
+        return state
+
     async def fetch_sources(self, sources: List[str]) -> Set[str]:
         """
         Fetch configurations from a list of source URLs.
@@ -83,6 +100,11 @@ class SourceManager:
         proxy = utils.choose_proxy(self.settings)
 
         async def fetch_one(url: str) -> Set[str]:
+            circuit_state = self._get_circuit_state(url)
+            if circuit_state == "OPEN":
+                logging.debug("Circuit for %s is open, skipping fetch.", url)
+                return set()
+
             async with semaphore:
                 text = await utils.fetch_text(
                     session,
@@ -93,8 +115,27 @@ class SourceManager:
                     proxy=proxy,
                 )
             if not text:
+                self._failure_counts[url] = self._failure_counts.get(url, 0) + 1
+                if self._failure_counts[url] >= self.FAILURE_THRESHOLD:
+                    self._circuit_states[url] = "OPEN"
+                    self._last_failure_time[url] = time.time()
+                    logging.warning(
+                        "Circuit for %s opened after %d failures.",
+                        url,
+                        self._failure_counts[url],
+                    )
+                if circuit_state == "HALF_OPEN":
+                    self._circuit_states[url] = "OPEN"
+                    self._last_failure_time[url] = time.time()
+
                 logging.warning("Failed to fetch %s", url)
                 return set()
+            else:
+                if circuit_state == "HALF_OPEN":
+                    logging.info("Circuit for %s has been closed.", url)
+                self._circuit_states.pop(url, None)
+                self._failure_counts.pop(url, None)
+                self._last_failure_time.pop(url, None)
             return utils.parse_configs_from_text(text)
 
         tasks = [asyncio.create_task(fetch_one(u)) for u in sources]

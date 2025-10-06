@@ -3,31 +3,36 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
-from .common import sanitize_str
+from .common import BaseParser
 
 
-def parse(config: str, idx: int) -> Optional[Dict[str, Any]]:
+class NaiveParser(BaseParser):
     """
-    Parse a NaiveProxy configuration link.
-
-    Args:
-        config: The NaiveProxy configuration link.
-        idx: The index of the configuration, used for default naming.
-
-    Returns:
-        A dictionary representing the Clash proxy, or None if parsing fails.
+    Parses a NaiveProxy configuration link.
     """
-    p = urlparse(config)
-    name = sanitize_str(p.fragment or f"naive-{idx}")
-    if not p.hostname or not p.port:
-        return None
 
-    return {
-        "name": name,
-        "type": "http",
-        "server": sanitize_str(p.hostname),
-        "port": p.port,
-        "username": sanitize_str(p.username or ""),
-        "password": sanitize_str(p.password or ""),
-        "tls": True,
-    }
+    def __init__(self, config_uri: str, idx: int):
+        super().__init__(config_uri)
+        self.idx = idx
+
+    def parse(self) -> Optional[Dict[str, Any]]:
+        """
+        Parse the NaiveProxy configuration link.
+
+        Returns:
+            A dictionary representing the Clash proxy, or None if parsing fails.
+        """
+        p = urlparse(self.config_uri)
+        name = self.sanitize_str(p.fragment or f"naive-{self.idx}")
+        if not p.hostname or not p.port:
+            return None
+
+        return {
+            "name": name,
+            "type": "http",
+            "server": self.sanitize_str(p.hostname),
+            "port": p.port,
+            "username": self.sanitize_str(p.username or ""),
+            "password": self.sanitize_str(p.password or ""),
+            "tls": True,
+        }

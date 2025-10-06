@@ -3,118 +3,85 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 from urllib.parse import parse_qs, urlparse
 
-from .common import sanitize_headers, sanitize_str
+from .common import BaseParser
 
 
-def _parse_reality_opts(q: Dict[str, Any]) -> Dict[str, Any]:
-    """Helper to parse and build the reality-opts dictionary."""
-    pbk_q = q.get("pbk") or q.get("public-key") or q.get("publicKey") or q.get("public_key") or q.get("publickey")
-    sid_q = q.get("sid") or q.get("short-id") or q.get("shortId") or q.get("short_id") or q.get("shortid")
-    spider_q = q.get("spiderX") or q.get("spider-x") or q.get("spider_x")
-
-    pbk = sanitize_str(pbk_q[0]) if pbk_q else None
-    sid = sanitize_str(sid_q[0]) if sid_q else None
-    spider = sanitize_str(spider_q[0]) if spider_q else None
-
-    opts = {}
-    if pbk:
-        opts["public-key"] = pbk
-    if sid:
-        opts["short-id"] = sid
-    if spider:
-        opts["spider-x"] = spider
-
-    return opts, pbk, sid, spider
-
-
-def parse(config: str, idx: int) -> Optional[Dict[str, Any]]:
+class VlessParser(BaseParser):
     """
-    Parse a VLESS configuration link.
-
-    Args:
-        config: The VLESS configuration link.
-        idx: The index of the configuration, used for default naming.
-
-    Returns:
-        A dictionary representing the Clash proxy, or None if parsing fails.
+    Parses a VLESS or Reality configuration link.
     """
-    p = urlparse(config)
-    q = parse_qs(p.query)
-    name = sanitize_str(p.fragment or f"vless-{idx}")
-    security = q.get("security")
-    proxy = {
-        "name": name,
-        "type": "vless",
-        "server": sanitize_str(p.hostname or ""),
-        "port": p.port or 0,
-        "uuid": sanitize_str(p.username or ""),
-        "encryption": sanitize_str(q.get("encryption", ["none"])[0]),
-    }
-    if security:
-        proxy["tls"] = True
-    net = q.get("type") or q.get("mode")
-    if net:
-        proxy["network"] = sanitize_str(net[0])
-    for key in ("host", "path", "sni", "alpn", "fp", "flow", "serviceName"):
-        if key in q:
-            proxy[key] = sanitize_str(q[key][0])
 
-    reality_opts, pbk, sid, spider = _parse_reality_opts(q)
-    if pbk:
-        proxy["pbk"] = pbk
-    if sid:
-        proxy["sid"] = sid
-    if spider:
-        proxy["spiderX"] = spider
-    if reality_opts:
-        proxy["reality-opts"] = reality_opts
+    def __init__(self, config_uri: str, idx: int):
+        super().__init__(config_uri)
+        self.idx = idx
 
-    if "ws-headers" in q:
-        proxy["ws-headers"] = sanitize_headers(q["ws-headers"][0])
-    return proxy
+    def _parse_reality_opts(self, q: Dict[str, Any]) -> Dict[str, Any]:
+        """Helper to parse and build the reality-opts dictionary."""
+        pbk_q = q.get("pbk") or q.get("public-key") or q.get("publicKey") or q.get("public_key") or q.get("publickey")
+        sid_q = q.get("sid") or q.get("short-id") or q.get("shortId") or q.get("short_id") or q.get("shortid")
+        spider_q = q.get("spiderX") or q.get("spider-x") or q.get("spider_x")
 
+        pbk = self.sanitize_str(pbk_q[0]) if pbk_q else None
+        sid = self.sanitize_str(sid_q[0]) if sid_q else None
+        spider = self.sanitize_str(spider_q[0]) if spider_q else None
 
-def parse_reality(config: str, idx: int) -> Optional[Dict[str, Any]]:
-    """
-    Parse a Reality configuration link.
+        opts = {}
+        if pbk:
+            opts["public-key"] = pbk
+        if sid:
+            opts["short-id"] = sid
+        if spider:
+            opts["spider-x"] = spider
 
-    Args:
-        config: The Reality configuration link.
-        idx: The index of the configuration, used for default naming.
+        return opts, pbk, sid, spider
 
-    Returns:
-        A dictionary representing the Clash proxy, or None if parsing fails.
-    """
-    p = urlparse(config)
-    q = parse_qs(p.query)
-    name = sanitize_str(p.fragment or f"reality-{idx}")
-    proxy = {
-        "name": name,
-        "type": "vless",
-        "server": sanitize_str(p.hostname or ""),
-        "port": p.port or 0,
-        "uuid": sanitize_str(p.username or ""),
-        "encryption": sanitize_str(q.get("encryption", ["none"])[0]),
-        "tls": True,
-    }
-    for key in ("sni", "alpn", "fp", "serviceName", "flow", "host", "path"):
-        if key in q:
-            proxy[key] = sanitize_str(q[key][0])
+    def parse(self) -> Optional[Dict[str, Any]]:
+        """
+        Parse the VLESS or Reality configuration link.
+        """
+        p = urlparse(self.config_uri)
+        q = parse_qs(p.query)
+        scheme = p.scheme.lower()
+        name = self.sanitize_str(p.fragment or f"{scheme}-{self.idx}")
 
-    reality_opts, pbk, sid, spider = _parse_reality_opts(q)
-    if pbk:
-        proxy["pbk"] = pbk
-    if sid:
-        proxy["sid"] = sid
-    if spider:
-        proxy["spiderX"] = spider
-    if reality_opts:
-        proxy["reality-opts"] = reality_opts
+        proxy = {
+            "name": name,
+            "type": "vless",
+            "server": self.sanitize_str(p.hostname or ""),
+            "port": p.port or 0,
+            "uuid": self.sanitize_str(p.username or ""),
+            "encryption": self.sanitize_str(q.get("encryption", ["none"])[0]),
+        }
 
-    net = q.get("type") or q.get("mode")
-    if net:
-        proxy["network"] = sanitize_str(net[0])
+        if scheme == "reality" or q.get("security") in (["reality"], ["tls"]):
+            proxy["tls"] = True
 
-    if "ws-headers" in q:
-        proxy["ws-headers"] = sanitize_headers(q["ws-headers"][0])
-    return proxy
+        net = q.get("type") or q.get("mode")
+        if net:
+            proxy["network"] = self.sanitize_str(net[0])
+
+        for key in ("host", "path", "sni", "alpn", "fp", "flow", "serviceName"):
+            if key in q:
+                proxy[key] = self.sanitize_str(q[key][0])
+
+        reality_opts, pbk, sid, spider = self._parse_reality_opts(q)
+        if pbk:
+            proxy["pbk"] = pbk
+        if sid:
+            proxy["sid"] = sid
+        if spider:
+            proxy["spiderX"] = spider
+        if reality_opts:
+            proxy["reality-opts"] = reality_opts
+
+        if "ws-headers" in q:
+            proxy["ws-headers"] = self.sanitize_headers(q["ws-headers"][0])
+
+        return proxy
+
+    def get_identifier(self) -> Optional[str]:
+        """
+        Get the identifier (UUID) for the VLESS/Reality configuration.
+        """
+        p = urlparse(self.config_uri)
+        return self.sanitize_str(p.username)

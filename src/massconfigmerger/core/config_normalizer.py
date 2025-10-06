@@ -11,6 +11,11 @@ from urllib.parse import parse_qsl, parse_qs, urlencode, urlparse, urlunparse
 
 from ..config import Settings
 from ..constants import MAX_DECODE_SIZE
+from .parsers.common import BaseParser
+from .parsers.hysteria import HysteriaParser
+from .parsers.shadowsocks import ShadowsocksParser
+from .parsers.trojan import TrojanParser
+from .parsers.vmess import VmessParser
 
 
 def extract_host_port(
@@ -95,75 +100,28 @@ def _normalize_url(config: str, max_decode_size: int = MAX_DECODE_SIZE) -> str:
     return urlunparse(parsed._replace(query=sorted_query, fragment=""))
 
 
+def get_parser(config: str, idx: int) -> Optional[BaseParser]:
+    """Get the appropriate parser for a given configuration URI."""
+    scheme = urlparse(config).scheme.lower()
+    if scheme in ("vmess", "vless"):
+        return VmessParser(config, idx)
+    if scheme == "trojan":
+        return TrojanParser(config, idx)
+    if scheme in ("ss", "shadowsocks"):
+        return ShadowsocksParser(config, idx)
+    if scheme in ("hysteria", "hy2", "hysteria2"):
+        return HysteriaParser(config, idx, scheme)
+    return None
+
+
 def create_semantic_hash(
-    config: str, max_decode_size: int = MAX_DECODE_SIZE
+    config: str, idx: int, max_decode_size: int = MAX_DECODE_SIZE
 ) -> str:
     """Create semantic hash for intelligent deduplication."""
-    parsed = urlparse(config)
     normalized_config = _normalize_url(config, max_decode_size)
-
     host, port = extract_host_port(normalized_config, max_decode_size)
-    identifier = None
-
-    scheme = parsed.scheme.lower()
-
-    if scheme in ("vmess", "vless"):
-        try:
-            after_scheme = normalized_config.split("://", 1)[1].split("?", 1)[0]
-            if parsed.username:
-                identifier = parsed.username
-            else:
-                padded = after_scheme + "=" * (-len(after_scheme) % 4)
-                decoded_bytes = base64.b64decode(padded)
-                if len(decoded_bytes) > max_decode_size:
-                    identifier = None
-                else:
-                    decoded = decoded_bytes.decode("utf-8", "ignore")
-                    data = json.loads(decoded)
-                    json.dumps(data, sort_keys=True)
-                    identifier = (
-                        data.get("id") or data.get("uuid") or data.get("user")
-                    )
-        except (
-            binascii.Error,
-            UnicodeDecodeError,
-            json.JSONDecodeError,
-            ValueError,
-        ) as exc:
-            logging.debug("semantic_hash vmess failed: %s", exc)
-    elif scheme == "trojan":
-        try:
-            parsed_norm = urlparse(normalized_config)
-            if parsed_norm.username or parsed_norm.password:
-                identifier = parsed_norm.username or ""
-                if parsed_norm.password is not None:
-                    if identifier:
-                        identifier += f":{parsed_norm.password}"
-                    else:
-                        identifier = parsed_norm.password
-            else:
-                identifier = None
-        except ValueError as exc:
-            logging.debug("semantic_hash trojan failed: %s", exc)
-    elif scheme in ("ss", "shadowsocks"):
-        try:
-            parsed_norm = urlparse(normalized_config)
-            if parsed_norm.username and parsed_norm.password:
-                identifier = parsed_norm.password
-            else:
-                base = normalized_config.split("://", 1)[1]
-                base = base.split("?", 1)[0]
-                padded = base + "=" * (-len(base) % 4)
-                decoded_bytes = base64.b64decode(padded)
-                if len(decoded_bytes) > max_decode_size:
-                    identifier = None
-                else:
-                    decoded = decoded_bytes.decode("utf-8", "ignore")
-                    before_at = decoded.split("@", 1)[0]
-                    _, password = before_at.split(":", 1)
-                    identifier = password
-        except (binascii.Error, UnicodeDecodeError, ValueError) as exc:
-            logging.debug("semantic_hash ss failed: %s", exc)
+    parser = get_parser(config, idx)
+    identifier = parser.get_identifier() if parser else None
 
     if host and port:
         key = f"{host}:{port}"
