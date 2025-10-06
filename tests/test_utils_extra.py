@@ -59,6 +59,25 @@ def test_choose_proxy():
 
 from unittest.mock import MagicMock
 
+@pytest.mark.parametrize(
+    "url, expected",
+    [
+        ("http://example.com", True),
+        ("https://google.com/search?q=test", True),
+        ("ftp://example.com", False),
+        ("file:///etc/passwd", False),
+        ("http://localhost/admin", False),
+        ("https://127.0.0.1:8080", False),
+        ("http://169.254.169.254/latest/meta-data", False),
+        ("http://metadata.google.internal", False),
+        ("http://[::1]:8080/", False),
+    ]
+)
+def test_is_safe_url(url, expected):
+    from massconfigmerger.core.utils import is_safe_url
+    assert is_safe_url(url) == expected
+
+
 @pytest.mark.asyncio
 async def test_fetch_text_retry_logic():
     """Test that fetch_text retries on failure."""
@@ -79,7 +98,7 @@ async def test_fetch_text_retry_logic():
 
     # Use a small delay for testing
     result = await fetch_text(
-        mock_session, "http://example.com", retries=2, base_delay=0.01
+        mock_session, "http://example.com", timeout=10, retries=2, base_delay=0.01, jitter=0.1
     )
 
     assert result == "success"

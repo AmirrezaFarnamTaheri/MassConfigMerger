@@ -174,6 +174,32 @@ class OutputSettings(BaseModel):
     log_file: Optional[Path] = Field(
         None, description="Path to a specific file for logging, instead of a directory."
     )
+
+    @field_validator(
+        "output_dir",
+        "log_dir",
+        "log_file",
+        "history_db_file",
+        "surge_file",
+        "qx_file",
+        "xyz_file",
+        mode="before",
+    )
+    @classmethod
+    def _validate_path_is_safe(cls, v: Any) -> Path | None:
+        """Ensure user-provided paths are not absolute and do not contain '..'.
+
+        This is a security measure to prevent path traversal attacks.
+        """
+        if v is None:
+            return None
+
+        path_str = str(v)
+        if Path(path_str).is_absolute() or ".." in Path(path_str).parts:
+            raise ValueError(f"Path cannot be absolute or contain '..': {path_str}")
+
+        return Path(path_str)
+
     history_db_file: Path = Field(
         Path(HISTORY_DB_FILE_NAME),
         description="SQLite database file to store proxy connection history for reliability scoring.",

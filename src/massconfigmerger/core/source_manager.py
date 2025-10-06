@@ -22,6 +22,7 @@ from .. import constants, metrics
 from ..config import Settings
 from ..exceptions import NetworkError
 from . import utils
+from .utils import is_safe_url
 
 
 class SourceManager:
@@ -148,7 +149,15 @@ class SourceManager:
                 logging.warning("Failed to fetch %s: %s", url, e)
                 return set()
 
-        tasks = [asyncio.create_task(fetch_one(u)) for u in sources]
+        safe_sources = [s for s in sources if is_safe_url(s)]
+        invalid_count = len(sources) - len(safe_sources)
+        if invalid_count > 0:
+            logging.warning("Skipped %d invalid or unsafe source URLs.", invalid_count)
+
+        tasks = [asyncio.create_task(fetch_one(u)) for u in safe_sources]
+        if not tasks:
+            return set()
+
         for task in tqdm(
             asyncio.as_completed(tasks),
             total=len(tasks),
@@ -192,6 +201,8 @@ class SourceManager:
 
         with path.open() as f:
             sources = [line.strip() for line in f if line.strip()]
+
+        sources = [s for s in sources if is_safe_url(s)]
 
         valid_sources: List[str] = []
         removed: List[str] = []
