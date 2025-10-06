@@ -63,38 +63,6 @@ async def test_db_get_proxy_history(db_path: Path):
 
 
 @pytest.mark.asyncio
-async def test_db_update_proxy_history_success(db_path: Path):
-    """Test updating proxy history with a successful connection."""
-    db = Database(db_path)
-    await db.connect()
-
-    await db.update_proxy_history("test_key", success=True)
-
-    history = await db.get_proxy_history()
-    assert "test_key" in history
-    assert history["test_key"]["successes"] == 1
-    assert history["test_key"]["failures"] == 0
-
-    await db.close()
-
-
-@pytest.mark.asyncio
-async def test_db_update_proxy_history_failure(db_path: Path):
-    """Test updating proxy history with a failed connection."""
-    db = Database(db_path)
-    await db.connect()
-
-    await db.update_proxy_history("test_key", success=False)
-
-    history = await db.get_proxy_history()
-    assert "test_key" in history
-    assert history["test_key"]["successes"] == 0
-    assert history["test_key"]["failures"] == 1
-
-    await db.close()
-
-
-@pytest.mark.asyncio
 async def test_get_proxy_history_auto_connect(db_path: Path):
     """Test that get_proxy_history automatically connects to the database."""
     db = Database(db_path)
@@ -105,10 +73,35 @@ async def test_get_proxy_history_auto_connect(db_path: Path):
 
 
 @pytest.mark.asyncio
-async def test_update_proxy_history_auto_connect(db_path: Path):
-    """Test that update_proxy_history automatically connects to the database."""
+async def test_add_proxy_history_batch(db_path: Path):
+    """Test updating proxy history with a batch of results."""
+    db = Database(db_path)
+    await db.connect()
+
+    batch = [
+        ("success_key", True),
+        ("failure_key", False),
+        ("success_key", True),  # Test duplicate key
+    ]
+    await db.add_proxy_history_batch(batch)
+
+    history = await db.get_proxy_history()
+    assert "success_key" in history
+    assert history["success_key"]["successes"] == 2
+    assert history["success_key"]["failures"] == 0
+
+    assert "failure_key" in history
+    assert history["failure_key"]["successes"] == 0
+    assert history["failure_key"]["failures"] == 1
+
+    await db.close()
+
+
+@pytest.mark.asyncio
+async def test_add_proxy_history_batch_auto_connect(db_path: Path):
+    """Test that add_proxy_history_batch automatically connects to the database."""
     db = Database(db_path)
     assert db.conn is None
-    await db.update_proxy_history("test_key", success=True)
+    await db.add_proxy_history_batch([("test_key", True)])
     assert db.conn is not None
     await db.close()

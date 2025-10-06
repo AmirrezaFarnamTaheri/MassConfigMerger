@@ -149,7 +149,6 @@ async def test_run_retester_flow(
     mock_db_instance.connect = AsyncMock()
     mock_db_instance.get_proxy_history = AsyncMock(return_value={})
     mock_db_instance.close = AsyncMock()
-    mock_db_instance.update_proxy_history = AsyncMock()
 
     mock_load.return_value = ["c1", "c2", "c3"]
     mock_filter_proto.return_value = ["c1", "c2"]
@@ -182,7 +181,7 @@ async def test_run_retester_flow(
     mock_load.assert_called_once()
     mock_filter_proto.assert_called_once()
     mock_test.assert_awaited_once_with(
-        ["c1", "c2"], settings, {}
+        ["c1", "c2"], settings, {}, mock_db_instance
     )
     mock_filter_ping.assert_called_once()
     mock_sort.assert_called_once()
@@ -190,6 +189,5 @@ async def test_run_retester_flow(
     final_results = mock_save.call_args[0][0]
     assert len(final_results) == 1
     assert final_results[0].config == "c1_processed"
-    mock_db_instance.update_proxy_history.assert_awaited()
     mock_db_instance.close.assert_awaited_once()
 

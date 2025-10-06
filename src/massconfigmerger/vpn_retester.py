@@ -107,11 +107,9 @@ async def run_retester(
     try:
         configs = load_configs_from_file(input_file)
         configs = filter_configs_by_protocol(configs, cfg)
-        results = await pipeline.test_configs(configs, cfg, history)
+        results = await pipeline.test_configs(configs, cfg, history, db)
         results = pipeline.filter_results_by_ping(results, cfg)
         processed_results = pipeline.sort_and_trim_results(results, cfg)
         save_retest_results(processed_results, cfg)
-
-        await pipeline.update_proxy_history(db, processed_results)
     finally:
         await db.close()

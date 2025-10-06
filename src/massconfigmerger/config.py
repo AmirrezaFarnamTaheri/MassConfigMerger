@@ -87,11 +87,18 @@ class NetworkSettings(BaseModel):
     concurrent_limit: int = Field(
         20, description="Maximum number of concurrent HTTP requests."
     )
+    connection_limit: int = Field(
+        100,
+        description="Maximum number of simultaneous TCP connections in the pool. 0 for unlimited.",
+    )
     retry_attempts: int = Field(
         3, description="Number of retry attempts for failed HTTP requests."
     )
     retry_base_delay: float = Field(
         1.0, description="Base delay for exponential backoff between retries."
+    )
+    retry_jitter: float = Field(
+        0.5, description="Amount of random jitter to apply to retry delays (0 to 1)."
     )
     connect_timeout: float = Field(
         3.0, description="Connection timeout for testing individual VPN configs in seconds."

@@ -18,6 +18,7 @@ from tqdm.asyncio import tqdm_asyncio
 
 from .. import metrics
 from ..config import Settings
+from ..db import Database
 from ..tester import BlocklistChecker, NodeTester
 from . import config_normalizer
 
@@ -107,6 +108,7 @@ class ConfigProcessor:
         self.tester = NodeTester(settings)
         self.blocklist_checker = BlocklistChecker(settings)
         self.settings = settings
+        self.history_batch: list[tuple[str, bool]] = []
 
     def filter_configs(
         self, configs: Set[str], *, use_fetch_rules: bool = False
@@ -201,6 +203,9 @@ class ConfigProcessor:
 
         country, isp, latitude, longitude = geo_data
         key = f"{host}:{port}"
+        if host and port:
+            self.history_batch.append((key, ping_time is not None))
+
         stats = history.get(key)
         reliability = None
         if stats and (stats["successes"] + stats["failures"]) > 0:
@@ -341,3 +346,10 @@ class ConfigProcessor:
             The modified configuration string.
         """
         return config_normalizer.apply_tuning(config, self.settings)
+
+    async def write_history_batch(self, db: Database):
+        """Write the accumulated history batch to the database."""
+        if self.history_batch:
+            # Pass a copy of the batch to the database method
+            await db.add_proxy_history_batch(list(self.history_batch))
+            self.history_batch.clear()

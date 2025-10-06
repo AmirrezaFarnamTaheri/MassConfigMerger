@@ -63,7 +63,9 @@ class SourceManager:
             An active aiohttp.ClientSession instance.
         """
         if self.session is None or self.session.closed:
-            connector = aiohttp.TCPConnector(limit=self.settings.network.concurrent_limit)
+            connector = aiohttp.TCPConnector(
+                limit=self.settings.network.connection_limit
+            )
             self.session = aiohttp.ClientSession(connector=connector)
         return self.session
 
@@ -117,6 +119,7 @@ class SourceManager:
                         timeout=self.settings.network.request_timeout,
                         retries=self.settings.network.retry_attempts,
                         base_delay=self.settings.network.retry_base_delay,
+                        jitter=self.settings.network.retry_jitter,
                         proxy=proxy,
                     )
                 # Success
@@ -206,6 +209,7 @@ class SourceManager:
                         timeout=self.settings.network.request_timeout,
                         retries=self.settings.network.retry_attempts,
                         base_delay=self.settings.network.retry_base_delay,
+                        jitter=self.settings.network.retry_jitter,
                         proxy=proxy,
                     )
                 return url, bool(text and utils.parse_configs_from_text(text))

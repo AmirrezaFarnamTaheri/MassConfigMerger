@@ -31,7 +31,6 @@ async def test_run_merger_from_sources(
     mock_db = MockDatabase.return_value
     mock_db.connect = AsyncMock()
     mock_db.get_proxy_history = AsyncMock(return_value={})
-    mock_db.update_proxy_history = AsyncMock()
     mock_db.close = AsyncMock()
 
     mock_source_manager = MockSourceManager.return_value
@@ -77,9 +76,8 @@ async def test_run_merger_from_sources(
         {"vless://config1", "ss://config2"}
     )
     mock_test_configs.assert_awaited_once_with(
-        list({"vless://config1", "ss://config2"}), settings, {}
+        list({"vless://config1", "ss://config2"}), settings, {}, mock_db
     )
-    mock_db.update_proxy_history.assert_awaited()
     # Verify that the final configs are sorted correctly (reachable first)
     mock_output_generator.write_outputs.assert_called_once()
     final_configs = mock_output_generator.write_outputs.call_args[0][0]
@@ -113,7 +111,6 @@ async def test_run_merger_with_resume(
     mock_db = MockDatabase.return_value
     mock_db.connect = AsyncMock()
     mock_db.get_proxy_history = AsyncMock(return_value={})
-    mock_db.update_proxy_history = AsyncMock()
     mock_db.close = AsyncMock()
 
     mock_source_manager = MockSourceManager.return_value
@@ -157,7 +154,7 @@ async def test_run_merger_with_resume(
         {"vless://resume1", "ss://resume2"}
     )
     mock_test_configs.assert_awaited_once_with(
-        list({"vless://resume1", "ss://resume2"}), settings, {}
+        list({"vless://resume1", "ss://resume2"}), settings, {}, mock_db
     )
 
     # Check that top_n logic was applied

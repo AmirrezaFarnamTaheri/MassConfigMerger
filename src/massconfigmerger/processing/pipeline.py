@@ -16,15 +16,6 @@ from ..core.utils import get_sort_key
 from ..db import Database
 
 
-async def update_proxy_history(db: Database, results: list[ConfigResult]) -> None:
-    """Update proxy history in the database based on test results."""
-    logging.debug("Updating proxy history for %d results.", len(results))
-    for result in results:
-        if result.host and result.port:
-            key = f"{result.host}:{result.port}"
-            await db.update_proxy_history(key, result.is_reachable)
-
-
 def sort_and_trim_results(
     results: list[ConfigResult], cfg: Settings
 ) -> list[ConfigResult]:
@@ -41,12 +32,14 @@ def sort_and_trim_results(
 
 
 async def test_configs(
-    configs: list[str], cfg: Settings, history: dict[str, Any]
+    configs: list[str], cfg: Settings, history: dict[str, Any], db: Database
 ) -> list[ConfigResult]:
     """Test a list of configurations concurrently."""
     proc = ConfigProcessor(cfg)
     try:
-        return await proc.test_configs(configs, history)
+        results = await proc.test_configs(configs, history)
+        await proc.write_history_batch(db)
+        return results
     finally:
         if proc.tester:
             await proc.tester.close()

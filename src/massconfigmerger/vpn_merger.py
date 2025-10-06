@@ -59,8 +59,7 @@ async def run_merger(
         history = await db.get_proxy_history()
         filtered_configs = config_processor.filter_configs(configs)
 
-        results = await pipeline.test_configs(list(filtered_configs), cfg, history)
-        await pipeline.update_proxy_history(db, results)
+        results = await pipeline.test_configs(list(filtered_configs), cfg, history, db)
         sorted_results = pipeline.sort_and_trim_results(results, cfg)
 
         final_configs = [r.config for r in sorted_results]

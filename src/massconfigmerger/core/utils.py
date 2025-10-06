@@ -335,7 +335,18 @@ async def fetch_text(
         attempt += 1
         if attempt >= retries:
             break
-        delay = base_delay * 2 ** (attempt - 1)
-        await asyncio.sleep(delay + random.uniform(0, jitter))
+
+        # Exponential backoff with jitter
+        backoff = base_delay * (2 ** (attempt - 1))
+        sleep_duration = backoff + (backoff * random.uniform(0, jitter))
+
+        logging.debug(
+            "Attempt %d/%d failed for %s. Retrying in %.2f seconds...",
+            attempt,
+            retries,
+            url,
+            sleep_duration,
+        )
+        await asyncio.sleep(sleep_duration)
 
     raise NetworkError(f"Failed to fetch {url} after {retries} retries.") from last_exc

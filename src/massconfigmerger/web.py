@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from flask import Flask, Response, render_template_string, send_file
+from flask import Flask, Response, jsonify, render_template_string, send_file
 from prometheus_client import make_wsgi_app
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
@@ -72,11 +72,18 @@ def index():
             <li><a href="/report" class="report-link">View Latest Report</a></li>
             <li><a href="/history" class="report-link">View Proxy History</a></li>
             <li><a href="/metrics" class="report-link">View Metrics</a></li>
+            <li><a href="/health" class="report-link">Health Check</a></li>
         </ul>
     </body>
     </html>
     """
     return render_template_string(template)
+
+
+@app.route("/health")
+def health_check():
+    """Return a simple health check response."""
+    return jsonify({"status": "ok"})
 
 
 @app.route("/aggregate")
