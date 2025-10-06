@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from massconfigmerger.exceptions import ConfigError, GistUploadError
 from massconfigmerger.gist_uploader import (
-    GistUploadError,
     upload_files_to_gist,
     write_upload_links,
 )
@@ -76,14 +76,14 @@ async def test_upload_files_to_gist_failure(MockSession, tmp_path: Path):
 @pytest.mark.asyncio
 async def test_upload_files_to_gist_no_token():
     """Test that a ValueError is raised if no token is provided."""
-    with pytest.raises(ValueError, match="GitHub token is required"):
+    with pytest.raises(ConfigError, match="GitHub token is required"):
         await upload_files_to_gist([], "")
 
 
 @pytest.mark.asyncio
 async def test_upload_files_to_gist_invalid_base_url():
     """Test that a ValueError is raised for an invalid base_url."""
-    with pytest.raises(ValueError, match="Invalid base_url"):
+    with pytest.raises(ConfigError, match="Invalid base_url"):
         await upload_files_to_gist([], "secret", base_url="ftp://invalid.com")
 
 

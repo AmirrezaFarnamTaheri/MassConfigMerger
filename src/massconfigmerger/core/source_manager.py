@@ -20,6 +20,7 @@ from tqdm import tqdm
 
 from .. import constants
 from ..config import Settings
+from ..exceptions import NetworkError
 from . import utils
 
 
@@ -105,16 +106,25 @@ class SourceManager:
                 logging.debug("Circuit for %s is open, skipping fetch.", url)
                 return set()
 
-            async with semaphore:
-                text = await utils.fetch_text(
-                    session,
-                    url,
-                    timeout=self.settings.network.request_timeout,
-                    retries=self.settings.network.retry_attempts,
-                    base_delay=self.settings.network.retry_base_delay,
-                    proxy=proxy,
-                )
-            if not text:
+            try:
+                async with semaphore:
+                    text = await utils.fetch_text(
+                        session,
+                        url,
+                        timeout=self.settings.network.request_timeout,
+                        retries=self.settings.network.retry_attempts,
+                        base_delay=self.settings.network.retry_base_delay,
+                        proxy=proxy,
+                    )
+                # Success
+                if circuit_state == "HALF_OPEN":
+                    logging.info("Circuit for %s has been closed.", url)
+                self._circuit_states.pop(url, None)
+                self._failure_counts.pop(url, None)
+                self._last_failure_time.pop(url, None)
+                return utils.parse_configs_from_text(text)
+            except NetworkError as e:
+                # Failure
                 self._failure_counts[url] = self._failure_counts.get(url, 0) + 1
                 if self._failure_counts[url] >= self.FAILURE_THRESHOLD:
                     self._circuit_states[url] = "OPEN"
@@ -128,15 +138,8 @@ class SourceManager:
                     self._circuit_states[url] = "OPEN"
                     self._last_failure_time[url] = time.time()
 
-                logging.warning("Failed to fetch %s", url)
+                logging.warning("Failed to fetch %s: %s", url, e)
                 return set()
-            else:
-                if circuit_state == "HALF_OPEN":
-                    logging.info("Circuit for %s has been closed.", url)
-                self._circuit_states.pop(url, None)
-                self._failure_counts.pop(url, None)
-                self._last_failure_time.pop(url, None)
-            return utils.parse_configs_from_text(text)
 
         tasks = [asyncio.create_task(fetch_one(u)) for u in sources]
         for task in tqdm(
@@ -190,16 +193,20 @@ class SourceManager:
         proxy = utils.choose_proxy(self.settings)
 
         async def check(url: str) -> tuple[str, bool]:
-            async with semaphore:
-                text = await utils.fetch_text(
-                    session,
-                    url,
-                    timeout=self.settings.network.request_timeout,
-                    retries=self.settings.network.retry_attempts,
-                    base_delay=self.settings.network.retry_base_delay,
-                    proxy=proxy,
-                )
-            return url, bool(text and utils.parse_configs_from_text(text))
+            try:
+                async with semaphore:
+                    text = await utils.fetch_text(
+                        session,
+                        url,
+                        timeout=self.settings.network.request_timeout,
+                        retries=self.settings.network.retry_attempts,
+                        base_delay=self.settings.network.retry_base_delay,
+                        proxy=proxy,
+                    )
+                return url, bool(text and utils.parse_configs_from_text(text))
+            except NetworkError as e:
+                logging.debug("Source check failed for %s: %s", url, e)
+                return url, False
 
         tasks = [asyncio.create_task(check(u)) for u in sources]
         for task in tqdm(

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from urllib.parse import parse_qs, urlparse
 
 from .common import BaseParser
+from ...exceptions import ParserError
 
 
 class TrojanParser(BaseParser):
@@ -15,22 +16,31 @@ class TrojanParser(BaseParser):
         super().__init__(config_uri)
         self.idx = idx
 
-    def parse(self) -> Optional[Dict[str, Any]]:
+    def parse(self) -> Dict[str, Any]:
         """
         Parse the Trojan configuration link.
 
         Returns:
-            A dictionary representing the Clash proxy, or None if parsing fails.
+            A dictionary representing the Clash proxy.
+        Raises:
+            ParserError: If essential components are missing.
         """
         p = urlparse(self.config_uri)
         q = parse_qs(p.query)
         name = self.sanitize_str(p.fragment or f"trojan-{self.idx}")
+
+        password = self.sanitize_str(p.username or p.password or "")
+        if not p.hostname or not p.port or not password:
+            raise ParserError(
+                f"Missing components in Trojan link: {self.config_uri}"
+            )
+
         proxy = {
             "name": name,
             "type": "trojan",
-            "server": self.sanitize_str(p.hostname or ""),
-            "port": p.port or 0,
-            "password": self.sanitize_str(p.username or p.password or ""),
+            "server": self.sanitize_str(p.hostname),
+            "port": p.port,
+            "password": password,
         }
         if q.get("sni"):
             proxy["sni"] = self.sanitize_str(q.get("sni")[0])

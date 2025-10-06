@@ -21,6 +21,7 @@ import aiohttp
 
 from ..config import Settings
 from ..constants import BASE64_RE, MAX_DECODE_SIZE, PROTOCOL_RE
+from ..exceptions import NetworkError
 from .config_processor import ConfigResult
 
 _warning_printed = False
@@ -264,7 +265,7 @@ async def fetch_text(
     base_delay: float = 1.0,
     jitter: float = 0.1,
     proxy: str | None = None,
-) -> str | None:
+) -> str:
     """
     Fetch text content from a URL with retries and exponential backoff.
 
@@ -282,14 +283,15 @@ async def fetch_text(
         proxy: The proxy URL to use for the request.
 
     Returns:
-        The text content of the response, or None if the request fails
-        after all retries.
+        The text content of the response.
+    Raises:
+        NetworkError: If the request fails after all retries.
     """
     parsed = urlparse(url)
     if not parsed.scheme or not parsed.netloc:
-        logging.debug("fetch_text invalid url: %s", url)
-        return None
+        raise NetworkError(f"Invalid URL for fetch_text: {url}")
 
+    last_exc = None
     attempt = 0
     while attempt < retries:
         try:
@@ -299,12 +301,19 @@ async def fetch_text(
                 if resp.status == 200:
                     return await resp.text(errors="ignore")
                 if 400 <= resp.status < 500 and resp.status != 429:
-                    logging.debug(
-                        "fetch_text non-retry status %s on %s", resp.status, url
+                    raise NetworkError(
+                        f"Non-retryable client error for {url}: {resp.status}"
                     )
-                    return None
+                last_exc = aiohttp.ClientResponseError(
+                    resp.request_info,
+                    resp.history,
+                    status=resp.status,
+                    message=await resp.text(),
+                    headers=resp.headers,
+                )
         except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
             logging.debug("fetch_text error on %s: %s", url, exc)
+            last_exc = exc
 
         attempt += 1
         if attempt >= retries:
@@ -312,4 +321,4 @@ async def fetch_text(
         delay = base_delay * 2 ** (attempt - 1)
         await asyncio.sleep(delay + random.uniform(0, jitter))
 
-    return None
+    raise NetworkError(f"Failed to fetch {url} after {retries} retries.") from last_exc

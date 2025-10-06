@@ -4,10 +4,11 @@ import base64
 import binascii
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from urllib.parse import parse_qs, urlparse
 
 from .common import BaseParser
+from ...exceptions import ParserError
 
 
 class VmessParser(BaseParser):
@@ -19,12 +20,14 @@ class VmessParser(BaseParser):
         super().__init__(config_uri)
         self.idx = idx
 
-    def parse(self) -> Optional[Dict[str, Any]]:
+    def parse(self) -> Dict[str, Any]:
         """
         Parse the VMess configuration link.
 
         Returns:
-            A dictionary representing the Clash proxy, or None if parsing fails.
+            A dictionary representing the Clash proxy.
+        Raises:
+            ParserError: If parsing fails.
         """
         name = f"vmess-{self.idx}"
         after = self.config_uri.split("://", 1)[1]
@@ -61,32 +64,35 @@ class VmessParser(BaseParser):
                 proxy["ws-headers"] = self.sanitize_headers(ws_opts.get("headers"))
 
             return proxy
-        except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError):
+        except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError) as e1:
             # Fallback parsing method: URL-based
             logging.debug("Fallback Clash parse for vmess: %s", self.config_uri)
-            p = urlparse(self.config_uri)
-            q = parse_qs(p.query)
-            security = q.get("security")
-            proxy = {
-                "name": self.sanitize_str(p.fragment or name),
-                "type": "vmess",
-                "server": self.sanitize_str(p.hostname or ""),
-                "port": p.port or 0,
-                "uuid": self.sanitize_str(p.username or ""),
-                "alterId": int(q.get("aid", [0])[0]),
-                "cipher": self.sanitize_str(q.get("type", ["auto"])[0]),
-            }
-            if security:
-                proxy["tls"] = True
-            net = q.get("type") or q.get("mode")
-            if net:
-                proxy["network"] = self.sanitize_str(net[0])
-            for key in ("host", "path", "sni", "alpn", "fp", "flow", "serviceName"):
-                if key in q:
-                    proxy[key] = self.sanitize_str(q[key][0])
-            if "ws-headers" in q:
-                proxy["ws-headers"] = self.sanitize_headers(q["ws-headers"][0])
-            return proxy
+            try:
+                p = urlparse(self.config_uri)
+                q = parse_qs(p.query)
+                security = q.get("security")
+                proxy = {
+                    "name": self.sanitize_str(p.fragment or name),
+                    "type": "vmess",
+                    "server": self.sanitize_str(p.hostname or ""),
+                    "port": p.port or 0,
+                    "uuid": self.sanitize_str(p.username or ""),
+                    "alterId": int(q.get("aid", [0])[0]),
+                    "cipher": self.sanitize_str(q.get("type", ["auto"])[0]),
+                }
+                if security:
+                    proxy["tls"] = True
+                net = q.get("type") or q.get("mode")
+                if net:
+                    proxy["network"] = self.sanitize_str(net[0])
+                for key in ("host", "path", "sni", "alpn", "fp", "flow", "serviceName"):
+                    if key in q:
+                        proxy[key] = self.sanitize_str(q[key][0])
+                if "ws-headers" in q:
+                    proxy["ws-headers"] = self.sanitize_headers(q["ws-headers"][0])
+                return proxy
+            except Exception as e2:
+                raise ParserError(f"Failed to parse vmess link: {self.config_uri}") from e2
 
     def get_identifier(self) -> Optional[str]:
         """

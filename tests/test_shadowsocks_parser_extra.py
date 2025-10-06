@@ -4,6 +4,7 @@ import base64
 import pytest
 
 from massconfigmerger.core.parsers.shadowsocks import ShadowsocksParser
+from massconfigmerger.exceptions import ParserError
 
 
 @pytest.mark.parametrize(
@@ -15,17 +16,19 @@ from massconfigmerger.core.parsers.shadowsocks import ShadowsocksParser
     ],
 )
 def test_parse_malformed_base64(malformed_base64_content: str):
-    """Test that the ss parser returns None for malformed base64 content."""
+    """Test that the ss parser raises ParserError for malformed base64 content."""
     encoded_content = base64.b64encode(malformed_base64_content.encode()).decode()
     config = f"ss://{encoded_content}"
     parser = ShadowsocksParser(config, 0)
-    assert parser.parse() is None
+    with pytest.raises(ParserError):
+        parser.parse()
 
 
 def test_parse_missing_components():
-    """Test that the ss parser returns None if essential components are missing."""
+    """Test that the ss parser raises ParserError if essential components are missing."""
     # This format is not standard but supported as a fallback.
     # We test the case where the hostname is missing.
     config = "ss://YWVzLTI1Ni1nY206dGVzdA==@:443"  # Empty hostname
     parser = ShadowsocksParser(config, 0)
-    assert parser.parse() is None
+    with pytest.raises(ParserError):
+        parser.parse()

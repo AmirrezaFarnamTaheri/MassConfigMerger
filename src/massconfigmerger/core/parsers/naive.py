@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from urllib.parse import urlparse
 
 from .common import BaseParser
+from ...exceptions import ParserError
 
 
 class NaiveParser(BaseParser):
@@ -15,17 +16,19 @@ class NaiveParser(BaseParser):
         super().__init__(config_uri)
         self.idx = idx
 
-    def parse(self) -> Optional[Dict[str, Any]]:
+    def parse(self) -> Dict[str, Any]:
         """
         Parse the NaiveProxy configuration link.
 
         Returns:
-            A dictionary representing the Clash proxy, or None if parsing fails.
+            A dictionary representing the Clash proxy.
+        Raises:
+            ParserError: If the hostname or port is missing.
         """
         p = urlparse(self.config_uri)
         name = self.sanitize_str(p.fragment or f"naive-{self.idx}")
         if not p.hostname or not p.port:
-            return None
+            raise ParserError(f"Missing hostname or port in NaiveProxy link: {self.config_uri}")
 
         return {
             "name": name,

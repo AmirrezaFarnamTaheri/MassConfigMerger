@@ -13,11 +13,7 @@ from urllib.parse import urlparse
 import aiohttp
 
 from .constants import UPLOAD_LINKS_FILE_NAME
-
-
-class GistUploadError(Exception):
-    """Custom exception for Gist upload failures."""
-    pass
+from .exceptions import ConfigError, GistUploadError
 
 
 async def upload_files_to_gist(
@@ -26,11 +22,11 @@ async def upload_files_to_gist(
     """Upload files as separate private gists and return name->raw_url mapping."""
 
     if not token:
-        raise ValueError("GitHub token is required to upload gists")
+        raise ConfigError("GitHub token is required to upload gists")
 
     parsed = urlparse(base_url)
     if parsed.scheme.lower() != "https" or not parsed.netloc:
-        raise ValueError(f"Invalid base_url: {base_url}")
+        raise ConfigError(f"Invalid base_url: {base_url}")
 
     headers = {
         "Authorization": f"token {token}",

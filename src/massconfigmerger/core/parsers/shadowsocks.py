@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
 from .common import BaseParser
+from ...exceptions import ParserError
 
 
 class ShadowsocksParser(BaseParser):
@@ -17,12 +18,14 @@ class ShadowsocksParser(BaseParser):
         super().__init__(config_uri)
         self.idx = idx
 
-    def parse(self) -> Optional[Dict[str, Any]]:
+    def parse(self) -> Dict[str, Any]:
         """
         Parse the Shadowsocks configuration link.
 
         Returns:
-            A dictionary representing the Clash proxy, or None if parsing fails.
+            A dictionary representing the Clash proxy.
+        Raises:
+            ParserError: If parsing fails.
         """
         p = urlparse(self.config_uri)
         name = self.sanitize_str(p.fragment or f"ss-{self.idx}")
@@ -43,8 +46,10 @@ class ShadowsocksParser(BaseParser):
                 method, password = userinfo_decoded.split(":", 1)
                 method = self.sanitize_str(method)
                 password = self.sanitize_str(password)
-            except (ValueError, IndexError, binascii.Error, UnicodeDecodeError):
-                return None
+            except (ValueError, IndexError, binascii.Error, UnicodeDecodeError) as e:
+                raise ParserError(
+                    f"Invalid base64 userinfo in ss link: {self.config_uri}"
+                ) from e
         else:
             try:
                 base = self.config_uri.split("://", 1)[1].split("#", 1)[0]
@@ -58,11 +63,11 @@ class ShadowsocksParser(BaseParser):
                 password = self.sanitize_str(password_raw)
                 server = self.sanitize_str(server_str)
                 port = int(port_str)
-            except (ValueError, IndexError):
-                return None
+            except (ValueError, IndexError) as e:
+                raise ParserError(f"Invalid ss link format: {self.config_uri}") from e
 
         if not all([server, port, method, password]):
-            return None
+            raise ParserError(f"Missing components in ss link: {self.config_uri}")
 
         return {
             "name": name,

@@ -5,6 +5,7 @@ import json
 import logging
 from typing import Any, Callable, Dict, Optional, Union
 
+from ..exceptions import ParserError
 from .parsers import (
     fallback,
 )
@@ -86,6 +87,7 @@ class ProxyParser:
             else:  # old function-based parsers
                 return parser(config, idx)
         except (
+            ParserError,
             ValueError,
             binascii.Error,
             UnicodeDecodeError,

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from urllib.parse import parse_qs, urlparse
 
 from .common import BaseParser
+from ...exceptions import ParserError
 
 
 class TuicParser(BaseParser):
@@ -15,17 +16,19 @@ class TuicParser(BaseParser):
         super().__init__(config_uri)
         self.idx = idx
 
-    def parse(self) -> Optional[Dict[str, Any]]:
+    def parse(self) -> Dict[str, Any]:
         """
         Parse the TUIC configuration link.
 
         Returns:
-            A dictionary representing the Clash proxy, or None if parsing fails.
+            A dictionary representing the Clash proxy.
+        Raises:
+            ParserError: If the hostname or port is missing.
         """
         p = urlparse(self.config_uri)
         name = self.sanitize_str(p.fragment or f"tuic-{self.idx}")
         if not p.hostname or not p.port:
-            return None
+            raise ParserError(f"Missing hostname or port in TUIC link: {self.config_uri}")
 
         q = parse_qs(p.query)
         proxy = {
