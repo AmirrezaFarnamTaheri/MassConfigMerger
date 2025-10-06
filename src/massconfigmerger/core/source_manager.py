@@ -149,29 +149,10 @@ class SourceManager:
                 logging.warning("Failed to fetch %s: %s", url, e)
                 return set()
 
-        safe_sources = []
-        rejected_sources = []
-        for s in sources:
-            if is_safe_url(s):
-                safe_sources.append(s)
-            else:
-                rejected_sources.append(s)
-
-        if rejected_sources:
-            # Warning with hostnames only to avoid leaking sensitive paths/queries
-            try:
-                from urllib.parse import urlparse
-                rejected_hosts = sorted({urlparse(u).hostname or "unknown" for u in rejected_sources})
-            except Exception:
-                rejected_hosts = ["unknown"]
-            logging.warning(
-                "Skipped %d invalid or unsafe source URLs. Rejected hosts: %s",
-                len(rejected_sources),
-                ", ".join(rejected_hosts),
-            )
-            # Detailed debug list of full URLs for diagnostics
-            for u in rejected_sources:
-                logging.debug("Rejected unsafe source URL: %s", u)
+        safe_sources = [s for s in sources if is_safe_url(s)]
+        invalid_count = len(sources) - len(safe_sources)
+        if invalid_count > 0:
+            logging.warning("Skipped %d invalid or unsafe source URLs.", invalid_count)
 
         tasks = [asyncio.create_task(fetch_one(u)) for u in safe_sources]
         if not tasks:

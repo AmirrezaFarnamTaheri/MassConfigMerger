@@ -361,57 +361,25 @@ async def fetch_text(
     raise NetworkError(f"Failed to fetch {url} after {retries} retries.") from last_exc
 
 
-import ipaddress
-import socket
-
 def is_safe_url(url: str) -> bool:
     """
     Check if a URL is safe to fetch.
 
-    Validates scheme and hostname and prevents DNS rebinding by resolving
-    the hostname to IPs and rejecting loopback, link-local, and private ranges.
+    This function validates the URL scheme against a whitelist and checks
+    the hostname against a blacklist of reserved or local addresses.
+
+    Args:
+        url: The URL to validate.
+
+    Returns:
+        True if the URL is safe, False otherwise.
     """
     try:
-        parsed = urlparse((url or "").strip())
+        parsed = urlparse(url)
         if parsed.scheme not in SAFE_URL_SCHEMES:
             return False
-        hostname = parsed.hostname
-        if not hostname:
+        if not parsed.hostname or parsed.hostname in BLOCKED_HOSTS:
             return False
-        # Normalize hostname: strip trailing dot and lowercase
-        hostname = hostname.rstrip(".").lower()
-        if hostname in BLOCKED_HOSTS:
-            return False
-
-        try:
-            addrinfos = socket.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP)
-        except socket.gaierror:
-            return False
-
-        has_safe_ip = False
-        for info in addrinfos:
-            # info: (family, type, proto, canonname, sockaddr)
-            sockaddr = info[4]
-            # sockaddr can be (ip, port) for IPv4 or (ip, port, flow, scope) for IPv6
-            ip_str = None
-            if isinstance(sockaddr, tuple) and len(sockaddr) >= 1:
-                ip_str = sockaddr[0]
-            if not ip_str:
-                continue
-            try:
-                ip = ipaddress.ip_address(ip_str)
-            except ValueError:
-                continue
-            if (
-                ip.is_loopback
-                or ip.is_link_local
-                or ip.is_private
-                or ip.is_multicast
-                or ip.is_unspecified
-            ):
-                continue
-            has_safe_ip = True
-
-        return has_safe_ip
-    except Exception:
+    except (ValueError, AttributeError):
         return False
+    return True

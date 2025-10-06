@@ -24,7 +24,8 @@ dependencies = [
     "pydantic-settings",
     "tqdm",
     "flask",
-    "aiosqlite"
+    "aiosqlite",
+    "prometheus_client"
 ]
 
 [project.scripts]
@@ -44,8 +45,7 @@ dev = [
     "pip-audit",
 ]
 web = [
-    "Flask",
-    "prometheus_client",
+    "Flask"
 ]
 
 [tool.setuptools.packages.find]
