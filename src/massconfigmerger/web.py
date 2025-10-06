@@ -7,7 +7,9 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from flask import Flask, render_template_string, send_file
+from flask import Flask, Response, render_template_string, send_file
+from prometheus_client import make_wsgi_app
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 from .config import load_config
 from .constants import (
@@ -69,6 +71,7 @@ def index():
             <li><a href="/merge" class="action-btn">Run Merge</a></li>
             <li><a href="/report" class="report-link">View Latest Report</a></li>
             <li><a href="/history" class="report-link">View Proxy History</a></li>
+            <li><a href="/metrics" class="report-link">View Metrics</a></li>
         </ul>
     </body>
     </html>
@@ -207,10 +210,10 @@ async def history():
 
 def main() -> None:
     """Run the Flask development server."""
+    # Add prometheus wsgi middleware to route /metrics requests
+    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
     app.run(host="0.0.0.0", port=8080)
 
 
 if __name__ == "__main__":
     main()
-
-# End of file

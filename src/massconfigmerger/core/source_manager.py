@@ -18,7 +18,7 @@ from typing import Dict, List, Set
 import aiohttp
 from tqdm import tqdm
 
-from .. import constants
+from .. import constants, metrics
 from ..config import Settings
 from ..exceptions import NetworkError
 from . import utils
@@ -102,8 +102,11 @@ class SourceManager:
 
         async def fetch_one(url: str) -> Set[str]:
             circuit_state = self._get_circuit_state(url)
+            metrics.SOURCES_FETCHED_TOTAL.inc()
+            circuit_state = self._get_circuit_state(url)
             if circuit_state == "OPEN":
                 logging.debug("Circuit for %s is open, skipping fetch.", url)
+                metrics.SOURCES_FAILED_TOTAL.inc()
                 return set()
 
             try:
@@ -125,6 +128,7 @@ class SourceManager:
                 return utils.parse_configs_from_text(text)
             except NetworkError as e:
                 # Failure
+                metrics.SOURCES_FAILED_TOTAL.inc()
                 self._failure_counts[url] = self._failure_counts.get(url, 0) + 1
                 if self._failure_counts[url] >= self.FAILURE_THRESHOLD:
                     self._circuit_states[url] = "OPEN"
@@ -193,6 +197,7 @@ class SourceManager:
         proxy = utils.choose_proxy(self.settings)
 
         async def check(url: str) -> tuple[str, bool]:
+            metrics.SOURCES_FETCHED_TOTAL.inc()
             try:
                 async with semaphore:
                     text = await utils.fetch_text(
@@ -206,6 +211,7 @@ class SourceManager:
                 return url, bool(text and utils.parse_configs_from_text(text))
             except NetworkError as e:
                 logging.debug("Source check failed for %s: %s", url, e)
+                metrics.SOURCES_FAILED_TOTAL.inc()
                 return url, False
 
         tasks = [asyncio.create_task(check(u)) for u in sources]

@@ -16,6 +16,7 @@ from typing import List, Optional, Set
 
 from tqdm.asyncio import tqdm_asyncio
 
+from .. import metrics
 from ..config import Settings
 from ..tester import BlocklistChecker, NodeTester
 from . import config_normalizer
@@ -183,6 +184,7 @@ class ConfigProcessor:
 
     async def _test_config(self, cfg: str, history: dict) -> ConfigResult:
         """Test a single configuration and return a ConfigResult."""
+        metrics.CONFIGS_TESTED_TOTAL.inc()
         host, port = config_normalizer.extract_host_port(cfg)
         ping_time = None
         if host and port:
@@ -192,6 +194,10 @@ class ConfigProcessor:
             )
         else:
             ping_time, geo_data = None, (None, None, None, None)
+
+        if ping_time is not None:
+            metrics.CONFIGS_REACHABLE_TOTAL.inc()
+            metrics.CONFIG_LATENCY_SECONDS.observe(ping_time)
 
         country, isp, latitude, longitude = geo_data
         key = f"{host}:{port}"
