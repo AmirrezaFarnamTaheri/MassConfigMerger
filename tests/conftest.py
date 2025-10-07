@@ -83,7 +83,16 @@ class SimpleFakeFilesystem:
         path_obj = Path(path)
         if path_obj.is_absolute():
             # Join absolute paths to the fake root, stripping their anchor.
-            return self.root.joinpath(path_obj.relative_to(path_obj.anchor))
+            try:
+                rel = path_obj.relative_to(path_obj.anchor)
+            except Exception:
+                # Fallback: construct a relative path by removing drive/anchor segments
+                parts = list(path_obj.parts)
+                # Remove anchor/drive (e.g., 'C:\\' or '/' or network share root)
+                while parts and (parts[0].endswith(":\\") or parts[0] in (path_obj.anchor, "/", "\\")):
+                    parts.pop(0)
+                rel = Path(*parts)
+            return self.root.joinpath(rel)
         return self.root.joinpath(path_obj)
 
     def create_dir(self, path: Union[Path, str]) -> Path:
