@@ -260,8 +260,7 @@ class SourceManager:
                 if not t.done():
                     t.cancel()
             await asyncio.gather(*tasks, return_exceptions=True)
-            # Ensure we close the session created above to avoid leaks
-            await self.close_session()
+            # Do not close the shared session here; lifecycle managed elsewhere.
 
         if prune:
             remaining = [u for u in sources if u not in removed]
