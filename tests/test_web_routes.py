@@ -148,6 +148,32 @@ def test_report_route_html(client, fs):
     assert response.data == b"<h1>HTML Report</h1>"
 
 
+@patch("configstream.web.find_project_root", side_effect=FileNotFoundError)
+def test_get_root_fallback(mock_find_root, client, fs):
+    """Test _get_root fallback when pyproject.toml is not found."""
+    # No pyproject.toml and find_project_root raises error
+    fs.create_file("config.yaml", contents="output:\n  output_dir: 'fake_output'")
+    fs.create_dir("fake_output")
+    fs.create_file("fake_output/vpn_report.html", contents=b"<h1>Fallback Report</h1>")
+
+    response = client.get("/report")
+    assert response.status_code == 200
+    assert response.data == b"<h1>Fallback Report</h1>"
+
+
+@patch("configstream.web.main")
+def test_main_entrypoint(mock_main, monkeypatch):
+    """Test the main entrypoint."""
+    import sys
+    # Ensure the module is reloaded for the test
+    if "configstream.web" in sys.modules:
+        monkeypatch.delitem(sys.modules, "configstream.web")
+
+    import runpy
+    runpy.run_module("configstream.web", run_name="__main__")
+    mock_main.assert_called_once()
+
+
 def test_report_route_json(client, fs):
     """Test the /report route when only a JSON report exists."""
     fs.create_file("pyproject.toml")
@@ -179,7 +205,7 @@ def test_main_run(mock_run):
     """Test that the main function calls app.run."""
     from configstream.web import main
     main()
-    mock_run.assert_called_once_with(host="0.0.0.0", port=8080)
+    mock_run.assert_called_once_with(host="0.0.0.0", port=8080, debug=False)
 
 
 def test_index_route(client):
@@ -187,6 +213,18 @@ def test_index_route(client):
     response = client.get("/")
     assert response.status_code == 200
     assert b"ConfigStream Control Panel" in response.data
+
+
+@patch("configstream.web._run_async_task")
+def test_index_route_history_exception(mock_run_async, client, fs):
+    """Test the index route when loading history fails."""
+    fs.create_file("pyproject.toml")
+    fs.create_file("config.yaml", contents="output:\n  history_db_file: 'fake.db'")
+    mock_run_async.side_effect = Exception("DB fail")
+
+    response = client.get("/")
+    assert response.status_code == 200
+    assert b"No proxy history recorded yet." in response.data
 
 
 def test_health_check_route(client):
@@ -220,9 +258,9 @@ def test_history_route_success(MockDatabase, client, fs):
     data = response.data.decode()
 
     # Check that the data is sorted by reliability and summary values render
-    assert "Total tracked: 4" in data
-    assert "Healthy: 2" in data
-    assert "Critical: 1" in data
+    assert "📊 Total Tracked: 4" in data
+    assert "✅ Healthy: 2" in data
+    assert "⚠️ Critical: 1" in data
     p1 = data.index("proxy1")
     p4 = data.index("proxy4")
     p2 = data.index("proxy2")

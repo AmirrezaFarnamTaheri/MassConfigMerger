@@ -43,7 +43,6 @@ pytest_plugins = [
     for plugin in (
         _load_optional_plugin("pytest_asyncio"),
         _load_optional_plugin("aiohttp.pytest_plugin"),
-        _load_optional_plugin("pyfakefs.pytest_plugin"),
     )
     if plugin is not None
 ]

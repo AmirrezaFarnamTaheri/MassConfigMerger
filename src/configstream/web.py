@@ -1,4 +1,4 @@
-"""Flask web interface for ConfigStream."""
+"""Modern Flask web interface for ConfigStream with enhanced UI/UX."""
 
 from __future__ import annotations
 
@@ -37,7 +37,6 @@ from .pipeline import run_aggregation_pipeline
 from .vpn_merger import run_merger as run_merger_pipeline
 
 app = Flask(__name__)
-
 CONFIG_PATH = Path(CONFIG_FILE_NAME)
 
 
@@ -55,13 +54,12 @@ def _get_root() -> Path:
 
 
 def load_cfg():
-    """Load configuration from ``CONFIG_PATH``."""
+    """Load configuration from CONFIG_PATH."""
     return load_config(CONFIG_PATH)
 
 
 def _run_async_task(coro: asyncio.Future) -> Any:
-    """Execute *coro* in a way that tolerates nested event loops."""
-
+    """Execute coro in a way that tolerates nested event loops."""
     try:
         return asyncio.run(coro)
     except RuntimeError:
@@ -75,22 +73,25 @@ def _extract_api_token() -> Optional[str]:
     header_token = request.headers.get("X-API-Key")
     auth_header = request.headers.get("Authorization", "")
 
-    token_from_header = header_token.strip() if header_token and header_token.strip() else None
+    token_from_header = None
+    if header_token:
+        cleaned = header_token.strip()
+        if cleaned and len(cleaned) <= 256:
+            token_from_header = cleaned
 
     token_from_bearer: Optional[str] = None
     if auth_header:
         scheme, _, value = auth_header.partition(" ")
         if scheme.strip().lower() == "bearer":
             value = value.strip()
-            token_from_bearer = value if value else None
+            if value and len(value) <= 256:
+                token_from_bearer = value
 
-    # Prefer X-API-Key over Bearer if both are present
     return token_from_header or token_from_bearer
 
 
 def _get_request_settings():
     """Return settings for the current request, enforcing API token checks."""
-
     cfg = load_cfg()
     expected = getattr(cfg.security, "web_api_token", None)
     if expected:
@@ -161,314 +162,472 @@ def _serialize_history(history_data: Dict[str, Dict[str, Any]]) -> List[Dict[str
             "status": status,
             "status_class": status_class,
             "last_tested": _format_timestamp(stats.get("last_tested")),
-            "country": stats.get("country") or stats.get("location"),
-            "isp": stats.get("isp"),
-            "latency_ms": latency,
+            "country": stats.get("country") or stats.get("geo", {}).get("country"),
+            "isp": stats.get("isp") or stats.get("geo", {}).get("isp"),
+            "latency": round(latency, 2) if latency is not None else None,
         }
         entries.append(entry)
-
-    entries.sort(
-        key=lambda item: (
-            item["reliability"],
-            item["successes"],
-            -item["failures"],
-            item["key"],
-        ),
-        reverse=True,
-    )
+    entries.sort(key=lambda x: x["reliability"], reverse=True)
     return entries
 
 
 async def _read_history(db_path: Path) -> Dict[str, Dict[str, Any]]:
+    """Read proxy history from the database."""
     db = Database(db_path)
     try:
         await db.connect()
-        return await db.get_proxy_history()
+        history = await db.get_proxy_history()
+        return history
     finally:
         await db.close()
 
 
-def _load_history_preview(limit: int = 5) -> List[Dict[str, Any]]:
-    try:
-        cfg = load_cfg()
-        project_root = _get_root()
-        db_path = project_root / cfg.output.history_db_file
-        history_data = _run_async_task(_read_history(db_path))
-        entries = _serialize_history(history_data)
-        return entries[:limit]
-    except Exception:  # pragma: no cover - defensive guard for dashboard
-        logging.getLogger(__name__).debug("History preview unavailable", exc_info=True)
-        return []
-
+# ============================================================================
+# ROUTES
+# ============================================================================
 
 @app.route("/")
 def index():
-    """Display the main dashboard with quick actions."""
+    """Modern dashboard with enhanced UI."""
+    cfg = load_cfg()
+    project_root = _get_root()
+    db_path = project_root / cfg.output.history_db_file
 
-    history_preview = _load_history_preview()
-    preview_limit = len(history_preview) if history_preview else 5
+    # Fetch top 5 proxies for preview
+    try:
+        history_data = _run_async_task(_read_history(db_path))
+        all_entries = _serialize_history(history_data)
+        preview_limit = 5
+        history_preview = all_entries[:preview_limit] if all_entries else []
+    except Exception:
+        history_preview = []
+        preview_limit = 5
+
     template = """
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>ConfigStream Control Panel</title>
         <style>
-            :root {
-                color-scheme: light dark;
-                --bg: #f5f7fb;
-                --card-bg: rgba(255, 255, 255, 0.85);
-                --card-border: rgba(15, 23, 42, 0.08);
-                --accent: #2563eb;
-                --accent-hover: #1d4ed8;
-                --danger: #dc2626;
-                --warning: #f59e0b;
-                --success: #16a34a;
-                --text: #0f172a;
-            }
-            @media (prefers-color-scheme: dark) {
-                :root {
-                    --bg: #0f172a;
-                    --card-bg: rgba(15, 23, 42, 0.85);
-                    --card-border: rgba(148, 163, 184, 0.15);
-                    --text: #e2e8f0;
-                }
-            }
-            * { box-sizing: border-box; }
-            body {
+            * {
                 margin: 0;
-                padding: 2.5rem;
-                font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-                background: linear-gradient(135deg, rgba(37,99,235,0.08), rgba(22,163,74,0.06)) var(--bg);
-                color: var(--text);
+                padding: 0;
+                box-sizing: border-box;
             }
+
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                padding: 2rem 1rem;
+                color: #1a202c;
+            }
+
             .container {
-                max-width: 1080px;
+                max-width: 1400px;
                 margin: 0 auto;
             }
-            header {
-                display: flex;
-                flex-direction: column;
-                gap: 0.5rem;
+
+            .header {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                padding: 2rem;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
                 margin-bottom: 2rem;
+                text-align: center;
             }
-            header h1 {
-                margin: 0;
-                font-size: 2.4rem;
+
+            .logo {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 1rem;
+                margin-bottom: 0.5rem;
             }
-            header p {
-                margin: 0;
-                max-width: 60ch;
-                line-height: 1.5;
-                color: rgba(15, 23, 42, 0.7);
+
+            .logo-icon {
+                width: 64px;
+                height: 64px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
             }
+
+            .logo-icon svg {
+                width: 36px;
+                height: 36px;
+                fill: white;
+            }
+
+            .logo h1 {
+                font-size: 2.5rem;
+                font-weight: 800;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+
+            .tagline {
+                color: #64748b;
+                font-size: 1.1rem;
+                margin-top: 0.5rem;
+            }
+
             .grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: 1.5rem;
+                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+                gap: 2rem;
+                margin-bottom: 2rem;
             }
+
             .card {
-                background: var(--card-bg);
-                border: 1px solid var(--card-border);
-                border-radius: 18px;
-                padding: 1.5rem;
-                backdrop-filter: blur(6px);
-                box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                padding: 2rem;
+                border-radius: 20px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                transition: all 0.3s ease;
             }
+
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            }
+
             .card h2 {
-                margin-top: 0;
-                font-size: 1.35rem;
+                font-size: 1.5rem;
+                margin-bottom: 1rem;
+                color: #1a202c;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
             }
-            .card p {
-                line-height: 1.5;
-                color: rgba(15, 23, 42, 0.75);
+
+            .card-icon {
+                width: 32px;
+                height: 32px;
+                padding: 6px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
-            label.token-label {
-                display: block;
-                margin-top: 1rem;
-                margin-bottom: 0.35rem;
-                font-weight: 600;
+
+            .card-icon svg {
+                width: 20px;
+                height: 20px;
+                fill: white;
             }
-            input[type="password"] {
-                width: 100%;
-                padding: 0.65rem 0.75rem;
-                border-radius: 10px;
-                border: 1px solid rgba(148, 163, 184, 0.6);
-                background: rgba(255, 255, 255, 0.7);
-                color: inherit;
-            }
-            input[type="password"]:focus {
-                outline: 2px solid rgba(37, 99, 235, 0.45);
-                outline-offset: 2px;
-            }
+
             .button-row {
                 display: flex;
-                gap: 0.75rem;
-                margin-top: 1rem;
-                flex-wrap: wrap;
+                gap: 1rem;
+                margin-top: 1.5rem;
             }
+
             button.action {
-                flex: 1 1 160px;
-                padding: 0.75rem 1rem;
-                border-radius: 12px;
-                border: none;
-                background: linear-gradient(135deg, var(--accent), #3b82f6);
+                flex: 1;
+                padding: 1rem 2rem;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
+                border: none;
+                border-radius: 12px;
+                font-size: 1rem;
                 font-weight: 600;
                 cursor: pointer;
-                transition: transform 0.18s ease, box-shadow 0.18s ease;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
             }
-            button.action:hover:enabled {
+
+            button.action:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 12px 25px rgba(37, 99, 235, 0.25);
+                box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
             }
+
             button.action:disabled {
                 opacity: 0.6;
-                cursor: progress;
+                cursor: not-allowed;
+                transform: none;
             }
-            pre#actionOutput {
-                margin-top: 1rem;
-                padding: 1rem;
-                background: rgba(15, 23, 42, 0.75);
-                color: #e2e8f0;
-                border-radius: 12px;
-                max-height: 220px;
-                overflow: auto;
-                font-size: 0.9rem;
-            }
-            ul.links {
+
+            .links {
                 list-style: none;
-                padding: 0;
-                margin: 1rem 0 0;
                 display: grid;
                 gap: 0.75rem;
             }
-            ul.links a {
-                display: inline-flex;
+
+            .links a {
+                display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 0.75rem 1rem;
-                border-radius: 12px;
-                background: rgba(37, 99, 235, 0.08);
-                color: inherit;
+                padding: 1rem 1.25rem;
+                background: linear-gradient(to right, #f8fafc, #f1f5f9);
+                border-radius: 10px;
+                color: #334155;
                 text-decoration: none;
+                font-weight: 500;
+                transition: all 0.2s ease;
+            }
+
+            .links a:hover {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                transform: translateX(5px);
+            }
+
+            .links a span {
+                font-weight: 700;
+                font-size: 1.2rem;
+            }
+
+            input[type="password"],
+            input[type="text"] {
+                width: 100%;
+                padding: 0.875rem 1rem;
+                border: 2px solid #e2e8f0;
+                border-radius: 10px;
+                font-size: 1rem;
+                transition: all 0.2s ease;
+                margin-top: 0.5rem;
+            }
+
+            input:focus {
+                outline: none;
+                border-color: #667eea;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            }
+
+            .token-label {
                 font-weight: 600;
-                transition: background 0.2s ease;
+                color: #475569;
+                margin-top: 1rem;
+                display: block;
             }
-            ul.links a:hover {
-                background: rgba(37, 99, 235, 0.16);
+
+            #actionOutput {
+                margin-top: 1.5rem;
+                padding: 1.25rem;
+                background: rgba(15, 23, 42, 0.85);
+                color: #e2e8f0;
+                border-radius: 10px;
+                font-family: 'Monaco', 'Courier New', monospace;
+                font-size: 0.875rem;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                min-height: 80px;
+                line-height: 1.6;
             }
+
             table.history {
                 width: 100%;
                 border-collapse: collapse;
                 margin-top: 1rem;
             }
-            table.history th,
-            table.history td {
-                padding: 0.65rem 0.75rem;
+
+            table.history thead {
+                background: linear-gradient(to right, #f8fafc, #f1f5f9);
+            }
+
+            table.history th {
+                padding: 1rem;
                 text-align: left;
-                border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-            }
-            table.history tbody tr:hover {
-                background: rgba(148, 163, 184, 0.12);
-            }
-            .status-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 0.35rem;
-                padding: 0.35rem 0.6rem;
-                border-radius: 999px;
-                font-size: 0.78rem;
                 font-weight: 600;
-                letter-spacing: 0.01em;
+                color: #475569;
+                font-size: 0.875rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
             }
-            .status-healthy { background: rgba(22, 163, 74, 0.12); color: var(--success); }
-            .status-warning { background: rgba(245, 158, 11, 0.12); color: var(--warning); }
-            .status-critical { background: rgba(220, 38, 38, 0.12); color: var(--danger); }
-            .status-untested { background: rgba(148, 163, 184, 0.18); color: rgba(15, 23, 42, 0.7); }
-            .geo { font-size: 0.82rem; color: rgba(15, 23, 42, 0.6); }
+
+            table.history td {
+                padding: 1rem;
+                border-bottom: 1px solid #e2e8f0;
+                color: #334155;
+            }
+
+            table.history tbody tr:hover {
+                background: #f8fafc;
+            }
+
+            .geo {
+                font-size: 0.8rem;
+                color: #64748b;
+                margin-top: 0.25rem;
+            }
+
+            .status-badge {
+                padding: 0.375rem 0.75rem;
+                border-radius: 9999px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+
+            .status-healthy {
+                background: #dcfce7;
+                color: #166534;
+            }
+
+            .status-warning {
+                background: #fef3c7;
+                color: #92400e;
+            }
+
+            .status-critical {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+
+            .status-untested {
+                background: #f1f5f9;
+                color: #475569;
+            }
+
             footer {
-                margin-top: 2rem;
                 text-align: center;
-                font-size: 0.85rem;
-                color: rgba(15, 23, 42, 0.6);
+                padding: 2rem;
+                color: rgba(255, 255, 255, 0.8);
+                font-size: 0.9rem;
+            }
+
+            @media (max-width: 768px) {
+                .grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .button-row {
+                    flex-direction: column;
+                }
+
+                .logo h1 {
+                    font-size: 2rem;
+                }
             }
         </style>
     </head>
     <body>
         <div class="container">
-            <header>
-                <h1>ConfigStream Control Panel</h1>
-                <p>Run aggregation and merge pipelines, inspect generated reports, and monitor proxy health without leaving your browser.</p>
+            <header class="header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm0 18c-3.87-.96-7-5.05-7-9V8.26l7-3.12 7 3.12V11c0 3.95-3.13 8.04-7 9z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </div>
+                    <h1>ConfigStream</h1>
+                </div>
+                <p class="tagline">VPN Configuration Management & Aggregation Platform</p>
             </header>
+
             <div class="grid">
-                <section class="card" aria-labelledby="operations-heading">
-                    <h2 id="operations-heading">Automated Operations</h2>
-                    <p>Trigger the data aggregation and merging workflows. Provide the optional API token if enforcement is enabled in your configuration.</p>
+                <div class="card">
+                    <h2>
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                            </svg>
+                        </div>
+                        Pipeline Actions
+                    </h2>
+                    <p style="color: #64748b; margin-bottom: 1rem;">
+                        Execute aggregation and merge operations. Provide the optional API token if enforcement is enabled.
+                    </p>
                     <label class="token-label" for="apiToken">API Token (optional)</label>
-                    <input id="apiToken" type="password" placeholder="Provide token if configured" autocomplete="off" />
+                    <input id="apiToken" type="password" placeholder="Enter token if configured" autocomplete="off" />
                     <div class="button-row">
                         <button class="action" id="aggregateBtn">Run Aggregation</button>
                         <button class="action" id="mergeBtn">Run Merge</button>
                     </div>
                     <pre id="actionOutput" aria-live="polite">Awaiting action…</pre>
-                </section>
-                <section class="card" aria-labelledby="resources-heading">
-                    <h2 id="resources-heading">Key Resources</h2>
-                    <p>Open generated artifacts and operational endpoints in new tabs.</p>
+                </div>
+
+                <div class="card">
+                    <h2>
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                            </svg>
+                        </div>
+                        Resources & Reports
+                    </h2>
+                    <p style="color: #64748b; margin-bottom: 1rem;">
+                        Access generated reports, metrics, and operational endpoints.
+                    </p>
                     <ul class="links">
                         <li><a href="/report" rel="noopener">Latest Report<span>→</span></a></li>
                         <li><a href="/history" rel="noopener">Detailed Proxy History<span>→</span></a></li>
                         <li><a href="/metrics" rel="noopener">Prometheus Metrics<span>→</span></a></li>
                         <li><a href="/health" rel="noopener">Health Check<span>→</span></a></li>
                     </ul>
-                </section>
-                <section class="card" aria-labelledby="history-heading">
-                    <h2 id="history-heading">Top Performing Proxies</h2>
-                    <p>Recent proxy test results ranked by reliability.</p>
-                    <table class="history" aria-describedby="history-heading">
-                        <thead>
-                            <tr>
-                                <th scope="col">Proxy</th>
-                                <th scope="col">Success Rate</th>
-                                <th scope="col">Tests</th>
-                                <th scope="col">Status</th>
-                                <th scope="col">Last Tested</th>
-                            </tr>
-                        </thead>
-                        <tbody id="historyTableBody">
-                            {% if history_preview %}
-                                {% for entry in history_preview %}
-                                <tr>
-                                    <td>
-                                        <strong>{{ entry.key }}</strong>
-                                        <div class="geo">
-                                            {% if entry.country %}
-                                                {{ entry.country }}{% if entry.isp %} · {{ entry.isp }}{% endif %}
-                                            {% elif entry.isp %}
-                                                {{ entry.isp }}
-                                            {% else %}
-                                                —
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                    <td>{{ '%.2f'|format(entry.reliability_percent) }}%</td>
-                                    <td>{{ entry.tests }}</td>
-                                    <td><span class="status-badge {{ entry.status_class }}">{{ entry.status }}</span></td>
-                                    <td>{{ entry.last_tested }}</td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr><td colspan="5">No proxy history recorded yet.</td></tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </section>
+                </div>
             </div>
+
+            <div class="card">
+                <h2>
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                        </svg>
+                    </div>
+                    Top Performing Proxies
+                </h2>
+                <p style="color: #64748b; margin-bottom: 1rem;">
+                    Recent proxy test results ranked by reliability.
+                </p>
+                <table class="history" aria-label="Top proxies preview">
+                    <thead>
+                        <tr>
+                            <th>Proxy</th>
+                            <th>Success Rate</th>
+                            <th>Tests</th>
+                            <th>Status</th>
+                            <th>Last Tested</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        {% if history_preview %}
+                            {% for entry in history_preview %}
+                            <tr>
+                                <td>
+                                    <strong>{{ entry.key }}</strong>
+                                    <div class="geo">
+                                        {% if entry.country %}
+                                            {{ entry.country }}{% if entry.isp %} · {{ entry.isp }}{% endif %}
+                                        {% elif entry.isp %}
+                                            {{ entry.isp }}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>{{ '%.2f'|format(entry.reliability_percent) }}%</td>
+                                <td>{{ entry.tests }}</td>
+                                <td><span class="status-badge {{ entry.status_class }}">{{ entry.status }}</span></td>
+                                <td>{{ entry.last_tested }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr><td colspan="5">No proxy history recorded yet.</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
             <footer>
-                Metrics refreshed automatically from live data. Reload the page after running actions to view the latest summaries.
+                <p>ConfigStream v1.0 · Secure VPN Configuration Management</p>
+                <p style="margin-top: 0.5rem; font-size: 0.8rem;">Metrics refresh automatically. Reload after running actions to view latest data.</p>
             </footer>
         </div>
+
         <script>
             const previewLimit = {{ preview_limit | tojson }};
             const historyTableBody = document.getElementById('historyTableBody');
@@ -477,11 +636,11 @@ def index():
 
             function setOutput(message, isError = false) {
                 output.textContent = message;
-                output.style.background = isError ? 'rgba(220,38,38,0.85)' : 'rgba(15,23,42,0.85)';
+                output.style.background = isError ? 'rgba(220, 38, 38, 0.9)' : 'rgba(15, 23, 42, 0.85)';
             }
 
-            async function callAction(endpoint, button) {
-                const btn = document.getElementById(button);
+            async function callAction(endpoint, buttonId) {
+                const btn = document.getElementById(buttonId);
                 const token = tokenField.value.trim();
                 const headers = { 'Content-Type': 'application/json' };
                 if (token) {
@@ -518,9 +677,7 @@ def index():
             async function refreshHistoryPreview() {
                 try {
                     const response = await fetch(`/api/history?limit=${previewLimit}`);
-                    if (!response.ok) {
-                        return;
-                    }
+                    if (!response.ok) return;
                     const data = await response.json();
                     const items = data.items || [];
                     if (!items.length) {
@@ -562,14 +719,13 @@ def health_check():
 @app.post("/api/aggregate")
 def aggregate_api() -> Any:
     """Run the aggregation pipeline and return the output files."""
-
     cfg = _get_request_settings()
     started = time.monotonic()
     try:
         out_dir, files = _run_async_task(
             run_aggregation_pipeline(cfg, sources_file=SOURCES_FILE)
         )
-    except Exception as exc:  # pragma: no cover - logged for diagnostics
+    except Exception as exc:
         app.logger.exception("Aggregation failed")
         return jsonify({"error": str(exc)}), 500
 
@@ -586,24 +742,9 @@ def aggregate_api() -> Any:
     )
 
 
-@app.route("/aggregate", methods=["GET"])
-def aggregate_legacy():
-    """Guide users towards the secured API endpoint."""
-
-    return (
-        jsonify(
-            {
-                "error": "Use POST /api/aggregate. Actions now require an explicit request.",
-            }
-        ),
-        405,
-    )
-
-
 @app.post("/api/merge")
 def merge_api() -> Any:
     """Run the VPN merger using the latest aggregated results."""
-
     cfg = _get_request_settings()
     project_root = _get_root()
     output_dir = project_root / cfg.output.output_dir
@@ -616,7 +757,7 @@ def merge_api() -> Any:
         _run_async_task(
             run_merger_pipeline(cfg, sources_file=SOURCES_FILE, resume_file=resume_file)
         )
-    except Exception as exc:  # pragma: no cover - logged for diagnostics
+    except Exception as exc:
         app.logger.exception("Merge failed")
         return jsonify({"error": str(exc)}), 500
 
@@ -628,20 +769,6 @@ def merge_api() -> Any:
             "completed_at": datetime.now(timezone.utc).isoformat(),
             "resume_file": str(resume_file),
         }
-    )
-
-
-@app.route("/merge", methods=["GET"])
-def merge_legacy():
-    """Guide legacy callers toward the secured merge API."""
-
-    return (
-        jsonify(
-            {
-                "error": "Use POST /api/merge. Operations must be triggered explicitly.",
-            }
-        ),
-        405,
     )
 
 
@@ -667,7 +794,6 @@ def report():
 @app.get("/api/history")
 def history_api() -> Any:
     """Return proxy history statistics as JSON."""
-
     cfg = load_cfg()
     project_root = _get_root()
     db_path = project_root / cfg.output.history_db_file
@@ -694,7 +820,6 @@ def history_api() -> Any:
 @app.route("/history")
 def history():
     """Display the proxy history from the database."""
-
     cfg = load_cfg()
     project_root = _get_root()
     db_path = project_root / cfg.output.history_db_file
@@ -713,74 +838,189 @@ def history():
     <html lang="en">
     <head>
         <meta charset="utf-8" />
-        <title>Proxy History</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Proxy History - ConfigStream</title>
         <style>
-            body {
-                font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            * {
                 margin: 0;
-                padding: 2rem;
-                background: #0f172a;
-                color: #e2e8f0;
+                padding: 0;
+                box-sizing: border-box;
             }
-            a { color: #60a5fa; }
-            .wrap { max-width: 1100px; margin: 0 auto; }
-            header { margin-bottom: 1.5rem; }
-            header h1 { margin: 0; font-size: 2rem; }
-            header p { margin: 0.35rem 0 0; color: #94a3b8; }
+
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                padding: 2rem 1rem;
+                color: #1a202c;
+            }
+
+            .container {
+                max-width: 1600px;
+                margin: 0 auto;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border-radius: 20px;
+                padding: 2rem;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            }
+
+            header {
+                border-bottom: 2px solid #e2e8f0;
+                padding-bottom: 1.5rem;
+                margin-bottom: 2rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+                font-weight: 800;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                margin-bottom: 1rem;
+            }
+
+            .back-link {
+                display: inline-block;
+                padding: 0.5rem 1rem;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 600;
+                transition: all 0.2s ease;
+                margin-bottom: 1rem;
+            }
+
+            .back-link:hover {
+                transform: translateX(-5px);
+                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            }
+
             .summary {
                 display: flex;
                 gap: 1rem;
                 flex-wrap: wrap;
-                margin-bottom: 1.5rem;
+                margin-bottom: 2rem;
             }
-            .summary .pill {
-                padding: 0.65rem 1rem;
+
+            .pill {
+                padding: 0.75rem 1.5rem;
+                background: linear-gradient(to right, #f8fafc, #f1f5f9);
                 border-radius: 999px;
-                background: rgba(148, 163, 184, 0.12);
-                border: 1px solid rgba(148, 163, 184, 0.2);
+                font-weight: 600;
+                color: #334155;
+                font-size: 0.875rem;
             }
+
             table {
                 width: 100%;
                 border-collapse: collapse;
-                background: rgba(15, 23, 42, 0.75);
-                border-radius: 16px;
+                background: white;
+                border-radius: 12px;
                 overflow: hidden;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
             }
-            thead { background: rgba(15, 23, 42, 0.9); }
-            th, td {
-                padding: 0.85rem 1rem;
+
+            thead {
+                background: linear-gradient(to right, #667eea, #764ba2);
+                color: white;
+            }
+
+            th {
+                padding: 1.25rem 1rem;
                 text-align: left;
-                border-bottom: 1px solid rgba(148, 163, 184, 0.12);
-            }
-            tbody tr:hover { background: rgba(59, 130, 246, 0.12); }
-            .status-badge {
-                display: inline-block;
-                padding: 0.35rem 0.7rem;
-                border-radius: 999px;
-                font-size: 0.8rem;
                 font-weight: 600;
+                font-size: 0.875rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
             }
-            .status-healthy { background: rgba(34, 197, 94, 0.18); color: #4ade80; }
-            .status-warning { background: rgba(234, 179, 8, 0.2); color: #facc15; }
-            .status-critical { background: rgba(239, 68, 68, 0.25); color: #f87171; }
-            .status-untested { background: rgba(148, 163, 184, 0.25); color: #cbd5f5; }
-            .geo { font-size: 0.82rem; color: #94a3b8; }
+
+            td {
+                padding: 1.25rem 1rem;
+                border-bottom: 1px solid #e2e8f0;
+                color: #334155;
+            }
+
+            tbody tr:hover {
+                background: #f8fafc;
+            }
+
+            tbody tr:last-child td {
+                border-bottom: none;
+            }
+
+            .geo {
+                font-size: 0.8rem;
+                color: #64748b;
+                margin-top: 0.25rem;
+            }
+
+            .status-badge {
+                padding: 0.375rem 0.75rem;
+                border-radius: 9999px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+
+            .status-healthy {
+                background: #dcfce7;
+                color: #166534;
+            }
+
+            .status-warning {
+                background: #fef3c7;
+                color: #92400e;
+            }
+
+            .status-critical {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+
+            .status-untested {
+                background: #f1f5f9;
+                color: #475569;
+            }
+
+            @media (max-width: 768px) {
+                .container {
+                    padding: 1rem;
+                }
+
+                table {
+                    font-size: 0.875rem;
+                }
+
+                th, td {
+                    padding: 0.75rem 0.5rem;
+                }
+
+                h1 {
+                    font-size: 1.5rem;
+                }
+            }
         </style>
     </head>
     <body>
-        <div class="wrap">
+        <div class="container">
             <header>
-                <h1>Proxy History</h1>
-                <p>Reliability metrics for recently tested proxies. <a href="/">Back to dashboard</a></p>
+                <a href="/" class="back-link">← Back to Dashboard</a>
+                <h1>Complete Proxy History</h1>
             </header>
+
             <section class="summary">
-                <div class="pill">Total tracked: {{ summary.total }}</div>
-                <div class="pill">Healthy: {{ summary.healthy }}</div>
-                <div class="pill">Critical: {{ summary.critical }}</div>
-                <div class="pill">Untested: {{ summary.untested }}</div>
-                <div class="pill">Generated: {{ summary.generated_at }} UTC</div>
+                <div class="pill">📊 Total Tracked: {{ summary.total }}</div>
+                <div class="pill">✅ Healthy: {{ summary.healthy }}</div>
+                <div class="pill">⚠️ Critical: {{ summary.critical }}</div>
+                <div class="pill">❓ Untested: {{ summary.untested }}</div>
+                <div class="pill">🕐 Generated: {{ summary.generated_at }} UTC</div>
             </section>
-            <table aria-label="Proxy History">
+
+            <table aria-label="Complete proxy history">
                 <thead>
                     <tr>
                         <th scope="col">Proxy</th>
@@ -830,9 +1070,8 @@ def history():
 
 def main() -> None:
     """Run the Flask development server."""
-    # Add prometheus wsgi middleware to route /metrics requests
     app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host="0.0.0.0", port=8080, debug=False)
 
 
 if __name__ == "__main__":
