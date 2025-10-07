@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from configstream.config import Settings
 from configstream.web import app
 
 
@@ -24,9 +25,10 @@ def client():
 def test_aggregate_route(mock_load_config, mock_run_pipeline, client, fs):
     """Test the /aggregate route."""
     fs.create_file("config.yaml")
+    mock_load_config.return_value = Settings()
     mock_run_pipeline.return_value = (Path("/fake/dir"), [Path("/fake/dir/file.txt")])
 
-    response = client.get("/aggregate")
+    response = client.post("/aggregate")
 
     assert response.status_code == 200
     assert response.json == {
@@ -44,7 +46,7 @@ def test_merge_route_success(mock_run_merger, client, fs):
     fs.create_dir("fake_output")
     fs.create_file("fake_output/vpn_subscription_raw.txt")
 
-    response = client.get("/merge")
+    response = client.post("/merge")
 
     assert response.status_code == 200
     assert response.json == {"status": "merge complete"}
@@ -57,7 +59,7 @@ def test_merge_route_no_resume_file(client, fs):
     fs.create_file("config.yaml", contents="output:\n  output_dir: 'fake_output'")
     fs.create_dir("fake_output")
 
-    response = client.get("/merge")
+    response = client.post("/merge")
 
     assert response.status_code == 404
     assert "error" in response.json
@@ -114,7 +116,7 @@ def test_index_route(client):
     """Test the index route."""
     response = client.get("/")
     assert response.status_code == 200
-    assert b"ConfigStream Dashboard" in response.data
+    assert b"Secure dashboard interface" in response.data
 
 
 def test_health_check_route(client):
@@ -179,7 +181,7 @@ def test_history_route_empty(MockDatabase, client, fs):
 
     response = client.get("/history")
     assert response.status_code == 200
-    assert response.data.count(b"<tr>") == 1
+    assert b"No proxy history recorded yet" in response.data
 
 
 @patch("configstream.web.Database")
@@ -214,10 +216,67 @@ def test_metrics_route(client):
 def test_aggregate_route_exception(mock_load_config, mock_run_pipeline, client, fs):
     """Test the /aggregate route when an exception occurs."""
     fs.create_file("config.yaml")
+    mock_load_config.return_value = Settings()
     mock_run_pipeline.side_effect = Exception("Test exception")
 
-    with pytest.raises(Exception, match="Test exception"):
-        client.get("/aggregate")
+    response = client.post("/aggregate")
+
+    assert response.status_code == 500
+    assert response.json == {"error": "Test exception"}
+
+
+@patch("configstream.web.run_aggregation_pipeline", new_callable=AsyncMock)
+@patch("configstream.web.load_config")
+def test_aggregate_route_requires_token(mock_load_config, mock_run_pipeline, client, fs):
+    """Protected routes should enforce dashboard tokens when configured."""
+
+    fs.create_file("config.yaml")
+    settings = Settings()
+    settings.security.dashboard_token = "secret"
+    mock_load_config.return_value = settings
+    mock_run_pipeline.return_value = (Path("/protected"), [])
+
+    response = client.post("/aggregate")
+    assert response.status_code == 403
+
+    response = client.post(
+        "/aggregate",
+        headers={"X-ConfigStream-Token": "secret"},
+    )
+
+    assert response.status_code == 200
+    mock_run_pipeline.assert_awaited_once()
+
+
+@patch("configstream.web.run_merger_pipeline", new_callable=AsyncMock)
+@patch("configstream.web.load_config")
+def test_merge_route_requires_token(mock_load_config, mock_run_merger, client, fs):
+    """Merge should require a token when configured."""
+
+    fs.create_file("pyproject.toml")
+    fs.create_file(
+        "config.yaml",
+        contents="""output:\n  output_dir: 'fake_output'""",
+    )
+    fs.create_dir("fake_output")
+    fs.create_file("fake_output/vpn_subscription_raw.txt")
+
+    settings = Settings()
+    settings.output.output_dir = "fake_output"
+    settings.security.dashboard_token = "secret"
+    mock_load_config.return_value = settings
+    mock_run_merger.return_value = None
+
+    response = client.post("/merge")
+    assert response.status_code == 403
+
+    response = client.post(
+        "/merge",
+        headers={"X-ConfigStream-Token": "secret"},
+    )
+
+    assert response.status_code == 200
+    mock_run_merger.assert_awaited_once()
 
 
 def test_report_route_no_project_root(client, fs):

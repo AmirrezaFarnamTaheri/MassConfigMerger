@@ -21,8 +21,15 @@ By default it listens on `http://127.0.0.1:5000`. Use Flask's `--host` and `--po
 
 ## Available endpoints
 
-- `GET /aggregate` – run the aggregation pipeline. Returns JSON with the output directory and list of generated files.
-- `GET /merge` – merge the most recent results. Responds with `{"status": "merge complete"}` when done.
+- `POST /aggregate` – run the aggregation pipeline. Returns JSON with the output directory and list of generated files.
+- `POST /merge` – merge the most recent results. Responds with `{"status": "merge complete"}` when done.
 - `GET /report` – download `vpn_report.html` if present, otherwise render the JSON report inline.
 
-These routes are intentionally simple and return minimal information, making them suitable for automation or quick checks from a web browser.
+Set `security.dashboard_token` in `config.yaml` to require a shared secret for the
+`/aggregate` and `/merge` routes. Supply it via the `X-ConfigStream-Token` header
+or the JSON body `{ "token": "<token>" }`. When omitted, the dashboard remains
+open for local automation and the token field stays optional.
+
+The HTML dashboard issues asynchronous requests to these endpoints, displays
+responses inline, and gracefully reports validation errors or missing resume
+files.

@@ -250,6 +250,10 @@ class SecuritySettings(BaseModel):
         1,
         description="Number of blacklist detections required to consider an IP malicious. 0 to disable.",
     )
+    dashboard_token: Optional[str] = Field(
+        None,
+        description="Shared secret required to invoke protected dashboard actions.",
+    )
 
 
 class ProcessingSettings(BaseModel):

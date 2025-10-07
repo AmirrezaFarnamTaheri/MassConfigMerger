@@ -15,7 +15,7 @@ import logging
 import socket
 import sys
 import time
-from typing import Optional
+from typing import Optional, Tuple
 
 import aiohttp
 
@@ -55,7 +55,20 @@ class NodeTester:
         """Initialize the NodeTester."""
         self.config = config
         self.dns_cache: dict[str, str] = {}
-        self.geoip_cache: dict[str, str] = {}
+        self.geoip_cache: dict[
+            str,
+            Tuple[Optional[str], Optional[str], Optional[float], Optional[float]],
+        ] = {}
+
+    @staticmethod
+    def _is_public_ip(ip: str) -> bool:
+        """Return True if *ip* is a globally routable address."""
+
+        try:
+            ip_obj = ipaddress.ip_address(ip)
+        except ValueError:
+            return False
+        return ip_obj.is_global
 
     def _get_resolver(self) -> Optional[AsyncResolver]:
         """Lazily initialize and return the asynchronous DNS resolver."""
@@ -141,8 +154,13 @@ class NodeTester:
 
         try:
             ip = await self.resolve_host(host)
+            if ip and ip in self.geoip_cache:
+                return self.geoip_cache[ip]
             if not ip or not is_ip_address(ip):
                 logging.debug("Skipping GeoIP lookup; unresolved host: %s", host)
+                return None, None, None, None
+            if not self._is_public_ip(ip):
+                logging.debug("Skipping GeoIP lookup; non-public IP: %s", ip)
                 return None, None, None, None
 
             # Use city() for more detailed data, fallback to country()
@@ -160,6 +178,7 @@ class NodeTester:
             geo_data = (country, isp, latitude, longitude)
             if any(geo_data):
                 self.geoip_cache[host] = geo_data
+                self.geoip_cache[ip] = geo_data
             return geo_data
         except (OSError, socket.gaierror, AddressNotFoundError) as exc:
             logging.debug("GeoIP lookup failed for %s: %s", host, exc)

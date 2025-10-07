@@ -259,6 +259,30 @@ python -m configstream.web
 
 Navigate to `http://localhost:5000` to use the web interface.
 
+### Securing the Web Dashboard
+
+The dashboard now supports an optional shared secret to protect sensitive
+actions such as *Run Aggregation* and *Run Merge*.
+
+1. Set `security.dashboard_token` in `config.yaml` (or via the environment) to
+   a strong random value:
+
+   ```yaml
+   security:
+     dashboard_token: "super-secret-token"
+   ```
+
+2. Provide the token when triggering protected routes:
+
+   - Through the UI by filling in the **Dashboard token** field before
+     submitting the form.
+   - Via API calls by sending the header `X-ConfigStream-Token: <token>` or a
+     JSON body `{ "token": "<token>" }` in a `POST` request.
+
+The dashboard buttons now issue asynchronous `POST` requests and surface the
+JSON response inline, so you can monitor job progress without leaving the page.
+If no token is configured the routes remain open for local automation.
+
 ### Proxy Configuration
 
 If your network requires using an HTTP or SOCKS proxy, you can provide the settings in two ways:

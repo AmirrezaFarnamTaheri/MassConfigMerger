@@ -229,14 +229,13 @@ class SourceManager:
                 metrics.SOURCES_FAILED_TOTAL.inc()
                 return url, False
 
-        tasks = [asyncio.create_task(check(u)) for u in sources]
-        for task in tqdm(
-            asyncio.as_completed(tasks),
-            total=len(tasks),
+        for url in tqdm(
+            sources,
+            total=len(sources),
             desc="Checking sources",
             unit="source",
         ):
-            url, ok = await task
+            url, ok = await check(url)
             if ok:
                 failures.pop(url, None)
                 valid_sources.append(url)

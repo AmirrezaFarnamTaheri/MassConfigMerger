@@ -95,3 +95,5 @@ security:
   apivoid_api_key: null
   # Number of blacklist detections required to consider an IP malicious. 0 to disable.
   blocklist_detection_threshold: 1
+  # Optional shared secret required to trigger aggregation/merge from the dashboard.
+  dashboard_token: null
