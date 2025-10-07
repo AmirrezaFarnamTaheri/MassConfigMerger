@@ -229,7 +229,17 @@ class SourceManager:
                 metrics.SOURCES_FAILED_TOTAL.inc()
                 return url, False
 
-        tasks = [asyncio.create_task(check(u)) for u in sources]
+        tasks = []
+        for u in sources:
+            async def _wrapped_check(url: str) -> tuple[str, bool]:
+                try:
+                    return await check(url)
+                except asyncio.CancelledError:
+                    raise
+                except Exception as e:
+                    logging.debug("Unhandled exception in source check for %s: %s", url, e)
+                    return url, False
+            tasks.append(asyncio.create_task(_wrapped_check(u)))
         if not tasks:
             return []
 
@@ -240,18 +250,11 @@ class SourceManager:
                 desc="Checking sources",
                 unit="source",
             ):
-                try:
-                    url, ok = await fut
-                except asyncio.CancelledError:
-                    # Propagate cancellation without marking as failure
-                    raise
-                except Exception as e:
-                    logging.debug("Unhandled exception in source check: %s", e)
-                    url, ok = (None, False)
-                if ok and url:
+                url, ok = await fut
+                if ok:
                     failures.pop(url, None)
                     valid_sources.append(url)
-                elif url:
+                else:
                     failures[url] = failures.get(url, 0) + 1
                     if prune and failures[url] >= max_failures:
                         removed.append(url)
@@ -260,7 +263,6 @@ class SourceManager:
                 if not t.done():
                     t.cancel()
             await asyncio.gather(*tasks, return_exceptions=True)
-            # Do not close the shared session here; lifecycle managed elsewhere.
 
         if prune:
             remaining = [u for u in sources if u not in removed]
