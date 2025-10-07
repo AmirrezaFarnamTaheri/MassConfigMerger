@@ -4,8 +4,8 @@ import sys
 from unittest.mock import patch, MagicMock, AsyncMock
 
 import pytest
-from massconfigmerger.config import Settings
-from massconfigmerger.tester import NodeTester, is_ip_address
+from configstream.config import Settings
+from configstream.tester import NodeTester, is_ip_address
 
 
 @pytest.mark.asyncio
@@ -17,7 +17,7 @@ async def test_lookup_geo_data_empty_host():
     assert result == (None, None, None, None)
 
 
-@patch("massconfigmerger.tester.Reader", side_effect=ValueError("Test ValueError"))
+@patch("configstream.tester.Reader", side_effect=ValueError("Test ValueError"))
 def test_get_geoip_reader_value_error(mock_reader, caplog):
     """Test _get_geoip_reader handles ValueError on init."""
     settings = Settings()

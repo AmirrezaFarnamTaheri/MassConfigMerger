@@ -4,9 +4,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from massconfigmerger.config import Settings
-from massconfigmerger.core.config_processor import ConfigProcessor, ConfigResult
-from massconfigmerger.db import Database
+from configstream.config import Settings
+from configstream.core.config_processor import ConfigProcessor, ConfigResult
+from configstream.db import Database
 
 
 @pytest.fixture

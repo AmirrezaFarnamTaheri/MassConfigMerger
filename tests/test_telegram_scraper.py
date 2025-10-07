@@ -7,8 +7,8 @@ import pytest
 from telethon import errors
 from telethon.tl.custom import Message as RealMessage
 
-from massconfigmerger.config import Settings
-from massconfigmerger.telegram_scraper import scrape_telegram_configs
+from configstream.config import Settings
+from configstream.telegram_scraper import scrape_telegram_configs
 
 
 @pytest.mark.asyncio
@@ -38,8 +38,8 @@ async def test_scrape_telegram_empty_channels_file(fs):
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.telegram_scraper.TelegramClient")
-@patch("massconfigmerger.telegram_scraper.aiohttp.ClientSession")
+@patch("configstream.telegram_scraper.TelegramClient")
+@patch("configstream.telegram_scraper.aiohttp.ClientSession")
 async def test_scrape_telegram_success(
     MockClientSession: MagicMock, MockTelegramClient: MagicMock, fs
 ):
@@ -91,7 +91,7 @@ async def test_scrape_telegram_success(
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.telegram_scraper.TelegramClient")
+@patch("configstream.telegram_scraper.TelegramClient")
 async def test_scrape_telegram_rpc_error(MockTelegramClient: MagicMock, fs):
     """Test that RPC errors during scraping are handled gracefully."""
     fs.create_file("channels.txt", contents="badchannel")
@@ -114,7 +114,7 @@ async def test_scrape_telegram_rpc_error(MockTelegramClient: MagicMock, fs):
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.telegram_scraper.TelegramClient")
+@patch("configstream.telegram_scraper.TelegramClient")
 async def test_scrape_telegram_proxy_conversion(MockTelegramClient: MagicMock, fs):
     """Test that HTTP and SOCKS proxies are correctly converted for Telethon."""
     fs.create_file("channels.txt", contents="channel1")

@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping improve Mass Config Merger! The steps below set up the development environment.
+Thank you for helping improve ConfigStream! The steps below set up the development environment.
 
 ## Setup
 

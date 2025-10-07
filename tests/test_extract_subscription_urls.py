@@ -1,6 +1,6 @@
 import pytest
 
-from massconfigmerger.core.utils import extract_subscription_urls
+from configstream.core.utils import extract_subscription_urls
 
 
 def test_extract_subscription_urls_basic():

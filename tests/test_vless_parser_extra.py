@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from massconfigmerger.core.parsers.vless import VlessParser
+from configstream.core.parsers.vless import VlessParser
 
 
 @pytest.mark.parametrize(

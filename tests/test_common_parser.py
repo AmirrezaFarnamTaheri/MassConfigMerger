@@ -1,7 +1,7 @@
 import base64
 import json
 
-from massconfigmerger.core.parsers.common import BaseParser
+from configstream.core.parsers.common import BaseParser
 
 
 def test_sanitize_str_non_string():

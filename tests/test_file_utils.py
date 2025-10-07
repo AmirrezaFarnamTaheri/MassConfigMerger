@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-import massconfigmerger.core.file_utils as file_utils_module
+import configstream.core.file_utils as file_utils_module
 
 
 def test_find_project_root_success(fs, monkeypatch):

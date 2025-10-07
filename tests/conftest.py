@@ -1,7 +1,17 @@
 """Pytest configuration and shared fixtures."""
 
 import asyncio
-from massconfigmerger.config import Settings
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SRC_PATH = ROOT / "src"
+if str(SRC_PATH) not in sys.path:
+    sys.path.insert(0, str(SRC_PATH))
+
+import pytest
+
+from configstream.config import Settings
 
 pytest_plugins = ["pytest_asyncio", "aiohttp.pytest_plugin"]
 
@@ -10,7 +20,6 @@ pytest_plugins = ["pytest_asyncio", "aiohttp.pytest_plugin"]
 CONFIG = Settings()
 CONFIG.network.http_proxy = None
 CONFIG.network.socks_proxy = None
-import pytest
 
 @pytest.fixture
 def loop():

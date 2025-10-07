@@ -1,6 +1,6 @@
 # Application Architecture
 
-This document provides a high-level overview of the MassConfigMerger application architecture.
+This document provides a high-level overview of the ConfigStream application architecture.
 
 ## Architecture Diagram
 

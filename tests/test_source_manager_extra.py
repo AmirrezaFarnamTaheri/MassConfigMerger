@@ -5,12 +5,12 @@ from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from massconfigmerger.config import Settings
-from massconfigmerger.core.source_manager import SourceManager
+from configstream.config import Settings
+from configstream.core.source_manager import SourceManager
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.core.utils.fetch_text")
+@patch("configstream.core.utils.fetch_text")
 async def test_check_and_update_sources_failure_counting(mock_fetch_text: AsyncMock, fs):
     """Test that check_and_update_sources correctly counts failures."""
     # Arrange
@@ -37,7 +37,7 @@ async def test_check_and_update_sources_failure_counting(mock_fetch_text: AsyncM
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.core.utils.fetch_text")
+@patch("configstream.core.utils.fetch_text")
 async def test_check_and_update_sources_pruning(mock_fetch_text: AsyncMock, fs):
     """Test that failing sources are correctly pruned."""
     # Arrange
@@ -74,7 +74,7 @@ async def test_check_and_update_sources_pruning(mock_fetch_text: AsyncMock, fs):
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.core.utils.fetch_text", return_value="vless://config")
+@patch("configstream.core.utils.fetch_text", return_value="vless://config")
 async def test_check_and_update_sources_invalid_failures_json(mock_fetch_text, fs):
     """Test that check_and_update_sources handles invalid failures.json gracefully."""
     settings = Settings()

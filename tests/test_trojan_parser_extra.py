@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from massconfigmerger.core.parsers.trojan import TrojanParser
+from configstream.core.parsers.trojan import TrojanParser
 
 
 def test_parse_trojan_minimal_config():

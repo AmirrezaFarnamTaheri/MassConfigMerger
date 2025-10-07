@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from massconfigmerger.config import Settings
-from massconfigmerger.tester import NodeTester
+from configstream.config import Settings
+from configstream.tester import NodeTester
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ async def test_geoip_import_error(mock_settings):
         tester = NodeTester(mock_settings)
         # We need to re-import the module to trigger the ImportError handling
         from importlib import reload
-        from massconfigmerger import tester as t
+        from configstream import tester as t
         reload(t)
 
         # Now create an instance of the reloaded NodeTester
@@ -63,7 +63,7 @@ async def test_lookup_geo_data_country_db_fallback(mock_settings, monkeypatch):
     del mock_reader_instance.city
 
     mock_reader = MagicMock(return_value=mock_reader_instance)
-    monkeypatch.setattr("massconfigmerger.tester.Reader", mock_reader)
+    monkeypatch.setattr("configstream.tester.Reader", mock_reader)
 
     tester = NodeTester(mock_settings)
     tester.resolve_host = AsyncMock(return_value="1.1.1.1")

@@ -2,16 +2,16 @@ from __future__ import annotations
 
 from prometheus_client import generate_latest
 
-from massconfigmerger import metrics
+from configstream import metrics
 
 
 def test_metrics_definition():
     """Test that the Prometheus metrics are defined correctly."""
-    assert metrics.SOURCES_FETCHED_TOTAL._name == "massconfigmerger_sources_fetched"
-    assert metrics.SOURCES_FAILED_TOTAL._name == "massconfigmerger_sources_failed"
-    assert metrics.CONFIGS_TESTED_TOTAL._name == "massconfigmerger_configs_tested"
-    assert metrics.CONFIGS_REACHABLE_TOTAL._name == "massconfigmerger_configs_reachable"
-    assert metrics.CONFIG_LATENCY_SECONDS._name == "massconfigmerger_config_latency_seconds"
+    assert metrics.SOURCES_FETCHED_TOTAL._name == "configstream_sources_fetched"
+    assert metrics.SOURCES_FAILED_TOTAL._name == "configstream_sources_failed"
+    assert metrics.CONFIGS_TESTED_TOTAL._name == "configstream_configs_tested"
+    assert metrics.CONFIGS_REACHABLE_TOTAL._name == "configstream_configs_reachable"
+    assert metrics.CONFIG_LATENCY_SECONDS._name == "configstream_config_latency_seconds"
 
 
 def _get_metric_value(metric):
@@ -52,22 +52,22 @@ def test_metrics_generation():
 
     # Assertions
     assert (
-        f"massconfigmerger_sources_fetched_total {sources_fetched_before + 1.0}"
+        f"configstream_sources_fetched_total {sources_fetched_before + 1.0}"
         in text
     )
     assert (
-        f"massconfigmerger_sources_failed_total {sources_failed_before + 2.0}"
+        f"configstream_sources_failed_total {sources_failed_before + 2.0}"
         in text
     )
     assert (
-        f"massconfigmerger_configs_tested_total {configs_tested_before + 3.0}"
+        f"configstream_configs_tested_total {configs_tested_before + 3.0}"
         in text
     )
     assert (
-        f"massconfigmerger_configs_reachable_total {configs_reachable_before + 4.0}"
+        f"configstream_configs_reachable_total {configs_reachable_before + 4.0}"
         in text
     )
     assert (
-        f'massconfigmerger_config_latency_seconds_bucket{{le="0.5"}} {latency_bucket_before + 1.0}'
+        f'configstream_config_latency_seconds_bucket{{le="0.5"}} {latency_bucket_before + 1.0}'
         in text
     )

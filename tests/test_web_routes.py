@@ -5,7 +5,7 @@ from unittest.mock import patch, AsyncMock
 
 import pytest
 
-from massconfigmerger.web import app
+from configstream.web import app
 
 
 @pytest.fixture
@@ -19,8 +19,8 @@ def client():
         yield client
 
 
-@patch("massconfigmerger.web.run_aggregation_pipeline", new_callable=AsyncMock)
-@patch("massconfigmerger.web.load_config")
+@patch("configstream.web.run_aggregation_pipeline", new_callable=AsyncMock)
+@patch("configstream.web.load_config")
 def test_aggregate_route(mock_load_config, mock_run_pipeline, client, fs):
     """Test the /aggregate route."""
     fs.create_file("config.yaml")
@@ -36,7 +36,7 @@ def test_aggregate_route(mock_load_config, mock_run_pipeline, client, fs):
     mock_run_pipeline.assert_awaited_once()
 
 
-@patch("massconfigmerger.web.run_merger_pipeline", new_callable=AsyncMock)
+@patch("configstream.web.run_merger_pipeline", new_callable=AsyncMock)
 def test_merge_route_success(mock_run_merger, client, fs):
     """Test the /merge route when the resume file exists."""
     fs.create_file("pyproject.toml")
@@ -102,10 +102,10 @@ def test_report_route_not_found(client, fs):
     assert b"Report not found" in response.data
 
 
-@patch("massconfigmerger.web.app.run")
+@patch("configstream.web.app.run")
 def test_main_run(mock_run):
     """Test that the main function calls app.run."""
-    from massconfigmerger.web import main
+    from configstream.web import main
     main()
     mock_run.assert_called_once_with(host="0.0.0.0", port=8080)
 
@@ -114,7 +114,7 @@ def test_index_route(client):
     """Test the index route."""
     response = client.get("/")
     assert response.status_code == 200
-    assert b"MassConfigMerger Dashboard" in response.data
+    assert b"ConfigStream Dashboard" in response.data
 
 
 def test_health_check_route(client):
@@ -124,7 +124,7 @@ def test_health_check_route(client):
     assert response.json == {"status": "ok"}
 
 
-@patch("massconfigmerger.web.Database")
+@patch("configstream.web.Database")
 def test_history_route_success(MockDatabase, client, fs):
     """Test the /history route with successful data retrieval."""
     fs.create_file("pyproject.toml")
@@ -166,7 +166,7 @@ def test_history_route_success(MockDatabase, client, fs):
     mock_db_instance.close.assert_awaited_once()
 
 
-@patch("massconfigmerger.web.Database")
+@patch("configstream.web.Database")
 def test_history_route_empty(MockDatabase, client, fs):
     """Test the /history route with no data."""
     fs.create_file("pyproject.toml")
@@ -182,7 +182,7 @@ def test_history_route_empty(MockDatabase, client, fs):
     assert response.data.count(b"<tr>") == 1
 
 
-@patch("massconfigmerger.web.Database")
+@patch("configstream.web.Database")
 def test_history_route_bad_data(MockDatabase, client, fs):
     """Test the /history route with malformed data in the database."""
     fs.create_file("pyproject.toml")
@@ -209,8 +209,8 @@ def test_metrics_route(client):
     assert b"python_info" in response.data
 
 
-@patch("massconfigmerger.web.run_aggregation_pipeline", new_callable=AsyncMock)
-@patch("massconfigmerger.web.load_config")
+@patch("configstream.web.run_aggregation_pipeline", new_callable=AsyncMock)
+@patch("configstream.web.load_config")
 def test_aggregate_route_exception(mock_load_config, mock_run_pipeline, client, fs):
     """Test the /aggregate route when an exception occurs."""
     fs.create_file("config.yaml")

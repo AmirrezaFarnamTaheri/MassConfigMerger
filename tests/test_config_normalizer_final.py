@@ -3,12 +3,12 @@ from __future__ import annotations
 from unittest.mock import patch
 import pytest
 
-from massconfigmerger.core.config_normalizer import (
+from configstream.core.config_normalizer import (
     extract_host_port,
     create_semantic_hash,
 )
 
-@patch("massconfigmerger.core.config_normalizer.logging.debug")
+@patch("configstream.core.config_normalizer.logging.debug")
 def test_extract_host_port_vless_fallback_failure(mock_logging_debug):
     """Test that the vless host/port extraction fallback logs on failure."""
     # This config is invalid base64 and also not a valid URI with host/port
@@ -18,7 +18,7 @@ def test_extract_host_port_vless_fallback_failure(mock_logging_debug):
         "extract_host_port vmess/vless fallback failed for: %s", config
     )
 
-@patch("massconfigmerger.core.config_normalizer.extract_host_port", return_value=(None, None))
+@patch("configstream.core.config_normalizer.extract_host_port", return_value=(None, None))
 def test_create_semantic_hash_no_host_port(mock_extract_host_port):
     """Test create_semantic_hash when host and port cannot be extracted."""
     config = "vless://some-id@?type=ws"

@@ -5,15 +5,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from massconfigmerger.config import Settings
-from massconfigmerger.pipeline import run_aggregation_pipeline
+from configstream.config import Settings
+from configstream.pipeline import run_aggregation_pipeline
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.pipeline.SourceManager")
-@patch("massconfigmerger.pipeline.ConfigProcessor")
-@patch("massconfigmerger.pipeline.OutputGenerator")
-@patch("massconfigmerger.pipeline.scrape_telegram_configs", new_callable=AsyncMock)
+@patch("configstream.pipeline.SourceManager")
+@patch("configstream.pipeline.ConfigProcessor")
+@patch("configstream.pipeline.OutputGenerator")
+@patch("configstream.pipeline.scrape_telegram_configs", new_callable=AsyncMock)
 async def test_run_aggregation_pipeline_full_flow(
     mock_scrape_telegram: AsyncMock,
     MockOutputGenerator: MagicMock,
@@ -72,10 +72,10 @@ async def test_run_aggregation_pipeline_full_flow(
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.pipeline.SourceManager")
-@patch("massconfigmerger.pipeline.ConfigProcessor")
-@patch("massconfigmerger.pipeline.OutputGenerator")
-@patch("massconfigmerger.pipeline.scrape_telegram_configs", new_callable=AsyncMock)
+@patch("configstream.pipeline.SourceManager")
+@patch("configstream.pipeline.ConfigProcessor")
+@patch("configstream.pipeline.OutputGenerator")
+@patch("configstream.pipeline.scrape_telegram_configs", new_callable=AsyncMock)
 async def test_run_aggregation_pipeline_no_telegram(
     mock_scrape_telegram: AsyncMock,
     MockOutputGenerator: MagicMock,

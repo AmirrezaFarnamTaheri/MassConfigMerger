@@ -4,10 +4,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from massconfigmerger.config import Settings
-from massconfigmerger.core.config_processor import ConfigResult
-from massconfigmerger.db import Database
-from massconfigmerger.processing import pipeline
+from configstream.config import Settings
+from configstream.core.config_processor import ConfigResult
+from configstream.db import Database
+from configstream.processing import pipeline
 
 
 def test_sort_and_trim_results():
@@ -52,7 +52,7 @@ def test_sort_and_trim_results():
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.processing.pipeline.ConfigProcessor", new_callable=MagicMock)
+@patch("configstream.processing.pipeline.ConfigProcessor", new_callable=MagicMock)
 async def test_test_configs(MockConfigProcessor):
     """Test the test_configs function."""
     mock_proc_instance = MockConfigProcessor.return_value

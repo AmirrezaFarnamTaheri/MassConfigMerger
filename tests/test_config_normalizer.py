@@ -5,8 +5,8 @@ import json
 
 import pytest
 
-from massconfigmerger.config import Settings
-from massconfigmerger.core import config_normalizer
+from configstream.config import Settings
+from configstream.core import config_normalizer
 
 
 @pytest.mark.parametrize(

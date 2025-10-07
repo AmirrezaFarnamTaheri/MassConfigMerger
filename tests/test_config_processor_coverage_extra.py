@@ -4,9 +4,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from massconfigmerger.config import Settings
-from massconfigmerger.core.config_processor import ConfigProcessor, ConfigResult
-from massconfigmerger.exceptions import NetworkError
+from configstream.config import Settings
+from configstream.core.config_processor import ConfigProcessor, ConfigResult
+from configstream.exceptions import NetworkError
 
 
 @pytest.mark.asyncio
@@ -33,7 +33,7 @@ async def test_test_configs_filter_malicious_exception(fs):
     processor.blocklist_checker.close = AsyncMock()
 
 
-    with patch("massconfigmerger.core.config_processor.logging.debug") as mock_debug:
+    with patch("configstream.core.config_processor.logging.debug") as mock_debug:
         results = await processor.test_configs(["vless://config"], {})
         assert results == []
 
@@ -59,7 +59,7 @@ async def test_test_config_no_host_port():
     settings = Settings()
     processor = ConfigProcessor(settings)
 
-    with patch("massconfigmerger.core.config_normalizer.extract_host_port", return_value=(None, None)):
+    with patch("configstream.core.config_normalizer.extract_host_port", return_value=(None, None)):
         result = await processor._test_config("invalid-config", {})
         assert not result.is_reachable
         assert result.ping_time is None

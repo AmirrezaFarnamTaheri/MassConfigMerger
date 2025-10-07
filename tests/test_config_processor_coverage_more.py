@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from massconfigmerger.config import Settings
-from massconfigmerger.core.config_processor import ConfigProcessor, ConfigResult
+from configstream.config import Settings
+from configstream.core.config_processor import ConfigProcessor, ConfigResult
 
 
 @pytest.mark.asyncio
@@ -28,7 +28,7 @@ async def test_test_config_with_reliability_coverage():
     settings = Settings()
     processor = ConfigProcessor(settings)
     history = {"example.com:443": {"successes": 1, "failures": 1}}
-    with patch("massconfigmerger.core.config_normalizer.extract_host_port", return_value=("example.com", 443)):
+    with patch("configstream.core.config_normalizer.extract_host_port", return_value=("example.com", 443)):
         result = await processor._test_config("vless://config", history)
     assert result.reliability == 0.5
     await processor.tester.close()

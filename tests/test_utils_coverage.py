@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from massconfigmerger.core.utils import is_valid_config, parse_configs_from_text
+from configstream.core.utils import is_valid_config, parse_configs_from_text
 
 
 @pytest.mark.parametrize(
@@ -42,7 +42,7 @@ def test_parse_configs_from_text_oversized_b64():
     b64_string = base64.urlsafe_b64encode(long_string.encode()).decode()
     text = f"some text\n{b64_string}\nmore text"
 
-    with patch("massconfigmerger.core.utils.MAX_DECODE_SIZE", 4000):
+    with patch("configstream.core.utils.MAX_DECODE_SIZE", 4000):
         configs = parse_configs_from_text(text)
         assert len(configs) == 0
 

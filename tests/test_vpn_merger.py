@@ -5,17 +5,17 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import pytest
 
-from massconfigmerger.config import Settings
-from massconfigmerger.core.config_processor import ConfigResult
-from massconfigmerger.vpn_merger import run_merger
+from configstream.config import Settings
+from configstream.core.config_processor import ConfigResult
+from configstream.vpn_merger import run_merger
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.vpn_merger.Database")
-@patch("massconfigmerger.vpn_merger.SourceManager")
-@patch("massconfigmerger.vpn_merger.ConfigProcessor")
-@patch("massconfigmerger.vpn_merger.OutputGenerator")
-@patch("massconfigmerger.vpn_merger.pipeline.test_configs", new_callable=AsyncMock)
+@patch("configstream.vpn_merger.Database")
+@patch("configstream.vpn_merger.SourceManager")
+@patch("configstream.vpn_merger.ConfigProcessor")
+@patch("configstream.vpn_merger.OutputGenerator")
+@patch("configstream.vpn_merger.pipeline.test_configs", new_callable=AsyncMock)
 @patch("pathlib.Path.open", new_callable=mock_open, read_data="http://source1")
 async def test_run_merger_from_sources(
     mock_open_file: MagicMock,
@@ -65,7 +65,7 @@ async def test_run_merger_from_sources(
     ]
     mock_source_manager.close_session = AsyncMock()
 
-    with patch("massconfigmerger.processing.pipeline.sort_and_trim_results", side_effect=lambda r, c: sorted(r, key=lambda x: not x.is_reachable)):
+    with patch("configstream.processing.pipeline.sort_and_trim_results", side_effect=lambda r, c: sorted(r, key=lambda x: not x.is_reachable)):
         # Act
         await run_merger(settings, Path("sources.txt"))
 
@@ -88,11 +88,11 @@ async def test_run_merger_from_sources(
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.vpn_merger.Database")
-@patch("massconfigmerger.vpn_merger.SourceManager")
-@patch("massconfigmerger.vpn_merger.ConfigProcessor")
-@patch("massconfigmerger.vpn_merger.OutputGenerator")
-@patch("massconfigmerger.vpn_merger.pipeline.test_configs", new_callable=AsyncMock)
+@patch("configstream.vpn_merger.Database")
+@patch("configstream.vpn_merger.SourceManager")
+@patch("configstream.vpn_merger.ConfigProcessor")
+@patch("configstream.vpn_merger.OutputGenerator")
+@patch("configstream.vpn_merger.pipeline.test_configs", new_callable=AsyncMock)
 @patch(
     "pathlib.Path.open", new_callable=mock_open, read_data="vless://resume1\nss://resume2"
 )
@@ -141,7 +141,7 @@ async def test_run_merger_with_resume(
     mock_source_manager.close_session = AsyncMock()
 
     # Act
-    with patch("massconfigmerger.processing.pipeline.sort_and_trim_results", side_effect=lambda r, c: sorted(r, key=lambda x: not x.is_reachable)[:c.processing.top_n or None]):
+    with patch("configstream.processing.pipeline.sort_and_trim_results", side_effect=lambda r, c: sorted(r, key=lambda x: not x.is_reachable)[:c.processing.top_n or None]):
         await run_merger(settings, Path("dummy_sources.txt"), resume_file=Path("resume.txt"))
 
     # Assert

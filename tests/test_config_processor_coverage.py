@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import base64
 import pytest
-from massconfigmerger.config import Settings
-from massconfigmerger.core import config_normalizer
-from massconfigmerger.core.config_processor import ConfigProcessor, categorize_protocol
+from configstream.config import Settings
+from configstream.core import config_normalizer
+from configstream.core.config_processor import ConfigProcessor, categorize_protocol
 
 
 @pytest.fixture
@@ -179,7 +179,7 @@ from unittest.mock import AsyncMock, patch
 import logging
 import asyncio
 
-from massconfigmerger.core.config_processor import ConfigResult
+from configstream.core.config_processor import ConfigResult
 
 
 @pytest.mark.asyncio
@@ -223,7 +223,7 @@ async def test_filter_malicious_check_failure(config_processor: ConfigProcessor,
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.core.config_processor.tqdm_asyncio")
+@patch("configstream.core.config_processor.tqdm_asyncio")
 async def test_test_configs_worker_failure(mock_tqdm, config_processor: ConfigProcessor, caplog):
     """Test that test_configs handles exceptions within the worker."""
     async def gather_side_effect(*tasks, **kwargs):

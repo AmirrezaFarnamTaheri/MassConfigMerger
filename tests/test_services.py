@@ -5,9 +5,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from massconfigmerger import services
-from massconfigmerger.config import Settings
-from massconfigmerger.exceptions import ConfigError
+from configstream import services
+from configstream.config import Settings
+from configstream.exceptions import ConfigError
 
 
 def test_list_sources_no_file(capsys):
@@ -84,7 +84,7 @@ def test_remove_nonexistent_source(fs, capsys):
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.pipeline.run_aggregation_pipeline", new_callable=AsyncMock)
+@patch("configstream.pipeline.run_aggregation_pipeline", new_callable=AsyncMock)
 async def test_run_fetch_pipeline(mock_run_agg_pipeline):
     """Test the run_fetch_pipeline service."""
     settings = Settings()
@@ -102,7 +102,7 @@ async def test_run_fetch_pipeline(mock_run_agg_pipeline):
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.vpn_merger.run_merger", new_callable=AsyncMock)
+@patch("configstream.vpn_merger.run_merger", new_callable=AsyncMock)
 async def test_run_merge_pipeline(mock_run_merger):
     """Test the run_merge_pipeline service."""
     settings = Settings()
@@ -113,7 +113,7 @@ async def test_run_merge_pipeline(mock_run_merger):
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.vpn_retester.run_retester", new_callable=AsyncMock)
+@patch("configstream.vpn_retester.run_retester", new_callable=AsyncMock)
 async def test_run_retest_pipeline(mock_run_retester):
     """Test the run_retest_pipeline service."""
     settings = Settings()
@@ -122,8 +122,8 @@ async def test_run_retest_pipeline(mock_run_retester):
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.pipeline.run_aggregation_pipeline", new_callable=AsyncMock)
-@patch("massconfigmerger.vpn_merger.run_merger", new_callable=AsyncMock)
+@patch("configstream.pipeline.run_aggregation_pipeline", new_callable=AsyncMock)
+@patch("configstream.vpn_merger.run_merger", new_callable=AsyncMock)
 async def test_run_full_pipeline(mock_run_merger, mock_run_agg_pipeline):
     """Test the run_full_pipeline service."""
     mock_run_agg_pipeline.return_value = (Path("output"), [])
