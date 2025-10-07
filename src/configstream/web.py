@@ -76,20 +76,24 @@ def _extract_api_token() -> Optional[str]:
     auth_header = request.headers.get("Authorization", "")
 
     token_from_header = header_token.strip() if header_token else None
+    if token_from_header == "":
+        token_from_header = None
 
     token_from_bearer = None
     if auth_header:
         scheme, _, value = auth_header.partition(" ")
-        if scheme.lower() == "bearer" and value:
-            token_from_bearer = value.strip()
+        scheme = scheme.strip().lower()
+        value = value.strip()
+        if scheme == "bearer" and value:
+            token_from_bearer = value
 
     # If both are provided and non-empty, reject to avoid ambiguity
     if token_from_header and token_from_bearer:
         return None
 
     token = token_from_header or token_from_bearer
-    if token:
-        return token
+    if token and token.strip():
+        return token.strip()
     return None
 
 
