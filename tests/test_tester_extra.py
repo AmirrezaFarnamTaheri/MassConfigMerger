@@ -61,3 +61,29 @@ def test_missing_aiodns_dependency():
         tester = NodeTester(settings)
         # _get_resolver should return None without raising an error
         assert tester._get_resolver() is None
+
+
+@pytest.mark.asyncio
+async def test_resolve_host_rejects_private_ip():
+    """Ensure plain private IP inputs are not cached or returned."""
+    settings = Settings()
+    tester = NodeTester(settings)
+    ip = await tester.resolve_host("192.168.1.10")
+    assert ip is None
+    assert "192.168.1.10" not in tester.dns_cache
+
+
+@pytest.mark.asyncio
+async def test_resolve_host_filters_private_from_resolver(monkeypatch):
+    """Reject private addresses returned by async resolvers."""
+    settings = Settings()
+    tester = NodeTester(settings)
+
+    mock_resolver = AsyncMock()
+    mock_resolver.resolve.return_value = [{"host": "10.0.0.5"}]
+    monkeypatch.setattr(tester, "_get_resolver", lambda: mock_resolver)
+
+    ip = await tester.resolve_host("internal.example")
+    assert ip is None
+    mock_resolver.resolve.assert_awaited_once_with("internal.example")
+    assert "internal.example" not in tester.dns_cache

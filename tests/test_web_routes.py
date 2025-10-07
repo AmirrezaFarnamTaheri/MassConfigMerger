@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from configstream.config import Settings
 from configstream.web import app
 
 
@@ -21,46 +22,117 @@ def client():
 
 @patch("configstream.web.run_aggregation_pipeline", new_callable=AsyncMock)
 @patch("configstream.web.load_config")
-def test_aggregate_route(mock_load_config, mock_run_pipeline, client, fs):
-    """Test the /aggregate route."""
+def test_aggregate_api(mock_load_config, mock_run_pipeline, client, fs):
+    """Test the /api/aggregate route."""
+
     fs.create_file("config.yaml")
+    mock_load_config.return_value = Settings()
     mock_run_pipeline.return_value = (Path("/fake/dir"), [Path("/fake/dir/file.txt")])
 
-    response = client.get("/aggregate")
+    response = client.post("/api/aggregate", json={})
 
     assert response.status_code == 200
-    assert response.json == {
-        "output_dir": "/fake/dir",
-        "files": ["/fake/dir/file.txt"],
-    }
+    payload = response.get_json()
+    assert payload["status"] == "ok"
+    assert payload["output_dir"] == "/fake/dir"
+    assert payload["file_count"] == 1
+    assert payload["files"] == ["/fake/dir/file.txt"]
+    mock_run_pipeline.assert_awaited_once()
+
+
+@patch("configstream.web.run_aggregation_pipeline", new_callable=AsyncMock)
+@patch("configstream.web.load_config")
+def test_aggregate_requires_token(mock_load_config, mock_run_pipeline, client, fs):
+    """Ensure /api/aggregate enforces the configured API token."""
+
+    settings = Settings()
+    settings.security.web_api_token = "topsecret"
+    mock_load_config.return_value = settings
+
+    response = client.post("/api/aggregate", json={})
+
+    assert response.status_code == 401
+    assert b"Missing or invalid API token" in response.data
+    mock_run_pipeline.assert_not_awaited()
+
+    mock_run_pipeline.reset_mock()
+    mock_run_pipeline.return_value = (Path("/secured"), [])
+    response_ok = client.post(
+        "/api/aggregate",
+        json={},
+        headers={"X-API-Key": "topsecret"},
+    )
+
+    assert response_ok.status_code == 200
     mock_run_pipeline.assert_awaited_once()
 
 
 @patch("configstream.web.run_merger_pipeline", new_callable=AsyncMock)
-def test_merge_route_success(mock_run_merger, client, fs):
-    """Test the /merge route when the resume file exists."""
+@patch("configstream.web.load_config")
+def test_merge_route_success(mock_load_config, mock_run_merger, client, fs):
+    """Test the /api/merge route when the resume file exists."""
+
     fs.create_file("pyproject.toml")
-    fs.create_file("config.yaml", contents="output:\n  output_dir: 'fake_output'")
     fs.create_dir("fake_output")
     fs.create_file("fake_output/vpn_subscription_raw.txt")
+    settings = Settings()
+    settings.output.output_dir = Path("fake_output")
+    mock_load_config.return_value = settings
 
-    response = client.get("/merge")
+    response = client.post("/api/merge", json={})
 
     assert response.status_code == 200
-    assert response.json == {"status": "merge complete"}
+    payload = response.get_json()
+    assert payload["status"] == "merge complete"
+    assert payload["resume_file"].endswith("vpn_subscription_raw.txt")
     mock_run_merger.assert_awaited_once()
 
 
-def test_merge_route_no_resume_file(client, fs):
-    """Test the /merge route when the resume file is missing."""
-    fs.create_file("pyproject.toml")
-    fs.create_file("config.yaml", contents="output:\n  output_dir: 'fake_output'")
-    fs.create_dir("fake_output")
+@patch("configstream.web.run_merger_pipeline", new_callable=AsyncMock)
+@patch("configstream.web.load_config")
+def test_merge_route_no_resume_file(mock_load_config, mock_run_merger, client, fs):
+    """Test the /api/merge route when the resume file is missing."""
 
-    response = client.get("/merge")
+    fs.create_file("pyproject.toml")
+    settings = Settings()
+    settings.output.output_dir = Path("fake_output")
+    mock_load_config.return_value = settings
+
+    response = client.post("/api/merge", json={})
 
     assert response.status_code == 404
-    assert "error" in response.json
+    assert "error" in response.get_json()
+    mock_run_merger.assert_not_awaited()
+
+
+@patch("configstream.web.run_merger_pipeline", new_callable=AsyncMock)
+@patch("configstream.web.load_config")
+def test_merge_requires_token(mock_load_config, mock_run_merger, client, fs):
+    """Ensure /api/merge enforces the configured API token."""
+
+    fs.create_file("pyproject.toml")
+    fs.create_dir("fake_output")
+    fs.create_file("fake_output/vpn_subscription_raw.txt")
+    settings = Settings()
+    settings.output.output_dir = Path("fake_output")
+    settings.security.web_api_token = "supersecret"
+    mock_load_config.return_value = settings
+
+    response = client.post("/api/merge", json={})
+
+    assert response.status_code == 401
+    assert b"Missing or invalid API token" in response.data
+    mock_run_merger.assert_not_awaited()
+
+    mock_run_merger.reset_mock()
+    response_ok = client.post(
+        "/api/merge",
+        json={},
+        headers={"Authorization": "Bearer supersecret"},
+    )
+
+    assert response_ok.status_code == 200
+    mock_run_merger.assert_awaited_once()
 
 
 def test_report_route_html(client, fs):
@@ -114,7 +186,7 @@ def test_index_route(client):
     """Test the index route."""
     response = client.get("/")
     assert response.status_code == 200
-    assert b"ConfigStream Dashboard" in response.data
+    assert b"ConfigStream Control Panel" in response.data
 
 
 def test_health_check_route(client):
@@ -147,18 +219,21 @@ def test_history_route_success(MockDatabase, client, fs):
     assert response.status_code == 200
     data = response.data.decode()
 
-    # Check that the data is sorted by reliability
-    p1 = data.find("proxy1")
-    p2 = data.find("proxy2")
-    p3 = data.find("proxy3")
-    p4 = data.find("proxy4")
-    assert -1 < p1 < p4 < p2 < p3
+    # Check that the data is sorted by reliability and summary values render
+    assert "Total tracked: 4" in data
+    assert "Healthy: 2" in data
+    assert "Critical: 1" in data
+    p1 = data.index("proxy1")
+    p4 = data.index("proxy4")
+    p2 = data.index("proxy2")
+    p3 = data.index("proxy3")
+    assert p1 < p4 < p2 < p3
 
     # Check for correct data rendering
     assert "100.00%" in data
-    assert '2023-01-01 00:00:00' in data
     assert "50.00%" in data
     assert "0.00%" in data
+    assert "2023-01-01 00:00:00" in data
     assert "N/A" in data
 
     mock_db_instance.connect.assert_awaited_once()
@@ -179,7 +254,7 @@ def test_history_route_empty(MockDatabase, client, fs):
 
     response = client.get("/history")
     assert response.status_code == 200
-    assert response.data.count(b"<tr>") == 1
+    assert b"No proxy history recorded yet." in response.data
 
 
 @patch("configstream.web.Database")
@@ -202,6 +277,35 @@ def test_history_route_bad_data(MockDatabase, client, fs):
     assert b"0.00%" in response.data
 
 
+@patch("configstream.web.Database")
+def test_history_api_endpoint(MockDatabase, client, fs):
+    """Test the JSON API for proxy history."""
+
+    fs.create_file("pyproject.toml")
+    fs.create_file("config.yaml", contents="output:\n  history_db_file: 'fake.db'")
+    fs.create_dir("output")
+
+    mock_db_instance = MockDatabase.return_value
+    mock_db_instance.connect = AsyncMock()
+    mock_db_instance.close = AsyncMock()
+    mock_db_instance.get_proxy_history = AsyncMock(
+        return_value={
+            "proxy1": {"successes": 3, "failures": 1, "last_tested": 1672531200},
+            "proxy2": {"successes": 0, "failures": 2},
+            "proxy3": {"successes": 1, "failures": 0},
+        }
+    )
+
+    response = client.get("/api/history?limit=2")
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["returned"] == 2
+    assert payload["total"] == 3
+    assert payload["healthy"] >= 1
+    assert any(item["key"] == "proxy1" for item in payload["items"])
+
+
 def test_metrics_route(client):
     """Test the /metrics route."""
     response = client.get("/metrics")
@@ -212,12 +316,16 @@ def test_metrics_route(client):
 @patch("configstream.web.run_aggregation_pipeline", new_callable=AsyncMock)
 @patch("configstream.web.load_config")
 def test_aggregate_route_exception(mock_load_config, mock_run_pipeline, client, fs):
-    """Test the /aggregate route when an exception occurs."""
+    """Test the /api/aggregate route when an exception occurs."""
+
     fs.create_file("config.yaml")
+    mock_load_config.return_value = Settings()
     mock_run_pipeline.side_effect = Exception("Test exception")
 
-    with pytest.raises(Exception, match="Test exception"):
-        client.get("/aggregate")
+    response = client.post("/api/aggregate", json={})
+
+    assert response.status_code == 500
+    assert response.get_json()["error"] == "Test exception"
 
 
 def test_report_route_no_project_root(client, fs):

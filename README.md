@@ -139,7 +139,7 @@ The `sources` command provides a simple way to manage the `sources.txt` file fro
 - Generates subscription files for various clients, including raw text, base64, Clash, and Sing-Box.
 - Creates CSV and JSON reports for analysis.
 - Provides a command-line interface for all fetching, merging, and testing operations.
-- Includes a basic Flask web server to trigger operations remotely.
+- Includes a secured Flask control panel with JSON APIs for history and automation.
 - Can be automated for periodic runs using the included Docker Compose setup.
 
 ## Table of Contents
@@ -257,7 +257,12 @@ Run the server with:
 python -m configstream.web
 ```
 
-Navigate to `http://localhost:5000` to use the web interface.
+Navigate to `http://localhost:8080` to use the refreshed control panel. The dashboard exposes the
+latest proxy health metrics, provides quick links to reports and Prometheus metrics, and drives the
+`POST /api/aggregate` and `POST /api/merge` endpoints for background processing. If you set
+`security.web_api_token` in `config.yaml` the token must be supplied via the dashboard input field
+or an `X-API-Key` header when calling the endpoints directly. Historical proxy results are also
+available as JSON from `GET /api/history` for programmatic integrations.
 
 ### Proxy Configuration
 

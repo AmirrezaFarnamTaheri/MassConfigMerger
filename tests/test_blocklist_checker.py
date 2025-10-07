@@ -71,6 +71,16 @@ async def test_is_malicious_invalid_ip(config: Settings):
 
 
 @pytest.mark.asyncio
+async def test_is_malicious_private_ip_skipped(config: Settings, caplog):
+    """Private IPs should be ignored for blocklist lookups."""
+
+    checker = BlocklistChecker(config)
+    with caplog.at_level("DEBUG"):
+        assert not await checker.is_malicious("10.0.0.5")
+    assert "Skipping blocklist lookup for non-public IP" in caplog.text
+
+
+@pytest.mark.asyncio
 @patch("aiohttp.ClientSession")
 async def test_is_malicious_api_error(MockClientSession, config: Settings, caplog):
     """Test is_malicious handles API returning an error."""
