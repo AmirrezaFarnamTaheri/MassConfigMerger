@@ -114,24 +114,6 @@ def get_parser(config: str, idx: int) -> Optional[BaseParser]:
     return None
 
 
-def create_semantic_hash(
-    config: str, idx: int, max_decode_size: int = MAX_DECODE_SIZE
-) -> str:
-    """Create semantic hash for intelligent deduplication."""
-    normalized_config = _normalize_url(config, max_decode_size)
-    host, port = extract_host_port(normalized_config, max_decode_size)
-    parser = get_parser(config, idx)
-    identifier = parser.get_identifier() if parser else None
-
-    if host and port:
-        key = f"{host}:{port}"
-        if identifier:
-            key = f"{identifier}@{key}"
-    else:
-        key = normalized_config.strip()
-    return hashlib.sha256(key.encode()).hexdigest()[:16]
-
-
 def apply_tuning(config: str, settings: Settings) -> str:
     """Apply mux and smux parameters to URI-style configs."""
     try:
@@ -150,3 +132,42 @@ def apply_tuning(config: str, settings: Settings) -> str:
     except ValueError as exc:
         logging.debug("apply_tuning failed: %s", exc)
         return config
+
+
+def create_semantic_hash(config: str, idx: int) -> str:
+    """
+    Create a hash for a configuration URL that is sensitive to its core,
+    functional parts (host, port, credentials) but insensitive to non-functional
+    parts like the fragment (# remark).
+    """
+    try:
+        parsed = urlparse(config)
+        # For certain protocols, the identity is defined by host, port, and password,
+        # not the full URL path or query.
+        if parsed.scheme in {"trojan", "ss", "shadowsocks"}:
+            # Key components: scheme, host, port, and user credentials.
+            # The fragment (#) is explicitly excluded.
+            key_parts = (
+                parsed.scheme,
+                parsed.hostname,
+                str(parsed.port or ""),
+                parsed.username or "",
+                parsed.password or "",
+            )
+            semantic_key = ":".join(filter(None, key_parts))
+        else:
+            # For other protocols (VLESS, VMESS, etc.), the path and query can be
+            # significant. We normalize by sorting query params and removing the fragment.
+            semantic_key = _normalize_url(config)
+
+        # Create a stable hash of the semantic key.
+        hasher = hashlib.sha256()
+        hasher.update(semantic_key.encode("utf-8"))
+        return hasher.hexdigest()
+    except Exception as e:
+        # Fallback for any parsing errors: hash the original string with its index.
+        logging.debug("Semantic hash failed for '%s': %s. Falling back.", config, e)
+        fallback_key = f"{config}:{idx}"
+        hasher = hashlib.sha256()
+        hasher.update(fallback_key.encode("utf-8"))
+        return hasher.hexdigest()

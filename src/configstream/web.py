@@ -16,7 +16,7 @@ from flask import (
     Flask,
     abort,
     jsonify,
-    render_template,
+    render_template_string,
     request,
     send_file,
 )
@@ -35,25 +35,8 @@ from .core.file_utils import find_marker_from, find_project_root
 from .db import Database
 from .pipeline import run_aggregation_pipeline
 from .vpn_merger import run_merger as run_merger_pipeline
-import psutil
-import shutil
-import os
-from werkzeug.utils import secure_filename
-from .tester import NodeTester
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.interval import IntervalTrigger
-import zipfile
 
 app = Flask(__name__)
-
-scheduler = BackgroundScheduler()
-scheduler.start()
-
-def daily_aggregation_job():
-    """Placeholder for the daily aggregation job."""
-    print("Running daily aggregation job...")
-
-scheduler.add_job(daily_aggregation_job, 'interval', hours=24)
 CONFIG_PATH = Path(CONFIG_FILE_NAME)
 
 
@@ -205,7 +188,7 @@ async def _read_history(db_path: Path) -> Dict[str, Dict[str, Any]]:
 
 @app.route("/")
 def index():
-    """Modern dashboard with enhanced UI and navigation to all pages."""
+    """Modern dashboard with enhanced UI."""
     cfg = load_cfg()
     project_root = _get_root()
     db_path = project_root / cfg.output.history_db_file
@@ -220,8 +203,508 @@ def index():
         history_preview = []
         preview_limit = 5
 
-    return render_template(
-        "index.html",
+    template = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ConfigStream Control Panel</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                padding: 2rem 1rem;
+                color: #1a202c;
+            }
+
+            .container {
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+
+            .header {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                padding: 2rem;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+                margin-bottom: 2rem;
+                text-align: center;
+            }
+
+            .logo {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 1rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .logo-icon {
+                width: 64px;
+                height: 64px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            }
+
+            .logo-icon svg {
+                width: 36px;
+                height: 36px;
+                fill: white;
+            }
+
+            .logo h1 {
+                font-size: 2.5rem;
+                font-weight: 800;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+
+            .tagline {
+                color: #64748b;
+                font-size: 1.1rem;
+                margin-top: 0.5rem;
+            }
+
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+                gap: 2rem;
+                margin-bottom: 2rem;
+            }
+
+            .card {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                padding: 2rem;
+                border-radius: 20px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                transition: all 0.3s ease;
+            }
+
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            }
+
+            .card h2 {
+                font-size: 1.5rem;
+                margin-bottom: 1rem;
+                color: #1a202c;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .card-icon {
+                width: 32px;
+                height: 32px;
+                padding: 6px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .card-icon svg {
+                width: 20px;
+                height: 20px;
+                fill: white;
+            }
+
+            .button-row {
+                display: flex;
+                gap: 1rem;
+                margin-top: 1.5rem;
+            }
+
+            button.action {
+                flex: 1;
+                padding: 1rem 2rem;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                border-radius: 12px;
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            }
+
+            button.action:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            }
+
+            button.action:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+            .links {
+                list-style: none;
+                display: grid;
+                gap: 0.75rem;
+            }
+
+            .links a {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem 1.25rem;
+                background: linear-gradient(to right, #f8fafc, #f1f5f9);
+                border-radius: 10px;
+                color: #334155;
+                text-decoration: none;
+                font-weight: 500;
+                transition: all 0.2s ease;
+            }
+
+            .links a:hover {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                transform: translateX(5px);
+            }
+
+            .links a span {
+                font-weight: 700;
+                font-size: 1.2rem;
+            }
+
+            input[type="password"],
+            input[type="text"] {
+                width: 100%;
+                padding: 0.875rem 1rem;
+                border: 2px solid #e2e8f0;
+                border-radius: 10px;
+                font-size: 1rem;
+                transition: all 0.2s ease;
+                margin-top: 0.5rem;
+            }
+
+            input:focus {
+                outline: none;
+                border-color: #667eea;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            }
+
+            .token-label {
+                font-weight: 600;
+                color: #475569;
+                margin-top: 1rem;
+                display: block;
+            }
+
+            #actionOutput {
+                margin-top: 1.5rem;
+                padding: 1.25rem;
+                background: rgba(15, 23, 42, 0.85);
+                color: #e2e8f0;
+                border-radius: 10px;
+                font-family: 'Monaco', 'Courier New', monospace;
+                font-size: 0.875rem;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                min-height: 80px;
+                line-height: 1.6;
+            }
+
+            table.history {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 1rem;
+            }
+
+            table.history thead {
+                background: linear-gradient(to right, #f8fafc, #f1f5f9);
+            }
+
+            table.history th {
+                padding: 1rem;
+                text-align: left;
+                font-weight: 600;
+                color: #475569;
+                font-size: 0.875rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+
+            table.history td {
+                padding: 1rem;
+                border-bottom: 1px solid #e2e8f0;
+                color: #334155;
+            }
+
+            table.history tbody tr:hover {
+                background: #f8fafc;
+            }
+
+            .geo {
+                font-size: 0.8rem;
+                color: #64748b;
+                margin-top: 0.25rem;
+            }
+
+            .status-badge {
+                padding: 0.375rem 0.75rem;
+                border-radius: 9999px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+
+            .status-healthy {
+                background: #dcfce7;
+                color: #166534;
+            }
+
+            .status-warning {
+                background: #fef3c7;
+                color: #92400e;
+            }
+
+            .status-critical {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+
+            .status-untested {
+                background: #f1f5f9;
+                color: #475569;
+            }
+
+            footer {
+                text-align: center;
+                padding: 2rem;
+                color: rgba(255, 255, 255, 0.8);
+                font-size: 0.9rem;
+            }
+
+            @media (max-width: 768px) {
+                .grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .button-row {
+                    flex-direction: column;
+                }
+
+                .logo h1 {
+                    font-size: 2rem;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <header class="header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm0 18c-3.87-.96-7-5.05-7-9V8.26l7-3.12 7 3.12V11c0 3.95-3.13 8.04-7 9z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </div>
+                    <h1>ConfigStream</h1>
+                </div>
+                <p class="tagline">VPN Configuration Management & Aggregation Platform</p>
+            </header>
+
+            <div class="grid">
+                <div class="card">
+                    <h2>
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                            </svg>
+                        </div>
+                        Pipeline Actions
+                    </h2>
+                    <p style="color: #64748b; margin-bottom: 1rem;">
+                        Execute aggregation and merge operations. Provide the optional API token if enforcement is enabled.
+                    </p>
+                    <label class="token-label" for="apiToken">API Token (optional)</label>
+                    <input id="apiToken" type="password" placeholder="Enter token if configured" autocomplete="off" />
+                    <div class="button-row">
+                        <button class="action" id="aggregateBtn">Run Aggregation</button>
+                        <button class="action" id="mergeBtn">Run Merge</button>
+                    </div>
+                    <pre id="actionOutput" aria-live="polite">Awaiting action…</pre>
+                </div>
+
+                <div class="card">
+                    <h2>
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                            </svg>
+                        </div>
+                        Resources & Reports
+                    </h2>
+                    <p style="color: #64748b; margin-bottom: 1rem;">
+                        Access generated reports, metrics, and operational endpoints.
+                    </p>
+                    <ul class="links">
+                        <li><a href="/report" rel="noopener">Latest Report<span>→</span></a></li>
+                        <li><a href="/history" rel="noopener">Detailed Proxy History<span>→</span></a></li>
+                        <li><a href="/metrics" rel="noopener">Prometheus Metrics<span>→</span></a></li>
+                        <li><a href="/health" rel="noopener">Health Check<span>→</span></a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                        </svg>
+                    </div>
+                    Top Performing Proxies
+                </h2>
+                <p style="color: #64748b; margin-bottom: 1rem;">
+                    Recent proxy test results ranked by reliability.
+                </p>
+                <table class="history" aria-label="Top proxies preview">
+                    <thead>
+                        <tr>
+                            <th>Proxy</th>
+                            <th>Success Rate</th>
+                            <th>Tests</th>
+                            <th>Status</th>
+                            <th>Last Tested</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        {% if history_preview %}
+                            {% for entry in history_preview %}
+                            <tr>
+                                <td>
+                                    <strong>{{ entry.key }}</strong>
+                                    <div class="geo">
+                                        {% if entry.country %}
+                                            {{ entry.country }}{% if entry.isp %} · {{ entry.isp }}{% endif %}
+                                        {% elif entry.isp %}
+                                            {{ entry.isp }}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>{{ '%.2f'|format(entry.reliability_percent) }}%</td>
+                                <td>{{ entry.tests }}</td>
+                                <td><span class="status-badge {{ entry.status_class }}">{{ entry.status }}</span></td>
+                                <td>{{ entry.last_tested }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr><td colspan="5">No proxy history recorded yet.</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <footer>
+                <p>ConfigStream v1.0 · Secure VPN Configuration Management</p>
+                <p style="margin-top: 0.5rem; font-size: 0.8rem;">Metrics refresh automatically. Reload after running actions to view latest data.</p>
+            </footer>
+        </div>
+
+        <script>
+            const previewLimit = {{ preview_limit | tojson }};
+            const historyTableBody = document.getElementById('historyTableBody');
+            const output = document.getElementById('actionOutput');
+            const tokenField = document.getElementById('apiToken');
+
+            function setOutput(message, isError = false) {
+                output.textContent = message;
+                output.style.background = isError ? 'rgba(220, 38, 38, 0.9)' : 'rgba(15, 23, 42, 0.85)';
+            }
+
+            async function callAction(endpoint, buttonId) {
+                const btn = document.getElementById(buttonId);
+                const token = tokenField.value.trim();
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) {
+                    headers['X-API-Key'] = token;
+                }
+                setOutput('Running ' + endpoint + '…');
+                btn.disabled = true;
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify(token ? { token } : {})
+                    });
+                    const payload = await response.json().catch(() => ({ error: 'Invalid JSON response' }));
+                    if (!response.ok) {
+                        throw new Error(payload.error || response.statusText);
+                    }
+                    setOutput(JSON.stringify(payload, null, 2));
+                } catch (err) {
+                    console.error(err);
+                    setOutput('Error: ' + err.message, true);
+                } finally {
+                    btn.disabled = false;
+                }
+            }
+
+            document.getElementById('aggregateBtn').addEventListener('click', () => {
+                callAction('/api/aggregate', 'aggregateBtn');
+            });
+            document.getElementById('mergeBtn').addEventListener('click', () => {
+                callAction('/api/merge', 'mergeBtn');
+            });
+
+            async function refreshHistoryPreview() {
+                try {
+                    const response = await fetch(`/api/history?limit=${previewLimit}`);
+                    if (!response.ok) return;
+                    const data = await response.json();
+                    const items = data.items || [];
+                    if (!items.length) {
+                        historyTableBody.innerHTML = '<tr><td colspan="5">No proxy history recorded yet.</td></tr>';
+                        return;
+                    }
+                    historyTableBody.innerHTML = items.map(entry => `
+                        <tr>
+                            <td><strong>${entry.key}</strong><div class="geo">${entry.country ? entry.country + (entry.isp ? ' · ' + entry.isp : '') : (entry.isp || '—')}</div></td>
+                            <td>${entry.reliability_percent.toFixed(2)}%</td>
+                            <td>${entry.tests}</td>
+                            <td><span class="status-badge ${entry.status_class}">${entry.status}</span></td>
+                            <td>${entry.last_tested}</td>
+                        </tr>
+                    `).join('');
+                } catch (err) {
+                    console.error('Failed to refresh history preview', err);
+                }
+            }
+
+            refreshHistoryPreview();
+        </script>
+    </body>
+    </html>
+    """
+    return render_template_string(
+        template,
         history_preview=history_preview,
         preview_limit=preview_limit,
     )
@@ -302,7 +785,10 @@ def report():
     if not json_report.exists():
         return "Report not found", 404
     data = json.loads(json_report.read_text())
-    return render_template("report.html", data=json.dumps(data, indent=2))
+    html = render_template_string(
+        "<h1>VPN Report</h1><pre>{{ data }}</pre>", data=json.dumps(data, indent=2)
+    )
+    return html
 
 
 @app.get("/api/history")
@@ -346,313 +832,240 @@ def history():
         "untested": sum(1 for entry in entries if entry["status"] == "Untested"),
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
     }
-    return render_template("history.html", entries=entries, summary=summary)
 
-
-# ============================================================================
-# SOURCES MANAGEMENT PAGE
-# ============================================================================
-
-@app.route("/sources")
-def sources_page():
-    """Sources management interface."""
-    project_root = _get_root()
-    sources_file = project_root / SOURCES_FILE
-
-    sources = []
-    if sources_file.exists():
-        sources = sources_file.read_text().strip().split('\n')
-        sources = [s.strip() for s in sources if s.strip() and not s.startswith('#')]
-
-    return render_template("sources.html", sources=sources)
-
-
-@app.post("/api/sources")
-def add_source():
-    """Add a new source to sources file."""
-    data = request.get_json()
-    url = data.get('url', '').strip()
-
-    if not url:
-        return jsonify({"error": "URL is required"}), 400
-
-    project_root = _get_root()
-    sources_file = project_root / SOURCES_FILE
-
-    existing_sources = []
-    if sources_file.exists():
-        existing_sources = sources_file.read_text().strip().split('\n')
-
-    if url in existing_sources:
-        return jsonify({"error": "Source already exists"}), 409
-
-    existing_sources.append(url)
-    sources_file.write_text('\n'.join(existing_sources) + '\n')
-
-    return jsonify({"status": "ok", "message": "Source added successfully"}), 201
-
-
-@app.delete("/api/sources")
-def delete_source():
-    """Delete a source from sources file."""
-    data = request.get_json()
-    url = data.get('url', '').strip()
-
-    if not url:
-        return jsonify({"error": "URL is required"}), 400
-
-    project_root = _get_root()
-    sources_file = project_root / SOURCES_FILE
-
-    if not sources_file.exists():
-        return jsonify({"error": "Sources file not found"}), 404
-
-    sources = sources_file.read_text().strip().split('\n')
-    filtered_sources = [s for s in sources if s.strip() != url]
-
-    if len(sources) == len(filtered_sources):
-        return jsonify({"error": "Source not found"}), 404
-
-    sources_file.write_text('\n'.join(filtered_sources) + '\n')
-
-    return jsonify({"status": "ok", "message": "Source deleted successfully"})
-
-
-# ============================================================================
-# ANALYTICS DASHBOARD
-# ============================================================================
-
-@app.route("/analytics")
-def analytics_page():
-    """Analytics and statistics dashboard."""
-    cfg = load_cfg()
-    project_root = _get_root()
-    db_path = project_root / cfg.output.history_db_file
-
-    try:
-        history_data = _run_async_task(_read_history(db_path))
-        entries = _serialize_history(history_data)
-    except Exception:
-        entries = []
-
-    total_proxies = len(entries)
-    healthy = sum(1 for e in entries if e['status'] == 'Healthy')
-    warning = sum(1 for e in entries if e['status'] == 'Warning')
-    critical = sum(1 for e in entries if e['status'] == 'Critical')
-    untested = sum(1 for e in entries if e['status'] == 'Untested')
-
-    total_tests = sum(e['tests'] for e in entries)
-    avg_reliability = sum(e['reliability_percent'] for e in entries) / len(entries) if entries else 0
-
-    countries = {}
-    for e in entries:
-        if e.get('country'):
-            countries[e['country']] = countries.get(e['country'], 0) + 1
-
-    return render_template(
-        "analytics.html",
-        total_proxies=total_proxies,
-        healthy=healthy,
-        warning=warning,
-        critical=critical,
-        untested=untested,
-        total_tests=total_tests,
-        avg_reliability=avg_reliability,
-        countries=countries,
-        entries=entries
-    )
-
-
-# ============================================================================
-# SETTINGS PAGE
-# ============================================================================
-
-@app.route("/settings")
-def settings_page():
-    """Configuration settings interface."""
-    cfg = load_cfg()
-    return render_template("settings.html", cfg=cfg)
-
-
-# ============================================================================
-# API DOCUMENTATION PAGE
-# ============================================================================
-
-@app.route("/api-docs")
-def api_docs_page():
-    """Interactive API documentation."""
-    return render_template("api-docs.html")
-
-
-# ============================================================================
-# LOGS VIEWER PAGE
-# ============================================================================
-
-@app.route("/logs")
-def logs_page():
-    """Log file viewer interface."""
-    project_root = _get_root()
-    log_file = project_root / "web_server.log"
-
-    log_lines = []
-    if log_file.exists():
-        try:
-            with open(log_file, 'r') as f:
-                log_lines = f.readlines()[-100:]
-        except Exception as e:
-            log_lines = [f"Error reading log file: {str(e)}"]
-    else:
-        log_lines = ["Log file not found. Logs will appear here once the server starts generating them."]
-
-    return render_template("logs.html", log_lines=log_lines)
-
-
-# ============================================================================
-# TESTING & DIAGNOSTICS PAGE
-# ============================================================================
-
-@app.route("/testing")
-def testing_page():
-    """Testing and diagnostics interface."""
-    return render_template("testing.html")
-
-@app.post("/api/test-proxies")
-async def test_proxies_api():
-    """Test a list of proxies and return their status."""
-    data = request.get_json()
-    proxies = data.get("proxies", [])
-
-    if not proxies:
-        return jsonify([])
-
-    settings = load_cfg()
-    tester = NodeTester(settings)
-    results = await tester.test_proxies(proxies)
-
-    return jsonify(results)
-
-# ============================================================================
-# BACKUP & RESTORE PAGE
-# ============================================================================
-
-@app.route("/backup")
-def backup_page():
-    """Backup and restore interface."""
-    return render_template("backup.html")
-
-@app.get("/api/export-backup")
-def export_backup():
-    """Export a zip archive of all critical configuration files."""
-    project_root = _get_root()
-    backup_dir = project_root / "output" / "backup"
-    backup_dir.mkdir(exist_ok=True)
-
-    # Files to include in the backup
-    files_to_backup = [
-        project_root / "config.yaml",
-        project_root / "sources.txt",
-        project_root / "proxy_history.db"
-    ]
-
-    # Create a temporary zip file
-    backup_zip_path = backup_dir / f"configstream_backup_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-
-    with shutil.ZipFile(f"{backup_zip_path}.zip", 'w') as zipf:
-        for file in files_to_backup:
-            if file.exists():
-                zipf.write(file, file.name)
-
-    return send_file(f"{backup_zip_path}.zip", as_attachment=True)
-
-@app.post("/api/import-backup")
-def import_backup():
-    """Import a backup file to restore configurations."""
-    if 'backup_file' not in request.files:
-        return "No file part", 400
-    file = request.files['backup_file']
-    if file.filename == '':
-        return "No selected file", 400
-
-    if file and file.filename.endswith('.zip'):
-        project_root = _get_root()
-        filename = secure_filename(file.filename)
-        temp_path = project_root / "output" / filename
-
-        try:
-            file.save(temp_path)
-
-            with zipfile.ZipFile(temp_path, 'r') as zipf:
-                for member in zipf.infolist():
-                    # Path traversal check
-                    target_path = os.path.realpath(os.path.join(project_root, member.filename))
-                    if not target_path.startswith(os.path.realpath(project_root)):
-                        raise ValueError(f"Invalid path in zip file: {member.filename}")
-
-                    if not member.is_dir():
-                        zipf.extract(member, project_root)
-
-            return "Backup restored successfully!", 200
-        except (zipfile.BadZipFile, ValueError) as e:
-            return str(e), 400
-        finally:
-            if temp_path.exists():
-                os.remove(temp_path)
-
-    return "Invalid file type", 400
-
-# ============================================================================
-# SCHEDULER PAGE
-# ============================================================================
-
-@app.route("/scheduler")
-def scheduler_page():
-    """Scheduler interface."""
-    jobs = []
-    for job in scheduler.get_jobs():
-        jobs.append({
-            "id": job.id,
-            "name": job.name,
-            "trigger": str(job.trigger),
-            "next_run_time": str(job.next_run_time)
-        })
-    return render_template("scheduler.html", jobs=jobs)
-
-# ============================================================================
-# SYSTEM STATUS PAGE
-# ============================================================================
-
-@app.route("/status")
-def status_page():
-    """System status and metrics page."""
-
-    uptime_seconds = time.time() - psutil.boot_time()
-    uptime_str = str(datetime.timedelta(seconds=int(uptime_seconds)))
-
-    status = {
-        "cpu_usage": psutil.cpu_percent(),
-        "memory_usage": psutil.virtual_memory().percent,
-        "disk_usage": psutil.disk_usage('/').percent,
-        "uptime": uptime_str,
-    }
-    return render_template("status.html", status=status)
-
-# ============================================================================
-# HELP PAGE
-# ============================================================================
-
-@app.route("/help")
-def help_page():
-    """Help and documentation page."""
-    return render_template("help.html")
-
-# ============================================================================
-# SITEMAP PAGE
-# ============================================================================
-
-@app.route("/sitemap")
-def sitemap_page():
-    """Sitemap page."""
-    return render_template("sitemap.html")
+    template = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Proxy History - ConfigStream</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                padding: 2rem 1rem;
+                color: #1a202c;
+            }
+
+            .container {
+                max-width: 1600px;
+                margin: 0 auto;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border-radius: 20px;
+                padding: 2rem;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            }
+
+            header {
+                border-bottom: 2px solid #e2e8f0;
+                padding-bottom: 1.5rem;
+                margin-bottom: 2rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+                font-weight: 800;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                margin-bottom: 1rem;
+            }
+
+            .back-link {
+                display: inline-block;
+                padding: 0.5rem 1rem;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 600;
+                transition: all 0.2s ease;
+                margin-bottom: 1rem;
+            }
+
+            .back-link:hover {
+                transform: translateX(-5px);
+                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            }
+
+            .summary {
+                display: flex;
+                gap: 1rem;
+                flex-wrap: wrap;
+                margin-bottom: 2rem;
+            }
+
+            .pill {
+                padding: 0.75rem 1.5rem;
+                background: linear-gradient(to right, #f8fafc, #f1f5f9);
+                border-radius: 999px;
+                font-weight: 600;
+                color: #334155;
+                font-size: 0.875rem;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                background: white;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            }
+
+            thead {
+                background: linear-gradient(to right, #667eea, #764ba2);
+                color: white;
+            }
+
+            th {
+                padding: 1.25rem 1rem;
+                text-align: left;
+                font-weight: 600;
+                font-size: 0.875rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+
+            td {
+                padding: 1.25rem 1rem;
+                border-bottom: 1px solid #e2e8f0;
+                color: #334155;
+            }
+
+            tbody tr:hover {
+                background: #f8fafc;
+            }
+
+            tbody tr:last-child td {
+                border-bottom: none;
+            }
+
+            .geo {
+                font-size: 0.8rem;
+                color: #64748b;
+                margin-top: 0.25rem;
+            }
+
+            .status-badge {
+                padding: 0.375rem 0.75rem;
+                border-radius: 9999px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+
+            .status-healthy {
+                background: #dcfce7;
+                color: #166534;
+            }
+
+            .status-warning {
+                background: #fef3c7;
+                color: #92400e;
+            }
+
+            .status-critical {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+
+            .status-untested {
+                background: #f1f5f9;
+                color: #475569;
+            }
+
+            @media (max-width: 768px) {
+                .container {
+                    padding: 1rem;
+                }
+
+                table {
+                    font-size: 0.875rem;
+                }
+
+                th, td {
+                    padding: 0.75rem 0.5rem;
+                }
+
+                h1 {
+                    font-size: 1.5rem;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <a href="/" class="back-link">← Back to Dashboard</a>
+                <h1>Complete Proxy History</h1>
+            </header>
+
+            <section class="summary">
+                <div class="pill">📊 Total Tracked: {{ summary.total }}</div>
+                <div class="pill">✅ Healthy: {{ summary.healthy }}</div>
+                <div class="pill">⚠️ Critical: {{ summary.critical }}</div>
+                <div class="pill">❓ Untested: {{ summary.untested }}</div>
+                <div class="pill">🕐 Generated: {{ summary.generated_at }} UTC</div>
+            </section>
+
+            <table aria-label="Complete proxy history">
+                <thead>
+                    <tr>
+                        <th scope="col">Proxy</th>
+                        <th scope="col">Successes</th>
+                        <th scope="col">Failures</th>
+                        <th scope="col">Success Rate</th>
+                        <th scope="col">Tests</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Last Tested (UTC)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if entries %}
+                        {% for entry in entries %}
+                        <tr>
+                            <td>
+                                <strong>{{ entry.key }}</strong>
+                                <div class="geo">
+                                    {% if entry.country %}
+                                        {{ entry.country }}{% if entry.isp %} · {{ entry.isp }}{% endif %}
+                                    {% elif entry.isp %}
+                                        {{ entry.isp }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>{{ entry.successes }}</td>
+                            <td>{{ entry.failures }}</td>
+                            <td>{{ '%.2f'|format(entry.reliability_percent) }}%</td>
+                            <td>{{ entry.tests }}</td>
+                            <td><span class="status-badge {{ entry.status_class }}">{{ entry.status }}</span></td>
+                            <td>{{ entry.last_tested }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="7">No proxy history recorded yet.</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </body>
+    </html>
+    """
+    return render_template_string(template, entries=entries, summary=summary)
 
 
 def main() -> None:

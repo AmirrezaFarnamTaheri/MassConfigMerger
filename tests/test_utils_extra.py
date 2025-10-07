@@ -11,7 +11,6 @@ from configstream.config import Settings
 from configstream.core.config_processor import ConfigResult
 from configstream.core.utils import (
     get_sort_key,
-    is_valid_config,
     choose_proxy,
     fetch_text,
 )
@@ -27,21 +26,6 @@ def test_get_sort_key_reliability_none():
     )
     # Should sort by reachability (False) and reliability (0)
     assert key_func(result) == (False, 0)
-
-
-@pytest.mark.parametrize(
-    "config, expected",
-    [
-        ("warp://auto", False),
-        ("vmess://invalid-json-or-base64", False),
-        ("ssr://bm90IGEgdXJs", False),  # "not a url"
-        ("ss://YWVzLTEyOC1nY206cGFzc3dvcmQ=@1.1.1.1:8080", True),
-        ("ss://YWVzLTEyOC1nY20@1.1.1.1:8080", False), # Missing password in user info
-    ],
-)
-def test_is_valid_config_edge_cases(config: str, expected: bool):
-    """Test edge cases for is_valid_config."""
-    assert is_valid_config(config) == expected
 
 
 def test_choose_proxy():

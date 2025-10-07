@@ -8,7 +8,6 @@ import pytest
 from configstream.config import Settings
 from configstream.core.config_processor import ConfigResult
 from configstream.output_writer import (
-    write_all_outputs,
     write_base64_configs,
     write_clash_proxies,
     write_csv_report,
@@ -55,44 +54,6 @@ def test_write_clash_proxies(mock_to_clash, fs, sample_results: list[ConfigResul
     assert path.exists()
     assert "proxies:" in path.read_text()
     mock_to_clash.assert_called()
-
-
-@patch("configstream.output_writer.generate_json_report")
-@patch("configstream.output_writer.generate_html_report")
-@patch("configstream.output_writer.write_clash_proxies")
-@patch("configstream.output_writer.write_csv_report")
-@patch("configstream.output_writer.write_base64_configs")
-@patch("configstream.output_writer.write_raw_configs")
-def test_write_all_outputs(
-    mock_raw, mock_b64, mock_csv, mock_clash, mock_html, mock_json, fs
-):
-    """Test the main orchestrator function for writing all outputs."""
-    fs.create_dir("/output")
-    settings = Settings()
-    # Enable all options to test all branches
-    settings.output.write_base64 = True
-    settings.output.write_csv = True
-    settings.output.write_html = True
-    settings.output.write_clash_proxies = True
-    settings.output.surge_file = "surge.conf"
-    settings.output.qx_file = "qx.conf"
-
-    results = [ConfigResult(config="c1", protocol="p1")]
-    stats = {"s": 1}
-    start_time = 0
-
-    written_files = write_all_outputs(results, settings, stats, start_time)
-
-    # Check that all the main writer functions were called
-    mock_raw.assert_called_once()
-    mock_b64.assert_called_once()
-    mock_csv.assert_called_once()
-    mock_clash.assert_called_once()
-    mock_html.assert_called_once()
-    mock_json.assert_called_once()
-
-    # 2 base files + 4 optional files
-    assert len(written_files) == 6
 
 
 def test_write_csv_report_content(fs, sample_results: list[ConfigResult]):

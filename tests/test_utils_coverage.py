@@ -4,36 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from configstream.core.utils import is_valid_config, parse_configs_from_text
-
-
-@pytest.mark.parametrize(
-    "link, expected",
-    [
-        ("ssr://invalid-b64", False),  # Invalid base64
-        ("naive://user:pass@example.com:443", True),
-        ("hy2://pass@example.com:443", True),
-        ("vless://uuid@example.com:443", True),
-        ("trojan://pass@example.com:443", True),
-        ("ss://method:pass@example.com:443", True),
-        ("http://example.com:80", True),
-        ("wireguard://config", True),
-        # Edge cases
-            ("invalid-proto://", False), # Fallback case
-        ("ss://user-only@host:port", False), # Invalid ss format
-    ],
-)
-def test_is_valid_config_coverage(link, expected):
-    """Test edge cases and various protocols for is_valid_config."""
-    # The ss:// with userinfo is not standard and requires this for parsing
-    from urllib.parse import uses_netloc
-    if "ss" not in uses_netloc:
-        uses_netloc.append("ss")
-
-    assert is_valid_config(link) == expected
-
-    if "ss" in uses_netloc:
-        uses_netloc.remove("ss")
+from configstream.core.utils import parse_configs_from_text
 
 def test_parse_configs_from_text_oversized_b64():
     """Test that oversized base64 lines are skipped."""

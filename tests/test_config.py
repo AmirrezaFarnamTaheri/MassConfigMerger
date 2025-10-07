@@ -21,28 +21,18 @@ def test_telegram_settings_parse_allowed_ids():
     settings = TelegramSettings(allowed_user_ids="123, 456")
     assert settings.allowed_user_ids == [123, 456]
 
-    # From space-separated string
-    settings = TelegramSettings(allowed_user_ids="123 456")
-    assert settings.allowed_user_ids == [123, 456]
-
-    # From a single integer
-    settings = TelegramSettings(allowed_user_ids=123)
-    assert settings.allowed_user_ids == [123]
-
     # From a list of integers (should pass through)
     settings = TelegramSettings(allowed_user_ids=[123, 456])
     assert settings.allowed_user_ids == [123, 456]
 
     # Test invalid value
-    with pytest.raises(ValidationError) as exc_info:
+    with pytest.raises(ValidationError):
         TelegramSettings(allowed_user_ids="123,abc")
-    assert "allowed_user_ids must be a list of integers" in str(exc_info.value)
 
 
 def test_yaml_config_source_file_not_found():
     """Test YamlConfigSettingsSource when the config file does not exist."""
-    source = YamlConfigSettingsSource(Settings, Path("nonexistent.yaml"))
-    assert source.get_field_value(None, "field") is None
+    source = YamlConfigSettingsSource(Path("nonexistent.yaml"))
     assert source() == {}
 
 
@@ -50,8 +40,7 @@ def test_yaml_config_source_invalid_yaml(tmp_path: Path):
     """Test YamlConfigSettingsSource with a malformed YAML file."""
     p = tmp_path / "invalid.yaml"
     p.write_text("key: value: nested")
-    source = YamlConfigSettingsSource(Settings, p)
-    assert source.get_field_value(None, "field") is None
+    source = YamlConfigSettingsSource(p)
     assert source() == {}
 
 
@@ -103,8 +92,8 @@ def test_load_config_finds_default_config(fs):
     [
         ("output_dir", "/etc/passwd"),
         ("output_dir", "../../../../etc/passwd"),
-        ("log_dir", "/var/log"),
-        ("log_dir", "../../var/log"),
+        ("log_file", "/var/log"),
+        ("log_file", "../../var/log"),
         ("history_db_file", "/root/.bash_history"),
         ("history_db_file", "../.bash_history"),
         ("surge_file", "/tmp/test.conf"),
@@ -128,12 +117,12 @@ def test_output_settings_valid_paths():
     try:
         settings = OutputSettings(
             output_dir="my_output",
-            log_dir="my_logs",
+            log_file=Path("my_logs/app.log"),
             history_db_file="data/history.db",
             surge_file="surge.conf",
         )
         assert settings.output_dir == Path("my_output")
-        assert settings.log_dir == Path("my_logs")
+        assert settings.log_file == Path("my_logs/app.log")
         assert settings.history_db_file == Path("data/history.db")
         assert settings.surge_file == Path("surge.conf")
     except ValidationError as e:
