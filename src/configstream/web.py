@@ -75,27 +75,20 @@ def _extract_api_token() -> Optional[str]:
     header_token = request.headers.get("X-API-Key")
     auth_header = request.headers.get("Authorization", "")
 
-    token_from_header = header_token.strip() if header_token else None
-    if token_from_header == "":
-        token_from_header = None
+    token_from_header = header_token.strip() if header_token and header_token.strip() else None
 
-    token_from_bearer = None
+    token_from_bearer: Optional[str] = None
     if auth_header:
         scheme, _, value = auth_header.partition(" ")
-        scheme = scheme.strip().lower()
-        value = value.strip()
-    if token_from_header and token_from_bearer:
-        # Use a sentinel to indicate ambiguity so caller can return 400
-        return ""  # ambiguous
+        if scheme.strip().lower() == "bearer":
+            token_from_bearer = value.strip() or None
 
     # If both are provided and non-empty, reject to avoid ambiguity
     if token_from_header and token_from_bearer:
         return None
 
     token = token_from_header or token_from_bearer
-    if token and token.strip():
-        return token.strip()
-    return None
+    return token if token else None
 
 
 def _get_request_settings():
