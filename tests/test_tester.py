@@ -309,6 +309,21 @@ async def test_test_connection_unresolved_host(mock_resolve_host, caplog):
 
 
 @pytest.mark.asyncio
+@patch("configstream.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value="10.0.0.2")
+async def test_test_connection_private_ip(mock_resolve_host, caplog):
+    """Ensure private IPs resolved from hostnames are rejected."""
+    caplog.set_level(logging.DEBUG)
+    settings = Settings()
+    tester = NodeTester(settings)
+    with patch("asyncio.open_connection") as mock_open_connection:
+        latency = await tester.test_connection("internal.example", 443)
+    assert latency is None
+    mock_open_connection.assert_not_called()
+    assert "non-public IP resolved for internal.example" in caplog.text
+    mock_resolve_host.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 @patch("configstream.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value=None)
 async def test_lookup_geo_data_unresolved_host(mock_resolve_host, caplog):
     """Test that lookup_geo_data skips if host cannot be resolved."""

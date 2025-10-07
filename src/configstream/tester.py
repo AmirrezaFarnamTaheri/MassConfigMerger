@@ -45,6 +45,16 @@ def is_ip_address(host: str) -> bool:
         return False
 
 
+def is_public_ip_address(ip: str) -> bool:
+    """Return ``True`` when *ip* is globally reachable."""
+
+    try:
+        ip_obj = ipaddress.ip_address(ip)
+    except ValueError:
+        return False
+    return ip_obj.is_global
+
+
 class NodeTester:
     """A utility class for testing node latency and performing GeoIP lookups."""
 
@@ -80,7 +90,11 @@ class NodeTester:
         if host in self.dns_cache:
             return self.dns_cache[host]
         if is_ip_address(host):
-            return host
+            if is_public_ip_address(host):
+                self.dns_cache[host] = host
+                return host
+            logging.debug("Rejecting non-public IP host: %s", host)
+            return None
 
         resolver = self._get_resolver()
         if resolver:
@@ -88,16 +102,30 @@ class NodeTester:
                 result = await resolver.resolve(host)
                 if result:
                     ip = result[0]["host"]
-                    self.dns_cache[host] = ip
-                    return ip
+                    if is_public_ip_address(ip):
+                        self.dns_cache[host] = ip
+                        return ip
+                    logging.debug(
+                        "Async DNS resolve returned non-public IP for %s: %s",
+                        host,
+                        ip,
+                    )
+                    return None
             except Exception as exc:
                 logging.debug("Async DNS resolve failed for %s: %s", host, exc)
 
         try:
             info = await asyncio.get_running_loop().getaddrinfo(host, None)
             ip = info[0][4][0]
-            self.dns_cache[host] = ip
-            return ip
+            if is_public_ip_address(ip):
+                self.dns_cache[host] = ip
+                return ip
+            logging.debug(
+                "Standard DNS lookup returned non-public IP for %s: %s",
+                host,
+                ip,
+            )
+            return None
         except (OSError, socket.gaierror) as exc:
             logging.debug("Standard DNS lookup failed for %s: %s", host, exc)
             return None
@@ -110,8 +138,15 @@ class NodeTester:
         start_time = time.time()
         try:
             target_ip = await self.resolve_host(host)
-            if not target_ip or not is_ip_address(target_ip):
+            if not target_ip:
                 logging.debug("Skipping connection test; unresolved host: %s", host)
+                return None
+            if not is_public_ip_address(target_ip):
+                logging.debug(
+                    "Skipping connection test; non-public IP resolved for %s: %s",
+                    host,
+                    target_ip,
+                )
                 return None
             _, writer = await asyncio.wait_for(
                 asyncio.open_connection(target_ip, port),
@@ -135,25 +170,38 @@ class NodeTester:
         if host in self.geoip_cache:
             return self.geoip_cache[host]
 
+        ip_address: Optional[str]
+        if is_ip_address(host):
+            ip_address = host
+        else:
+            ip_address = await self.resolve_host(host)
+
+        if not ip_address:
+            logging.debug("Skipping GeoIP lookup; unresolved host: %s", host)
+            return None, None, None, None
+        if not is_public_ip_address(ip_address):
+            logging.debug(
+                "Skipping GeoIP lookup; non-public IP resolved for %s: %s",
+                host,
+                ip_address,
+            )
+            return None, None, None, None
+
         geoip_reader = self._get_geoip_reader()
         if not geoip_reader:
             return None, None, None, None
 
         try:
-            ip = await self.resolve_host(host)
-            if not ip or not is_ip_address(ip):
-                logging.debug("Skipping GeoIP lookup; unresolved host: %s", host)
-                return None, None, None, None
 
             # Use city() for more detailed data, fallback to country()
             if hasattr(geoip_reader, "city"):
-                resp = geoip_reader.city(ip)
+                resp = geoip_reader.city(ip_address)
                 country = resp.country.iso_code
                 isp = resp.traits.isp
                 latitude = resp.location.latitude
                 longitude = resp.location.longitude
             else:
-                resp = geoip_reader.country(ip)
+                resp = geoip_reader.country(ip_address)
                 country = resp.country.iso_code
                 isp, latitude, longitude = None, None, None
 
@@ -214,6 +262,12 @@ class BlocklistChecker:
             return False
 
         if not ip_address or not is_ip_address(ip_address):
+            return False
+
+        if not is_public_ip_address(ip_address):
+            logging.debug(
+                "Skipping blocklist lookup for non-public IP: %s", ip_address
+            )
             return False
 
         session = await self.get_session()

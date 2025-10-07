@@ -55,3 +55,11 @@ def test_find_project_root_at_root(fs, monkeypatch):
     monkeypatch.setattr(file_utils_module, "__file__", str(src_dir / "file.py"))
 
     assert file_utils_module.find_project_root() == Path("/")
+
+
+def test_find_marker_from_none(fs):
+    """Ensure find_marker_from returns None when marker is absent."""
+
+    base_dir = Path("/home/user/project/src")
+    fs.create_dir(base_dir)
+    assert file_utils_module.find_marker_from(base_dir) is None
