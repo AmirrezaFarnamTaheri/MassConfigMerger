@@ -81,7 +81,8 @@ class SimpleFakeFilesystem:
     def _real_path(self, path: Path | str) -> Path:
         path_obj = Path(path)
         if path_obj.is_absolute():
-            return path_obj
+            # Join absolute paths to the fake root, stripping their anchor.
+            return self.root.joinpath(path_obj.relative_to(path_obj.anchor))
         return self.root.joinpath(path_obj)
 
     def create_dir(self, path: Path | str) -> Path:

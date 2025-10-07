@@ -71,18 +71,15 @@ def _run_async_task(coro: asyncio.Future) -> Any:
 
 
 def _extract_api_token() -> Optional[str]:
-    data = request.get_json(silent=True) or {}
+    """Extract the API token from request headers."""
     header_token = request.headers.get("X-API-Key")
-    if not header_token:
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header.lower().startswith("bearer "):
-            header_token = auth_header.split(None, 1)[1]
-    form_token = request.form.get("token") if request.form else None
-    query_token = request.args.get("token")
-    body_token = data.get("token") if isinstance(data, dict) else None
-    for candidate in (header_token, body_token, form_token, query_token):
-        if candidate:
-            return str(candidate)
+    if header_token:
+        return header_token
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.lower().startswith("bearer "):
+        return auth_header.split(None, 1)[1]
+
     return None
 
 

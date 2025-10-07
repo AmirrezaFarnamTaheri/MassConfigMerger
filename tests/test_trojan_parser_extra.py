@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from configstream.core.parsers.trojan import TrojanParser
 
 
@@ -49,3 +50,12 @@ def test_parse_trojan_full_config():
     assert result["flow"] == "xtls-rprx-vision"
     assert result["serviceName"] == "my-service"
     assert result["ws-headers"] == {"Host": "example.com"}
+
+
+def test_parse_trojan_no_password():
+    """Test that parsing a Trojan config without a password raises a ParserError."""
+    from configstream.exceptions import ParserError
+    config = "trojan://example.com:443"  # Missing password
+    parser = TrojanParser(config, 0)
+    with pytest.raises(ParserError):
+        parser.parse()

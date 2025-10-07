@@ -83,6 +83,16 @@ def test_remove_nonexistent_source(fs, capsys):
     assert sources_file.read_text() == "http://source1.com\n"
 
 
+def test_add_new_source_no_scheme(fs, capsys):
+    """Test adding a new source without a URL scheme."""
+    sources_file = Path("sources.txt")
+    fs.create_file(sources_file)
+    services.add_new_source(sources_file, "noscheme.com")
+    captured = capsys.readouterr()
+    assert "Successfully added source: http://noscheme.com" in captured.out
+    assert sources_file.read_text() == "http://noscheme.com\n"
+
+
 @pytest.mark.asyncio
 @patch("configstream.pipeline.run_aggregation_pipeline", new_callable=AsyncMock)
 async def test_run_fetch_pipeline(mock_run_agg_pipeline):

@@ -53,3 +53,12 @@ web = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.coverage.run]
+source = ["src/configstream"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == '__main__':"
+]

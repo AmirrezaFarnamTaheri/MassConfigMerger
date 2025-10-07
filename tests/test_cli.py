@@ -200,3 +200,14 @@ def test_parse_protocol_set_empty_input():
     """Test _parse_protocol_set with empty and None inputs."""
     assert _parse_protocol_set(None) == set()
     assert _parse_protocol_set("") == set()
+
+
+def test_cli_no_args_prints_help(capsys):
+    """Test that running the CLI with no arguments prints the help message."""
+    with pytest.raises(SystemExit) as e:
+        main([])
+    # Argparse exits with 2 when a required argument is missing
+    assert e.value.code == 2
+    captured = capsys.readouterr()
+    assert "usage:" in captured.err
+    assert "the following arguments are required: command" in captured.err

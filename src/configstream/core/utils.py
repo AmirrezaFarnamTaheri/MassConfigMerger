@@ -24,7 +24,7 @@ import aiohttp
 
 from ..config import Settings
 from ..constants import BASE64_RE, MAX_DECODE_SIZE, PROTOCOL_RE
-from ..exceptions import NetworkError
+from ..exceptions import ConfigError, NetworkError
 from .config_processor import ConfigResult
 
 SAFE_URL_SCHEMES = ("http", "https")
@@ -280,7 +280,11 @@ def choose_proxy(cfg: Settings) -> str | None:
 
     Returns:
         The proxy URL string, or None if no proxy is configured.
+    Raises:
+        ConfigError: If both http_proxy and socks_proxy are defined.
     """
+    if cfg.network.http_proxy and cfg.network.socks_proxy:
+        raise ConfigError("http_proxy and socks_proxy cannot be used simultaneously")
     return cfg.network.socks_proxy or cfg.network.http_proxy
 
 

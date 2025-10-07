@@ -51,3 +51,17 @@ def test_parse_configs_from_text_invalid_b64():
     text = "some text\ninvalid-base64-string\nmore text"
     configs = parse_configs_from_text(text)
     assert len(configs) == 0
+
+
+def test_choose_proxy_mutually_exclusive_error():
+    """Test that choose_proxy raises ConfigError if both proxies are set."""
+    from configstream.config import Settings
+    from configstream.core.utils import choose_proxy
+    from configstream.exceptions import ConfigError
+
+    settings = Settings()
+    settings.network.http_proxy = "http://proxy.com"
+    settings.network.socks_proxy = "socks5://proxy.com"
+
+    with pytest.raises(ConfigError, match="http_proxy and socks_proxy cannot be used simultaneously"):
+        choose_proxy(settings)

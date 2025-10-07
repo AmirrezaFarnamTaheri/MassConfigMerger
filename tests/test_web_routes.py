@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -268,13 +269,15 @@ def test_history_route_bad_data(MockDatabase, client, fs):
     mock_db_instance.connect = AsyncMock()
     mock_db_instance.close = AsyncMock()
     mock_db_instance.get_proxy_history = AsyncMock(return_value={
-        "proxy1": {"successes": "not-a-number", "failures": 1},
+        "proxy1": {"successes": "not-a-number", "failures": 1, "latency_ms": "bad-float"},
+        "proxy2": {"last_tested": "bad-ts", "latency": None},
     })
 
     response = client.get("/history")
     assert response.status_code == 200
-    # Check that it gracefully handles the bad data and shows 0.00%
+    # Check that it gracefully handles the bad data
     assert b"0.00%" in response.data
+    assert b"N/A" in response.data
 
 
 @patch("configstream.web.Database")
@@ -340,3 +343,84 @@ def test_report_route_no_project_root(client, fs):
 
     assert response.status_code == 200
     assert response.data == b"<h1>HTML Report</h1>"
+
+
+def test_aggregate_legacy_route(client):
+    """Test the legacy GET /aggregate route."""
+    response = client.get("/aggregate")
+    assert response.status_code == 405
+    assert "error" in response.get_json()
+
+
+def test_merge_legacy_route(client):
+    """Test the legacy GET /merge route."""
+    response = client.get("/merge")
+    assert response.status_code == 405
+    assert "error" in response.get_json()
+
+
+@patch("asyncio.run", side_effect=RuntimeError("Loop is running"))
+@patch("configstream.web.nest_asyncio")
+def test_run_async_task_handles_runtime_error(mock_nest_asyncio, mock_asyncio_run, event_loop):
+    """Test that _run_async_task uses nest_asyncio when a loop is running."""
+    from configstream.web import _run_async_task
+
+    async def dummy_coro():
+        return "it worked"
+
+    with patch("asyncio.get_event_loop", return_value=event_loop):
+        result = _run_async_task(dummy_coro())
+
+    assert result == "it worked"
+    mock_asyncio_run.assert_called_once()
+    mock_nest_asyncio.apply.assert_called_once()
+
+
+@patch("configstream.web.find_project_root")
+def test_get_root_fallback_to_find_project_root(mock_find_project_root, fs):
+    """Test _get_root falls back to find_project_root when config is missing."""
+    from configstream.web import _get_root
+
+    fake_project_root = Path("/fake/project/root")
+    mock_find_project_root.return_value = fake_project_root
+
+    assert _get_root() == fake_project_root
+    mock_find_project_root.assert_called_once()
+
+
+@patch("configstream.web.find_project_root", side_effect=FileNotFoundError)
+def test_get_root_fallback_to_cwd(mock_find_project_root, fs):
+    """Test _get_root falls back to CWD when all else fails."""
+    from configstream.web import _get_root
+    assert _get_root() == Path.cwd()
+    mock_find_project_root.assert_called_once()
+
+
+def test_get_root_finds_local_config(fs):
+    """Test _get_root finds a local config.yaml and returns CWD."""
+    from configstream.web import _get_root
+    fs.create_file("config.yaml")
+    assert _get_root() == Path.cwd()
+
+
+def test_coerce_float_with_none():
+    """Test that _coerce_float returns None when the input is None."""
+    from configstream.web import _coerce_float
+    assert _coerce_float(None) is None
+
+
+@patch("configstream.web.run_merger_pipeline", new_callable=AsyncMock)
+@patch("configstream.web.load_config")
+def test_merge_route_exception(mock_load_config, mock_run_merger, client, fs):
+    """Test the /api/merge route when an exception occurs."""
+    fs.create_file("pyproject.toml")
+    fs.create_dir("fake_output")
+    fs.create_file("fake_output/vpn_subscription_raw.txt")
+    settings = Settings()
+    settings.output.output_dir = Path("fake_output")
+    mock_load_config.return_value = settings
+    mock_run_merger.side_effect = Exception("Merge failed")
+
+    response = client.post("/api/merge", json={})
+    assert response.status_code == 500
+    assert response.get_json()["error"] == "Merge failed"

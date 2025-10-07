@@ -109,6 +109,7 @@ def test_load_config_finds_default_config(fs):
         ("history_db_file", "../.bash_history"),
         ("surge_file", "/tmp/test.conf"),
         ("qx_file", "../../../tmp/test.conf"),
+        ("xyz_file", "/dev/null"),
     ],
 )
 def test_output_settings_path_traversal_prevention(path_field, malicious_path):
@@ -138,3 +139,13 @@ def test_output_settings_valid_paths():
         assert settings.surge_file == Path("surge.conf")
     except ValidationError as e:
         pytest.fail(f"Valid paths raised a ValidationError unexpectedly: {e}")
+
+
+def test_yaml_config_source_io_error(tmp_path: Path):
+    """Test YamlConfigSettingsSource when the YAML file is unreadable."""
+    config_path = tmp_path / "config.yaml"
+    config_path.touch()  # Ensure the file exists
+
+    with patch.object(Path, "read_text", side_effect=IOError("Test IOError")):
+        source = YamlConfigSettingsSource(Settings, config_path)
+        assert source() == {}

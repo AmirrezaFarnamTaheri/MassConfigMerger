@@ -32,8 +32,7 @@ def sample_results() -> list[ConfigResult]:
 
 def test_generate_json_report(fs, sample_results: list[ConfigResult]):
     """Test the generation of a JSON report."""
-    fs.create_dir("/output")
-    output_dir = Path("/output")
+    output_dir = fs.create_dir("output")
     settings = Settings()
     stats = {"total": 1}
     start_time = 0
@@ -53,8 +52,7 @@ def test_generate_json_report(fs, sample_results: list[ConfigResult]):
 
 def test_generate_html_report(fs, sample_results: list[ConfigResult]):
     """Test the generation of an HTML report."""
-    fs.create_dir("/output")
-    output_dir = Path("/output")
+    output_dir = fs.create_dir("output")
 
     report_path = generate_html_report(sample_results, output_dir)
 
