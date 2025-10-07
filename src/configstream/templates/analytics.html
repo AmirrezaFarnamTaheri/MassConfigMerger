@@ -1,280 +1,199 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Analytics - ConfigStream</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+{% extends "base.html" %}
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 2rem 1rem;
-        }
+{% block title %}Analytics - ConfigStream{% endblock %}
 
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-        }
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .stat-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 1.75rem;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+    }
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #1a202c;
+        margin-bottom: 0.5rem;
+    }
+    .stat-label {
+        color: #64748b;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.875rem;
+        letter-spacing: 0.05em;
+    }
+    .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        gap: 2rem;
+    }
+    .chart-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 2rem;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    .chart-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1a202c;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
 
-        .header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 2rem;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        h1 {
-            font-size: 2rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .back-link {
-            padding: 0.75rem 1.5rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-decoration: none;
-            border-radius: 10px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .back-link:hover {
-            transform: translateX(-5px);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 1.75rem;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-        }
-
-        .stat-icon {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1rem;
-        }
-
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: #1a202c;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            color: #64748b;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.875rem;
-            letter-spacing: 0.05em;
-        }
-
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 2rem;
-        }
-
-        .chart-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 2rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        .chart-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #1a202c;
-            margin-bottom: 1.5rem;
-        }
-
-        @media (max-width: 768px) {
-            .charts-grid { grid-template-columns: 1fr; }
-            .stats-grid { grid-template-columns: 1fr; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>📊 Analytics Dashboard</h1>
-            <a href="/" class="back-link">← Dashboard</a>
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-server"></i>
         </div>
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <svg width="24" height="24" fill="white" viewBox="0 0 20 20">
-                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                        <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"/>
-                    </svg>
-                </div>
-                <div class="stat-value">{{ total_proxies }}</div>
-                <div class="stat-label">Total Proxies</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <svg width="24" height="24" fill="white" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
-                    </svg>
-                </div>
-                <div class="stat-value">{{ '%.1f'|format(avg_reliability) }}%</div>
-                <div class="stat-label">Avg Reliability</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <svg width="24" height="24" fill="white" viewBox="0 0 20 20">
-                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                        <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/>
-                    </svg>
-                </div>
-                <div class="stat-value">{{ total_tests }}</div>
-                <div class="stat-label">Total Tests</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <svg width="24" height="24" fill="white" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"/>
-                    </svg>
-                </div>
-                <div class="stat-value">{{ countries|length }}</div>
-                <div class="stat-label">Countries</div>
-            </div>
-        </div>
-
-        <div class="charts-grid">
-            <div class="chart-card">
-                <h3 class="chart-title">Status Distribution</h3>
-                <canvas id="statusChart"></canvas>
-            </div>
-
-            <div class="chart-card">
-                <h3 class="chart-title">Top Countries</h3>
-                <canvas id="countryChart"></canvas>
-            </div>
-
-            <div class="chart-card" style="grid-column: 1 / -1;">
-                <h3 class="chart-title">Reliability Distribution</h3>
-                <canvas id="reliabilityChart"></canvas>
-            </div>
-        </div>
+        <div class="stat-value">{{ total_proxies }}</div>
+        <div class="stat-label">Total Proxies</div>
     </div>
 
-    <script>
-        // Status Distribution Pie Chart
-        const statusCtx = document.getElementById('statusChart').getContext('2d');
-        new Chart(statusCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Healthy', 'Warning', 'Critical', 'Untested'],
-                datasets: [{
-                    data: [{{ healthy }}, {{ warning }}, {{ critical }}, {{ untested }}],
-                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#94a3b8']
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'bottom' }
-                }
-            }
-        });
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-value">{{ '%.1f'|format(avg_reliability) }}%</div>
+        <div class="stat-label">Avg Reliability</div>
+    </div>
 
-        // Country Distribution Bar Chart
-        const countryCtx = document.getElementById('countryChart').getContext('2d');
-        const countries = {{ countries|tojson }};
-        const sortedCountries = Object.entries(countries).sort((a, b) => b[1] - a[1]).slice(0, 10);
-        new Chart(countryCtx, {
-            type: 'bar',
-            data: {
-                labels: sortedCountries.map(c => c[0]),
-                datasets: [{
-                    label: 'Proxies',
-                    data: sortedCountries.map(c => c[1]),
-                    backgroundColor: '#667eea'
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: { beginAtZero: true }
-                }
-            }
-        });
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-tasks"></i>
+        </div>
+        <div class="stat-value">{{ total_tests }}</div>
+        <div class="stat-label">Total Tests</div>
+    </div>
 
-        // Reliability Distribution Histogram
-        const reliabilityCtx = document.getElementById('reliabilityChart').getContext('2d');
-        const entries = {{ entries|tojson }};
-        const ranges = ['0-25%', '25-50%', '50-75%', '75-100%'];
-        const rangeCounts = [0, 0, 0, 0];
-        entries.forEach(e => {
-            const rel = e.reliability_percent;
-            if (rel < 25) rangeCounts[0]++;
-            else if (rel < 50) rangeCounts[1]++;
-            else if (rel < 75) rangeCounts[2]++;
-            else rangeCounts[3]++;
-        });
-        new Chart(reliabilityCtx, {
-            type: 'bar',
-            data: {
-                labels: ranges,
-                datasets: [{
-                    label: 'Number of Proxies',
-                    data: rangeCounts,
-                    backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981']
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: { beginAtZero: true }
-                }
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-globe-americas"></i>
+        </div>
+        <div class="stat-value">{{ countries|length }}</div>
+        <div class="stat-label">Countries</div>
+    </div>
+</div>
+
+<div class="charts-grid">
+    <div class="chart-card">
+        <h3 class="chart-title">Status Distribution</h3>
+        <canvas id="statusChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+        <h3 class="chart-title">Top Countries</h3>
+        <canvas id="countryChart"></canvas>
+    </div>
+
+    <div class="chart-card" style="grid-column: 1 / -1;">
+        <h3 class="chart-title">Reliability Distribution</h3>
+        <canvas id="reliabilityChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Healthy', 'Warning', 'Critical', 'Untested'],
+            datasets: [{
+                data: [{{ healthy }}, {{ warning }}, {{ critical }}, {{ untested }}],
+                backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#94a3b8']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
             }
-        });
-    </script>
-</body>
-</html>
+        }
+    });
+
+    const countryCtx = document.getElementById('countryChart').getContext('2d');
+    const countries = {{ countries|tojson }};
+    const sortedCountries = Object.entries(countries).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    new Chart(countryCtx, {
+        type: 'bar',
+        data: {
+            labels: sortedCountries.map(c => c[0]),
+            datasets: [{
+                label: 'Proxies',
+                data: sortedCountries.map(c => c[1]),
+                backgroundColor: '#667eea'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    const reliabilityCtx = document.getElementById('reliabilityChart').getContext('2d');
+    const entries = {{ entries|tojson }};
+    const ranges = ['0-25%', '25-50%', '50-75%', '75-100%'];
+    const rangeCounts = [0, 0, 0, 0];
+    entries.forEach(e => {
+        const rel = e.reliability_percent;
+        if (rel < 25) rangeCounts[0]++;
+        else if (rel < 50) rangeCounts[1]++;
+        else if (rel < 75) rangeCounts[2]++;
+        else rangeCounts[3]++;
+    });
+    new Chart(reliabilityCtx, {
+        type: 'bar',
+        data: {
+            labels: ranges,
+            datasets: [{
+                label: 'Number of Proxies',
+                data: rangeCounts,
+                backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+</script>
+{% endblock %}

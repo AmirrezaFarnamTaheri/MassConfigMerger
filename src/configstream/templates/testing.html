@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Testing & Diagnostics - ConfigStream{% endblock %}
+
+{% block head_extra %}
+<style>
+    .test-form {
+        background: linear-gradient(to right, #f8fafc, #f1f5f9);
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+    textarea {
+        width: 100%;
+        padding: 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-family: 'Monaco', 'Courier New', monospace;
+        min-height: 150px;
+        margin-bottom: 1rem;
+    }
+    button {
+        padding: 0.875rem 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .results-container {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+    }
+    .result-item {
+        padding: 1rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .result-item:last-child {
+        border-bottom: none;
+    }
+    .result-proxy {
+        font-family: 'Monaco', 'Courier New', monospace;
+        font-weight: 600;
+    }
+    .result-status {
+        font-weight: 600;
+    }
+    .status-success { color: #16a34a; }
+    .status-failure { color: #dc2626; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="test-form">
+    <h2 style="margin-bottom: 1rem;">Test Proxies</h2>
+    <textarea id="proxyInput" placeholder="Enter one proxy per line..."></textarea>
+    <button onclick="runTests()">Run Tests</button>
+</div>
+
+<div class="results-container" id="results">
+    <h3>Results will appear here...</h3>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function runTests() {
+        const input = document.getElementById('proxyInput').value;
+        const proxies = input.split('\\n').filter(p => p.trim());
+        const resultsContainer = document.getElementById('results');
+        resultsContainer.innerHTML = '<h3>Testing...</h3>';
+
+        const response = await fetch('/api/test-proxies', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ proxies })
+        });
+
+        const results = await response.json();
+        let html = '<h3>Test Results</h3>';
+
+        for (const result of results) {
+            html += `
+                <div class="result-item">
+                    <div class="result-proxy">${result.proxy}</div>
+                    <div class="result-status ${result.is_reachable ? 'status-success' : 'status-failure'}">
+                        ${result.is_reachable ? 'Reachable' : 'Unreachable'}
+                        - Ping: ${result.ping_time ? (result.ping_time * 1000).toFixed(2) + 'ms' : 'N/A'}
+                    </div>
+                </div>
+            `;
+        }
+
+        resultsContainer.innerHTML = html;
+    }
+</script>
+{% endblock %}

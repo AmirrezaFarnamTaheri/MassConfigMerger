@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Backup & Restore - ConfigStream{% endblock %}
+
+{% block head_extra %}
+<style>
+    .card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+    }
+    h2 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1a202c;
+        margin-bottom: 1rem;
+    }
+    button {
+        padding: 0.875rem 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Export Data</h2>
+    <p style="margin-bottom: 1rem; color: #475569;">Download a complete backup of your configurations and proxy history.</p>
+    <button onclick="location.href='/api/export-backup'">Download Backup</button>
+</div>
+
+<div class="card">
+    <h2>Import Data</h2>
+    <p style="margin-bottom: 1rem; color: #475569;">Restore from a previously exported backup file. This will overwrite existing data.</p>
+    <form action="/api/import-backup" method="post" enctype="multipart/form-data">
+        <input type="file" name="backup_file" required>
+        <button type="submit">Upload & Restore</button>
+    </form>
+</div>
+{% endblock %}

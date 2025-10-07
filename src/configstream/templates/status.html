@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}System Status - ConfigStream{% endblock %}
+
+{% block head_extra %}
+<style>
+    .status-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+    .metric-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+    }
+    .metric-label {
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 0.5rem;
+    }
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1a202c;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="status-grid">
+    <div class="metric-card">
+        <div class="metric-label">CPU Usage</div>
+        <div class="metric-value">{{ status.cpu_usage }}%</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Memory Usage</div>
+        <div class="metric-value">{{ status.memory_usage }}%</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Disk Usage</div>
+        <div class="metric-value">{{ status.disk_usage }}%</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Uptime</div>
+        <div class="metric-value">{{ status.uptime }}</div>
+    </div>
+</div>
+{% endblock %}

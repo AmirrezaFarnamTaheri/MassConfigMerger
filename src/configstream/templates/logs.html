@@ -1,178 +1,83 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Logs - ConfigStream</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+{% extends "base.html" %}
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 2rem 1rem;
-        }
+{% block title %}Logs - ConfigStream{% endblock %}
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 2rem;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-        }
+{% block head_extra %}
+<style>
+    .controls {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+    button {
+        padding: 0.75rem 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .log-container {
+        background: #1e293b;
+        color: #e2e8f0;
+        padding: 1.5rem;
+        border-radius: 12px;
+        font-family: 'Monaco', 'Courier New', monospace;
+        font-size: 0.875rem;
+        line-height: 1.8;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+    .log-line {
+        margin-bottom: 0.25rem;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+    .log-error {
+        color: #fca5a5;
+        font-weight: 600;
+    }
+    .log-warning {
+        color: #fcd34d;
+    }
+    .log-info {
+        color: #93c5fd;
+    }
+</style>
+{% endblock %}
 
-        .header {
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 1.5rem;
-            margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+{% block content %}
+<div class="controls">
+    <button onclick="location.reload()">🔄 Refresh</button>
+    <button onclick="clearLogs()">🗑️ Clear Display</button>
+    <button onclick="scrollToBottom()">⬇️ Scroll to Bottom</button>
+</div>
 
-        h1 {
-            font-size: 2rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+<div class="log-container" id="logContainer">
+    {% for line in log_lines %}
+    <div class="log-line {% if 'ERROR' in line %}log-error{% elif 'WARNING' in line %}log-warning{% elif 'INFO' in line %}log-info{% endif %}">{{ line }}</div>
+    {% endfor %}
+</div>
+{% endblock %}
 
-        .back-link {
-            padding: 0.75rem 1.5rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-decoration: none;
-            border-radius: 10px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
+{% block scripts %}
+<script>
+    function clearLogs() {
+        document.getElementById('logContainer').innerHTML = '<div class="log-line log-info">Log display cleared. Refresh to reload.</div>';
+    }
 
-        .back-link:hover {
-            transform: translateX(-5px);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
+    function scrollToBottom() {
+        const container = document.getElementById('logContainer');
+        container.scrollTop = container.scrollHeight;
+    }
 
-        .controls {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
+    // Auto-scroll to bottom on load
+    scrollToBottom();
 
-        button {
-            padding: 0.75rem 1.5rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .log-container {
-            background: #1e293b;
-            color: #e2e8f0;
-            padding: 1.5rem;
-            border-radius: 12px;
-            font-family: 'Monaco', 'Courier New', monospace;
-            font-size: 0.875rem;
-            line-height: 1.8;
-            max-height: 600px;
-            overflow-y: auto;
-        }
-
-        .log-line {
-            margin-bottom: 0.25rem;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-
-        .log-error {
-            color: #fca5a5;
-            font-weight: 600;
-        }
-
-        .log-warning {
-            color: #fcd34d;
-        }
-
-        .log-info {
-            color: #93c5fd;
-        }
-
-        .log-timestamp {
-            color: #94a3b8;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-left: 1rem;
-        }
-
-        .badge-live {
-            background: #10b981;
-            color: white;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <div>
-                <h1>📝 Application Logs</h1>
-                <span class="badge badge-live">● LIVE</span>
-            </div>
-            <a href="/" class="back-link">← Dashboard</a>
-        </div>
-
-        <div class="controls">
-            <button onclick="location.reload()">🔄 Refresh</button>
-            <button onclick="clearLogs()">🗑️ Clear Display</button>
-            <button onclick="scrollToBottom()">⬇️ Scroll to Bottom</button>
-        </div>
-
-        <div class="log-container" id="logContainer">
-            {% for line in log_lines %}
-            <div class="log-line {% if 'ERROR' in line %}log-error{% elif 'WARNING' in line %}log-warning{% elif 'INFO' in line %}log-info{% endif %}">{{ line }}</div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <script>
-        function clearLogs() {
-            document.getElementById('logContainer').innerHTML = '<div class="log-line log-info">Log display cleared. Refresh to reload.</div>';
-        }
-
-        function scrollToBottom() {
-            const container = document.getElementById('logContainer');
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // Auto-scroll to bottom on load
-        scrollToBottom();
-
-        // Auto-refresh every 10 seconds
-        setTimeout(() => location.reload(), 10000);
-    </script>
-</body>
-</html>
+    // Auto-refresh every 10 seconds
+    setTimeout(() => location.reload(), 10000);
+</script>
+{% endblock %}

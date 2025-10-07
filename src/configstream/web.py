@@ -35,8 +35,25 @@ from .core.file_utils import find_marker_from, find_project_root
 from .db import Database
 from .pipeline import run_aggregation_pipeline
 from .vpn_merger import run_merger as run_merger_pipeline
+import psutil
+import shutil
+import os
+from werkzeug.utils import secure_filename
+from .tester import NodeTester
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+import zipfile
 
 app = Flask(__name__)
+
+scheduler = BackgroundScheduler()
+scheduler.start()
+
+def daily_aggregation_job():
+    """Placeholder for the daily aggregation job."""
+    print("Running daily aggregation job...")
+
+scheduler.add_job(daily_aggregation_job, 'interval', hours=24)
 CONFIG_PATH = Path(CONFIG_FILE_NAME)
 
 
@@ -488,6 +505,154 @@ def logs_page():
         log_lines = ["Log file not found. Logs will appear here once the server starts generating them."]
 
     return render_template("logs.html", log_lines=log_lines)
+
+
+# ============================================================================
+# TESTING & DIAGNOSTICS PAGE
+# ============================================================================
+
+@app.route("/testing")
+def testing_page():
+    """Testing and diagnostics interface."""
+    return render_template("testing.html")
+
+@app.post("/api/test-proxies")
+async def test_proxies_api():
+    """Test a list of proxies and return their status."""
+    data = request.get_json()
+    proxies = data.get("proxies", [])
+
+    if not proxies:
+        return jsonify([])
+
+    settings = load_cfg()
+    tester = NodeTester(settings)
+    results = await tester.test_proxies(proxies)
+
+    return jsonify(results)
+
+# ============================================================================
+# BACKUP & RESTORE PAGE
+# ============================================================================
+
+@app.route("/backup")
+def backup_page():
+    """Backup and restore interface."""
+    return render_template("backup.html")
+
+@app.get("/api/export-backup")
+def export_backup():
+    """Export a zip archive of all critical configuration files."""
+    project_root = _get_root()
+    backup_dir = project_root / "output" / "backup"
+    backup_dir.mkdir(exist_ok=True)
+
+    # Files to include in the backup
+    files_to_backup = [
+        project_root / "config.yaml",
+        project_root / "sources.txt",
+        project_root / "proxy_history.db"
+    ]
+
+    # Create a temporary zip file
+    backup_zip_path = backup_dir / f"configstream_backup_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+
+    with shutil.ZipFile(f"{backup_zip_path}.zip", 'w') as zipf:
+        for file in files_to_backup:
+            if file.exists():
+                zipf.write(file, file.name)
+
+    return send_file(f"{backup_zip_path}.zip", as_attachment=True)
+
+@app.post("/api/import-backup")
+def import_backup():
+    """Import a backup file to restore configurations."""
+    if 'backup_file' not in request.files:
+        return "No file part", 400
+    file = request.files['backup_file']
+    if file.filename == '':
+        return "No selected file", 400
+
+    if file and file.filename.endswith('.zip'):
+        project_root = _get_root()
+        filename = secure_filename(file.filename)
+        temp_path = project_root / "output" / filename
+
+        try:
+            file.save(temp_path)
+
+            with zipfile.ZipFile(temp_path, 'r') as zipf:
+                for member in zipf.infolist():
+                    # Path traversal check
+                    target_path = os.path.realpath(os.path.join(project_root, member.filename))
+                    if not target_path.startswith(os.path.realpath(project_root)):
+                        raise ValueError(f"Invalid path in zip file: {member.filename}")
+
+                    if not member.is_dir():
+                        zipf.extract(member, project_root)
+
+            return "Backup restored successfully!", 200
+        except (zipfile.BadZipFile, ValueError) as e:
+            return str(e), 400
+        finally:
+            if temp_path.exists():
+                os.remove(temp_path)
+
+    return "Invalid file type", 400
+
+# ============================================================================
+# SCHEDULER PAGE
+# ============================================================================
+
+@app.route("/scheduler")
+def scheduler_page():
+    """Scheduler interface."""
+    jobs = []
+    for job in scheduler.get_jobs():
+        jobs.append({
+            "id": job.id,
+            "name": job.name,
+            "trigger": str(job.trigger),
+            "next_run_time": str(job.next_run_time)
+        })
+    return render_template("scheduler.html", jobs=jobs)
+
+# ============================================================================
+# SYSTEM STATUS PAGE
+# ============================================================================
+
+@app.route("/status")
+def status_page():
+    """System status and metrics page."""
+
+    uptime_seconds = time.time() - psutil.boot_time()
+    uptime_str = str(datetime.timedelta(seconds=int(uptime_seconds)))
+
+    status = {
+        "cpu_usage": psutil.cpu_percent(),
+        "memory_usage": psutil.virtual_memory().percent,
+        "disk_usage": psutil.disk_usage('/').percent,
+        "uptime": uptime_str,
+    }
+    return render_template("status.html", status=status)
+
+# ============================================================================
+# HELP PAGE
+# ============================================================================
+
+@app.route("/help")
+def help_page():
+    """Help and documentation page."""
+    return render_template("help.html")
+
+# ============================================================================
+# SITEMAP PAGE
+# ============================================================================
+
+@app.route("/sitemap")
+def sitemap_page():
+    """Sitemap page."""
+    return render_template("sitemap.html")
 
 
 def main() -> None:
