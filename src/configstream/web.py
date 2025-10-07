@@ -84,8 +84,9 @@ def _extract_api_token() -> Optional[str]:
         scheme, _, value = auth_header.partition(" ")
         scheme = scheme.strip().lower()
         value = value.strip()
-        if scheme == "bearer" and value:
-            token_from_bearer = value
+    if token_from_header and token_from_bearer:
+        # Use a sentinel to indicate ambiguity so caller can return 400
+        return ""  # ambiguous
 
     # If both are provided and non-empty, reject to avoid ambiguity
     if token_from_header and token_from_bearer:
