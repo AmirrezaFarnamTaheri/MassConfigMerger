@@ -8,11 +8,15 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "massconfigmerger"
+name = "configstream"
 version = "0.4.0"
 description = "VPN subscription aggregator and merger"
 readme = "README.md"
 requires-python = ">=3.8"
+authors = [
+    { name = "Amirreza \"Farnam\" Taheri", email = "taherifarnam@gmail.com" },
+]
+license = { file = "LICENSE" }
 dependencies = [
     "aiohttp",
     "aiodns",
@@ -29,7 +33,7 @@ dependencies = [
 ]
 
 [project.scripts]
-massconfigmerger = "massconfigmerger.cli:main"
+configstream = "configstream.cli:main"
 
 [project.optional-dependencies]
 dev = [

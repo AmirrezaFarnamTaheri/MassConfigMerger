@@ -3,8 +3,8 @@ from __future__ import annotations
 import base64
 import pytest
 from unittest.mock import patch
-from massconfigmerger.config import Settings
-from massconfigmerger.core.config_normalizer import (
+from configstream.config import Settings
+from configstream.core.config_normalizer import (
     extract_host_port,
     _normalize_url,
     create_semantic_hash,

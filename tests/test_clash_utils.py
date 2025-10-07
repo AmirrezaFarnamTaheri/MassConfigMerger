@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from massconfigmerger.clash_utils import build_clash_config, flag_emoji
+from configstream.clash_utils import build_clash_config, flag_emoji
 
 
 def test_flag_emoji():

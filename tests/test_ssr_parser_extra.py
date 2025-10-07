@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 import pytest
 
-from massconfigmerger.core.parsers.ssr import SsrParser
+from configstream.core.parsers.ssr import SsrParser
 
 
 def test_parse_ssr_malformed_main_part():

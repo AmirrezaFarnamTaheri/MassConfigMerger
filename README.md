@@ -1,16 +1,16 @@
-# Mass Config Merger
+# ConfigStream
 
 A toolchain for collecting, testing, and merging free VPN configuration links from public sources.
 
-[![CI](https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/actions/workflows/ci.yml/badge.svg)](https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/AmirrezaFarnamTaheri/ConfigStream/actions/workflows/ci.yml/badge.svg)](https://github.com/AmirrezaFarnamTaheri/ConfigStream/actions/workflows/ci.yml)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 This project provides a command-line tool to automatically fetch VPN configurations from public sources, test their connectivity, and merge them into a single, performance-sorted subscription link.
 
-The `massconfigmerger` command provides several subcommands:
+The `configstream` command provides several subcommands:
 ```mermaid
 graph TD
-    A[massconfigmerger] --> B[fetch]
+    A[configstream] --> B[fetch]
     A --> C[merge]
     A --> D[retest]
     A --> E[full]
@@ -44,7 +44,7 @@ This guide provides instructions for both basic usage and automation.
 > To keep only a subset during a merge, you can run:
 >
 > ```bash
-> massconfigmerger merge --include-protocols VLESS,VMESS
+> configstream merge --include-protocols VLESS,VMESS
 > ```
 
 ### ⚡ Quick Start
@@ -57,8 +57,8 @@ This guide provides instructions for both basic usage and automation.
 
 2.  **Clone the repository**
     ```bash
-    git clone https://github.com/AmirrezaFarnamTaheri/MassConfigMerger.git
-    cd MassConfigMerger
+    git clone https://github.com/AmirrezaFarnamTaheri/ConfigStream.git
+    cd ConfigStream
     ```
 
 3.  **Install the package and its dependencies**
@@ -75,7 +75,7 @@ This guide provides instructions for both basic usage and automation.
 
 5.  **Gather configuration links**
     ```bash
-    massconfigmerger fetch --hours 12
+    configstream fetch --hours 12
     ```
     This creates `output/vpn_subscription_raw.txt` and other files based on your configuration.
 
@@ -83,21 +83,21 @@ This guide provides instructions for both basic usage and automation.
     You can merge configurations from the `sources.txt` file or from a file you've already generated.
     ```bash
     # Merge from sources.txt
-    massconfigmerger merge
+    configstream merge
 
     # Merge from a previously fetched file
-    massconfigmerger merge --resume output/vpn_subscription_raw.txt
+    configstream merge --resume output/vpn_subscription_raw.txt
     ```
 
 7.  **All in one step**
     ```bash
-    massconfigmerger full --hours 12
+    configstream full --hours 12
     ```
     This runs the fetch and merge commands sequentially.
 
 8.  **Country filters**
     ```bash
-    massconfigmerger merge --geoip-db GeoLite2-Country.mmdb --include-country US,CA
+    configstream merge --geoip-db GeoLite2-Country.mmdb --include-country US,CA
     ```
     Combine `--include-country` or `--exclude-country` with `--geoip-db` to select preferred regions.
 
@@ -107,7 +107,7 @@ This guide provides instructions for both basic usage and automation.
 10. **Import your subscription**
     -   Use the link in `output/vpn_subscription_base64.txt` (unless `--no-base64` was used) or load `vpn_singbox.json` in clients like sing-box.
 
-> **Need more options?** Run `massconfigmerger --help` or `massconfigmerger <command> --help` for the full list of options.
+> **Need more options?** Run `configstream --help` or `configstream <command> --help` for the full list of options.
 
 ### Managing Sources
 
@@ -115,18 +115,18 @@ The `sources` command provides a simple way to manage the `sources.txt` file fro
 
 - **List all sources**:
   ```bash
-  massconfigmerger sources list
+  configstream sources list
   ```
 
 - **Add a new source**:
   ```bash
-  massconfigmerger sources add "http://example.com/new-source"
+  configstream sources add "http://example.com/new-source"
   ```
   The command will validate the URL format and check for duplicates before adding it.
 
 - **Remove a source**:
   ```bash
-  massconfigmerger sources remove "http://example.com/new-source"
+  configstream sources remove "http://example.com/new-source"
   ```
 
 ## Features
@@ -177,22 +177,22 @@ All of these files are written to the directory specified by `--output-dir` (def
 
 Enable these formats by passing `--output-surge` and `--output-qx` to the `merge` command.
 ```bash
-massconfigmerger merge --output-surge surge.conf --output-qx quantumultx.conf
+configstream merge --output-surge surge.conf --output-qx quantumultx.conf
 ```
 
 Once the files are generated, host them somewhere your phone can reach or copy them directly to the device.
 
 Example of generating and serving the files locally:
 ```bash
-massconfigmerger merge --output-surge surge.conf --output-qx quantumultx.conf
+configstream merge --output-surge surge.conf --output-qx quantumultx.conf
 python3 -m http.server -d output 8000
 ```
 Then import `http://<your-ip>:8000/surge.conf` or `http://<your-ip>:8000/quantumultx.conf` in the respective app.
 
-You can also call the converters directly from `src/massconfigmerger/format_converters_extra.py`:
+You can also call the converters directly from `src/configstream/format_converters_extra.py`:
 
 ```python
-from massconfigmerger.format_converters_extra import (
+from configstream.format_converters_extra import (
     generate_surge_conf,
     generate_qx_conf,
 )
@@ -217,7 +217,7 @@ Acquire the `telegram_api_id` and `telegram_api_hash` by signing in at [my.teleg
 
 Run the tool in bot mode:
 ```bash
-massconfigmerger fetch --bot --config config.yaml
+configstream fetch --bot --config config.yaml
 ```
 
 The tool must be running for the `/update` and `/status` commands to work.
@@ -249,12 +249,12 @@ Install them with `pip install -e .[dev]` or `pip install -e .[web]` as needed.
 
 Install the `web` extras from PyPI:
 ```bash
-pip install massconfigmerger[web]
+pip install configstream[web]
 ```
 
 Run the server with:
 ```bash
-python -m massconfigmerger.web
+python -m configstream.web
 ```
 
 Navigate to `http://localhost:5000` to use the web interface.
@@ -270,7 +270,7 @@ If your network requires using an HTTP or SOCKS proxy, you can provide the setti
 
 ### Sorting by Reliability
 
-Use `massconfigmerger merge --sort-by reliability` to rank servers by past success rates recorded in `proxy_history.db`. This provides a way to prioritize servers that have been historically more reliable.
+Use `configstream merge --sort-by reliability` to rank servers by past success rates recorded in `proxy_history.db`. This provides a way to prioritize servers that have been historically more reliable.
 
 ### Regex Filtering
 

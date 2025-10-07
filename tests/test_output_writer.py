@@ -5,16 +5,16 @@ from unittest.mock import patch, MagicMock, AsyncMock
 
 import pytest
 
-from massconfigmerger.config import Settings
-from massconfigmerger.core.config_processor import ConfigResult
-from massconfigmerger.output_writer import (
+from configstream.config import Settings
+from configstream.core.config_processor import ConfigResult
+from configstream.output_writer import (
     write_all_outputs,
     write_base64_configs,
     write_clash_proxies,
     write_csv_report,
     write_raw_configs,
 )
-from massconfigmerger.report_generator import generate_html_report
+from configstream.report_generator import generate_html_report
 
 
 @pytest.fixture
@@ -48,7 +48,7 @@ def test_write_base64_configs(fs, sample_results: list[ConfigResult]):
     assert path.exists()
     assert "dm1lc3M6Ly9jb25maWcx" in path.read_text()
 
-@patch("massconfigmerger.output_writer.config_to_clash_proxy", return_value={"name": "test"})
+@patch("configstream.output_writer.config_to_clash_proxy", return_value={"name": "test"})
 def test_write_clash_proxies(mock_to_clash, fs, sample_results: list[ConfigResult]):
     fs.create_dir("/output")
     path = write_clash_proxies(sample_results, Path("/output"))
@@ -57,12 +57,12 @@ def test_write_clash_proxies(mock_to_clash, fs, sample_results: list[ConfigResul
     mock_to_clash.assert_called()
 
 
-@patch("massconfigmerger.output_writer.generate_json_report")
-@patch("massconfigmerger.output_writer.generate_html_report")
-@patch("massconfigmerger.output_writer.write_clash_proxies")
-@patch("massconfigmerger.output_writer.write_csv_report")
-@patch("massconfigmerger.output_writer.write_base64_configs")
-@patch("massconfigmerger.output_writer.write_raw_configs")
+@patch("configstream.output_writer.generate_json_report")
+@patch("configstream.output_writer.generate_html_report")
+@patch("configstream.output_writer.write_clash_proxies")
+@patch("configstream.output_writer.write_csv_report")
+@patch("configstream.output_writer.write_base64_configs")
+@patch("configstream.output_writer.write_raw_configs")
 def test_write_all_outputs(
     mock_raw, mock_b64, mock_csv, mock_clash, mock_html, mock_json, fs
 ):

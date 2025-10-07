@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quick Start - MassConfigMerger</title>
+    <title>Quick Start - ConfigStream</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/docs.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -13,7 +13,7 @@
         <div class="container">
             <div class="nav-brand">
                 <i class="fas fa-network-wired"></i>
-                <span>MassConfigMerger</span>
+                <span>ConfigStream</span>
             </div>
             <ul class="nav-menu">
                 <li><a href="index.html">Home</a></li>
@@ -21,7 +21,7 @@
                 <li><a href="quickstart.html" class="active">Quick Start</a></li>
                 <li><a href="roadmap.html">Roadmap</a></li>
                 <li><a href="api.html">API</a></li>
-                <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger" class="github-btn">
+                <li><a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" class="github-btn">
                     <i class="fab fa-github"></i> GitHub
                 </a></li>
             </ul>
@@ -64,7 +64,7 @@
         <main class="docs-content">
             <div class="docs-header">
                 <h1>Quick Start Guide</h1>
-                <p class="lead">Get up and running with MassConfigMerger in 5 minutes</p>
+                <p class="lead">Get up and running with ConfigStream in 5 minutes</p>
             </div>
 
             <section id="installation" class="docs-section">
@@ -78,28 +78,28 @@
                 <h3>Method 1: Using pip (Recommended)</h3>
                 <div class="code-block">
                     <pre><code># Install from PyPI
-pip install massconfigmerger
+pip install configstream
 
 # Verify installation
-massconfigmerger --version</code></pre>
+configstream --version</code></pre>
                 </div>
 
                 <h3>Method 2: Using Docker</h3>
                 <div class="code-block">
                     <pre><code># Pull the image
-docker pull massconfigmerger/massconfigmerger:latest
+docker pull configstream/configstream:latest
 
 # Run a command
 docker run -v $(pwd)/output:/app/output \
-    massconfigmerger/massconfigmerger \
-    massconfigmerger full</code></pre>
+    configstream/configstream \
+    configstream full</code></pre>
                 </div>
 
                 <h3>Method 3: From Source</h3>
                 <div class="code-block">
                     <pre><code># Clone the repository
-git clone https://github.com/yourusername/MassConfigMerger.git
-cd MassConfigMerger
+git clone https://github.com/yourusername/ConfigStream.git
+cd ConfigStream
 
 # Install in development mode
 pip install -e .
@@ -121,7 +121,7 @@ pip install -e .[dev,web]</code></pre>
                             <h3>Run the Full Pipeline</h3>
                             <p>This command will fetch, test, and merge configurations:</p>
                             <div class="code-block">
-                                <pre><code>massconfigmerger full</code></pre>
+                                <pre><code>configstream full</code></pre>
                             </div>
                             <p class="note">
                                 <i class="fas fa-clock"></i>
@@ -205,16 +205,16 @@ output:
 
                 <div class="code-block">
                     <pre><code># Fetch all sources
-massconfigmerger fetch
+configstream fetch
 
 # Fetch from last 12 hours only
-massconfigmerger fetch --hours 12
+configstream fetch --hours 12
 
 # Fetch specific protocols
-massconfigmerger fetch --fetch-protocols vmess,vless
+configstream fetch --fetch-protocols vmess,vless
 
 # Save to custom directory
-massconfigmerger fetch --output-dir /path/to/output</code></pre>
+configstream fetch --output-dir /path/to/output</code></pre>
                 </div>
 
                 <div class="info-box">
@@ -236,19 +236,19 @@ massconfigmerger fetch --output-dir /path/to/output</code></pre>
 
                 <div class="code-block">
                     <pre><code># Test and merge all configs
-massconfigmerger merge
+configstream merge
 
 # Use existing file (skip fetching)
-massconfigmerger merge --resume output/vpn_subscription_raw.txt
+configstream merge --resume output/vpn_subscription_raw.txt
 
 # Keep only top 100 by latency
-massconfigmerger merge --top-n 100
+configstream merge --top-n 100
 
 # Filter by protocols
-massconfigmerger merge --include-protocols VMESS,VLESS
+configstream merge --include-protocols VMESS,VLESS
 
 # Exclude slow servers
-massconfigmerger merge --max-ping 300</code></pre>
+configstream merge --max-ping 300</code></pre>
                 </div>
 
                 <div class="alert alert-warning">
@@ -309,28 +309,28 @@ massconfigmerger merge --max-ping 300</code></pre>
                 <h3>Geographic Filtering</h3>
                 <div class="code-block">
                     <pre><code># Include only specific countries
-massconfigmerger merge --include-country US,GB,JP,DE
+configstream merge --include-country US,GB,JP,DE
 
 # Exclude specific countries
-massconfigmerger merge --exclude-country RU,CN</code></pre>
+configstream merge --exclude-country RU,CN</code></pre>
                 </div>
 
                 <h3>Pattern Matching</h3>
                 <div class="code-block">
                     <pre><code># Include configs matching pattern
-massconfigmerger merge --include-pattern "premium|vip|pro"
+configstream merge --include-pattern "premium|vip|pro"
 
 # Exclude configs matching pattern
-massconfigmerger merge --exclude-pattern "free|trial|test"</code></pre>
+configstream merge --exclude-pattern "free|trial|test"</code></pre>
                 </div>
 
                 <h3>Multiple Output Formats</h3>
                 <div class="code-block">
                     <pre><code># Generate Surge config
-massconfigmerger merge --output-surge output/surge.conf
+configstream merge --output-surge output/surge.conf
 
 # Generate Quantumult X config
-massconfigmerger merge --output-qx output/quantumultx.conf</code></pre>
+configstream merge --output-qx output/quantumultx.conf</code></pre>
                 </div>
             </section>
 
@@ -343,7 +343,7 @@ massconfigmerger merge --output-qx output/quantumultx.conf</code></pre>
 crontab -e
 
 # Add this line to run every 6 hours
-0 */6 * * * cd /path/to/project && massconfigmerger full</code></pre>
+0 */6 * * * cd /path/to/project && configstream full</code></pre>
                 </div>
 
                 <h3>Using Docker Compose</h3>
@@ -352,14 +352,14 @@ crontab -e
 version: '3.8'
 services:
   merger:
-    image: massconfigmerger/massconfigmerger:latest
+    image: configstream/configstream:latest
     volumes:
       - ./output:/app/output
     environment:
       - MERGE_INTERVAL=21600  # 6 hours
     command: |
       sh -c "while true; do
-        massconfigmerger full
+        configstream full
         sleep $MERGE_INTERVAL
       done"
 
@@ -385,9 +385,9 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install
-        run: pip install massconfigmerger
+        run: pip install configstream
       - name: Run
-        run: massconfigmerger full
+        run: configstream full
       - name: Commit
         run: |
           git config user.name "Bot"
@@ -403,11 +403,11 @@ jobs:
 
                 <div class="troubleshooting-item">
                     <h3><i class="fas fa-times-circle"></i> Command not found</h3>
-                    <p><strong>Problem:</strong> <code>massconfigmerger: command not found</code></p>
+                    <p><strong>Problem:</strong> <code>configstream: command not found</code></p>
                     <p><strong>Solution:</strong></p>
                     <div class="code-block">
                         <pre><code># Ensure pip installed to user directory
-pip install --user massconfigmerger
+pip install --user configstream
 
 # Add to PATH (add to ~/.bashrc or ~/.zshrc)
 export PATH="$HOME/.local/bin:$PATH"</code></pre>
@@ -432,7 +432,7 @@ network:
                     <p><strong>Solution:</strong></p>
                     <div class="code-block">
                         <pre><code># Limit configs and enable periodic saves
-massconfigmerger merge --top-n 1000 --save-every 100</code></pre>
+configstream merge --top-n 1000 --save-every 100</code></pre>
                     </div>
                 </div>
             </section>
@@ -452,10 +452,10 @@ massconfigmerger merge --top-n 1000 --save-every 100</code></pre>
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-col">
-                    <h4>MassConfigMerger</h4>
+                    <h4>ConfigStream</h4>
                     <p>High-performance VPN configuration aggregator and merger.</p>
                     <div class="social-links">
-                        <a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger"><i class="fab fa-github"></i></a>
+                        <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream"><i class="fab fa-github"></i></a>
                     </div>
                 </div>
                 <div class="footer-col">
@@ -470,10 +470,10 @@ massconfigmerger merge --top-n 1000 --save-every 100</code></pre>
                 <div class="footer-col">
                     <h4>Resources</h4>
                     <ul>
-                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/issues">Report Issues</a></li>
-                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/discussions">Discussions</a></li>
-                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/blob/main/CONTRIBUTING.md">Contributing</a></li>
-                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/blob/main/CHANGELOG.md">Changelog</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues">Report Issues</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/discussions">Discussions</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/blob/main/CONTRIBUTING.md">Contributing</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/blob/main/CHANGELOG.md">Changelog</a></li>
                     </ul>
                 </div>
                 <div class="footer-col">
@@ -486,7 +486,7 @@ massconfigmerger merge --top-n 1000 --save-every 100</code></pre>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 MassConfigMerger. Released under MIT License.</p>
+                <p>&copy; 2024 ConfigStream. Released under GNU GPL v3 License.</p>
             </div>
         </div>
     </footer>

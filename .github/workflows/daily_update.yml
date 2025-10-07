@@ -18,7 +18,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Run aggregator tool
-        run: python src/massconfigmerger/aggregator_tool.py --with-merger --hours 24
+        run: python src/configstream/aggregator_tool.py --with-merger --hours 24
       - name: Set timestamp
         id: timestamp
         run: echo "time=$(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> "$GITHUB_OUTPUT"

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MassConfigMerger - VPN Subscription Aggregator</title>
+    <title>ConfigStream - VPN Subscription Aggregator</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -12,7 +12,7 @@
         <div class="container">
             <div class="nav-brand">
                 <i class="fas fa-network-wired"></i>
-                <span>MassConfigMerger</span>
+                <span>ConfigStream</span>
             </div>
             <ul class="nav-menu">
                 <li><a href="#features">Features</a></li>
@@ -20,7 +20,7 @@
                 <li><a href="quickstart.html">Quick Start</a></li>
                 <li><a href="roadmap.html">Roadmap</a></li>
                 <li><a href="api.html">API</a></li>
-                <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger" class="github-btn">
+                <li><a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" class="github-btn">
                     <i class="fab fa-github"></i> GitHub
                 </a></li>
             </ul>
@@ -49,7 +49,7 @@
                     <a href="docs.html" class="btn btn-secondary">
                         <i class="fas fa-book"></i> Read Docs
                     </a>
-                    <a href="https://github.com/yourusername/MassConfigMerger" class="btn btn-outline">
+                    <a href="https://github.com/yourusername/ConfigStream" class="btn btn-outline">
                         <i class="fab fa-github"></i> View on GitHub
                     </a>
                 </div>
@@ -83,14 +83,14 @@
                     <div class="terminal-body">
                         <div class="terminal-line">
                             <span class="prompt">$</span>
-                            <span class="command">pip install massconfigmerger</span>
+                            <span class="command">pip install configstream</span>
                         </div>
                         <div class="terminal-line output">
-                            Successfully installed massconfigmerger-2.0.0
+                            Successfully installed configstream-2.0.0
                         </div>
                         <div class="terminal-line">
                             <span class="prompt">$</span>
-                            <span class="command">massconfigmerger full --hours 24 --top-n 200</span>
+                            <span class="command">configstream full --hours 24 --top-n 200</span>
                         </div>
                         <div class="terminal-line output">
                             <span class="success">✓</span> Fetched 15,432 configs from 652 sources
@@ -198,16 +198,16 @@
             <div class="install-methods">
                 <div class="install-card">
                     <h3><i class="fab fa-python"></i> pip</h3>
-                    <pre><code>pip install massconfigmerger</code></pre>
+                    <pre><code>pip install configstream</code></pre>
                 </div>
                 <div class="install-card">
                     <h3><i class="fab fa-docker"></i> Docker</h3>
-                    <pre><code>docker pull massconfigmerger/massconfigmerger:latest</code></pre>
+                    <pre><code>docker pull configstream/configstream:latest</code></pre>
                 </div>
                 <div class="install-card">
                     <h3><i class="fab fa-git-alt"></i> Source</h3>
-                    <pre><code>git clone https://github.com/yourusername/MassConfigMerger.git
-cd MassConfigMerger
+                    <pre><code>git clone https://github.com/yourusername/ConfigStream.git
+cd ConfigStream
 pip install -e .</code></pre>
                 </div>
             </div>
@@ -226,21 +226,21 @@ pip install -e .</code></pre>
 
                 <div class="usage-tab-content active" id="basic">
                     <pre><code># Fetch and merge configurations
-massconfigmerger full
+configstream full
 
 # Fetch from last 12 hours
-massconfigmerger fetch --hours 12
+configstream fetch --hours 12
 
 # Test and merge with filtering
-massconfigmerger merge --include-protocols VMESS,VLESS --top-n 100
+configstream merge --include-protocols VMESS,VLESS --top-n 100
 
 # Retest existing subscription
-massconfigmerger retest output/vpn_subscription_raw.txt</code></pre>
+configstream retest output/vpn_subscription_raw.txt</code></pre>
                 </div>
 
                 <div class="usage-tab-content" id="advanced">
                     <pre><code># Advanced filtering and options
-massconfigmerger full \
+configstream full \
     --hours 24 \
     --fetch-protocols vmess,vless,trojan \
     --include-country US,GB,JP \
@@ -251,7 +251,7 @@ massconfigmerger full \
     --output-surge output/surge.conf
 
 # Custom configuration
-massconfigmerger merge \
+configstream merge \
     --config custom_config.yaml \
     --output-dir /path/to/output \
     --no-sort \
@@ -261,8 +261,8 @@ massconfigmerger merge \
                 <div class="usage-tab-content" id="docker">
                     <pre><code># Run with Docker
 docker run -v $(pwd)/output:/app/output \
-    massconfigmerger/massconfigmerger \
-    massconfigmerger full
+    configstream/configstream \
+    configstream full
 
 # Docker Compose
 docker-compose up -d
@@ -278,7 +278,7 @@ docker-compose up web
     <section class="cta">
         <div class="container">
             <h2>Ready to Get Started?</h2>
-            <p>Join developers using MassConfigMerger to automate VPN configuration management</p>
+            <p>Join developers using ConfigStream to automate VPN configuration management</p>
             <div class="cta-buttons">
                 <a href="quickstart.html" class="btn btn-primary btn-large">
                     <i class="fas fa-rocket"></i> Quick Start Guide
@@ -294,10 +294,10 @@ docker-compose up web
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-col">
-                    <h4>MassConfigMerger</h4>
+                    <h4>ConfigStream</h4>
                     <p>High-performance VPN configuration aggregator and merger.</p>
                     <div class="social-links">
-                        <a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger"><i class="fab fa-github"></i></a>
+                        <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream"><i class="fab fa-github"></i></a>
                     </div>
                 </div>
                 <div class="footer-col">
@@ -312,10 +312,10 @@ docker-compose up web
                 <div class="footer-col">
                     <h4>Resources</h4>
                     <ul>
-                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/issues">Report Issues</a></li>
-                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/discussions">Discussions</a></li>
-                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/blob/main/CONTRIBUTING.md">Contributing</a></li>
-                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/blob/main/CHANGELOG.md">Changelog</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues">Report Issues</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/discussions">Discussions</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/blob/main/CONTRIBUTING.md">Contributing</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/blob/main/CHANGELOG.md">Changelog</a></li>
                     </ul>
                 </div>
                 <div class="footer-col">
@@ -329,7 +329,7 @@ docker-compose up web
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 MassConfigMerger. Released under MIT License.</p>
+                <p>&copy; 2024 ConfigStream. Released under GNU GPL v3 License.</p>
             </div>
         </div>
     </footer>

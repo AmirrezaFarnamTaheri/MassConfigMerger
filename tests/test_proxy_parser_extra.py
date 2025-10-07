@@ -5,7 +5,7 @@ import json
 from unittest.mock import patch
 
 import pytest
-from massconfigmerger.core.proxy_parser import ProxyParser
+from configstream.core.proxy_parser import ProxyParser
 
 
 @pytest.mark.parametrize(
@@ -16,8 +16,8 @@ from massconfigmerger.core.proxy_parser import ProxyParser
         json.JSONDecodeError("Test JSONDecodeError", "", 0),
     ],
 )
-@patch("massconfigmerger.core.parsers.vmess.VmessParser.parse")
-@patch("massconfigmerger.core.proxy_parser.logging.debug")
+@patch("configstream.core.parsers.vmess.VmessParser.parse")
+@patch("configstream.core.proxy_parser.logging.debug")
 def test_config_to_clash_proxy_exception_handling(
     mock_logging_debug, mock_vmess_parse, exception_to_raise
 ):

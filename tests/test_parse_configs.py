@@ -1,7 +1,7 @@
 import base64
 
-from massconfigmerger.core import utils
-from massconfigmerger.constants import MAX_DECODE_SIZE
+from configstream.core import utils
+from configstream.constants import MAX_DECODE_SIZE
 
 
 def test_multiple_links_same_line():

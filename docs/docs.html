@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Documentation - MassConfigMerger</title>
+    <title>Documentation - ConfigStream</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/docs.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -13,7 +13,7 @@
         <div class="container">
             <div class="nav-brand">
                 <i class="fas fa-network-wired"></i>
-                <span>MassConfigMerger</span>
+                <span>ConfigStream</span>
             </div>
             <ul class="nav-menu">
                 <li><a href="index.html">Home</a></li>
@@ -21,7 +21,7 @@
                 <li><a href="quickstart.html">Quick Start</a></li>
                 <li><a href="roadmap.html">Roadmap</a></li>
                 <li><a href="api.html">API</a></li>
-                <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger" class="github-btn">
+                <li><a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" class="github-btn">
                     <i class="fab fa-github"></i> GitHub
                 </a></li>
             </ul>
@@ -81,12 +81,12 @@
         <main class="docs-content">
             <div class="docs-header">
                 <h1>Full Documentation</h1>
-                <p class="lead">A comprehensive guide to MassConfigMerger</p>
+                <p class="lead">A comprehensive guide to ConfigStream</p>
             </div>
 
             <section id="introduction" class="docs-section">
                 <h2><i class="fas fa-info-circle"></i> Introduction</h2>
-                <p>MassConfigMerger is a toolchain for collecting, testing, and merging free VPN configuration links from public sources. This project provides a command-line tool to automatically fetch VPN configurations, test their connectivity, and merge them into a single, performance-sorted subscription link.</p>
+                <p>ConfigStream is a toolchain for collecting, testing, and merging free VPN configuration links from public sources. This project provides a command-line tool to automatically fetch VPN configurations, test their connectivity, and merge them into a single, performance-sorted subscription link.</p>
             </section>
 
             <section id="security" class="docs-section">
@@ -105,23 +105,23 @@
 
             <section id="installation" class="docs-section">
                 <h2><i class="fas fa-download"></i> Installation</h2>
-                <p>You need Python 3.8 or newer. You can install MassConfigMerger using one of the following methods:</p>
+                <p>You need Python 3.8 or newer. You can install ConfigStream using one of the following methods:</p>
 
                 <h3>Method 1: pip (Recommended)</h3>
-                <div class="code-block"><pre><code>pip install massconfigmerger</code></pre></div>
+                <div class="code-block"><pre><code>pip install configstream</code></pre></div>
 
                 <h3>Method 2: Docker</h3>
-                <div class="code-block"><pre><code>docker pull massconfigmerger/massconfigmerger:latest</code></pre></div>
+                <div class="code-block"><pre><code>docker pull configstream/configstream:latest</code></pre></div>
 
                 <h3>Method 3: From Source</h3>
-                <div class="code-block"><pre><code>git clone https://github.com/AmirrezaFarnamTaheri/MassConfigMerger.git
-cd MassConfigMerger
+                <div class="code-block"><pre><code>git clone https://github.com/AmirrezaFarnamTaheri/ConfigStream.git
+cd ConfigStream
 pip install -e .[dev]</code></pre></div>
             </section>
 
             <section id="usage-cli" class="docs-section">
                 <h2><i class="fas fa-terminal"></i> CLI Commands</h2>
-                <p>The main command is <code>massconfigmerger</code>, which has several subcommands:</p>
+                <p>The main command is <code>configstream</code>, which has several subcommands:</p>
                 <ul>
                     <li><code>fetch</code>: Gathers configurations from sources.</li>
                     <li><code>merge</code>: Tests and merges configurations.</li>
@@ -129,37 +129,37 @@ pip install -e .[dev]</code></pre></div>
                     <li><code>full</code>: Runs fetch and merge sequentially.</li>
                     <li><code>sources</code>: Manages the list of sources.</li>
                 </ul>
-                <p>For more help, run <code>massconfigmerger &lt;command&gt; --help</code>.</p>
+                <p>For more help, run <code>configstream &lt;command&gt; --help</code>.</p>
             </section>
 
             <section id="usage-config" class="docs-section">
                 <h2><i class="fas fa-cog"></i> Configuration</h2>
-                <p>Copy <code>config.yaml.example</code> to <code>config.yaml</code> and customize it. You can override settings with environment variables (e.g., <code>MASSCONFIGMERGER_NETWORK__CONCURRENT_LIMIT=50</code>).</p>
+                <p>Copy <code>config.yaml.example</code> to <code>config.yaml</code> and customize it. You can override settings with environment variables (e.g., <code>CONFIGSTREAM_NETWORK__CONCURRENT_LIMIT=50</code>).</p>
             </section>
 
             <section id="usage-filtering" class="docs-section">
                 <h2><i class="fas fa-filter"></i> Filtering</h2>
                 <p>You can filter by protocol, country, or regex patterns.</p>
                 <div class="code-block"><pre><code># Filter by protocol
-massconfigmerger merge --include-protocols VMESS,VLESS
+configstream merge --include-protocols VMESS,VLESS
 
 # Filter by country
-massconfigmerger merge --geoip-db GeoLite2-Country.mmdb --include-country US,CA
+configstream merge --geoip-db GeoLite2-Country.mmdb --include-country US,CA
 
 # Filter by regex
-massconfigmerger merge --include-pattern "premium|vip"</code></pre></div>
+configstream merge --include-pattern "premium|vip"</code></pre></div>
             </section>
 
             <section id="usage-sources" class="docs-section">
                 <h2><i class="fas fa-list-ul"></i> Managing Sources</h2>
                 <div class="code-block"><pre><code># List all sources
-massconfigmerger sources list
+configstream sources list
 
 # Add a new source
-massconfigmerger sources add "http://example.com/new-source"
+configstream sources add "http://example.com/new-source"
 
 # Remove a source
-massconfigmerger sources remove "http://example.com/new-source"</code></pre></div>
+configstream sources remove "http://example.com/new-source"</code></pre></div>
             </section>
 
             <section id="usage-output" class="docs-section">
@@ -179,7 +179,7 @@ massconfigmerger sources remove "http://example.com/new-source"</code></pre></di
 
             <section id="adv-telegram" class="docs-section">
                 <h2><i class="fab fa-telegram-plane"></i> Telegram Bot</h2>
-                <p>Set <code>telegram_api_id</code>, <code>telegram_api_hash</code>, and <code>telegram_bot_token</code> in <code>config.yaml</code> to enable the bot interface. Run with <code>massconfigmerger fetch --bot</code>.</p>
+                <p>Set <code>telegram_api_id</code>, <code>telegram_api_hash</code>, and <code>telegram_bot_token</code> in <code>config.yaml</code> to enable the bot interface. Run with <code>configstream fetch --bot</code>.</p>
             </section>
 
             <section id="adv-docker" class="docs-section">
@@ -189,12 +189,12 @@ massconfigmerger sources remove "http://example.com/new-source"</code></pre></di
 
             <section id="adv-web" class="docs-section">
                 <h2><i class="fas fa-globe"></i> Web Interface</h2>
-                <p>Install with <code>pip install massconfigmerger[web]</code> and run with <code>python -m massconfigmerger.web</code>.</p>
+                <p>Install with <code>pip install configstream[web]</code> and run with <code>python -m configstream.web</code>.</p>
             </section>
 
             <section id="adv-reliability" class="docs-section">
                 <h2><i class="fas fa-chart-line"></i> Reliability Sorting</h2>
-                <p>Use <code>massconfigmerger merge --sort-by reliability</code> to rank servers by past success rates.</p>
+                <p>Use <code>configstream merge --sort-by reliability</code> to rank servers by past success rates.</p>
             </section>
 
             <section id="adv-gist" class="docs-section">
@@ -239,10 +239,10 @@ massconfigmerger sources remove "http://example.com/new-source"</code></pre></di
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-col">
-                    <h4>MassConfigMerger</h4>
+                    <h4>ConfigStream</h4>
                     <p>High-performance VPN configuration aggregator and merger.</p>
                     <div class="social-links">
-                        <a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger"><i class="fab fa-github"></i></a>
+                        <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream"><i class="fab fa-github"></i></a>
                     </div>
                 </div>
                 <div class="footer-col">
@@ -257,10 +257,10 @@ massconfigmerger sources remove "http://example.com/new-source"</code></pre></di
                 <div class="footer-col">
                     <h4>Resources</h4>
                     <ul>
-                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/issues">Report Issues</a></li>
-                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/discussions">Discussions</a></li>
-                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/blob/main/CONTRIBUTING.md">Contributing</a></li>
-                        <li><a href="https://github.com/AmirrezaFarnamTaheri/MassConfigMerger/blob/main/CHANGELOG.md">Changelog</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues">Report Issues</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/discussions">Discussions</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/blob/main/CONTRIBUTING.md">Contributing</a></li>
+                        <li><a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/blob/main/CHANGELOG.md">Changelog</a></li>
                     </ul>
                 </div>
                 <div class="footer-col">
@@ -273,7 +273,7 @@ massconfigmerger sources remove "http://example.com/new-source"</code></pre></di
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 MassConfigMerger. Released under MIT License.</p>
+                <p>&copy; 2024 ConfigStream. Released under GNU GPL v3 License.</p>
             </div>
         </div>
     </footer>

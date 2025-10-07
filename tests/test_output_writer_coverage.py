@@ -2,9 +2,9 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch
 
-from massconfigmerger.config import Settings
-from massconfigmerger.output_writer import write_all_outputs, write_clash_proxies
-from massconfigmerger.core.config_processor import ConfigResult
+from configstream.config import Settings
+from configstream.output_writer import write_all_outputs, write_clash_proxies
+from configstream.core.config_processor import ConfigResult
 
 @pytest.fixture
 def mock_results() -> list[ConfigResult]:
@@ -33,7 +33,7 @@ def test_write_all_outputs_html_enabled(mock_settings_fs: Settings, mock_results
     """Test that the HTML report is generated when enabled."""
     mock_settings_fs.output.write_html = True
     fs.create_dir(mock_settings_fs.output.output_dir)
-    with patch("massconfigmerger.output_writer.generate_html_report") as mock_gen_html:
+    with patch("configstream.output_writer.generate_html_report") as mock_gen_html:
         write_all_outputs(mock_results, mock_settings_fs, {}, 0.0)
         mock_gen_html.assert_called_once()
 
@@ -43,8 +43,8 @@ def test_write_all_outputs_surge_enabled(mock_settings_fs: Settings, mock_result
     fs.create_dir(mock_settings_fs.output.output_dir)
     surge_content = "[Proxy]\nMyProxy = http, example.com, 80"
 
-    with patch("massconfigmerger.output_writer.generate_surge_conf", return_value=surge_content), \
-         patch("massconfigmerger.output_writer.config_to_clash_proxy", return_value={"name": "MyProxy"}):
+    with patch("configstream.output_writer.generate_surge_conf", return_value=surge_content), \
+         patch("configstream.output_writer.config_to_clash_proxy", return_value={"name": "MyProxy"}):
         written_files = write_all_outputs(mock_results, mock_settings_fs, {}, 0.0)
 
         surge_file = mock_settings_fs.output.output_dir / "surge.conf"
@@ -57,15 +57,15 @@ def test_write_all_outputs_qx_enabled(mock_settings_fs: Settings, mock_results: 
     fs.create_dir(mock_settings_fs.output.output_dir)
     qx_content = "vmess=example.com:443"
 
-    with patch("massconfigmerger.output_writer.generate_qx_conf", return_value=qx_content), \
-         patch("massconfigmerger.output_writer.config_to_clash_proxy", return_value={"name": "MyProxy"}):
+    with patch("configstream.output_writer.generate_qx_conf", return_value=qx_content), \
+         patch("configstream.output_writer.config_to_clash_proxy", return_value={"name": "MyProxy"}):
         written_files = write_all_outputs(mock_results, mock_settings_fs, {}, 0.0)
 
         qx_file = mock_settings_fs.output.output_dir / "qx.conf"
         assert str(qx_file) in [str(p) for p in written_files]
         assert qx_file.read_text() == qx_content
 
-@patch("massconfigmerger.output_writer.config_to_clash_proxy", return_value=None)
+@patch("configstream.output_writer.config_to_clash_proxy", return_value=None)
 def test_write_clash_proxies_no_valid_proxies(mock_clash_proxy, tmp_path: Path, mock_results: list[ConfigResult]):
     """Test write_clash_proxies when no configs can be converted."""
     output_file = write_clash_proxies(mock_results, tmp_path)

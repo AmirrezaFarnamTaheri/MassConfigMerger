@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import base64
 
-from massconfigmerger.core.proxy_parser import ProxyParser
+from configstream.core.proxy_parser import ProxyParser
 
 def test_parse_ss_base64_encoded():
     """Test parsing of a base64-encoded Shadowsocks link."""

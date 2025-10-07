@@ -7,7 +7,7 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from massconfigmerger.config import (
+from configstream.config import (
     Settings,
     TelegramSettings,
     YamlConfigSettingsSource,
@@ -57,13 +57,13 @@ def test_yaml_config_source_invalid_yaml(tmp_path: Path):
 
 def test_load_config_no_project_root(monkeypatch):
     """Test load_config when find_project_root raises FileNotFoundError."""
-    from massconfigmerger.constants import CONFIG_FILE_NAME
+    from configstream.constants import CONFIG_FILE_NAME
 
     monkeypatch.setattr(
-        "massconfigmerger.config.find_project_root",
+        "configstream.config.find_project_root",
         lambda: (_ for _ in ()).throw(FileNotFoundError),
     )
-    with patch("massconfigmerger.config.logging.warning") as mock_warning:
+    with patch("configstream.config.logging.warning") as mock_warning:
         settings = load_config()
         assert isinstance(settings, Settings)
         mock_warning.assert_called_once_with(
@@ -113,7 +113,7 @@ def test_load_config_finds_default_config(fs):
 )
 def test_output_settings_path_traversal_prevention(path_field, malicious_path):
     """Test that path traversal attempts are blocked in OutputSettings."""
-    from massconfigmerger.config import OutputSettings
+    from configstream.config import OutputSettings
 
     with pytest.raises(ValidationError) as exc_info:
         OutputSettings(**{path_field: malicious_path})
@@ -123,7 +123,7 @@ def test_output_settings_path_traversal_prevention(path_field, malicious_path):
 
 def test_output_settings_valid_paths():
     """Test that valid relative paths are accepted in OutputSettings."""
-    from massconfigmerger.config import OutputSettings
+    from configstream.config import OutputSettings
 
     try:
         settings = OutputSettings(

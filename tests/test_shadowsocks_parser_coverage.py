@@ -1,6 +1,6 @@
 import pytest
-from massconfigmerger.core.parsers.shadowsocks import ShadowsocksParser
-from massconfigmerger.exceptions import ParserError
+from configstream.core.parsers.shadowsocks import ShadowsocksParser
+from configstream.exceptions import ParserError
 
 def test_shadowsocks_parser_userinfo_no_password():
     """Test that ss link with username but no password in userinfo raises ParserError."""

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import pytest
 
-from massconfigmerger.config import Settings
-from massconfigmerger.core.config_processor import ConfigProcessor, ConfigResult
-from massconfigmerger.core.utils import get_sort_key, haversine_distance
+from configstream.config import Settings
+from configstream.core.config_processor import ConfigProcessor, ConfigResult
+from configstream.core.utils import get_sort_key, haversine_distance
 
 
 def test_filter_by_isp():

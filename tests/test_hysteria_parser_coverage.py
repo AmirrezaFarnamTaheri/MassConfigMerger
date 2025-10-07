@@ -1,5 +1,5 @@
 import pytest
-from massconfigmerger.core.parsers.hysteria import HysteriaParser
+from configstream.core.parsers.hysteria import HysteriaParser
 
 def test_hysteria_parser_username_as_password():
     """Test that username is used as password if password is not present."""

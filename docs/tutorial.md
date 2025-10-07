@@ -2,8 +2,8 @@
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/AmirrezaFarnamTaheri/MassConfigMerger.git
-   cd MassConfigMerger
+   git clone https://github.com/AmirrezaFarnamTaheri/ConfigStream.git
+   cd ConfigStream
    ```
 2. **Install the requirements:**
    ```bash
@@ -11,24 +11,24 @@
    # Install the package for CLI commands
    pip install -e .
    ```
-3. **Run `massconfigmerger fetch`** to grab fresh configuration links:
+3. **Run `configstream fetch`** to grab fresh configuration links:
    ```bash
-   massconfigmerger fetch --hours 12
+   configstream fetch --hours 12
    ```
-   > **Quick start:** Run `massconfigmerger full --hours 12` to fetch and merge
+   > **Quick start:** Run `configstream full --hours 12` to fetch and merge
    > everything in one step.
-4. **Run `massconfigmerger merge`** to test and merge all configs:
+4. **Run `configstream merge`** to test and merge all configs:
    ```bash
-   massconfigmerger merge
+   configstream merge
    ```
    Example output showing the new cumulative progress bar:
    ```
    🔄 [2/6] Fetching configs from 120 available sources...
    Testing: 50/120 cfg
    ```
-5. **Retest existing results** anytime with `massconfigmerger retest`:
+5. **Retest existing results** anytime with `configstream retest`:
    ```bash
-   massconfigmerger retest output/vpn_subscription_raw.txt
+   configstream retest output/vpn_subscription_raw.txt
    ```
 6. Import the files in `output/` into your VPN client or share the base64 link.
 
@@ -36,18 +36,18 @@
 
 ```mermaid
 graph TD
-    A[Source lists] --> B[massconfigmerger fetch]
+    A[Source lists] --> B[configstream fetch]
     B --> C[Deduplicate links]
-    C --> D[massconfigmerger merge]
+    C --> D[configstream merge]
     D --> E[Test & sort]
-    E --> F[massconfigmerger retest]
+    E --> F[configstream retest]
     F --> G[(Output files)]
 ```
 The pipeline works as follows:
-1. `massconfigmerger fetch` collects subscription URLs from `sources.txt` and `channels.txt`.
+1. `configstream fetch` collects subscription URLs from `sources.txt` and `channels.txt`.
 2. Duplicate links are removed so each configuration is processed only once.
-3. `massconfigmerger merge` downloads every config, tests connectivity and orders the servers by speed.
-4. `massconfigmerger retest` can optionally re-check a previous run for up-to-date latency.
+3. `configstream merge` downloads every config, tests connectivity and orders the servers by speed.
+4. `configstream retest` can optionally re-check a previous run for up-to-date latency.
 5. All cleaned and sorted files are written to the `output/` folder, ready to import into your VPN client.
 
 
@@ -57,7 +57,7 @@ Build the image and run the merger without installing Python locally:
 
 ```bash
 docker build -t vpn-merger .
-docker run --rm vpn-merger massconfigmerger full
+docker run --rm vpn-merger configstream full
 ```
 
 ### Docker Compose
@@ -70,8 +70,8 @@ docker compose build
 docker compose up -d
 ```
 
-By default the `merger` service runs `massconfigmerger merge` once a day. Start the optional
-`aggregator` service to run `massconfigmerger full` periodically:
+By default the `merger` service runs `configstream merge` once a day. Start the optional
+`aggregator` service to run `configstream full` periodically:
 
 ```bash
 docker compose --profile aggregator up -d
@@ -165,7 +165,7 @@ Past test results are stored in `proxy_history.db`. Use them to order servers
 by stability:
 
 ```bash
-massconfigmerger merge --sort-by reliability
+configstream merge --sort-by reliability
 ```
 Set a custom path with the `history_db_file` option in
 [`config.yaml.example`](../config.yaml.example).
@@ -174,10 +174,10 @@ Set a custom path with the `history_db_file` option in
 
 The script automates a simple but powerful process to create the best possible subscription link from public sources:
 
-1.  **📰 Gathers Sources**: `massconfigmerger fetch` reads `sources.txt` and `channels.txt`.
+1.  **📰 Gathers Sources**: `configstream fetch` reads `sources.txt` and `channels.txt`.
 2.  **✅ Tests Source Availability**: It quickly checks each of these links to see which ones are currently online and accessible.
 3.  **📥 Fetches All Configs**: It visits every active link and downloads all the individual VPN server configurations (`VLESS://`, `VMess://`, etc.).
-4.  **⚡ Tests Server Performance**: `massconfigmerger merge` attempts a direct connection to each individual server to measure its real-world connection speed (latency/ping). Servers that are offline or too slow are discarded.
+4.  **⚡ Tests Server Performance**: `configstream merge` attempts a direct connection to each individual server to measure its real-world connection speed (latency/ping). Servers that are offline or too slow are discarded.
 5.  **🧹 Cleans and Sorts**: Finally, it removes any duplicate servers and sorts the remaining, working servers from **fastest to slowest**.
 6.  **📦 Generates Outputs**: It saves this final, sorted list into multiple formats, including the `base64` subscription file that you use in your app.
 7.  **📁 Optional Batch Saving**: With `--save-every` (default `100`), the script periodically saves intermediate results while it runs.
@@ -234,7 +234,7 @@ This is the best method. You will create a personal copy (a "fork") of this repo
 3.  Click on the file named `vpn_subscription_base64.txt`.
 4.  On the file view page, click the **`Raw`** button.
 5.  **This is your link\!** The URL in your browser's address bar is your permanent, auto-updating subscription link. Copy it. It will look like this:
-    `https://raw.githubusercontent.com/YOUR_USERNAME/MassConfigMerger/main/output/vpn_subscription_base64.txt`
+    `https://raw.githubusercontent.com/YOUR_USERNAME/ConfigStream/main/output/vpn_subscription_base64.txt`
 
 This workflow runs automatically every day and commits the latest results to the `output/` folder so your link stays updated.
 
@@ -265,7 +265,7 @@ If you don't have it, download from [python.org](https://www.python.org/download
 In the same terminal, run:
 
 ```bash
-massconfigmerger full
+configstream full
 ```
 
 After 5-15 minutes, the `output` folder will appear with your files. To use the output, upload the content of `vpn_subscription_base64.txt` somewhere (like a private [GitHub Gist](https://gist.github.com/)) and use that file's "Raw" URL.
@@ -273,8 +273,8 @@ After 5-15 minutes, the `output` folder will appear with your files. To use the 
 ### Method 3: Using Google Colab (Easy, No Setup)
 
 1.  Go to [colab.research.google.com](https://colab.research.google.com) and click **`File`** -\> **`New notebook`**.
-2.  In a cell, run `!pip install massconfigmerger`.
-3.  In a new cell, run `!massconfigmerger full`.
+2.  In a cell, run `!pip install configstream`.
+3.  In a new cell, run `!configstream full`.
 4.  When it finishes, find the `output` folder in the file explorer on the left. Right-click the files to download them. (Like Method 2, you'll need to host the `base64.txt` file's content to get a usable link).
 
 -----
@@ -393,10 +393,10 @@ Users of **Clash** or **Clash Meta** can import the provided `clash.yaml` for a 
 Pass `--output-surge` or `--output-qx` to write files for these apps:
 
 ```bash
-massconfigmerger merge --output-surge surge.conf --output-qx quantumultx.conf
+configstream merge --output-surge surge.conf --output-qx quantumultx.conf
 ```
 
 The helpers used for this conversion live in
-[`src/massconfigmerger/advanced_converters.py`](../src/massconfigmerger/advanced_converters.py).
+[`src/configstream/advanced_converters.py`](../src/configstream/advanced_converters.py).
 
 -----

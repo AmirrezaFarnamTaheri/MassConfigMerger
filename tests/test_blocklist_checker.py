@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from aiohttp import ClientError
 
-from massconfigmerger.config import Settings
-from massconfigmerger.tester import BlocklistChecker
+from configstream.config import Settings
+from configstream.tester import BlocklistChecker
 
 
 @pytest.fixture

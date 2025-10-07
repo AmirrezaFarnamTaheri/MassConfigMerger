@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 from unittest.mock import patch, AsyncMock
 
-from massconfigmerger.config import Settings
-from massconfigmerger.core.config_processor import ConfigProcessor
+from configstream.config import Settings
+from configstream.core.config_processor import ConfigProcessor
 
 
 def test_filter_configs_no_rules():
@@ -22,7 +22,7 @@ def test_filter_configs_no_rules():
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.core.config_processor.ConfigProcessor._test_config")
+@patch("configstream.core.config_processor.ConfigProcessor._test_config")
 async def test_test_configs_worker_failure(mock_test_config: AsyncMock):
     """Test that the test_configs method handles a failure in a worker."""
     mock_test_config.side_effect = Exception("Test worker failure")
@@ -70,7 +70,7 @@ def test_apply_tuning_wrapper():
     processor = ConfigProcessor(settings)
     config = "vless://test"
 
-    with patch("massconfigmerger.core.config_processor.config_normalizer.apply_tuning") as mock_apply:
+    with patch("configstream.core.config_processor.config_normalizer.apply_tuning") as mock_apply:
         mock_apply.return_value = "tuned-config"
         result = processor.apply_tuning(config)
         mock_apply.assert_called_once_with(config, settings)

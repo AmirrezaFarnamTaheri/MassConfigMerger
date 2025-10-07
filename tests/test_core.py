@@ -5,10 +5,10 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from massconfigmerger.config import Settings
-from massconfigmerger.core.config_processor import ConfigProcessor, ConfigResult
-from massconfigmerger.core.output_generator import OutputGenerator
-from massconfigmerger.core.source_manager import SourceManager
+from configstream.config import Settings
+from configstream.core.config_processor import ConfigProcessor, ConfigResult
+from configstream.core.output_generator import OutputGenerator
+from configstream.core.source_manager import SourceManager
 
 # --- Valid Configs for Testing ---
 VMESS_CONFIG_PAYLOAD = json.dumps(
@@ -35,7 +35,7 @@ def settings():
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.core.source_manager.utils.choose_proxy", return_value=None)
+@patch("configstream.core.source_manager.utils.choose_proxy", return_value=None)
 async def test_source_manager_fetch_sources(mock_choose_proxy, settings):
     """Test that the SourceManager can fetch and parse sources."""
     source_manager = SourceManager(settings)
@@ -54,7 +54,7 @@ async def test_source_manager_fetch_sources(mock_choose_proxy, settings):
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.core.source_manager.utils.choose_proxy", return_value=None)
+@patch("configstream.core.source_manager.utils.choose_proxy", return_value=None)
 async def test_source_manager_check_and_update_sources(mock_choose_proxy, settings, tmp_path):
     """Test that the SourceManager can check and update sources."""
     source_manager = SourceManager(settings)

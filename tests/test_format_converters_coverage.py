@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from unittest.mock import patch
 
-from massconfigmerger.core.format_converters import FormatConverter
+from configstream.core.format_converters import FormatConverter
 
 
 def test_generate_clash_proxies_exception_handling(caplog):
@@ -13,7 +13,7 @@ def test_generate_clash_proxies_exception_handling(caplog):
     caplog.set_level(logging.DEBUG)
 
     # Mock the parser to raise an exception
-    with patch("massconfigmerger.core.format_converters.ProxyParser.config_to_clash_proxy") as mock_parse:
+    with patch("configstream.core.format_converters.ProxyParser.config_to_clash_proxy") as mock_parse:
         mock_parse.side_effect = Exception("Test parsing error")
 
         # Act
