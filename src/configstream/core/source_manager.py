@@ -242,22 +242,26 @@ class SourceManager:
             ):
                 try:
                     url, ok = await fut
+                except asyncio.CancelledError:
+                    # Propagate cancellation without marking as failure
+                    raise
                 except Exception as e:
                     logging.debug("Unhandled exception in source check: %s", e)
-                    url, ok = ("<unknown>", False)
-                if ok:
+                    url, ok = (None, False)
+                if ok and url:
                     failures.pop(url, None)
                     valid_sources.append(url)
-                else:
+                elif url:
                     failures[url] = failures.get(url, 0) + 1
-                    if prune and failures[url] >= max_failures and url != "<unknown>":
+                    if prune and failures[url] >= max_failures:
                         removed.append(url)
         finally:
             for t in tasks:
                 if not t.done():
                     t.cancel()
-            # Gather tasks to suppress warnings about un-awaited tasks
             await asyncio.gather(*tasks, return_exceptions=True)
+            # Ensure we close the session created above to avoid leaks
+            await self.close_session()
 
         if prune:
             remaining = [u for u in sources if u not in removed]
