@@ -71,19 +71,21 @@ def _run_async_task(coro: asyncio.Future) -> Any:
 
 
 def _extract_api_token() -> Optional[str]:
-    data = request.get_json(silent=True) or {}
+    """Extract the API token securely from request headers only."""
     header_token = request.headers.get("X-API-Key")
-    if not header_token:
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header.lower().startswith("bearer "):
-            header_token = auth_header.split(None, 1)[1]
-    form_token = request.form.get("token") if request.form else None
-    query_token = request.args.get("token")
-    body_token = data.get("token") if isinstance(data, dict) else None
-    for candidate in (header_token, body_token, form_token, query_token):
-        if candidate:
-            return str(candidate)
-    return None
+    auth_header = request.headers.get("Authorization", "")
+
+    token_from_header = header_token.strip() if header_token and header_token.strip() else None
+
+    token_from_bearer: Optional[str] = None
+    if auth_header:
+        scheme, _, value = auth_header.partition(" ")
+        if scheme.strip().lower() == "bearer":
+            value = value.strip()
+            token_from_bearer = value if value else None
+
+    # Prefer X-API-Key over Bearer if both are present
+    return token_from_header or token_from_bearer
 
 
 def _get_request_settings():

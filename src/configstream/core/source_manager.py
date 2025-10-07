@@ -229,20 +229,40 @@ class SourceManager:
                 metrics.SOURCES_FAILED_TOTAL.inc()
                 return url, False
 
-        for url in tqdm(
-            sources,
-            total=len(sources),
-            desc="Checking sources",
-            unit="source",
-        ):
-            url, ok = await check(url)
-            if ok:
-                failures.pop(url, None)
-                valid_sources.append(url)
-            else:
-                failures[url] = failures.get(url, 0) + 1
-                if prune and failures[url] >= max_failures:
-                    removed.append(url)
+        tasks = []
+        for u in sources:
+            async def _wrapped_check(url: str) -> tuple[str, bool]:
+                try:
+                    return await check(url)
+                except asyncio.CancelledError:
+                    raise
+                except Exception as e:
+                    logging.debug("Unhandled exception in source check for %s: %s", url, e)
+                    return url, False
+            tasks.append(asyncio.create_task(_wrapped_check(u)))
+        if not tasks:
+            return []
+
+        try:
+            for fut in tqdm(
+                asyncio.as_completed(tasks),
+                total=len(tasks),
+                desc="Checking sources",
+                unit="source",
+            ):
+                url, ok = await fut
+                if ok:
+                    failures.pop(url, None)
+                    valid_sources.append(url)
+                else:
+                    failures[url] = failures.get(url, 0) + 1
+                    if prune and failures[url] >= max_failures:
+                        removed.append(url)
+        finally:
+            for t in tasks:
+                if not t.done():
+                    t.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
 
         if prune:
             remaining = [u for u in sources if u not in removed]

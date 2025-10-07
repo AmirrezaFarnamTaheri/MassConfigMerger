@@ -24,7 +24,7 @@ import aiohttp
 
 from ..config import Settings
 from ..constants import BASE64_RE, MAX_DECODE_SIZE, PROTOCOL_RE
-from ..exceptions import NetworkError
+from ..exceptions import ConfigError, NetworkError
 from .config_processor import ConfigResult
 
 SAFE_URL_SCHEMES = ("http", "https")
@@ -273,15 +273,23 @@ def choose_proxy(cfg: Settings) -> str | None:
     Return the appropriate proxy URL from settings.
 
     This function prioritizes the SOCKS proxy over the HTTP proxy if both
-    are defined in the application settings.
+    are defined. It also handles empty or whitespace-only proxy strings
+    by treating them as None.
 
     Args:
         cfg: The application settings object.
 
     Returns:
         The proxy URL string, or None if no proxy is configured.
+    Raises:
+        ConfigError: If both http_proxy and socks_proxy are defined.
     """
-    return cfg.network.socks_proxy or cfg.network.http_proxy
+    http_proxy = (cfg.network.http_proxy or "").strip() or None
+    socks_proxy = (cfg.network.socks_proxy or "").strip() or None
+
+    if http_proxy and socks_proxy:
+        raise ConfigError("http_proxy and socks_proxy cannot be used simultaneously")
+    return socks_proxy or http_proxy
 
 
 async def fetch_text(
