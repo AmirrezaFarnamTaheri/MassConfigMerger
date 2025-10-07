@@ -5,6 +5,7 @@ import os
 import shutil
 import sys
 from pathlib import Path
+from typing import Optional, Union
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC_PATH = ROOT / "src"
@@ -19,7 +20,7 @@ import pytest
 from configstream.config import Settings
 
 
-def _load_optional_plugin(name: str) -> str | None:
+def _load_optional_plugin(name: str) -> Optional[str]:
     """Try to load an optional pytest plugin.
 
     When running in the execution environment used for these kata style tasks the
@@ -78,21 +79,21 @@ class SimpleFakeFilesystem:
         self._created_dirs: set[Path] = set()
         self._created_files: set[Path] = set()
 
-    def _real_path(self, path: Path | str) -> Path:
+    def _real_path(self, path: Union[Path, str]) -> Path:
         path_obj = Path(path)
         if path_obj.is_absolute():
             # Join absolute paths to the fake root, stripping their anchor.
             return self.root.joinpath(path_obj.relative_to(path_obj.anchor))
         return self.root.joinpath(path_obj)
 
-    def create_dir(self, path: Path | str) -> Path:
+    def create_dir(self, path: Union[Path, str]) -> Path:
         real_path = self._real_path(path)
         if not real_path.exists():
             real_path.mkdir(parents=True, exist_ok=True)
             self._created_dirs.add(real_path)
         return real_path
 
-    def create_file(self, path: Path | str, contents: str | bytes | bytearray | None = "") -> Path:
+    def create_file(self, path: Union[Path, str], contents: Optional[Union[str, bytes, bytearray]] = "") -> Path:
         real_path = self._real_path(path)
         real_path.parent.mkdir(parents=True, exist_ok=True)
         if isinstance(contents, (bytes, bytearray)):
