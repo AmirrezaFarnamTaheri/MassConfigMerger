@@ -2,82 +2,34 @@
 
 {% block title %}Logs - ConfigStream{% endblock %}
 
-{% block head_extra %}
+{% block content %}
+<div class="card">
+    <h2>
+        <div class="card-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+            </svg>
+        </div>
+        Application Logs
+    </h2>
+    <p style="color: #64748b; margin-bottom: 1rem;">
+        Displaying the last 100 lines of the application log file.
+    </p>
+    <div class="log-container">
+        <pre><code>{{ log_content }}</code></pre>
+    </div>
+</div>
 <style>
-    .controls {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-        flex-wrap: wrap;
-    }
-    button {
-        padding: 0.75rem 1.5rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        border-radius: 10px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    .log-container {
-        background: #1e293b;
+    .log-container pre {
+        background-color: #1e293b;
         color: #e2e8f0;
+        border: 1px solid #334155;
+        border-radius: 10px;
         padding: 1.5rem;
-        border-radius: 12px;
-        font-family: 'Monaco', 'Courier New', monospace;
-        font-size: 0.875rem;
-        line-height: 1.8;
+        white-space: pre-wrap;
+        word-wrap: break-word;
         max-height: 600px;
         overflow-y: auto;
     }
-    .log-line {
-        margin-bottom: 0.25rem;
-        white-space: pre-wrap;
-        word-break: break-all;
-    }
-    .log-error {
-        color: #fca5a5;
-        font-weight: 600;
-    }
-    .log-warning {
-        color: #fcd34d;
-    }
-    .log-info {
-        color: #93c5fd;
-    }
 </style>
-{% endblock %}
-
-{% block content %}
-<div class="controls">
-    <button onclick="location.reload()">🔄 Refresh</button>
-    <button onclick="clearLogs()">🗑️ Clear Display</button>
-    <button onclick="scrollToBottom()">⬇️ Scroll to Bottom</button>
-</div>
-
-<div class="log-container" id="logContainer">
-    {% for line in log_lines %}
-    <div class="log-line {% if 'ERROR' in line %}log-error{% elif 'WARNING' in line %}log-warning{% elif 'INFO' in line %}log-info{% endif %}">{{ line }}</div>
-    {% endfor %}
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    function clearLogs() {
-        document.getElementById('logContainer').innerHTML = '<div class="log-line log-info">Log display cleared. Refresh to reload.</div>';
-    }
-
-    function scrollToBottom() {
-        const container = document.getElementById('logContainer');
-        container.scrollTop = container.scrollHeight;
-    }
-
-    // Auto-scroll to bottom on load
-    scrollToBottom();
-
-    // Auto-refresh every 10 seconds
-    setTimeout(() => location.reload(), 10000);
-</script>
 {% endblock %}

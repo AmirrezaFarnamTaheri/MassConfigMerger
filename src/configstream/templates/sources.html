@@ -1,211 +1,122 @@
 {% extends "base.html" %}
 
-{% block title %}Sources Management - ConfigStream{% endblock %}
+{% block title %}Sources - ConfigStream{% endblock %}
 
-{% block head_extra %}
+{% block content %}
+<div class="card">
+    <h2>
+        <div class="card-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L8 12v1c0 1.1.9 2 2 2v3.93zm2-14.24c.78.43 1.45 1.02 2 1.76V5.07c-1.12.45-2.07 1.13-2.82 1.94l.82.26zM12 4c1.93 0 3.68.79 4.95 2.05L12 8.5V4zm0 5.5c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5S13.38 9.5 12 9.5zm7.79 2.21c.13.58.21 1.17.21 1.79 0 4.08-3.05 7.44-7 7.93V17c1.1 0 2-.9 2-2v-1l3.79-1.79z"/>
+            </svg>
+        </div>
+        Subscription Sources
+    </h2>
+    <p style="color: #64748b; margin-bottom: 1rem;">
+        Manage the list of subscription URLs used to fetch proxy configurations.
+    </p>
+
+    <div class="sources-container">
+        <div class="source-list">
+            <h3>Current Sources</h3>
+            <textarea readonly rows="15" id="sources-list">{{ sources_content }}</textarea>
+        </div>
+        <div class="source-actions">
+            <h3>Actions</h3>
+            <div class="action-form">
+                <label for="new-source">Add New Source URL:</label>
+                <input type="url" id="new-source" placeholder="https://example.com/subscription">
+                <button class="action-btn" id="add-btn">Add Source</button>
+            </div>
+            <div class="action-form">
+                <label for="remove-source">Remove Source URL:</label>
+                <input type="url" id="remove-source" placeholder="https://example.com/subscription">
+                <button class="action-btn" id="remove-btn">Remove Source</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    const addBtn = document.getElementById('add-btn');
+    const removeBtn = document.getElementById('remove-btn');
+    const newSourceInput = document.getElementById('new-source');
+    const removeSourceInput = document.getElementById('remove-source');
+
+    async function handleSourceAction(action, url) {
+        if (!url) {
+            alert('Please enter a URL.');
+            return;
+        }
+        try {
+            const response = await fetch(`/api/sources/${action}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: url })
+            });
+            const result = await response.json();
+            if (response.ok) {
+                alert(result.message);
+                window.location.reload();
+            } else {
+                alert('Error: ' + result.error);
+            }
+        } catch (err) {
+            console.error('Failed to perform source action:', err);
+            alert('An unexpected error occurred.');
+        }
+    }
+
+    addBtn.addEventListener('click', () => {
+        handleSourceAction('add', newSourceInput.value.trim());
+    });
+
+    removeBtn.addEventListener('click', () => {
+        handleSourceAction('remove', removeSourceInput.value.trim());
+    });
+</script>
 <style>
-    .add-form {
-        background: linear-gradient(to right, #f8fafc, #f1f5f9);
-        padding: 1.5rem;
-        border-radius: 12px;
-        margin-bottom: 2rem;
+    .sources-container {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+        margin-top: 2rem;
     }
-    .form-row {
+    .source-list textarea {
+        width: 100%;
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 1rem;
+        font-family: 'Monaco', 'Courier New', monospace;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        resize: vertical;
+    }
+    .action-form {
         display: flex;
-        gap: 1rem;
-        align-items: flex-end;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
     }
-    .form-group {
-        flex: 1;
-    }
-    label {
-        display: block;
-        font-weight: 600;
-        color: #475569;
-        margin-bottom: 0.5rem;
-    }
-    input[type="url"] {
+    .action-form input {
         width: 100%;
         padding: 0.875rem 1rem;
         border: 2px solid #e2e8f0;
         border-radius: 10px;
         font-size: 1rem;
-        transition: all 0.2s ease;
     }
-    input:focus {
-        outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-    button {
-        padding: 0.875rem 2rem;
+    .action-btn {
+        padding: 0.875rem 1rem;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border: none;
         border-radius: 10px;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-    }
-    .sources-list {
-        display: grid;
-        gap: 1rem;
-    }
-    .source-item {
-        background: white;
-        padding: 1.25rem;
-        border-radius: 12px;
-        border: 2px solid #e2e8f0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 1rem;
-        transition: all 0.2s ease;
-    }
-    .source-url {
-        font-family: 'Monaco', 'Courier New', monospace;
-        color: #334155;
-        word-break: break-all;
-        flex: 1;
-    }
-    .btn-delete {
-        padding: 0.5rem 1rem;
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 0.875rem;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.2s ease;
     }
-    .stats {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 2rem;
-        flex-wrap: wrap;
-    }
-    .stat-card {
-        flex: 1;
-        min-width: 200px;
-        padding: 1.25rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    .action-btn:hover {
+        transform: translateY(-2px);
     }
 </style>
-{% endblock %}
-
-{% block content %}
-<div class="stats">
-    <div class="stat-card">
-        <div class="stat-value" id="totalSources">{{ sources|length }}</div>
-        <div class="stat-label">Total Sources</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value" id="activeSources">{{ sources|length }}</div>
-        <div class="stat-label">Active Sources</div>
-    </div>
-</div>
-
-<div class="add-form">
-    <h2 style="margin-bottom: 1rem; color: #1a202c;">Add New Source</h2>
-    <form id="addSourceForm">
-        <div class="form-row">
-            <div class="form-group">
-                <label for="sourceUrl">Source URL</label>
-                <input
-                    type="url"
-                    id="sourceUrl"
-                    name="url"
-                    placeholder="https://example.com/subscription"
-                    required
-                />
-            </div>
-            <button type="submit">Add Source</button>
-        </div>
-    </form>
-</div>
-
-<div id="alertContainer"></div>
-
-<div class="sources-list" id="sourcesList">
-    {% if sources %}
-        {% for source in sources %}
-        <div class="source-item" data-url="{{ source }}">
-            <div class="source-url">{{ source }}</div>
-            <button class="btn-delete" onclick="deleteSource('{{ source }}')">Delete</button>
-        </div>
-        {% endfor %}
-    {% else %}
-        <div class="empty-state">
-            <svg fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6z"/>
-            </svg>
-            <h3>No sources configured</h3>
-            <p>Add your first VPN source above to get started</p>
-        </div>
-    {% endif %}
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    function showAlert(message, type = 'success') {
-        const container = document.getElementById('alertContainer');
-        const alert = document.createElement('div');
-        alert.className = `alert alert-${type}`;
-        alert.textContent = message;
-        container.appendChild(alert);
-        setTimeout(() => alert.remove(), 5000);
-    }
-
-    document.getElementById('addSourceForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const url = document.getElementById('sourceUrl').value;
-
-        try {
-            const response = await fetch('/api/sources', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
-            });
-
-            if (response.ok) {
-                showAlert('Source added successfully!', 'success');
-                setTimeout(() => location.reload(), 1500);
-            } else {
-                const data = await response.json();
-                showAlert(data.error || 'Failed to add source', 'error');
-            }
-        } catch (err) {
-            showAlert('Error: ' + err.message, 'error');
-        }
-    });
-
-    async function deleteSource(url) {
-        if (!confirm('Are you sure you want to delete this source?')) return;
-
-        try {
-            const response = await fetch('/api/sources', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
-            });
-
-            if (response.ok) {
-                showAlert('Source deleted successfully!', 'success');
-                setTimeout(() => location.reload(), 1500);
-            } else {
-                const data = await response.json();
-                showAlert(data.error || 'Failed to delete source', 'error');
-            }
-        } catch (err) {
-            showAlert('Error: ' + err.message, 'error');
-        }
-    }
-</script>
 {% endblock %}

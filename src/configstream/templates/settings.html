@@ -2,190 +2,32 @@
 
 {% block title %}Settings - ConfigStream{% endblock %}
 
-{% block head_extra %}
+{% block content %}
+<div class="card">
+    <h2>
+        <div class="card-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+            </svg>
+        </div>
+        Application Settings
+    </h2>
+    <p style="color: #64748b; margin-bottom: 2rem;">
+        A read-only view of the current application configuration loaded from <code>{{ config_path }}</code>.
+    </p>
+
+    <div class="settings-container">
+        <pre><code>{{ config_content }}</code></pre>
+    </div>
+</div>
 <style>
-    .section {
-        margin-bottom: 2rem;
+    .settings-container pre {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
         padding: 1.5rem;
-        background: linear-gradient(to right, #f8fafc, #f1f5f9);
-        border-radius: 12px;
-    }
-    .section-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #1a202c;
-        margin-bottom: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    .setting-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-        padding: 1rem;
-        background: white;
-        border-radius: 8px;
-        margin-bottom: 0.75rem;
-    }
-    .setting-label {
-        font-weight: 600;
-        color: #475569;
-    }
-    .setting-value {
-        font-family: 'Monaco', 'Courier New', monospace;
-        color: #334155;
-        word-break: break-all;
-    }
-    .badge {
-        display: inline-block;
-        padding: 0.25rem 0.75rem;
-        border-radius: 999px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-    .badge-enabled {
-        background: #dcfce7;
-        color: #166534;
-    }
-    .badge-disabled {
-        background: #fee2e2;
-        color: #991b1b;
-    }
-    code {
-        background: #1e293b;
-        color: #e2e8f0;
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        font-size: 0.875rem;
-    }
-    .info-box {
-        background: #e0e7ff;
-        border-left: 4px solid #667eea;
-        padding: 1rem 1.25rem;
-        border-radius: 8px;
-        color: #3730a3;
-        margin-top: 1rem;
+        white-space: pre-wrap;
+        word-wrap: break-word;
     }
 </style>
-{% endblock %}
-
-{% block content %}
-<div class="section">
-    <h2 class="section-title">🌐 Network Settings</h2>
-    <div class="setting-row">
-        <div class="setting-label">Concurrent Workers</div>
-        <div class="setting-value">{{ cfg.network.concurrent_workers }}</div>
-    </div>
-    <div class="setting-row">
-        <div class="setting-label">Request Timeout</div>
-        <div class="setting-value">{{ cfg.network.timeout }}s</div>
-    </div>
-    <div class="setting-row">
-        <div class="setting-label">Max Retries</div>
-        <div class="setting-value">{{ cfg.network.max_retries }}</div>
-    </div>
-    <div class="setting-row">
-        <div class="setting-label">HTTP Proxy</div>
-        <div class="setting-value">{{ cfg.network.http_proxy or 'Not configured' }}</div>
-    </div>
-</div>
-
-<div class="section">
-    <h2 class="section-title">🔒 Security Settings</h2>
-    <div class="setting-row">
-        <div class="setting-label">Web API Token</div>
-        <div class="setting-value">
-            {% if cfg.security.web_api_token %}
-            <span class="badge badge-enabled">Configured</span>
-            {% else %}
-            <span class="badge badge-disabled">Not Set</span>
-            {% endif %}
-        </div>
-    </div>
-    <div class="setting-row">
-        <div class="setting-label">GitHub Token</div>
-        <div class="setting-value">
-            {% if cfg.security.github_token %}
-            <span class="badge badge-enabled">Configured</span>
-            {% else %}
-            <span class="badge badge-disabled">Not Set</span>
-            {% endif %}
-        </div>
-    </div>
-</div>
-
-<div class="section">
-    <h2 class="section-title">🎯 Filtering Settings</h2>
-    <div class="setting-row">
-        <div class="setting-label">Allowed Protocols (Fetch)</div>
-        <div class="setting-value">{{ cfg.filtering.allowed_protocols_fetch|join(', ') }}</div>
-    </div>
-    <div class="setting-row">
-        <div class="setting-label">Allowed Protocols (Merge)</div>
-        <div class="setting-value">{{ cfg.filtering.allowed_protocols_merge|join(', ') }}</div>
-    </div>
-    <div class="setting-row">
-        <div class="setting-label">Include Patterns</div>
-        <div class="setting-value">{{ cfg.filtering.include_patterns|join(', ') or 'None' }}</div>
-    </div>
-    <div class="setting-row">
-        <div class="setting-label">Exclude Patterns</div>
-        <div class="setting-value">{{ cfg.filtering.exclude_patterns|join(', ') or 'None' }}</div>
-    </div>
-</div>
-
-<div class="section">
-    <h2 class="section-title">📁 Output Settings</h2>
-    <div class="setting-row">
-        <div class="setting-label">Output Directory</div>
-        <div class="setting-value">{{ cfg.output.output_dir }}</div>
-    </div>
-    <div class="setting-row">
-        <div class="setting-label">History Database</div>
-        <div class="setting-value">{{ cfg.output.history_db_file }}</div>
-    </div>
-    <div class="setting-row">
-        <div class="setting-label">Generate Clash Config</div>
-        <div class="setting-value">
-            {% if cfg.output.generate_clash_config %}
-            <span class="badge badge-enabled">Yes</span>
-            {% else %}
-            <span class="badge badge-disabled">No</span>
-            {% endif %}
-        </div>
-    </div>
-</div>
-
-<div class="section">
-    <h2 class="section-title">🧪 Testing Settings</h2>
-    <div class="setting-row">
-        <div class="setting-label">Enable Testing</div>
-        <div class="setting-value">
-            {% if cfg.testing.enable_testing %}
-            <span class="badge badge-enabled">Enabled</span>
-            {% else %}
-            <span class="badge badge-disabled">Disabled</span>
-            {% endif %}
-        </div>
-    </div>
-    <div class="setting-row">
-        <div class="setting-label">Max Test Workers</div>
-        <div class="setting-value">{{ cfg.testing.max_test_workers }}</div>
-    </div>
-    <div class="setting-row">
-        <div class="setting-label">Test Timeout</div>
-        <div class="setting-value">{{ cfg.testing.test_timeout }}s</div>
-    </div>
-    <div class="setting-row">
-        <div class="setting-label">Test Sample Size</div>
-        <div class="setting-value">{{ cfg.testing.sample_size or 'All' }}</div>
-    </div>
-</div>
-
-<div class="info-box">
-    <strong>ℹ️ Configuration File:</strong> Settings are loaded from <code>config.yaml</code>.
-    To modify these settings, edit the configuration file and restart the server.
-</div>
 {% endblock %}

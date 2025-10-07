@@ -4,108 +4,154 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}ConfigStream{% endblock %}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary-color: #6a11cb;
+            --secondary-color: #2575fc;
+            --background-color: #f0f2f5;
+            --card-background: #ffffff;
+            --text-color: #333;
+            --heading-color: #1a202c;
+            --subtle-text-color: #64748b;
+            --border-color: #e2e8f0;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 2rem 1rem;
-            color: #1a202c;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
         }
+
         .container {
-            max-width: 1600px;
+            max-width: 1400px;
             margin: 0 auto;
-        }
-        .header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
             padding: 2rem;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            margin-bottom: 2rem;
-            text-align: center;
         }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
         .logo {
-            display: inline-flex;
+            display: flex;
             align-items: center;
             justify-content: center;
             gap: 1rem;
-            margin-bottom: 0.5rem;
+            margin-bottom: 1rem;
         }
+
         .logo-icon {
             width: 64px;
             height: 64px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
             border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
+
         .logo-icon svg {
             width: 36px;
             height: 36px;
             fill: white;
         }
+
         .logo h1 {
             font-size: 2.5rem;
             font-weight: 800;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--heading-color);
         }
+
         .tagline {
-            color: #64748b;
+            color: var(--subtle-text-color);
             font-size: 1.1rem;
-            margin-top: 0.5rem;
         }
+
         .nav-bar {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+            background: var(--card-background);
             padding: 1rem;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px var(--shadow-color);
             margin-bottom: 2rem;
         }
+
         .nav-links {
             display: flex;
             gap: 0.5rem;
             justify-content: center;
             flex-wrap: wrap;
         }
+
         .nav-link {
+            padding: 0.75rem 1.25rem;
+            color: var(--subtle-text-color);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background-color: #eef2ff;
+            color: var(--primary-color);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card {
+            background: var(--card-background);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px var(--shadow-color);
+            margin-bottom: 2rem;
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--heading-color);
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.25rem;
-            background: linear-gradient(to right, #f8fafc, #f1f5f9);
-            color: #334155;
-            text-decoration: none;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
+            gap: 0.75rem;
         }
-        .nav-link:hover {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+
+        .card-icon {
+            width: 32px;
+            height: 32px;
+            padding: 6px;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .nav-link.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+
+        .card-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
         }
+
         footer {
             text-align: center;
-            padding: 2rem;
-            color: rgba(255, 255, 255, 0.8);
+            padding-top: 2rem;
+            color: var(--subtle-text-color);
             font-size: 0.9rem;
         }
-        {% block head_extra %}{% endblock %}
     </style>
 </head>
 <body>
@@ -129,14 +175,9 @@
                 <a href="/sources" class="nav-link {% if request.path == '/sources' %}active{% endif %}">📡 Sources</a>
                 <a href="/analytics" class="nav-link {% if request.path == '/analytics' %}active{% endif %}">📊 Analytics</a>
                 <a href="/history" class="nav-link {% if request.path == '/history' %}active{% endif %}">📜 Full History</a>
-                <a href="/testing" class="nav-link {% if request.path == '/testing' %}active{% endif %}">🧪 Testing</a>
-                <a href="/backup" class="nav-link {% if request.path == '/backup' %}active{% endif %}">📦 Backup/Restore</a>
-                <a href="/scheduler" class="nav-link {% if request.path == '/scheduler' %}active{% endif %}">🕒 Scheduler</a>
-                <a href="/status" class="nav-link {% if request.path == '/status' %}active{% endif %}">🖥️ System Status</a>
                 <a href="/settings" class="nav-link {% if request.path == '/settings' %}active{% endif %}">⚙️ Settings</a>
-                <a href="/api-docs" class="nav-link {% if request.path == '/api-docs' %}active{% endif %}">📚 API Docs</a>
+                <a href="/backup" class="nav-link {% if request.path == '/backup' %}active{% endif %}">💾 Backup</a>
                 <a href="/logs" class="nav-link {% if request.path == '/logs' %}active{% endif %}">📝 Logs</a>
-                <a href="/help" class="nav-link {% if request.path == '/help' %}active{% endif %}">❓ Help</a>
             </div>
         </nav>
 
@@ -145,9 +186,8 @@
         </main>
 
         <footer>
-            <p>ConfigStream v1.0 · Secure VPN Configuration Management</p>
+            <p>ConfigStream v1.0 · Modern VPN Configuration Management</p>
         </footer>
     </div>
-    {% block scripts %}{% endblock %}
 </body>
 </html>
