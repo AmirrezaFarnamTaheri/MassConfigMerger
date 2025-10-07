@@ -78,7 +78,9 @@ def _extract_api_token() -> Optional[str]:
 
     auth_header = request.headers.get("Authorization", "")
     if auth_header.lower().startswith("bearer "):
-        return auth_header.split(None, 1)[1]
+        parts = auth_header.split(None, 1)
+        if len(parts) == 2:
+            return parts[1]
 
     return None
 
