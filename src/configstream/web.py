@@ -81,11 +81,12 @@ def _extract_api_token() -> Optional[str]:
     if auth_header:
         scheme, _, value = auth_header.partition(" ")
         if scheme.strip().lower() == "bearer":
-            token_from_bearer = value.strip() or None
+            value = value.strip()
+            token_from_bearer = value if value else None
 
-    # If both are provided and non-empty, reject to avoid ambiguity
+    # If both are provided and non-empty, explicitly fail to avoid ambiguity
     if token_from_header and token_from_bearer:
-        return None
+        raise PermissionError("Multiple authentication tokens provided")
 
     token = token_from_header or token_from_bearer
     return token if token else None
