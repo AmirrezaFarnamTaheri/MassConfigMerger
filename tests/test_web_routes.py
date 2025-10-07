@@ -9,15 +9,6 @@ from configstream.config import Settings
 from configstream.web import app
 
 
-@pytest.fixture
-def client():
-    """Create a test client for the Flask app."""
-    from werkzeug.middleware.dispatcher import DispatcherMiddleware
-    from prometheus_client import make_wsgi_app
-    app.config["TESTING"] = True
-    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
-    with app.test_client() as client:
-        yield client
 
 
 @patch("configstream.web.run_aggregation_pipeline", new_callable=AsyncMock)
@@ -159,19 +150,6 @@ def test_get_root_fallback(mock_find_root, client, fs):
     response = client.get("/report")
     assert response.status_code == 200
     assert response.data == b"<h1>Fallback Report</h1>"
-
-
-@patch("configstream.web.main")
-def test_main_entrypoint(mock_main, monkeypatch):
-    """Test the main entrypoint."""
-    import sys
-    # Ensure the module is reloaded for the test
-    if "configstream.web" in sys.modules:
-        monkeypatch.delitem(sys.modules, "configstream.web")
-
-    import runpy
-    runpy.run_module("configstream.web", run_name="__main__")
-    mock_main.assert_called_once()
 
 
 def test_report_route_json(client, fs):

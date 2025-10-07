@@ -69,3 +69,21 @@ def loop():
 @pytest.fixture
 def event_loop(loop):
     yield loop
+
+
+@pytest.fixture
+def client(fs):
+    """Create a test client for the Flask app."""
+    # The fs fixture is a pyfakefs instance.
+    # We need to add the real templates directory to the fake filesystem.
+    fs.add_real_directory(Path(SRC_PATH, "configstream", "templates"))
+
+    from configstream.web import app
+    from werkzeug.middleware.dispatcher import DispatcherMiddleware
+    from prometheus_client import make_wsgi_app
+
+    app.config["TESTING"] = True
+    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
+
+    with app.test_client() as client:
+        yield client

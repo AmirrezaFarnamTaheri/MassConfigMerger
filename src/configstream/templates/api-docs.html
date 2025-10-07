@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>API Documentation - ConfigStream</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .header {
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .back-link {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .endpoint {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .method {
+            display: inline-block;
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.875rem;
+            margin-right: 1rem;
+        }
+
+        .method-post { background: #10b981; color: white; }
+        .method-get { background: #3b82f6; color: white; }
+        .method-delete { background: #ef4444; color: white; }
+
+        .path {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 1.1rem;
+            color: #1a202c;
+        }
+
+        .description {
+            margin: 1rem 0;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            margin: 0.75rem 0;
+        }
+
+        .section-title {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #667eea;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .param {
+            background: #f8fafc;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .param-name {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-weight: 700;
+            color: #334155;
+        }
+
+        .param-type {
+            color: #64748b;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 API Documentation</h1>
+            <a href="/" class="back-link">← Dashboard</a>
+        </div>
+
+        <div class="endpoint">
+            <div>
+                <span class="method method-post">POST</span>
+                <span class="path">/api/aggregate</span>
+            </div>
+            <p class="description">
+                Run the aggregation pipeline to fetch and process VPN configurations from configured sources.
+            </p>
+            <div class="section-title">Headers</div>
+            <div class="param">
+                <span class="param-name">X-API-Key</span>
+                <span class="param-type">string (optional)</span> - API token if authentication is enabled
+            </div>
+            <div class="section-title">Example Request</div>
+            <pre class="code-block">curl -X POST http://localhost:8080/api/aggregate \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: your-token-here"</pre>
+            <div class="section-title">Example Response</div>
+            <pre class="code-block">{
+  "status": "ok",
+  "output_dir": "/path/to/output",
+  "files": ["file1.txt", "file2.yaml"],
+  "file_count": 2,
+  "duration_seconds": 12.345,
+  "completed_at": "2025-10-07T12:00:00Z"
+}</pre>
+        </div>
+
+        <div class="endpoint">
+            <div>
+                <span class="method method-post">POST</span>
+                <span class="path">/api/merge</span>
+            </div>
+            <p class="description">
+                Run the VPN merger pipeline to consolidate and test aggregated configurations.
+            </p>
+            <div class="section-title">Headers</div>
+            <div class="param">
+                <span class="param-name">X-API-Key</span>
+                <span class="param-type">string (optional)</span> - API token if authentication is enabled
+            </div>
+            <div class="section-title">Example Request</div>
+            <pre class="code-block">curl -X POST http://localhost:8080/api/merge \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: your-token-here"</pre>
+            <div class="section-title">Example Response</div>
+            <pre class="code-block">{
+  "status": "merge complete",
+  "duration_seconds": 8.123,
+  "completed_at": "2025-10-07T12:00:00Z",
+  "resume_file": "/path/to/resume.txt"
+}</pre>
+        </div>
+
+        <div class="endpoint">
+            <div>
+                <span class="method method-get">GET</span>
+                <span class="path">/api/history</span>
+            </div>
+            <p class="description">
+                Retrieve proxy history and reliability statistics in JSON format.
+            </p>
+            <div class="section-title">Query Parameters</div>
+            <div class="param">
+                <span class="param-name">limit</span>
+                <span class="param-type">integer (optional)</span> - Maximum number of results to return
+            </div>
+            <div class="section-title">Example Request</div>
+            <pre class="code-block">curl http://localhost:8080/api/history?limit=10</pre>
+            <div class="section-title">Example Response</div>
+            <pre class="code-block">{
+  "items": [
+    {
+      "key": "proxy1.example.com:8080",
+      "successes": 150,
+      "failures": 10,
+      "reliability_percent": 93.75,
+      "status": "Healthy",
+      "country": "US",
+      "isp": "Example ISP"
+    }
+  ],
+  "returned": 10,
+  "total": 150,
+  "healthy": 120,
+  "critical": 15
+}</pre>
+        </div>
+
+        <div class="endpoint">
+            <div>
+                <span class="method method-post">POST</span>
+                <span class="path">/api/sources</span>
+            </div>
+            <p class="description">
+                Add a new VPN source URL to the sources list.
+            </p>
+            <div class="section-title">Request Body</div>
+            <div class="param">
+                <span class="param-name">url</span>
+                <span class="param-type">string (required)</span> - The source URL to add
+            </div>
+            <div class="section-title">Example Request</div>
+            <pre class="code-block">curl -X POST http://localhost:8080/api/sources \\
+  -H "Content-Type: application/json" \\
+  -d '{"url": "https://example.com/subscription"}'</pre>
+        </div>
+
+        <div class="endpoint">
+            <div>
+                <span class="method method-delete">DELETE</span>
+                <span class="path">/api/sources</span>
+            </div>
+            <p class="description">
+                Remove a VPN source URL from the sources list.
+            </p>
+            <div class="section-title">Request Body</div>
+            <div class="param">
+                <span class="param-name">url</span>
+                <span class="param-type">string (required)</span> - The source URL to remove
+            </div>
+            <div class="section-title">Example Request</div>
+            <pre class="code-block">curl -X DELETE http://localhost:8080/api/sources \\
+  -H "Content-Type: application/json" \\
+  -d '{"url": "https://example.com/subscription"}'</pre>
+        </div>
+
+        <div class="endpoint">
+            <div>
+                <span class="method method-get">GET</span>
+                <span class="path">/health</span>
+            </div>
+            <p class="description">
+                Simple health check endpoint to verify the service is running.
+            </p>
+            <div class="section-title">Example Response</div>
+            <pre class="code-block">{"status": "ok"}</pre>
+        </div>
+    </div>
+</body>
+</html>
