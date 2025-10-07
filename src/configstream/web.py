@@ -84,12 +84,8 @@ def _extract_api_token() -> Optional[str]:
             value = value.strip()
             token_from_bearer = value if value else None
 
-    # If both are provided and non-empty, explicitly fail to avoid ambiguity
-    if token_from_header and token_from_bearer:
-        raise PermissionError("Multiple authentication tokens provided")
-
-    token = token_from_header or token_from_bearer
-    return token if token else None
+    # Prefer X-API-Key over Bearer if both are present
+    return token_from_header or token_from_bearer
 
 
 def _get_request_settings():
