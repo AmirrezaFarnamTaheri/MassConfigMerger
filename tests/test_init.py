@@ -1,7 +1,7 @@
 import asyncio
 from unittest.mock import MagicMock
 
-from massconfigmerger import get_client_loop
+from configstream import get_client_loop
 
 
 def test_get_client_loop_success():

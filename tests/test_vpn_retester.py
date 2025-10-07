@@ -6,13 +6,13 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import pytest
 
-from massconfigmerger.config import Settings
-from massconfigmerger.core.config_processor import ConfigResult
-from massconfigmerger.processing.pipeline import (
+from configstream.config import Settings
+from configstream.core.config_processor import ConfigResult
+from configstream.processing.pipeline import (
     filter_results_by_ping,
     sort_and_trim_results,
 )
-from massconfigmerger.vpn_retester import (
+from configstream.vpn_retester import (
     filter_configs_by_protocol,
     load_configs_from_file,
     run_retester,
@@ -91,7 +91,7 @@ def test_filter_results_by_ping():
 
 
 
-@patch("massconfigmerger.vpn_retester.Path.write_text")
+@patch("configstream.vpn_retester.Path.write_text")
 @patch("builtins.open", new_callable=mock_open)
 def test_save_retest_results(
     mock_open_fn: MagicMock, mock_write_text: MagicMock, tmp_path: Path
@@ -126,13 +126,13 @@ def test_save_retest_results(
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.vpn_retester.Database")
-@patch("massconfigmerger.vpn_retester.load_configs_from_file")
-@patch("massconfigmerger.vpn_retester.filter_configs_by_protocol")
-@patch("massconfigmerger.vpn_retester.pipeline.test_configs")
-@patch("massconfigmerger.vpn_retester.pipeline.filter_results_by_ping")
-@patch("massconfigmerger.vpn_retester.pipeline.sort_and_trim_results")
-@patch("massconfigmerger.vpn_retester.save_retest_results")
+@patch("configstream.vpn_retester.Database")
+@patch("configstream.vpn_retester.load_configs_from_file")
+@patch("configstream.vpn_retester.filter_configs_by_protocol")
+@patch("configstream.vpn_retester.pipeline.test_configs")
+@patch("configstream.vpn_retester.pipeline.filter_results_by_ping")
+@patch("configstream.vpn_retester.pipeline.sort_and_trim_results")
+@patch("configstream.vpn_retester.save_retest_results")
 async def test_run_retester_flow(
     mock_save: MagicMock,
     mock_sort: MagicMock,

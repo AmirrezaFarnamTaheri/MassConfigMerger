@@ -48,4 +48,4 @@ services:
       - "8080:8080"
     volumes:
       - ./output:/app/output
-    command: python -m src.massconfigmerger.web
+    command: python -m src.configstream.web

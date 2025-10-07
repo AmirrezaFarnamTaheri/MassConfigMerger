@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 import json
 
-from massconfigmerger.core.parsers.vmess import VmessParser
+from configstream.core.parsers.vmess import VmessParser
 
 
 def test_parse_vmess_with_security_key():

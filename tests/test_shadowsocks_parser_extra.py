@@ -3,8 +3,8 @@ from __future__ import annotations
 import base64
 import pytest
 
-from massconfigmerger.core.parsers.shadowsocks import ShadowsocksParser
-from massconfigmerger.exceptions import ParserError
+from configstream.core.parsers.shadowsocks import ShadowsocksParser
+from configstream.exceptions import ParserError
 
 
 @pytest.mark.parametrize(

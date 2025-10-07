@@ -2,7 +2,7 @@
 
 #### **Command-Line Arguments**
 
-Run `massconfigmerger <command> --help` to see all options for a specific command. Important flags include:
+Run `configstream <command> --help` to see all options for a specific command. Important flags include:
 
   * `--save-every N` - save intermediate files every `N` configs (default `100`, `0` to disable).
   * `--stop-after-found N` - stop once `N` unique configs are collected.
@@ -50,7 +50,7 @@ If you have your own subscription links you'd like to merge, edit `sources.txt`:
 
 #### **Retesting an Existing Output**
 
-If you already generated a subscription file, run `massconfigmerger retest <path>` to check all servers again and sort them by current latency. The command accepts raw or base64 files and now exposes several tuning options:
+If you already generated a subscription file, run `configstream retest <path>` to check all servers again and sort them by current latency. The command accepts raw or base64 files and now exposes several tuning options:
 
 * `--concurrent-limit` limit how many tests run in parallel
 * `--connect-timeout` set the connection timeout in seconds
@@ -62,7 +62,7 @@ If you already generated a subscription file, run `massconfigmerger retest <path
 Example:
 
 ```bash
-massconfigmerger retest output/vpn_subscription_raw.txt \
+configstream retest output/vpn_subscription_raw.txt \
   --include-protocols VLESS,REALITY --max-ping 250 \
   --concurrent-limit 20 --connect-timeout 3 --output-dir retested --no-base64
 ```
@@ -112,4 +112,4 @@ pytest
 ```
 
 Failing to install the `dev` extras first will result in `ModuleNotFoundError`
-when the test suite tries to import `massconfigmerger`.
+when the test suite tries to import `configstream`.

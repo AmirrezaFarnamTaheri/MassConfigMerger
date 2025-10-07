@@ -1,5 +1,5 @@
 import pytest
-from massconfigmerger.core.parsers.vmess import VmessParser
+from configstream.core.parsers.vmess import VmessParser
 import base64
 import json
 

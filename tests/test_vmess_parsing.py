@@ -1,7 +1,7 @@
 import json
 import base64
 
-from massconfigmerger.clash_utils import config_to_clash_proxy
+from configstream.clash_utils import config_to_clash_proxy
 
 
 def test_vmess_parse_success():

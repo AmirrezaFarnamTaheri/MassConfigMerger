@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 import aiosqlite
 
-from massconfigmerger.db import Database
+from configstream.db import Database
 
 
 @pytest.fixture

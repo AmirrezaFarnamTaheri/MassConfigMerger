@@ -299,4 +299,4 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-console.log('MassConfigMerger website loaded successfully');
+console.log('ConfigStream website loaded successfully');

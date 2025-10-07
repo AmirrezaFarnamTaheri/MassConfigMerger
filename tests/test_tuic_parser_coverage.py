@@ -1,5 +1,5 @@
 import pytest
-from massconfigmerger.core.parsers.tuic import TuicParser
+from configstream.core.parsers.tuic import TuicParser
 
 def test_tuic_parser_get_identifier():
     """Test the get_identifier method for TuicParser."""

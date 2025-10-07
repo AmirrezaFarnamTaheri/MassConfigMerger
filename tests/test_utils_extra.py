@@ -6,10 +6,10 @@ import socket
 from unittest.mock import AsyncMock, patch, MagicMock
 
 import aiohttp
-from massconfigmerger.exceptions import NetworkError
-from massconfigmerger.config import Settings
-from massconfigmerger.core.config_processor import ConfigResult
-from massconfigmerger.core.utils import (
+from configstream.exceptions import NetworkError
+from configstream.config import Settings
+from configstream.core.config_processor import ConfigResult
+from configstream.core.utils import (
     get_sort_key,
     is_valid_config,
     choose_proxy,
@@ -76,7 +76,7 @@ from unittest.mock import MagicMock
     ]
 )
 def test_is_safe_url(url, expected):
-    from massconfigmerger.core.utils import is_safe_url
+    from configstream.core.utils import is_safe_url
     assert is_safe_url(url) == expected
 
 

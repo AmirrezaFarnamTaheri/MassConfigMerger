@@ -8,13 +8,13 @@ First install the optional dependencies:
 
 This extra installs only Flask and avoids FastAPI entirely, so it works with the default Pydantic 2 dependencies.
 ```bash
-pip install massconfigmerger[web]
+pip install configstream[web]
 ```
 
 Then start the development server with:
 
 ```bash
-python -m massconfigmerger.web
+python -m configstream.web
 ```
 
 By default it listens on `http://127.0.0.1:5000`. Use Flask's `--host` and `--port` options if you need to bind to a different address.

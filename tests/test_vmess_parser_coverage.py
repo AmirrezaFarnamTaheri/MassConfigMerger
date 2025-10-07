@@ -1,6 +1,6 @@
 import pytest
-from massconfigmerger.core.parsers.vmess import VmessParser
-from massconfigmerger.exceptions import ParserError
+from configstream.core.parsers.vmess import VmessParser
+from configstream.exceptions import ParserError
 import base64
 import json
 

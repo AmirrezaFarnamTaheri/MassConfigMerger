@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from massconfigmerger.config import Settings
-from massconfigmerger.core.config_processor import ConfigResult
-from massconfigmerger.report_generator import (
+from configstream.config import Settings
+from configstream.core.config_processor import ConfigResult
+from configstream.report_generator import (
     generate_html_report,
     generate_json_report,
 )

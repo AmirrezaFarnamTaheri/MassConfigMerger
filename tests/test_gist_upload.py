@@ -4,15 +4,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from massconfigmerger.exceptions import ConfigError, GistUploadError
-from massconfigmerger.gist_uploader import (
+from configstream.exceptions import ConfigError, GistUploadError
+from configstream.gist_uploader import (
     upload_files_to_gist,
     write_upload_links,
 )
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.gist_uploader.aiohttp.ClientSession")
+@patch("configstream.gist_uploader.aiohttp.ClientSession")
 async def test_upload_files_to_gist_success(MockSession, tmp_path: Path):
     """Test successful Gist upload using a mocked session."""
     f = tmp_path / "vpn_subscription_raw.txt"
@@ -49,7 +49,7 @@ async def test_upload_files_to_gist_success(MockSession, tmp_path: Path):
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.gist_uploader.aiohttp.ClientSession")
+@patch("configstream.gist_uploader.aiohttp.ClientSession")
 async def test_upload_files_to_gist_failure(MockSession, tmp_path: Path):
     """Test Gist upload failure handling."""
     f = tmp_path / "vpn_subscription_raw.txt"
@@ -96,7 +96,7 @@ async def test_upload_files_to_gist_file_not_found(tmp_path: Path):
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.gist_uploader.aiohttp.ClientSession")
+@patch("configstream.gist_uploader.aiohttp.ClientSession")
 async def test_upload_files_to_gist_invalid_json_response(MockSession, tmp_path: Path):
     """Test Gist upload with a non-JSON response."""
     f = tmp_path / "test.txt"
@@ -118,7 +118,7 @@ async def test_upload_files_to_gist_invalid_json_response(MockSession, tmp_path:
 
 
 @pytest.mark.asyncio
-@patch("massconfigmerger.gist_uploader.aiohttp.ClientSession")
+@patch("configstream.gist_uploader.aiohttp.ClientSession")
 async def test_upload_files_to_gist_unexpected_json_structure(MockSession, tmp_path: Path):
     """Test Gist upload with an unexpected JSON structure in the response."""
     f = tmp_path / "test.txt"
