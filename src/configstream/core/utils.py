@@ -273,7 +273,8 @@ def choose_proxy(cfg: Settings) -> str | None:
     Return the appropriate proxy URL from settings.
 
     This function prioritizes the SOCKS proxy over the HTTP proxy if both
-    are defined in the application settings.
+    are defined. It also handles empty or whitespace-only proxy strings
+    by treating them as None.
 
     Args:
         cfg: The application settings object.
@@ -283,9 +284,12 @@ def choose_proxy(cfg: Settings) -> str | None:
     Raises:
         ConfigError: If both http_proxy and socks_proxy are defined.
     """
-    if cfg.network.http_proxy and cfg.network.socks_proxy:
+    http_proxy = (cfg.network.http_proxy or "").strip() or None
+    socks_proxy = (cfg.network.socks_proxy or "").strip() or None
+
+    if http_proxy and socks_proxy:
         raise ConfigError("http_proxy and socks_proxy cannot be used simultaneously")
-    return cfg.network.socks_proxy or cfg.network.http_proxy
+    return socks_proxy or http_proxy
 
 
 async def fetch_text(

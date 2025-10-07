@@ -35,23 +35,23 @@ def sample_results() -> list[ConfigResult]:
 
 
 def test_write_raw_configs(fs, sample_results: list[ConfigResult]):
-    output_dir = fs.create_dir("output")
+    fs.create_dir("/output")
     configs = [r.config for r in sample_results]
-    path = write_raw_configs(configs, output_dir)
+    path = write_raw_configs(configs, Path("/output"))
     assert path.exists()
     assert path.read_text() == "vmess://config1"
 
 def test_write_base64_configs(fs, sample_results: list[ConfigResult]):
-    output_dir = fs.create_dir("output")
+    fs.create_dir("/output")
     configs = [r.config for r in sample_results]
-    path = write_base64_configs(configs, output_dir)
+    path = write_base64_configs(configs, Path("/output"))
     assert path.exists()
     assert "dm1lc3M6Ly9jb25maWcx" in path.read_text()
 
 @patch("configstream.output_writer.config_to_clash_proxy", return_value={"name": "test"})
 def test_write_clash_proxies(mock_to_clash, fs, sample_results: list[ConfigResult]):
-    output_dir = fs.create_dir("output")
-    path = write_clash_proxies(sample_results, output_dir)
+    fs.create_dir("/output")
+    path = write_clash_proxies(sample_results, Path("/output"))
     assert path.exists()
     assert "proxies:" in path.read_text()
     mock_to_clash.assert_called()
@@ -67,9 +67,8 @@ def test_write_all_outputs(
     mock_raw, mock_b64, mock_csv, mock_clash, mock_html, mock_json, fs
 ):
     """Test the main orchestrator function for writing all outputs."""
-    output_dir = fs.create_dir("output")
+    fs.create_dir("/output")
     settings = Settings()
-    settings.output.output_dir = output_dir
     # Enable all options to test all branches
     settings.output.write_base64 = True
     settings.output.write_csv = True
@@ -98,8 +97,8 @@ def test_write_all_outputs(
 
 def test_write_csv_report_content(fs, sample_results: list[ConfigResult]):
     """Test the content of the generated CSV report."""
-    output_dir = fs.create_dir("output")
-    path = write_csv_report(sample_results, output_dir)
+    fs.create_dir("/output")
+    path = write_csv_report(sample_results, Path("/output"))
     assert path.exists()
     content = path.read_text()
     lines = content.strip().split('\n')

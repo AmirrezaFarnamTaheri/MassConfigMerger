@@ -52,9 +52,10 @@ def test_choose_proxy():
     settings.network.http_proxy = "http://proxy.com"
     assert choose_proxy(settings) == "http://proxy.com"
 
-    # Unset http_proxy, as both cannot be set simultaneously
-    settings.network.http_proxy = None
     settings.network.socks_proxy = "socks5://proxy.com"
+    assert choose_proxy(settings) == "socks5://proxy.com"
+
+    settings.network.http_proxy = None
     assert choose_proxy(settings) == "socks5://proxy.com"
 
 

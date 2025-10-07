@@ -71,17 +71,25 @@ def _run_async_task(coro: asyncio.Future) -> Any:
 
 
 def _extract_api_token() -> Optional[str]:
-    """Extract the API token from request headers."""
+    """Extract the API token securely from request headers only."""
     header_token = request.headers.get("X-API-Key")
-    if header_token:
-        return header_token
-
     auth_header = request.headers.get("Authorization", "")
-    if auth_header.lower().startswith("bearer "):
-        parts = auth_header.split(None, 1)
-        if len(parts) == 2:
-            return parts[1]
 
+    token_from_header = header_token.strip() if header_token else None
+
+    token_from_bearer = None
+    if auth_header:
+        scheme, _, value = auth_header.partition(" ")
+        if scheme.lower() == "bearer" and value:
+            token_from_bearer = value.strip()
+
+    # If both are provided and non-empty, reject to avoid ambiguity
+    if token_from_header and token_from_bearer:
+        return None
+
+    token = token_from_header or token_from_bearer
+    if token:
+        return token
     return None
 
 

@@ -233,20 +233,31 @@ class SourceManager:
         if not tasks:
             return []
 
-        for task in tqdm(
-            asyncio.as_completed(tasks),
-            total=len(tasks),
-            desc="Checking sources",
-            unit="source",
-        ):
-            url, ok = await task
-            if ok:
-                failures.pop(url, None)
-                valid_sources.append(url)
-            else:
-                failures[url] = failures.get(url, 0) + 1
-                if prune and failures[url] >= max_failures:
-                    removed.append(url)
+        try:
+            for fut in tqdm(
+                asyncio.as_completed(tasks),
+                total=len(tasks),
+                desc="Checking sources",
+                unit="source",
+            ):
+                try:
+                    url, ok = await fut
+                except Exception as e:
+                    logging.debug("Unhandled exception in source check: %s", e)
+                    url, ok = ("<unknown>", False)
+                if ok:
+                    failures.pop(url, None)
+                    valid_sources.append(url)
+                else:
+                    failures[url] = failures.get(url, 0) + 1
+                    if prune and failures[url] >= max_failures and url != "<unknown>":
+                        removed.append(url)
+        finally:
+            for t in tasks:
+                if not t.done():
+                    t.cancel()
+            # Gather tasks to suppress warnings about un-awaited tasks
+            await asyncio.gather(*tasks, return_exceptions=True)
 
         if prune:
             remaining = [u for u in sources if u not in removed]
