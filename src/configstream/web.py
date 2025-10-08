@@ -353,15 +353,33 @@ def sources():
 @app.post("/api/sources/add")
 def add_source():
     """Add a new subscription source."""
-    data = request.get_json()
-    url = data.get("url")
-    if not url:
+    data = request.get_json(silent=True) or {}
+    raw_url = data.get("url")
+    if not raw_url or not isinstance(raw_url, str):
         return jsonify({"error": "URL is required"}), 400
+
+    url = raw_url.strip()
+    # Basic sanitation: prevent newlines and enforce length and scheme
+    if "\n" in url or "\r" in url or len(url) > 2048:
+        return jsonify({"error": "Invalid URL format"}), 400
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
+        return jsonify({"error": "Only http/https URLs with host are allowed"}), 400
 
     project_root = _get_root()
     sources_file = project_root / SOURCES_FILE
-    with open(sources_file, "a") as f:
-        f.write(f"\n{url}")
+    # Ensure file exists and avoid duplicates (case-insensitive compare on full line)
+    existing = set()
+    if sources_file.exists():
+        existing = {line.strip() for line in sources_file.read_text().splitlines() if line.strip()}
+    if url in existing:
+        return jsonify({"message": "Source already exists"}), 200
+
+    with open(sources_file, "a", encoding="utf-8") as f:
+        if sources_file.exists() and sources_file.stat().st_size > 0:
+            f.write("\n")
+        f.write(url)
 
     return jsonify({"message": "Source added successfully"})
 
