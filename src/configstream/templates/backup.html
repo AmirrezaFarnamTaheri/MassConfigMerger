@@ -43,11 +43,14 @@
             alert('Please select a file to upload.');
             return;
         }
-        const nameIsZip = file.name && file.name.toLowerCase().endsWith('.zip');
-        const type = (file.type || '').toLowerCase();
+        const nameLower = (file.name || '').toLowerCase();
+        const hasZipExt = nameLower.endsWith('.zip');
+        const looksDoubleExt = nameLower.match(/\.(zip)\.[^.\s]+$/); // e.g., .zip.exe
+        const typeLower = (file.type || '').toLowerCase();
         const zipTypes = new Set(['application/zip', 'application/x-zip-compressed', 'application/x-zip', 'multipart/x-zip']);
-        if (!nameIsZip && (type && !zipTypes.has(type))) {
-            alert('Please select a .zip backup file.');
+        const hasZipMime = zipTypes.has(typeLower);
+        if (looksDoubleExt || (!hasZipExt && !hasZipMime)) {
+            alert('Please select a valid .zip backup file.');
             return;
         }
 
