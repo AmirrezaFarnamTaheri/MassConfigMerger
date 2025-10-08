@@ -82,21 +82,25 @@
         });
 
         const results = await response.json();
-        let html = '<h3>Test Results</h3>';
+        resultsContainer.innerHTML = '<h3>Test Results</h3>';
 
         for (const result of results) {
-            html += `
-                <div class="result-item">
-                    <div class="result-proxy">${result.proxy}</div>
-                    <div class="result-status ${result.is_reachable ? 'status-success' : 'status-failure'}">
-                        ${result.is_reachable ? 'Reachable' : 'Unreachable'}
-                        - Ping: ${result.ping_time ? (result.ping_time * 1000).toFixed(2) + 'ms' : 'N/A'}
-                    </div>
-                </div>
-            `;
-        }
+            const item = document.createElement('div');
+            item.className = 'result-item';
 
-        resultsContainer.innerHTML = html;
+            const proxyDiv = document.createElement('div');
+            proxyDiv.className = 'result-proxy';
+            proxyDiv.textContent = result.proxy;
+
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `result-status ${result.is_reachable ? 'status-success' : 'status-failure'}`;
+            const pingTime = result.ping_time ? `${(result.ping_time * 1000).toFixed(2)}ms` : 'N/A';
+            statusDiv.textContent = `${result.is_reachable ? 'Reachable' : 'Unreachable'} - Ping: ${pingTime}`;
+
+            item.appendChild(proxyDiv);
+            item.appendChild(statusDiv);
+            resultsContainer.appendChild(item);
+        }
     }
 </script>
 {% endblock %}
