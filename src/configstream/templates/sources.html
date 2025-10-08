@@ -42,27 +42,48 @@
     const newSourceInput = document.getElementById('new-source');
     const removeSourceInput = document.getElementById('remove-source');
 
+    function isValidHttpUrl(value) {
+        try {
+            const u = new URL(value);
+            return u.protocol === 'http:' || u.protocol === 'https:';
+        } catch {
+            return false;
+        }
+    }
+
     async function handleSourceAction(action, url) {
         if (!url) {
             alert('Please enter a URL.');
+            return;
+        }
+        if (!isValidHttpUrl(url)) {
+            alert('Please enter a valid http(s) URL.');
             return;
         }
         try {
             const response = await fetch(`/api/sources/${action}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: url })
+                body: JSON.stringify({ url })
             });
-            const result = await response.json();
-            if (response.ok) {
-                alert(result.message);
-                window.location.reload();
-            } else {
-                alert('Error: ' + result.error);
+
+            if (!response.ok) {
+                const errText = await response.text().catch(() => '');
+                throw new Error(errText || `Request failed with status ${response.status}`);
             }
+
+            let result;
+            try {
+                result = await response.json();
+            } catch {
+                throw new Error('Invalid JSON response from server.');
+            }
+
+            alert(result.message || 'Success');
+            window.location.reload();
         } catch (err) {
             console.error('Failed to perform source action:', err);
-            alert('An unexpected error occurred.');
+            alert('Error: ' + err.message);
         }
     }
 
