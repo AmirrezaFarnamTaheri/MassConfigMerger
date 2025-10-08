@@ -389,62 +389,31 @@ def add_source():
 @app.post("/api/sources/remove")
 def remove_source():
     """Remove a subscription source."""
-    data = request.get_json()
-    url_to_remove = data.get("url")
-    if not url_to_remove:
+    data = request.get_json(silent=True) or {}
+    raw_url = data.get("url")
+    if not raw_url or not isinstance(raw_url, str):
         return jsonify({"error": "URL is required"}), 400
+
+    url_to_remove = raw_url.strip()
+    if "\n" in url_to_remove or "\r" in url_to_remove or len(url_to_remove) > 2048:
+        return jsonify({"error": "Invalid URL format"}), 400
 
     project_root = _get_root()
     sources_file = project_root / SOURCES_FILE
     if not sources_file.exists():
         return jsonify({"error": "Sources file not found"}), 404
-        """Remove a subscription source."""
-        data = request.get_json(silent=True) or {}
-        raw_url = data.get("url")
-        if not raw_url or not isinstance(raw_url, str):
-            return jsonify({"error": "URL is required"}), 400
 
-        url_to_remove = raw_url.strip()
-        if "\n" in url_to_remove or "\r" in url_to_remove or len(url_to_remove) > 2048:
-            return jsonify({"error": "Invalid URL format"}), 400
+    original = sources_file.read_text(encoding="utf-8").splitlines()
+    filtered = [line for line in original if line.strip() != url_to_remove]
 
-        project_root = _get_root()
-        sources_file = project_root / SOURCES_FILE
-        if not sources_file.exists():
-            return jsonify({"error": "Sources file not found"}), 404
+    if len(filtered) == len(original):
+        return jsonify({"message": "Source not found"}), 200
 
-        original = sources_file.read_text(encoding="utf-8").splitlines()
-        filtered = [line for line in original if line.strip() != url_to_remove]
+    tmp_path = sources_file.with_suffix(sources_file.suffix + ".tmp")
+    tmp_path.write_text("\n".join(filtered) + ("\n" if filtered else ""), encoding="utf-8")
+    tmp_path.replace(sources_file)
 
-        if len(filtered) == len(original):
-            return jsonify({"message": "Source not found"}), 200
-
-        tmp_path = sources_file.with_suffix(sources_file.suffix + ".tmp")
-        tmp_path.write_text("\n".join(filtered) + ("\n" if filtered else ""), encoding="utf-8")
-        tmp_path.replace(sources_file)
-
-        return jsonify({"message": "Source removed successfully"}), 200
-    history_data = _run_async_task(_read_history(db_path))
-    entries = _serialize_history(history_data)
-
-    # Process data for charts
-    protocol_counts = Counter(entry["key"].split("://")[0] for entry in entries)
-    country_counts = Counter(entry["country"] for entry in entries if entry["country"])
-
-    # Prepare data for Chart.js
-    protocol_labels = list(protocol_counts.keys())
-    protocol_values = list(protocol_counts.values())
-
-    country_labels = list(country_counts.keys())
-    country_values = list(country_counts.values())
-
-    return render_template(
-        "analytics.html",
-        protocol_labels=protocol_labels,
-        protocol_values=protocol_values,
-        country_labels=country_labels,
-        country_values=country_values,
-    )
+    return jsonify({"message": "Source removed successfully"}), 200
 
 
 @app.route("/settings")
