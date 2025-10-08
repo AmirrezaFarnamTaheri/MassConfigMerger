@@ -50,7 +50,7 @@
                         <td>
                           {% set rp = entry.reliability_percent %}
                           {% set rp_float = (rp | float(default=None)) %}
-                          {% if rp_float is not none %}
+                          {% if rp_float is not none and rp_float == rp_float and rp_float != float('inf') and rp_float != -float('inf') %}
                             {{ '%.2f'|format(rp_float) }}%
                           {% else %}
                             N/A
