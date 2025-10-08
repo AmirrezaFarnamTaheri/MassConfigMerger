@@ -52,46 +52,50 @@
         <span class="job-status {{ 'status-running' if job.is_running else '' }}">{{ 'Running' if job.is_running else 'Paused' }}</span>
         <button class="toggle-btn" data-job-id="{{ job.id }}">{{ 'Pause' if job.is_running else 'Resume' }}</button>
     </div>
-    {% block scripts %}
-    <script>
-      document.addEventListener('click', async (e) => {
-        const btn = e.target.closest('.toggle-btn');
-        if (!btn) return;
-        const jobId = btn.getAttribute('data-job-id');
-        const action = btn.textContent.trim().toLowerCase() === 'pause' ? 'pause' : 'resume';
-        try {
-          const resp = await fetch(`/api/scheduler/${action}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: jobId })
-          });
-          if (!resp.ok) {
-            const msg = await resp.text().catch(() => '');
-            throw new Error(msg || 'Request failed');
-          }
-          // Optimistically update UI
-          if (action === 'pause') {
-            btn.textContent = 'Resume';
-            const badge = btn.parentElement.querySelector('.job-status');
-            badge.textContent = 'Paused';
-            badge.classList.remove('status-running');
-          } else {
-            btn.textContent = 'Pause';
-            const badge = btn.parentElement.querySelector('.job-status');
-            badge.textContent = 'Running';
-            badge.classList.add('status-running');
-          }
-        } catch (err) {
-          console.error('Failed to toggle job:', err);
-          alert('Failed to update job: ' + (err.message || 'Unknown error'));
-        }
-      });
-    </script>
-    {% endblock %}
 </div>
 {% else %}
 <div class="job">
     <div class="job-name">No scheduled jobs found.</div>
 </div>
 {% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.toggle-btn');
+    if (!btn) return;
+    const jobId = btn.getAttribute('data-job-id');
+    const action = btn.textContent.trim().toLowerCase() === 'pause' ? 'pause' : 'resume';
+    try {
+      const resp = await fetch(`/api/scheduler/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: jobId })
+      });
+      if (!resp.ok) {
+        const msg = await resp.text().catch(() => '');
+        throw new Error(msg || 'Request failed');
+      }
+      if (action === 'pause') {
+        btn.textContent = 'Resume';
+        const badge = btn.parentElement.querySelector('.job-status');
+        if (badge) {
+          badge.textContent = 'Paused';
+          badge.classList.remove('status-running');
+        }
+      } else {
+        btn.textContent = 'Pause';
+        const badge = btn.parentElement.querySelector('.job-status');
+        if (badge) {
+          badge.textContent = 'Running';
+          badge.classList.add('status-running');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to toggle job:', err);
+      alert('Failed to update job: ' + (err.message || 'Unknown error'));
+    }
+  }, { once: false });
+</script>
 {% endblock %}
