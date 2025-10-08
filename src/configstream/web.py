@@ -468,22 +468,34 @@ def export_backup():
     project_root = _get_root()
     root = project_root.resolve()
 
-    # Define which files to back up (only top-level allowed)
-    candidate_names = ("config.yaml", "sources.txt", "proxy_history.db")
+    candidate_names = {"config.yaml", "sources.txt", "proxy_history.db"}
     files_to_backup: List[Path] = []
+    max_total_bytes = 50 * 1024 * 1024  # 50 MB cap
+    total_bytes = 0
+
     for name in candidate_names:
+        # Only allow exact filenames, no path components
+        if Path(name).name != name:
+            continue
         p = (root / name).resolve()
-        # Containment check to avoid escaping project root
         if not str(p).startswith(str(root)):
             continue
-        if p.exists() and p.is_file():
-            files_to_backup.append(p)
+        # Avoid following symlinks
+        if not p.exists() or not p.is_file() or p.is_symlink():
+            continue
+        try:
+            size = p.stat().st_size
+        except OSError:
+            continue
+        total_bytes += size
+        if total_bytes > max_total_bytes:
+            return jsonify({"error": "Backup exceeds allowed size"}), 400
+        files_to_backup.append(p)
 
     memory_file = io.BytesIO()
     with zipfile.ZipFile(memory_file, "w", zipfile.ZIP_DEFLATED) as zf:
         for file_path in files_to_backup:
             zf.write(file_path, arcname=file_path.name)
-
     memory_file.seek(0)
     return send_file(
         memory_file,
