@@ -468,28 +468,25 @@ def export_backup():
     # Enforce API token if configured
     _get_request_settings()
 
-    project_root = _get_root()
-    root = project_root.resolve()
-
     candidate_names = {"config.yaml", "sources.txt", "proxy_history.db"}
-    files_to_backup: List[Path] = []
     max_total_bytes = 50 * 1024 * 1024  # 50 MB cap
-    total_bytes = 0
 
     sizes: List[tuple[Path, int]] = []
     for name in candidate_names:
         if Path(name).name != name:
             continue
         p = (root / name).resolve()
+        # Ensure file stays within project root and is a regular file
         if not str(p).startswith(str(root)):
             continue
-        if not p.exists() or not p.is_file() or p.is_symlink():
-            continue
         try:
-            size = p.stat().st_size
+            st = p.lstat()
         except OSError:
             continue
-        sizes.append((p, size))
+        # Disallow symlinks and non-regular files
+        if not p.exists() or not p.is_file() or p.is_symlink():
+            continue
+        sizes.append((p, st.st_size))
 
     total_bytes = sum(size for _, size in sizes)
     if total_bytes > max_total_bytes:
@@ -498,6 +495,23 @@ def export_backup():
     memory_file = io.BytesIO()
     compression = getattr(zipfile, "ZIP_DEFLATED", zipfile.ZIP_STORED)
     with zipfile.ZipFile(memory_file, "w", compression) as zf:
+        for file_path, _ in sizes:
+            # Validate arcname is a simple filename
+            arcname = file_path.name
+            if Path(arcname).name != arcname:
+                continue
+            # Read content defensively
+            try:
+                with open(file_path, "rb") as f:
+                    data = f.read()
+            except OSError:
+                continue
+            # Create ZipInfo with safe permissions (rw for owner)
+            zi = zipfile.ZipInfo(arcname)
+            zi.external_attr = (0o600 & 0xFFFF) << 16
+            zf.writestr(zi, data)
+
+    memory_file.seek(0)
         for file_path, _ in sizes:
             zf.write(file_path, arcname=file_path.name)
     memory_file.seek(0)
