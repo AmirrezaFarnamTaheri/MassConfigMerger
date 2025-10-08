@@ -518,60 +518,53 @@ def import_backup():
     if file.filename == "":
         return jsonify({"error": "No selected file"}), 400
 
-    if file and file.filename.endswith(".zip"):
-        project_root = _get_root()
-        try:
-            with zipfile.ZipFile(file, "r") as zf:
-            with zipfile.ZipFile(file, "r") as zf:
-                # Only allow known safe targets
-                allowed_names = {"config.yaml", "sources.txt", "proxy_history.db"}
-                max_total_uncompressed = 50 * 1024 * 1024  # 50 MB cap
-                max_file_uncompressed = 10 * 1024 * 1024   # 10 MB per file
-                total_uncompressed = 0
+    if not file or not file.filename.endswith(".zip"):
+        return jsonify({"error": "Invalid file type. Please upload a .zip file."}), 400
 
-                root_resolved = project_root.resolve()
-                for member in zf.infolist():
-                    # Skip directories and disallow symlinks or unusual file types
-                    if member.is_dir():
-                        continue
-                    # Reject absolute paths or drive changes
-                    member_path = Path(member.filename)
-                    if member_path.is_absolute() or member_path.drive:
-                        return jsonify({"error": f"Invalid absolute path in archive: {member.filename}"}), 400
-                    # Only allow top-level files with exact allowed names
-                    if member_path.parent != Path(".") or member_path.name not in allowed_names:
-                        return jsonify({"error": f"Disallowed file in archive: {member.filename}"}), 400
+    project_root = _get_root()
+    try:
+        with zipfile.ZipFile(file, "r") as zf:
+            allowed_names = {"config.yaml", "sources.txt", "proxy_history.db"}
+            max_total_uncompressed = 50 * 1024 * 1024  # 50 MB cap
+            max_file_uncompressed = 10 * 1024 * 1024   # 10 MB per file
+            total_uncompressed = 0
 
-                    # Enforce size limits to prevent zip bombs
-                    if member.file_size is not None and member.file_size > max_file_uncompressed:
-                        return jsonify({"error": f"File too large in archive: {member.filename}"}), 400
-                    total_uncompressed += int(member.file_size or 0)
-                    if total_uncompressed > max_total_uncompressed:
-                        return jsonify({"error": "Archive content too large"}), 400
+            root_resolved = project_root.resolve()
+            for member in zf.infolist():
+                if member.is_dir():
+                    continue
+                member_path = Path(member.filename)
+                if member_path.is_absolute() or member_path.drive:
+                    return jsonify({"error": f"Invalid absolute path in archive: {member.filename}"}), 400
+                if member_path.parent != Path(".") or member_path.name not in allowed_names:
+                    return jsonify({"error": f"Disallowed file in archive: {member.filename}"}), 400
 
-                    # Resolve target path and ensure it remains within project root
-                    target_path = (root_resolved / member_path.name).resolve()
-                    if not str(target_path).startswith(str(root_resolved)):
-                        return jsonify({"error": f"Invalid file path in archive: {member.filename}"}), 400
+                if member.file_size is not None and member.file_size > max_file_uncompressed:
+                    return jsonify({"error": f"File too large in archive: {member.filename}"}), 400
+                total_uncompressed += int(member.file_size or 0)
+                if total_uncompressed > max_total_uncompressed:
+                    return jsonify({"error": "Archive content too large"}), 400
 
-                    # Write file safely
-                    target_path.parent.mkdir(parents=True, exist_ok=True)
-                    with zf.open(member, "r") as src, open(target_path, "wb") as dst:
-                        # Stream copy with a cap to avoid excessive memory usage
-                        read_limit = 0
+                target_path = (root_resolved / member_path.name).resolve()
+                if not str(target_path).startswith(str(root_resolved)):
+                    return jsonify({"error": f"Invalid file path in archive: {member.filename}"}), 400
+
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                with zf.open(member, "r") as src, open(target_path, "wb") as dst:
+                    read_limit = 0
+                    while True:
                         chunk = src.read(65536)
-                        while chunk:
-                            read_limit += len(chunk)
-                            if read_limit > max_file_uncompressed:
-                                return jsonify({"error": f"File too large in archive: {member.filename}"}), 400
-                            dst.write(chunk)
-                            chunk = src.read(65536)
-            return jsonify({"message": "Backup imported successfully."})
-            return jsonify({"error": "Invalid zip file."}), 400
-        except Exception as e:
-            return jsonify({"error": f"An error occurred: {e}"}), 500
-
-    return jsonify({"error": "Invalid file type. Please upload a .zip file."}), 400
+                        if not chunk:
+                            break
+                        read_limit += len(chunk)
+                        if read_limit > max_file_uncompressed:
+                            return jsonify({"error": f"File too large in archive: {member.filename}"}), 400
+                        dst.write(chunk)
+        return jsonify({"message": "Backup imported successfully."}), 200
+    except zipfile.BadZipFile:
+        return jsonify({"error": "Invalid zip file."}), 400
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {e}"}), 500
 
 
 def main() -> None:
