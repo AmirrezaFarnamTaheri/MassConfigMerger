@@ -45,16 +45,41 @@
         formData.append('backup_file', fileInput.files[0]);
 
         try {
-            const response = await fetch('/api/import-backup', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.json();
-            if (response.ok) {
-                alert(result.message);
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a file to upload.');
+                return;
+            }
+            if (file.type && file.type !== 'application/zip' && !file.name.toLowerCase().endsWith('.zip')) {
+                alert('Please select a .zip backup file.');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('backup_file', file);
+
+            try {
+                const response = await fetch('/api/import-backup', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errText = await response.text().catch(() => '');
+                    throw new Error(errText || `Import failed with status ${response.status}`);
+                }
+
+                let result;
+                try {
+                    result = await response.json();
+                } catch {
+                    throw new Error('Invalid JSON response from server.');
+                }
+
+                alert(result.message || 'Import completed.');
                 window.location.reload();
-            } else {
-                alert('Error: ' + result.error);
+            } catch (err) {
+                console.error('Failed to import backup:', err);
+                alert('Error: ' + err.message);
             }
         } catch (err) {
             console.error('Failed to import backup:', err);
