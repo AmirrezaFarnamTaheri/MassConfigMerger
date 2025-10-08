@@ -465,13 +465,22 @@ def settings():
 @app.route("/logs")
 def logs():
     """Display application logs."""
-    log_file = _get_root() / "web_server.log"
+    log_file = (_get_root() / "web_server.log").resolve()
+    root = _get_root().resolve()
+    # Ensure the file is inside project root
+    if not str(log_file).startswith(str(root)):
+        abort(400)
+
     log_content = "Log file not found."
-    if log_file.exists():
+    if log_file.exists() and log_file.is_file():
         try:
-            with open(log_file, "r") as f:
-                lines = f.readlines()
-                log_content = "".join(lines[-100:])
+            max_bytes = 512 * 1024  # 512 KB cap
+            size = log_file.stat().st_size
+            with open(log_file, "rb") as f:
+                if size > max_bytes:
+                    f.seek(-max_bytes, 2)
+                data = f.read()
+            log_content = data.decode("utf-8", errors="replace")
         except Exception as e:
             log_content = f"Error reading log file: {e}"
 
