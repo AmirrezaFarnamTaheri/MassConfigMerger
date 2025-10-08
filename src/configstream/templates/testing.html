@@ -81,21 +81,41 @@
             body: JSON.stringify({ proxies })
         });
 
-        const results = await response.json();
+        let results;
+        try {
+            if (!response.ok) {
+                const errMsg = await response.text();
+                resultsContainer.innerHTML = `<h3>Error</h3><div class="result-item">${errMsg || 'Request failed'}</div>`;
+                return;
+            }
+            results = await response.json();
+        } catch (e) {
+            resultsContainer.innerHTML = `<h3>Error</h3><div class="result-item">Invalid response from server.</div>`;
+            return;
+        }
+
         resultsContainer.innerHTML = '<h3>Test Results</h3>';
 
+        if (!Array.isArray(results)) {
+            resultsContainer.innerHTML += `<div class="result-item">Unexpected response format.</div>`;
+            return;
+        }
+
         for (const result of results) {
-            const item = document.createElement('div');
-            item.className = 'result-item';
+          const item = document.createElement('div');
+          item.className = 'result-item';
 
-            const proxyDiv = document.createElement('div');
-            proxyDiv.className = 'result-proxy';
-            proxyDiv.textContent = result.proxy;
+          const proxyDiv = document.createElement('div');
+          proxyDiv.className = 'result-proxy';
+          proxyDiv.textContent = result && typeof result.proxy === 'string' ? result.proxy : 'Unknown proxy';
 
-            const statusDiv = document.createElement('div');
-            statusDiv.className = `result-status ${result.is_reachable ? 'status-success' : 'status-failure'}`;
-            const pingTime = result.ping_time ? `${(result.ping_time * 1000).toFixed(2)}ms` : 'N/A';
-            statusDiv.textContent = `${result.is_reachable ? 'Reachable' : 'Unreachable'} - Ping: ${pingTime}`;
+          const isReachable = result && typeof result.is_reachable === 'boolean' ? result.is_reachable : false;
+          const pingSeconds = result && typeof result.ping_time === 'number' ? result.ping_time : null;
+
+          const statusDiv = document.createElement('div');
+          statusDiv.className = `result-status ${isReachable ? 'status-success' : 'status-failure'}`;
+          const pingTime = pingSeconds != null ? `${(pingSeconds * 1000).toFixed(2)}ms` : 'N/A';
+          statusDiv.textContent = `${isReachable ? 'Reachable' : 'Unreachable'} - Ping: ${pingTime}`;
 
             item.appendChild(proxyDiv);
             item.appendChild(statusDiv);
