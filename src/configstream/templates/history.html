@@ -49,8 +49,9 @@
                         <td>{{ entry.failures }}</td>
                         <td>
                           {% set rp = entry.reliability_percent %}
-                          {% if rp is number %}
-                            {{ '%.2f'|format(rp) }}%
+                          {% set rp_float = (rp | float(default=None)) %}
+                          {% if rp_float is not none %}
+                            {{ '%.2f'|format(rp_float) }}%
                           {% else %}
                             N/A
                           {% endif %}
