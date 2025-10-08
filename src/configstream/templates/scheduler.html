@@ -49,8 +49,11 @@
         </div>
     </div>
     <div>
-        <span class="job-status {{ 'status-running' if job.is_running else '' }}">{{ 'Running' if job.is_running else 'Paused' }}</span>
-        <button class="toggle-btn" data-job-id="{{ job.id }}" data-state="{{ 'running' if job.is_running else 'paused' }}">{{ 'Pause' if job.is_running else 'Resume' }}</button>
+        {% set is_running = (job.is_running is boolean and job.is_running) %}
+        <span class="job-status {{ 'status-running' if is_running else '' }}">{{ 'Running' if is_running else 'Paused' }}</span>
+        <button class="toggle-btn" data-job-id="{{ job.id }}" data-state="{{ 'running' if is_running else 'paused' }}">
+          {{ 'Pause' if is_running else 'Resume' }}
+        </button>
     </div>
 </div>
 {% else %}
