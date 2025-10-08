@@ -493,12 +493,23 @@ def import_backup():
         project_root = _get_root()
         try:
             with zipfile.ZipFile(file, "r") as zf:
+                root_resolved = project_root.resolve()
                 for member in zf.infolist():
-                    # Prevent path traversal attacks (Zip Slip)
-                    target_path = project_root.joinpath(member.filename).resolve()
-                    if not str(target_path).startswith(str(project_root.resolve())):
+                    # Reject absolute paths or drive changes
+                    member_path = Path(member.filename)
+                    if member_path.is_absolute() or member_path.drive:
+                        return jsonify({"error": f"Invalid absolute path in archive: {member.filename}"}), 400
+                    # Normalize and resolve against project root
+                    target_path = (root_resolved / member_path).resolve()
+                    if not str(target_path).startswith(str(root_resolved)):
                         return jsonify({"error": f"Invalid file path in archive: {member.filename}"}), 400
-                zf.extractall(project_root)
+                    # Create parent directories and write file safely
+                    if member.is_dir():
+                        target_path.mkdir(parents=True, exist_ok=True)
+                    else:
+                        target_path.parent.mkdir(parents=True, exist_ok=True)
+                        with zf.open(member, "r") as src, open(target_path, "wb") as dst:
+                            dst.write(src.read())
             return jsonify({"message": "Backup imported successfully."})
         except zipfile.BadZipFile:
             return jsonify({"error": "Invalid zip file."}), 400
