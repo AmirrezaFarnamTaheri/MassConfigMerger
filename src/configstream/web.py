@@ -466,10 +466,13 @@ def backup():
 def export_backup():
     """Export critical application files as a zip archive."""
     project_root = _get_root()
-    files_to_backup = [
-        project_root / CONFIG_FILE_NAME,
-        project_root / SOURCES_FILE,
-        project_root / "proxy_history.db",
+    root = _get_root().resolve()
+
+    try:
+        # Python 3.9+ safe containment check
+        rel = log_file.relative_to(root)
+    except Exception:
+        abort(400)
     ]
 
     memory_file = io.BytesIO()
