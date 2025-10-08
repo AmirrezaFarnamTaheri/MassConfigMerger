@@ -362,39 +362,29 @@ def add_source():
     # Basic sanitation: prevent newlines and enforce length and scheme
     if "\n" in url or "\r" in url or len(url) > 2048:
         return jsonify({"error": "Invalid URL format"}), 400
+
     from urllib.parse import urlparse
     parsed = urlparse(url)
     if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
         return jsonify({"error": "Only http/https URLs with host are allowed"}), 400
 
     project_root = _get_root()
-    """Remove a subscription source."""
-    data = request.get_json(silent=True) or {}
-    raw_url = data.get("url")
-    if not raw_url or not isinstance(raw_url, str):
-        return jsonify({"error": "URL is required"}), 400
-
-    url_to_remove = raw_url.strip()
-    if "\n" in url_to_remove or "\r" in url_to_remove or len(url_to_remove) > 2048:
-        return jsonify({"error": "Invalid URL format"}), 400
-
-    project_root = _get_root()
     sources_file = project_root / SOURCES_FILE
-    if not sources_file.exists():
-        return jsonify({"error": "Sources file not found"}), 404
+    existing = []
+    if sources_file.exists():
+        existing = sources_file.read_text(encoding="utf-8").splitlines()
 
-    original = sources_file.read_text(encoding="utf-8").splitlines()
-    # Normalize lines and remove exact matches only
-    filtered = [line for line in original if line.strip() != url_to_remove]
+    # Avoid duplicates (compare normalized)
+    if any(line.strip() == url for line in existing):
+        return jsonify({"message": "Source already exists"}), 200
 
-    # If no change, return idempotent response
-    if len(filtered) == len(original):
-        return jsonify({"message": "Source not found"}), 200
-
-    # Atomic write
+    # Append safely
+    new_lines = [*existing, url] if existing else [url]
     tmp_path = sources_file.with_suffix(sources_file.suffix + ".tmp")
-    tmp_path.write_text("\n".join(filtered), encoding="utf-8")
+    tmp_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
     tmp_path.replace(sources_file)
+
+    return jsonify({"message": "Source added successfully"}), 200
 
 @app.post("/api/sources/remove")
 def remove_source():
