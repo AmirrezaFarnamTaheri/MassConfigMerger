@@ -32,9 +32,13 @@
 <!-- Load Chart.js without an invalid placeholder SRI to avoid blocking -->
 <!-- Prefer self-hosting; if using CDN, include SRI and crossorigin -->
 <!-- Prefer self-hosting; if using CDN, include SRI and crossorigin -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
-        integrity="sha384-n4v3r3alExAmpl3dSRIhaShvAluE9v1l1z1y0h5Jxwq9Q8I5XrQzVhN3q9d8z3QK"
-        crossorigin="anonymous"></script>
+<!-- Option 1: remove integrity to avoid false blocking (prefer self-hosting in production) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+
+<!-- Option 2: if you verify the exact hash for this asset, keep SRI -->
+<!-- <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+integrity="sha384-<verified-hash-here>"
+crossorigin="anonymous"></script> -->
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
