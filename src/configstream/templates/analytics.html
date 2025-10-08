@@ -33,7 +33,7 @@
     new Chart(protocolCtx, {
         type: 'doughnut',
         data: {
-            labels: {{ protocol_labels|tojson }},
+            labels: {{ protocol_labels|tojson|safe }},
             datasets: [{
                 label: 'Protocols',
                 data: {{ protocol_values|tojson }},
