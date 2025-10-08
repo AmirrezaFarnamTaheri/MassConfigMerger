@@ -522,25 +522,51 @@ def import_backup():
         project_root = _get_root()
         try:
             with zipfile.ZipFile(file, "r") as zf:
+            with zipfile.ZipFile(file, "r") as zf:
+                # Only allow known safe targets
+                allowed_names = {"config.yaml", "sources.txt", "proxy_history.db"}
+                max_total_uncompressed = 50 * 1024 * 1024  # 50 MB cap
+                max_file_uncompressed = 10 * 1024 * 1024   # 10 MB per file
+                total_uncompressed = 0
+
                 root_resolved = project_root.resolve()
                 for member in zf.infolist():
+                    # Skip directories and disallow symlinks or unusual file types
+                    if member.is_dir():
+                        continue
                     # Reject absolute paths or drive changes
                     member_path = Path(member.filename)
                     if member_path.is_absolute() or member_path.drive:
                         return jsonify({"error": f"Invalid absolute path in archive: {member.filename}"}), 400
-                    # Normalize and resolve against project root
-                    target_path = (root_resolved / member_path).resolve()
+                    # Only allow top-level files with exact allowed names
+                    if member_path.parent != Path(".") or member_path.name not in allowed_names:
+                        return jsonify({"error": f"Disallowed file in archive: {member.filename}"}), 400
+
+                    # Enforce size limits to prevent zip bombs
+                    if member.file_size is not None and member.file_size > max_file_uncompressed:
+                        return jsonify({"error": f"File too large in archive: {member.filename}"}), 400
+                    total_uncompressed += int(member.file_size or 0)
+                    if total_uncompressed > max_total_uncompressed:
+                        return jsonify({"error": "Archive content too large"}), 400
+
+                    # Resolve target path and ensure it remains within project root
+                    target_path = (root_resolved / member_path.name).resolve()
                     if not str(target_path).startswith(str(root_resolved)):
                         return jsonify({"error": f"Invalid file path in archive: {member.filename}"}), 400
-                    # Create parent directories and write file safely
-                    if member.is_dir():
-                        target_path.mkdir(parents=True, exist_ok=True)
-                    else:
-                        target_path.parent.mkdir(parents=True, exist_ok=True)
-                        with zf.open(member, "r") as src, open(target_path, "wb") as dst:
-                            dst.write(src.read())
+
+                    # Write file safely
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    with zf.open(member, "r") as src, open(target_path, "wb") as dst:
+                        # Stream copy with a cap to avoid excessive memory usage
+                        read_limit = 0
+                        chunk = src.read(65536)
+                        while chunk:
+                            read_limit += len(chunk)
+                            if read_limit > max_file_uncompressed:
+                                return jsonify({"error": f"File too large in archive: {member.filename}"}), 400
+                            dst.write(chunk)
+                            chunk = src.read(65536)
             return jsonify({"message": "Backup imported successfully."})
-        except zipfile.BadZipFile:
             return jsonify({"error": "Invalid zip file."}), 400
         except Exception as e:
             return jsonify({"error": f"An error occurred: {e}"}), 500
