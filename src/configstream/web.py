@@ -473,28 +473,29 @@ def export_backup():
     max_total_bytes = 50 * 1024 * 1024  # 50 MB cap
     total_bytes = 0
 
+    sizes: List[tuple[Path, int]] = []
     for name in candidate_names:
-        # Only allow exact filenames, no path components
         if Path(name).name != name:
             continue
         p = (root / name).resolve()
         if not str(p).startswith(str(root)):
             continue
-        # Avoid following symlinks
         if not p.exists() or not p.is_file() or p.is_symlink():
             continue
         try:
             size = p.stat().st_size
         except OSError:
             continue
-        total_bytes += size
-        if total_bytes > max_total_bytes:
-            return jsonify({"error": "Backup exceeds allowed size"}), 400
-        files_to_backup.append(p)
+        sizes.append((p, size))
+
+    total_bytes = sum(size for _, size in sizes)
+    if total_bytes > max_total_bytes:
+        return jsonify({"error": "Backup exceeds allowed size"}), 400
 
     memory_file = io.BytesIO()
-    with zipfile.ZipFile(memory_file, "w", zipfile.ZIP_DEFLATED) as zf:
-        for file_path in files_to_backup:
+    compression = getattr(zipfile, "ZIP_DEFLATED", zipfile.ZIP_STORED)
+    with zipfile.ZipFile(memory_file, "w", compression) as zf:
+        for file_path, _ in sizes:
             zf.write(file_path, arcname=file_path.name)
     memory_file.seek(0)
     return send_file(
