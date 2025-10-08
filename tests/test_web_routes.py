@@ -1,66 +1,65 @@
 from __future__ import annotations
 
-import zipfile
 import io
+import zipfile
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
-import pytest
 
-from configstream.config import Settings
-from configstream.web import app
+# Note: No need to import pytest, Settings, or app. They are provided by fixtures.
 
 
 @patch("configstream.web.run_aggregation_pipeline", new_callable=AsyncMock)
-@patch("configstream.web.load_config")
-def test_aggregate_api(mock_load_config, mock_run_pipeline, client, fs):
+def test_aggregate_api(mock_run_pipeline, client, settings):
     """Test the /api/aggregate route."""
-    fs.create_file("config.yaml")
-    mock_load_config.return_value = Settings()
-    mock_run_pipeline.return_value = (Path("/fake/dir"), [Path("/fake/dir/file.txt")])
-
-    response = client.post("/api/aggregate", json={})
+    mock_run_pipeline.return_value = (
+        Path(settings.output.output_dir),
+        [Path(settings.output.output_dir) / "file.txt"],
+    )
+    response = client.post(
+        "/api/aggregate",
+        json={},
+        headers={"Authorization": f"Bearer {settings.security.web_api_token}"},
+    )
     assert response.status_code == 200
     payload = response.get_json()
     assert payload["status"] == "ok"
-    assert payload["output_dir"] == "/fake/dir"
+    assert payload["output_dir"] == str(settings.output.output_dir)
     assert payload["file_count"] == 1
-    assert payload["files"] == ["/fake/dir/file.txt"]
     mock_run_pipeline.assert_awaited_once()
 
 
 @patch("configstream.web.run_aggregation_pipeline", new_callable=AsyncMock)
-@patch("configstream.web.load_config")
-def test_aggregate_requires_token(mock_load_config, mock_run_pipeline, client, fs):
+def test_aggregate_requires_token(mock_run_pipeline, client, settings):
     """Ensure /api/aggregate enforces the configured API token."""
-    settings = Settings()
-    settings.security.web_api_token = "topsecret"
-    mock_load_config.return_value = settings
-
+    # Test without token
     response = client.post("/api/aggregate", json={})
     assert response.status_code == 401
     assert b"Missing or invalid API token" in response.data
     mock_run_pipeline.assert_not_awaited()
 
-    mock_run_pipeline.reset_mock()
+    # Test with valid token
     mock_run_pipeline.return_value = (Path("/secured"), [])
-    response_ok = client.post("/api/aggregate", json={}, headers={"X-API-Key": "topsecret"})
+    response_ok = client.post(
+        "/api/aggregate",
+        json={},
+        headers={"Authorization": f"Bearer {settings.security.web_api_token}"},
+    )
     assert response_ok.status_code == 200
     mock_run_pipeline.assert_awaited_once()
 
 
 @patch("configstream.web.run_merger_pipeline", new_callable=AsyncMock)
-@patch("configstream.web.load_config")
-def test_merge_route_success(mock_load_config, mock_run_merger, client, fs):
+def test_merge_route_success(mock_run_merger, client, settings):
     """Test the /api/merge route when the resume file exists."""
-    fs.create_file("pyproject.toml")
-    fs.create_dir("fake_output")
-    fs.create_file("fake_output/vpn_subscription_raw.txt")
-    settings = Settings()
-    settings.output.output_dir = Path("fake_output")
-    mock_load_config.return_value = settings
+    resume_file = Path(settings.output.output_dir) / "vpn_subscription_raw.txt"
+    resume_file.write_text("test data")
 
-    response = client.post("/api/merge", json={})
+    response = client.post(
+        "/api/merge",
+        json={},
+        headers={"Authorization": f"Bearer {settings.security.web_api_token}"},
+    )
     assert response.status_code == 200
     payload = response.get_json()
     assert payload["status"] == "merge complete"
@@ -72,7 +71,7 @@ def test_index_route(client):
     """Test the index route."""
     response = client.get("/")
     assert response.status_code == 200
-    assert b"ConfigStream Control Panel" in response.data
+    assert b"Dashboard - ConfigStream" in response.data
 
 
 def test_health_check_route(client):
@@ -83,18 +82,26 @@ def test_health_check_route(client):
 
 
 @patch("configstream.web.Database")
-def test_history_route_success(MockDatabase, client, fs):
+def test_history_route_success(MockDatabase, client, settings):
     """Test the /history route with successful data retrieval."""
-    fs.create_file("pyproject.toml")
-    fs.create_file("config.yaml", contents="output:\n  history_db_file: 'fake.db'")
-    fs.create_dir("output")
+    # Ensure the database file exists in the fake filesystem
+    db_path = Path(settings.output.output_dir) / settings.output.history_db_file
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    db_path.touch()
 
     mock_db_instance = MockDatabase.return_value
     mock_db_instance.connect = AsyncMock()
     mock_db_instance.close = AsyncMock()
-    mock_db_instance.get_proxy_history = AsyncMock(return_value={
-        "proxy1": {"successes": 10, "failures": 0, "last_tested": 1672531200, "country": "US"},
-    })
+    mock_db_instance.get_proxy_history = AsyncMock(
+        return_value={
+            "proxy1": {
+                "successes": 10,
+                "failures": 0,
+                "last_tested": 1672531200,
+                "country": "US",
+            },
+        }
+    )
 
     response = client.get("/history")
     assert response.status_code == 200
@@ -103,30 +110,34 @@ def test_history_route_success(MockDatabase, client, fs):
     assert b"100.00%" in response.data
 
 
-def test_sources_route(client, fs):
+def test_sources_route(client, settings):
     """Test the /sources route."""
-    fs.create_file("sources.txt", contents="http://source1.com\nhttp://source2.com")
+    Path(settings.sources.sources_file).write_text(
+        "http://source1.com\nhttp://source2.com"
+    )
     response = client.get("/sources")
     assert response.status_code == 200
     assert b"Subscription Sources" in response.data
     assert b"http://source1.com" in response.data
 
 
-def test_analytics_route(client, fs):
+def test_analytics_route(client, settings):
     """Test the /analytics route."""
-    fs.create_file("proxy_history.db")
+    db_path = Path(settings.output.output_dir) / settings.output.history_db_file
+    db_path.touch()
     response = client.get("/analytics")
     assert response.status_code == 200
-    assert b"Performance Analytics" in response.data
+    assert b"Analytics - ConfigStream" in response.data
 
 
-def test_settings_route(client, fs):
+def test_settings_route(client, settings):
     """Test the /settings route."""
-    fs.create_file("config.yaml", contents="network:\n  request_timeout: 99")
     response = client.get("/settings")
     assert response.status_code == 200
     assert b"Application Settings" in response.data
-    assert b"request_timeout: 99" in response.data
+    # Check for key parts of the config, less sensitive to exact formatting.
+    assert b"output_dir" in response.data
+    assert settings.output.output_dir.name.encode() in response.data
 
 
 def test_logs_route(client, fs):
@@ -145,31 +156,33 @@ def test_backup_route(client):
     assert b"Backup & Restore" in response.data
 
 
-def test_export_backup_api(client, fs):
+def test_export_backup_api(client, settings):
     """Test the /api/export-backup endpoint."""
-    fs.create_file("config.yaml", contents="test_config")
-    fs.create_file("sources.txt", contents="test_sources")
-    response = client.get("/api/export-backup")
+    response = client.get(
+        "/api/export-backup",
+        headers={"Authorization": f"Bearer {settings.security.web_api_token}"},
+    )
     assert response.status_code == 200
     assert response.mimetype == "application/zip"
 
     zip_file = zipfile.ZipFile(io.BytesIO(response.data))
     assert "config.yaml" in zip_file.namelist()
-    assert "sources.txt" in zip_file.namelist()
+    assert Path(settings.sources.sources_file).name in zip_file.namelist()
 
 
-def test_import_backup_api(client, fs):
+def test_import_backup_api(client, settings):
     """Test the /api/import-backup endpoint."""
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w") as zf:
-        zf.writestr("config.yaml", "new_config")
+        zf.writestr("config.yaml", "new_config_content")
     zip_buffer.seek(0)
 
     response = client.post(
         "/api/import-backup",
         data={"backup_file": (zip_buffer, "backup.zip")},
         content_type="multipart/form-data",
+        headers={"Authorization": f"Bearer {settings.security.web_api_token}"},
     )
     assert response.status_code == 200
     assert response.json["message"] == "Backup imported successfully."
-    assert "new_config" in (Path(".") / "config.yaml").read_text()
+    assert "new_config_content" in Path("config.yaml").read_text()

@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import aiohttp
 import pytest
 from configstream.config import Settings
 from configstream.core.config_processor import ConfigProcessor, ConfigResult
@@ -34,51 +35,43 @@ def settings():
     return Settings()
 
 
+from configstream.exceptions import NetworkError
+
+
 @pytest.mark.asyncio
 @patch("configstream.core.source_manager.utils.choose_proxy", return_value=None)
-async def test_source_manager_fetch_sources(mock_choose_proxy, settings):
+@patch("configstream.core.source_manager.utils.fetch_text", new_callable=AsyncMock)
+async def test_source_manager_fetch_sources(mock_fetch_text, mock_choose_proxy, settings):
     """Test that the SourceManager can fetch and parse sources."""
     source_manager = SourceManager(settings)
     sources = ["http://example.com/sub1"]
 
-    mock_response = MagicMock()
-    mock_response.text = AsyncMock(return_value=VALID_VMESS)
-    mock_response.status = 200
+    mock_fetch_text.return_value = VALID_VMESS
 
-    mock_session = MagicMock()
-    mock_session.get.return_value.__aenter__.return_value = mock_response
-
-    with patch("aiohttp.ClientSession", return_value=mock_session):
-        configs = await source_manager.fetch_sources(sources)
-        assert VALID_VMESS in configs
+    configs = await source_manager.fetch_sources(sources)
+    assert VALID_VMESS in configs
+    mock_fetch_text.assert_called_once()
 
 
 @pytest.mark.asyncio
 @patch("configstream.core.source_manager.utils.choose_proxy", return_value=None)
-async def test_source_manager_check_and_update_sources(mock_choose_proxy, settings, tmp_path):
+@patch("configstream.core.source_manager.utils.fetch_text")
+async def test_source_manager_check_and_update_sources(mock_fetch_text, mock_choose_proxy, settings, tmp_path):
     """Test that the SourceManager can check and update sources."""
     source_manager = SourceManager(settings)
     sources_file = tmp_path / "sources.txt"
     sources_file.write_text("http://example.com/sub1\nhttp://example.com/sub2")
 
-    mock_response_ok = MagicMock()
-    mock_response_ok.text = AsyncMock(return_value=VALID_VMESS)
-    mock_response_ok.status = 200
-    mock_response_fail = MagicMock()
-    mock_response_fail.text = AsyncMock(return_value="")
-    mock_response_fail.status = 404
+    async def side_effect_fetch(session, url, **kwargs):
+        if url == "http://example.com/sub1":
+            return VALID_VMESS
+        raise NetworkError(f"Mock fetch failed for {url}")
 
-    mock_session = MagicMock()
-    mock_cm_ok = AsyncMock()
-    mock_cm_ok.__aenter__.return_value = mock_response_ok
-    mock_cm_fail = AsyncMock()
-    mock_cm_fail.__aenter__.return_value = mock_response_fail
-    mock_session.get.side_effect = [mock_cm_ok, mock_cm_fail]
+    mock_fetch_text.side_effect = side_effect_fetch
 
-    with patch("aiohttp.ClientSession", return_value=mock_session):
-        valid_sources = await source_manager.check_and_update_sources(sources_file)
-        assert "http://example.com/sub1" in valid_sources
-        assert "http://example.com/sub2" not in valid_sources
+    valid_sources = await source_manager.check_and_update_sources(sources_file)
+    assert "http://example.com/sub1" in valid_sources
+    assert "http://example.com/sub2" not in valid_sources
 
 
 def test_config_processor_filter_configs(settings):
