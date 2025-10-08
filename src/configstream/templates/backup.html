@@ -45,10 +45,15 @@
         }
         const nameLower = (file.name || '').toLowerCase();
         const hasZipExt = nameLower.endsWith('.zip');
-        const looksDoubleExt = nameLower.match(/\.(zip)\.[^.\s]+$/); // e.g., .zip.exe
+        const looksDoubleExt = /\.(zip)\.[^.\s]+$/.test(nameLower); // e.g., .zip.exe
         const typeLower = (file.type || '').toLowerCase();
         const zipTypes = new Set(['application/zip', 'application/x-zip-compressed', 'application/x-zip', 'multipart/x-zip']);
         const hasZipMime = zipTypes.has(typeLower);
+        const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50MB client hint
+        if (file.size > MAX_SIZE_BYTES) {
+          alert('Backup file is too large.');
+          return;
+        }
         if (looksDoubleExt || (!hasZipExt && !hasZipMime)) {
             alert('Please select a valid .zip backup file.');
             return;
