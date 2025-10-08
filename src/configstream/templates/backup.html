@@ -43,7 +43,10 @@
             alert('Please select a file to upload.');
             return;
         }
-        if (file.type && file.type !== 'application/zip' && !file.name.toLowerCase().endsWith('.zip')) {
+        const nameIsZip = file.name && file.name.toLowerCase().endsWith('.zip');
+        const type = (file.type || '').toLowerCase();
+        const zipTypes = new Set(['application/zip', 'application/x-zip-compressed', 'application/x-zip', 'multipart/x-zip']);
+        if (!nameIsZip && (type && !zipTypes.has(type))) {
             alert('Please select a .zip backup file.');
             return;
         }
