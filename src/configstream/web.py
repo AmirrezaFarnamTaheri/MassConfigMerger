@@ -465,6 +465,9 @@ def backup():
 @app.get("/api/export-backup")
 def export_backup():
     """Export critical application files as a zip archive."""
+    # Enforce API token if configured
+    _get_request_settings()
+
     project_root = _get_root()
     root = project_root.resolve()
 
