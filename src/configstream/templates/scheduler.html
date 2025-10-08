@@ -50,7 +50,7 @@
     </div>
     <div>
         <span class="job-status {{ 'status-running' if job.is_running else '' }}">{{ 'Running' if job.is_running else 'Paused' }}</span>
-        <button class="toggle-btn" data-job-id="{{ job.id }}">{{ 'Pause' if job.is_running else 'Resume' }}</button>
+        <button class="toggle-btn" data-job-id="{{ job.id }}" data-state="{{ 'running' if job.is_running else 'paused' }}">{{ 'Pause' if job.is_running else 'Resume' }}</button>
     </div>
 </div>
 {% else %}
