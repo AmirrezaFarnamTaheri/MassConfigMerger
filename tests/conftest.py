@@ -84,23 +84,20 @@ def app(fs, settings):
 
     fs.add_real_directory(str(Path(SRC_PATH, "configstream", "templates")))
 
-    app_instance = create_app(settings_override=settings)
-    app_instance.config.update({"TESTING": True})
+    # This is a known issue with pyfakefs and importlib.metadata.
+    # We need to monkeypatch the version lookup for werkzeug.
+    with patch("importlib.metadata.version", return_value="3.0.3"):
+        app_instance = create_app(settings_override=settings)
+        app_instance.config.update({"TESTING": True})
 
-    def _get_werkzeug_version() -> str:
-        return "3.0.3"
+        from werkzeug.middleware.dispatcher import DispatcherMiddleware
+        from prometheus_client import make_wsgi_app
 
-    from flask import testing
-    original_get_version = testing._get_werkzeug_version
-    testing._get_werkzeug_version = _get_werkzeug_version
+        app_instance.wsgi_app = DispatcherMiddleware(
+            app_instance.wsgi_app, {"/metrics": make_wsgi_app()}
+        )
 
-    from werkzeug.middleware.dispatcher import DispatcherMiddleware
-    from prometheus_client import make_wsgi_app
-    app_instance.wsgi_app = DispatcherMiddleware(app_instance.wsgi_app, {"/metrics": make_wsgi_app()})
-
-    yield app_instance
-
-    testing._get_werkzeug_version = original_get_version
+        yield app_instance
 
 
 @pytest.fixture

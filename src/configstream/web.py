@@ -42,6 +42,27 @@ from .pipeline import run_aggregation_pipeline
 from .vpn_merger import run_merger as run_merger_pipeline
 
 
+def _run_async_task(coro: asyncio.Future) -> Any:
+    """Execute coro in a way that tolerates nested event loops."""
+    try:
+        return asyncio.run(coro)
+    except RuntimeError:
+        nest_asyncio.apply()
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(coro)
+
+
+async def _read_history(db_path: Path) -> Dict[str, Dict[str, Any]]:
+    """Read proxy history from the database."""
+    db = Database(db_path)
+    try:
+        await db.connect()
+        history = await db.get_proxy_history()
+        return history
+    finally:
+        await db.close()
+
+
 def create_app(settings_override: Optional[Settings] = None) -> Flask:
     """Create and configure an instance of the Flask application."""
     app = Flask(__name__, template_folder="templates")
@@ -64,15 +85,6 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
     def load_cfg() -> Settings:
         """Load configuration from the app context."""
         return app.config["SETTINGS"]
-
-    def _run_async_task(coro: asyncio.Future) -> Any:
-        """Execute coro in a way that tolerates nested event loops."""
-        try:
-            return asyncio.run(coro)
-        except RuntimeError:
-            nest_asyncio.apply()
-            loop = asyncio.get_event_loop()
-            return loop.run_until_complete(coro)
 
     def _extract_api_token() -> Optional[str]:
         """Extract the API token securely from request headers only."""
@@ -170,16 +182,6 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
         entries.sort(key=lambda x: x["reliability"], reverse=True)
         return entries
 
-    async def _read_history(db_path: Path) -> Dict[str, Dict[str, Any]]:
-        """Read proxy history from the database."""
-        db = Database(db_path)
-        try:
-            await db.connect()
-            history = await db.get_proxy_history()
-            return history
-        finally:
-            await db.close()
-
     # ============================================================================
     # ROUTES
     # ============================================================================
@@ -189,7 +191,7 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
         """Modern dashboard with enhanced UI."""
         cfg = load_cfg()
         project_root = _get_root()
-        db_path = project_root / cfg.output.output_dir / cfg.output.history_db_file
+        db_path = project_root / cfg.output.history_db_file
         history_preview = []
         preview_limit = 5
         try:
@@ -287,7 +289,7 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
         """Return proxy history statistics as JSON."""
         cfg = load_cfg()
         project_root = _get_root()
-        db_path = project_root / cfg.output.output_dir / cfg.output.history_db_file
+        db_path = project_root / cfg.output.history_db_file
         history_data = _run_async_task(_read_history(db_path))
         entries = _serialize_history(history_data)
         total = len(entries)
@@ -317,7 +319,7 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
         """Display the proxy history from the database."""
         cfg = load_cfg()
         project_root = _get_root()
-        db_path = project_root / cfg.output.output_dir / cfg.output.history_db_file
+        db_path = project_root / cfg.output.history_db_file
         history_data = _run_async_task(_read_history(db_path))
         entries = _serialize_history(history_data)
         summary = {
