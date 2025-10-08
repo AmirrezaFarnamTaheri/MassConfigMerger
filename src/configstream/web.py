@@ -345,6 +345,7 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
     @app.post("/api/sources/add")
     def add_source():
         """Add a new subscription source."""
+        _get_request_settings()
         data = request.get_json(silent=True) or {}
         raw_url = data.get("url")
         if not raw_url or not isinstance(raw_url, str):
@@ -372,6 +373,7 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
     @app.post("/api/sources/remove")
     def remove_source():
         """Remove a subscription source."""
+        _get_request_settings()
         data = request.get_json(silent=True) or {}
         raw_url = data.get("url")
         if not raw_url or not isinstance(raw_url, str):
@@ -492,6 +494,7 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
     @app.post("/api/import-backup")
     def import_backup():
         """Import a zip archive to restore application data atomically."""
+        _get_request_settings()
         if "backup_file" not in request.files:
             return jsonify({"error": "No file part"}), 400
         file = request.files["backup_file"]
@@ -547,14 +550,40 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
                             jsonify({"error": f"File too large in archive: {member.filename}"}),
                             400,
                         )
+                    # Check for zip bomb
+                    compression_ratio = (member.file_size or 1) / max(member.compress_size or 1, 1)
+                    if compression_ratio > 200:  # e.g., > 200x compression is suspicious
+                        return (
+                            jsonify(
+                                {"error": f"Suspicious compression ratio for: {member.filename}"}
+                            ),
+                            400,
+                        )
+
                     total_uncompressed += int(member.file_size or 0)
                     if total_uncompressed > max_total_uncompressed:
                         return jsonify({"error": "Archive content too large"}), 400
                     staged_target = (tmp_dir / member_path.name).resolve()
-                    with zf.open(member, "r") as src, open(
-                        staged_target, "wb"
-                    ) as dst:
-                        shutil.copyfileobj(src, dst)
+                    # Read in chunks to prevent decompression bombs that bypass metadata checks
+                    try:
+                        with zf.open(member, "r") as src, open(staged_target, "wb") as dst:
+                            bytes_read = 0
+                            while True:
+                                chunk = src.read(65536)  # 64KB chunks
+                                if not chunk:
+                                    break
+                                bytes_read += len(chunk)
+                                if bytes_read > max_file_uncompressed:
+                                    return (
+                                        jsonify(
+                                            {"error": f"File content exceeds size limit: {member.filename}"}
+                                        ),
+                                        400,
+                                    )
+                                dst.write(chunk)
+                    except Exception as e:
+                        return jsonify({"error": f"Failed to extract file {member.filename}: {e}"}), 500
+
                     os.chmod(staged_target, 0o600)
                     staged_paths.append((staged_target, member))
                 for staged_target, member in staged_paths:

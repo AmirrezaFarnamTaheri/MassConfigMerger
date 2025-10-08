@@ -184,6 +184,21 @@ def test_export_backup_api(client, settings):
     assert Path(settings.sources.sources_file).name in zip_file.namelist()
 
 
+def test_import_backup_api_unauthorized(client, settings):
+    """Test that the /api/import-backup endpoint requires authentication."""
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as zf:
+        zf.writestr("config.yaml", "new_config_content")
+    zip_buffer.seek(0)
+
+    response = client.post(
+        "/api/import-backup",
+        data={"backup_file": (zip_buffer, "backup.zip")},
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 401
+
+
 def test_import_backup_api(client, settings):
     """Test the /api/import-backup endpoint."""
     zip_buffer = io.BytesIO()
