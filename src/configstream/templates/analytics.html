@@ -28,9 +28,13 @@
     </div>
 </div>
 <!-- Prefer self-hosting; if using CDN, include SRI and crossorigin -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"
-        integrity="sha384-aBCDEF1234567890placeholderSRIhashPleaseReplaceWithRealOne"
+<!-- Option A: correct SRI for the specific version you pin -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+        integrity="sha384-REPLACE_WITH_REAL_HASH_FOR_THIS_FILE"
         crossorigin="anonymous"></script>
+
+<!-- Option B: if not providing a valid SRI, omit the attribute to avoid blocking -->
+<!-- <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script> -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     try {
