@@ -47,7 +47,13 @@
                         </td>
                         <td>{{ entry.successes }}</td>
                         <td>{{ entry.failures }}</td>
-                        <td>{{ '%.2f'|format(entry.reliability_percent) }}%</td>
+                        <td>
+                          {% if entry.reliability_percent is number %}
+                            {{ '%.2f'|format(entry.reliability_percent) }}%
+                          {% else %}
+                            N/A
+                          {% endif %}
+                        </td>
                         <td>{{ entry.tests }}</td>
                         <td><span class="status-badge {{ entry.status_class }}">{{ entry.status }}</span></td>
                         <td>{{ entry.last_tested }}</td>
