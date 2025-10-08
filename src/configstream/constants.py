@@ -6,12 +6,11 @@ CHANNELS_FILE = Path("channels.txt")
 
 # Regular expressions shared across modules
 PROTOCOL_RE = re.compile(
-    r"(?:"
+    r"\b(?:"
     r"vmess|vless|reality|ssr?|trojan|hy2|hysteria2?|tuic|"
     r"shadowtls|juicity|naive|brook|wireguard|"
-    r"socks5|socks4|socks|http|https|grpc|ws|wss|"
-    r"tcp|kcp|quic|h2"
-    r")://\S+",
+    r"socks5|socks4|socks|https"  # Keep https for things like https proxies
+    r")://[^\s\"'<>()\[\]{}]+",
     re.IGNORECASE,
 )
 BASE64_RE = re.compile(r"^[A-Za-z0-9+/=_-]+$")

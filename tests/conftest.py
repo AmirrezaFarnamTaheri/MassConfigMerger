@@ -6,6 +6,7 @@ import shutil
 import sys
 from pathlib import Path
 from typing import Optional
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC_PATH = ROOT / "src"
@@ -16,28 +17,17 @@ import importlib
 import importlib.util
 
 import pytest
-
 from configstream.config import Settings
 
 
 def _load_optional_plugin(name: str) -> Optional[str]:
-    """Try to load an optional pytest plugin.
-
-    When running in the execution environment used for these kata style tasks the
-    optional test dependencies are often not installed. Importing a missing
-    plugin would therefore raise an exception during pytest collection and no
-    tests would be executed.  To keep the suite runnable we attempt the import
-    dynamically and only register the plugin when it is available locally.
-    """
-
+    """Try to load an optional pytest plugin."""
     if importlib.util.find_spec(name) is None:
         return None
     importlib.import_module(name)
     return name
 
 
-# Ensure optional pytest plugins are loaded when available without failing when
-# they are missing from the execution environment.
 pytest_plugins = [
     plugin
     for plugin in (
@@ -50,40 +40,70 @@ pytest_plugins = [
 
 def pytest_addoption(parser):
     """Register compatibility ini options when pytest-asyncio is unavailable."""
-
     parser.addini("asyncio_mode", "Compatibility shim for pytest-asyncio", default="auto")
 
 
-# Do not use proxies when running tests to avoid network issues with local
-# test servers.
-CONFIG = Settings()
-CONFIG.network.http_proxy = None
-CONFIG.network.socks_proxy = None
-
 @pytest.fixture
 def loop():
+    """Provide a new event loop for each test function."""
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()
 
+
 @pytest.fixture
 def event_loop(loop):
+    """Ensure tests run in the correct event loop."""
     yield loop
 
 
 @pytest.fixture
-def client(fs):
-    """Create a test client for the Flask app."""
-    # The fs fixture is a pyfakefs instance.
-    # We need to add the real templates directory to the fake filesystem.
-    fs.add_real_directory(Path(SRC_PATH, "configstream", "templates"))
+def settings(fs) -> Settings:
+    """Create a Settings object with a relative output directory in the fake FS."""
+    output_dir_name = "test_output"
+    fs.create_dir(output_dir_name)
+    fs.create_file("config.yaml", contents=f"output:\n  output_dir: {output_dir_name}")
 
-    from configstream.web import app
+    settings_obj = Settings(
+        output={"output_dir": output_dir_name},
+        security={"web_api_token": "test-token"},
+        config_file=Path("config.yaml"),
+    )
+
+    sources_file_path = Path(settings_obj.sources.sources_file)
+    if not fs.exists(sources_file_path):
+        fs.create_file(sources_file_path, create_missing_dirs=True)
+
+    return settings_obj
+
+
+@pytest.fixture
+def app(fs, settings):
+    """Create and configure a new app instance for each test."""
+    from configstream.web import create_app
+
+    fs.add_real_directory(str(Path(SRC_PATH, "configstream", "templates")))
+
+    app_instance = create_app(settings_override=settings)
+    app_instance.config.update({"TESTING": True})
+
+    def _get_werkzeug_version() -> str:
+        return "3.0.3"
+
+    from flask import testing
+    original_get_version = testing._get_werkzeug_version
+    testing._get_werkzeug_version = _get_werkzeug_version
+
     from werkzeug.middleware.dispatcher import DispatcherMiddleware
     from prometheus_client import make_wsgi_app
+    app_instance.wsgi_app = DispatcherMiddleware(app_instance.wsgi_app, {"/metrics": make_wsgi_app()})
 
-    app.config["TESTING"] = True
-    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
+    yield app_instance
 
-    with app.test_client() as client:
-        yield client
+    testing._get_werkzeug_version = original_get_version
+
+
+@pytest.fixture
+def client(app):
+    """A test client for the app."""
+    return app.test_client()
