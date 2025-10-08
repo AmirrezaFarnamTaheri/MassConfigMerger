@@ -20,6 +20,7 @@ from flask import (
     abort,
     jsonify,
     render_template,
+    render_template_string,
     request,
     send_file,
 )
@@ -41,6 +42,12 @@ from .vpn_merger import run_merger as run_merger_pipeline
 
 app = Flask(__name__, template_folder="templates")
 CONFIG_PATH = Path(CONFIG_FILE_NAME)
+
+
+@app.context_processor
+def inject_utility_functions():
+    """Inject utility functions into the template context."""
+    return {"float": float}
 
 
 def _get_root() -> Path:
@@ -320,6 +327,12 @@ def history_api() -> Any:
     )
 
 
+@app.route("/analytics")
+def analytics():
+    """Render the analytics page."""
+    return render_template("analytics.html")
+
+
 @app.route("/history")
 def history():
     """Display the proxy history from the database."""
@@ -360,7 +373,7 @@ def add_source():
 
     url = raw_url.strip()
     # Basic sanitation: prevent newlines and enforce length and scheme
-    if "\n" in url or "\r" in url or len(url) > 2048:
+    if "\n" in raw_url or "\r" in raw_url or len(url) > 2048:
         return jsonify({"error": "Invalid URL format"}), 400
 
     from urllib.parse import urlparse
@@ -467,6 +480,7 @@ def export_backup():
     """Export critical application files as a zip archive."""
     # Enforce API token if configured
     _get_request_settings()
+    root = _get_root()
 
     candidate_names = {"config.yaml", "sources.txt", "proxy_history.db"}
     max_total_bytes = 50 * 1024 * 1024  # 50 MB cap
@@ -512,9 +526,6 @@ def export_backup():
             zf.writestr(zi, data)
 
     memory_file.seek(0)
-        for file_path, _ in sizes:
-            zf.write(file_path, arcname=file_path.name)
-    memory_file.seek(0)
     return send_file(
         memory_file,
         download_name="configstream_backup.zip",
@@ -522,10 +533,14 @@ def export_backup():
         mimetype="application/zip",
     )
 
-        """Import a zip archive to restore application data atomically."""
-        # Local import to avoid NameError and limit scope
-        import os
 
+@app.post("/api/import-backup")
+def import_backup():
+    """Import a zip archive to restore application data atomically."""
+    # Local import to avoid NameError and limit scope
+    import os
+
+    try:
         if "backup_file" not in request.files:
             return jsonify({"error": "No file part"}), 400
         file = request.files["backup_file"]
@@ -638,7 +653,6 @@ def export_backup():
                     tmp_dir.rmdir()
             except Exception:
                 pass
-        return jsonify({"error": "Invalid zip file."}), 400
     except Exception as e:
         return jsonify({"error": f"An error occurred: {e}"}), 500
 
