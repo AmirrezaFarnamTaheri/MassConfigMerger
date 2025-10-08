@@ -40,9 +40,9 @@
                     {% for entry in entries %}
                     <tr>
                         <td>
-                            <strong>{{ entry.key }}</strong>
+                            <strong>{{ entry.key | e }}</strong>
                             <div class="geo-info">
-                                {% if entry.country %}{{ entry.country }}{% endif %}{% if entry.isp %} · {{ entry.isp }}{% endif %}
+                                {% if entry.country %}{{ entry.country | e }}{% endif %}{% if entry.isp %} · {{ entry.isp | e }}{% endif %}
                             </div>
                         </td>
                         <td>{{ entry.successes }}</td>
@@ -56,8 +56,8 @@
                           {% endif %}
                         </td>
                         <td>{{ entry.tests }}</td>
-                        <td><span class="status-badge {{ entry.status_class }}">{{ entry.status }}</span></td>
-                        <td>{{ entry.last_tested }}</td>
+                        <td><span class="status-badge {{ entry.status_class | e }}">{{ entry.status | e }}</span></td>
+                        <td>{{ entry.last_tested | e }}</td>
                     </tr>
                     {% endfor %}
                 {% else %}
