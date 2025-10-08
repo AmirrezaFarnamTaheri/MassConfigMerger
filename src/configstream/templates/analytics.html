@@ -29,12 +29,9 @@
 </div>
 <!-- Prefer self-hosting; if using CDN, include SRI and crossorigin -->
 <!-- Option A: correct SRI for the specific version you pin -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
-        integrity="sha384-REPLACE_WITH_REAL_HASH_FOR_THIS_FILE"
-        crossorigin="anonymous"></script>
+<!-- Load Chart.js without an invalid placeholder SRI to avoid blocking -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 
-<!-- Option B: if not providing a valid SRI, omit the attribute to avoid blocking -->
-<!-- <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script> -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     try {
@@ -43,13 +40,16 @@
       if (!protocolCanvas || !countryCanvas || typeof Chart === 'undefined') {
         console.warn('Charts unavailable: missing canvas or Chart.js');
         return;
+      }
+
+      const protocolCtx = protocolCanvas.getContext('2d');
+      const countryCtx  = countryCanvas.getContext('2d');
+
       const protocolLabels = {{ (protocol_labels or []) | tojson }};
       const protocolValues = {{ (protocol_values or []) | tojson }};
       const countryLabels  = {{ (country_labels  or []) | tojson }};
       const countryValues  = {{ (country_values  or []) | tojson }};
-      const protocolValues = {{ protocol_values|tojson or '[]' }};
-      const countryLabels  = {{ country_labels|tojson or '[]' }};
-      const countryValues  = {{ country_values|tojson or '[]' }};
+
       new Chart(protocolCtx, {
         type: 'doughnut',
         data: {
@@ -71,6 +71,7 @@
         },
         options: { responsive: true, maintainAspectRatio: false }
       });
+
       new Chart(countryCtx, {
         type: 'bar',
         data: {
