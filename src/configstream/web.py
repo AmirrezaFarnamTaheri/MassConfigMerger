@@ -508,111 +508,122 @@ def export_backup():
         mimetype="application/zip",
     )
 
+        """Import a zip archive to restore application data atomically."""
+        # Local import to avoid NameError and limit scope
+        import os
 
-@app.post("/api/import-backup")
-def import_backup():
-    """Import a zip archive to restore application data atomically."""
-    if "backup_file" not in request.files:
-        return jsonify({"error": "No file part"}), 400
-    file = request.files["backup_file"]
-    if not file or file.filename == "":
-        return jsonify({"error": "No selected file"}), 400
+        if "backup_file" not in request.files:
+            return jsonify({"error": "No file part"}), 400
+        file = request.files["backup_file"]
+        if not file or file.filename == "":
+            return jsonify({"error": "No selected file"}), 400
 
-    filename = Path(file.filename)
-    if filename.suffix.lower() != ".zip":
-        return jsonify({"error": "Invalid file type. Please upload a .zip file."}), 400
-    content_type = (file.mimetype or "").lower()
-    if content_type not in {"application/zip", "application/x-zip-compressed", "multipart/x-zip"}:
-        return jsonify({"error": "Invalid content-type for zip upload."}), 400
+        filename = Path(file.filename)
+        if filename.suffix.lower() != ".zip":
+            return jsonify({"error": "Invalid file type. Please upload a .zip file."}), 400
+        content_type = (file.mimetype or "").lower()
+        if content_type not in {"application/zip", "application/x-zip-compressed", "multipart/x-zip"}:
+            return jsonify({"error": "Invalid content-type for zip upload."}), 400
 
-    data = file.read()
-    if not data:
-        return jsonify({"error": "Empty archive."}), 400
-    memory_file = io.BytesIO(data)
+        data = file.read()
+        if not data:
+            return jsonify({"error": "Empty archive."}), 400
+        memory_file = io.BytesIO(data)
 
-    project_root = _get_root().resolve()
-    try:
-        with zipfile.ZipFile(memory_file, "r") as zf:
-            if zf.testzip() is not None:
-                return jsonify({"error": "Corrupted zip archive."}), 400
+        project_root = _get_root().resolve()
+        tmp_dir = project_root / ".restore_tmp"
+        try:
+            with zipfile.ZipFile(memory_file, "r") as zf:
+                if zf.testzip() is not None:
+                    return jsonify({"error": "Corrupted zip archive."}), 400
 
-            allowed_names = {"config.yaml", "sources.txt", "proxy_history.db"}
-            max_total_uncompressed = 50 * 1024 * 1024
-            max_file_uncompressed = 10 * 1024 * 1024
-            total_uncompressed = 0
+                allowed_names = {"config.yaml", "sources.txt", "proxy_history.db"}
+                max_total_uncompressed = 50 * 1024 * 1024
+                max_file_uncompressed = 10 * 1024 * 1024
+                total_uncompressed = 0
 
-            # Extract into a temporary directory first
-            tmp_dir = project_root / ".restore_tmp"
-            if tmp_dir.exists():
-                # Clean up from previous failed attempts
-                for p in tmp_dir.iterdir():
+                # Prepare temp dir
+                try:
+                    if tmp_dir.exists():
+                        for p in tmp_dir.iterdir():
+                            try:
+                                p.unlink()
+                            except Exception:
+                                pass
+                    else:
+                        tmp_dir.mkdir(parents=True, exist_ok=True)
+                except Exception:
+                    return jsonify({"error": "Failed to prepare temporary directory"}), 500
+
+                staged_paths: list[tuple[Path, zipfile.ZipInfo]] = []
+                for member in zf.infolist():
+                    if member.is_dir():
+                        continue
+                    member_path = Path(member.filename)
+                    if member_path.is_absolute() or member_path.drive:
+                        return jsonify({"error": f"Invalid absolute path in archive: {member.filename}"}), 400
+                    if member_path.parent != Path(".") or member_path.name not in allowed_names:
+                        return jsonify({"error": f"Disallowed file in archive: {member.filename}"}), 400
+
+                    if member.file_size is None or member.compress_size is None:
+                        return jsonify({"error": f"Invalid file metadata: {member.filename}"}), 400
+                    if member.file_size > max_file_uncompressed:
+                        return jsonify({"error": f"File too large in archive: {member.filename}"}), 400
+                    compression_ratio = (member.file_size or 1) / max(member.compress_size or 1, 1)
+                    if compression_ratio > 200:
+                        return jsonify({"error": f"Suspicious compression ratio for: {member.filename}"}), 400
+
+                    total_uncompressed += int(member.file_size)
+                    if total_uncompressed > max_total_uncompressed:
+                        return jsonify({"error": "Archive content too large"}), 400
+
+                    staged_target = (tmp_dir / member_path.name).resolve()
+                    if not str(staged_target).startswith(str(project_root)):
+                        return jsonify({"error": f"Invalid file path in archive: {member.filename}"}), 400
+
+                    with zf.open(member, "r") as src, open(staged_target, "wb") as dst:
+                        read_limit = 0
+                        while True:
+                            chunk = src.read(65536)
+                            if not chunk:
+                                break
+                            read_limit += len(chunk)
+                            if read_limit > max_file_uncompressed:
+                                return jsonify({"error": f"File too large in archive: {member.filename}"}), 400
+                            dst.write(chunk)
                     try:
-                        p.unlink()
+                        os.chmod(staged_target, 0o600)
                     except Exception:
                         pass
-            else:
-                tmp_dir.mkdir(parents=True, exist_ok=True)
+                    staged_paths.append((staged_target, member))
 
-            staged_paths: list[tuple[Path, zipfile.ZipInfo]] = []
-            for member in zf.infolist():
-                if member.is_dir():
-                    continue
-                member_path = Path(member.filename)
-                if member_path.is_absolute() or member_path.drive:
-                    return jsonify({"error": f"Invalid absolute path in archive: {member.filename}"}), 400
-                if member_path.parent != Path(".") or member_path.name not in allowed_names:
-                    return jsonify({"error": f"Disallowed file in archive: {member.filename}"}), 400
+                # Atomically replace targets
+                for staged_target, member in staged_paths:
+                    final_target = (project_root / Path(member.filename).name).resolve()
+                    if not str(final_target).startswith(str(project_root)):
+                        return jsonify({"error": f"Invalid file path in archive: {member.filename}"}), 400
+                    try:
+                        staged_target.replace(final_target)
+                    except Exception as e:
+                        return jsonify({"error": f"Failed to write file {final_target.name}: {e}"}), 500
 
-                if member.file_size is None or member.compress_size is None:
-                    return jsonify({"error": f"Invalid file metadata: {member.filename}"}), 400
-                if member.file_size > max_file_uncompressed:
-                    return jsonify({"error": f"File too large in archive: {member.filename}"}), 400
-                compression_ratio = (member.file_size or 1) / max(member.compress_size or 1, 1)
-                if compression_ratio > 200:
-                    return jsonify({"error": f"Suspicious compression ratio for: {member.filename}"}), 400
-
-                total_uncompressed += int(member.file_size)
-                if total_uncompressed > max_total_uncompressed:
-                    return jsonify({"error": "Archive content too large"}), 400
-
-                staged_target = (tmp_dir / member_path.name).resolve()
-                if not str(staged_target).startswith(str(project_root)):
-                    return jsonify({"error": f"Invalid file path in archive: {member.filename}"}), 400
-
-                with zf.open(member, "r") as src, open(staged_target, "wb") as dst:
-                    read_limit = 0
-                    while True:
-                        chunk = src.read(65536)
-                        if not chunk:
-                            break
-                        read_limit += len(chunk)
-                        if read_limit > max_file_uncompressed:
-                            return jsonify({"error": f"File too large in archive: {member.filename}"}), 400
-                        dst.write(chunk)
-                try:
-                    # Restrict permissions: rw for owner only
-                    os.chmod(staged_target, 0o600)
-                except Exception:
-                    pass
-                staged_paths.append((staged_target, member))
-
-            # All validations and staging succeeded; atomically replace targets
-            for staged_target, member in staged_paths:
-                final_target = (project_root / Path(member.filename).name).resolve()
-                if not str(final_target).startswith(str(project_root)):
-                    return jsonify({"error": f"Invalid file path in archive: {member.filename}"}), 400
-                staged_target.replace(final_target)
-
-            # Cleanup temp dir
+            return jsonify({"message": "Backup imported successfully."}), 200
+        except zipfile.BadZipFile:
+            return jsonify({"error": "Invalid zip file."}), 400
+        except Exception as e:
+            return jsonify({"error": f"An error occurred: {e}"}), 500
+        finally:
+            # Best-effort cleanup of temporary directory
             try:
-                for p in tmp_dir.iterdir():
-                    p.unlink()
-                tmp_dir.rmdir()
+                if tmp_dir.exists():
+                    for p in tmp_dir.iterdir():
+                        try:
+                            p.unlink()
+                        except Exception:
+                            pass
+                    tmp_dir.rmdir()
             except Exception:
                 pass
-
-        return jsonify({"message": "Backup imported successfully."}), 200
-    except zipfile.BadZipFile:
         return jsonify({"error": "Invalid zip file."}), 400
     except Exception as e:
         return jsonify({"error": f"An error occurred: {e}"}), 500
