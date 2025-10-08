@@ -493,6 +493,11 @@ def import_backup():
         project_root = _get_root()
         try:
             with zipfile.ZipFile(file, "r") as zf:
+                for member in zf.infolist():
+                    # Prevent path traversal attacks (Zip Slip)
+                    target_path = project_root.joinpath(member.filename).resolve()
+                    if not str(target_path).startswith(str(project_root.resolve())):
+                        return jsonify({"error": f"Invalid file path in archive: {member.filename}"}), 400
                 zf.extractall(project_root)
             return jsonify({"message": "Backup imported successfully."})
         except zipfile.BadZipFile:
