@@ -26,30 +26,30 @@ from .constants import CONFIG_FILE_NAME, HISTORY_DB_FILE_NAME
 from .core.file_utils import find_project_root
 
 
-class YamlConfigSettingsSource(PydanticBaseSettingsSource):
+class YamlConfigSettingsSource:
     """
     A Pydantic settings source that loads variables from a YAML file.
     """
 
-    def __init__(self, settings_cls: Type[BaseSettings], yaml_file: Path | None):
-        super().__init__(settings_cls)
-        self.yaml_file = yaml_file
+    def __init__(self, yaml_file: Path | None):
+        self._yaml_file = yaml_file
         self._data: dict[str, Any] | None = None
-        if self.yaml_file and self.yaml_file.exists():
-            try:
-                self._data = yaml.safe_load(self.yaml_file.read_text()) or {}
-            except (yaml.YAMLError, IOError):
-                self._data = {}
-        else:
-            self._data = {}
-
-    def get_field_value(self, field: Any, field_name: str) -> tuple[Any, str] | None:
-        if not self._data:
-            return None
-        return (self._data.get(field_name), field_name)
 
     def __call__(self) -> dict[str, Any]:
-        return dict(self._data or {})
+        if self._data is None:
+            if self._yaml_file and self._yaml_file.exists():
+                try:
+                    self._data = yaml.safe_load(self._yaml_file.read_text()) or {}
+                except (yaml.YAMLError, IOError) as e:
+                    logging.warning(
+                        "Could not read or parse YAML config from %s: %s",
+                        self._yaml_file,
+                        e,
+                    )
+                    self._data = {}
+            else:
+                self._data = {}
+        return self._data
 
 
 class TelegramSettings(BaseModel):
@@ -57,27 +57,29 @@ class TelegramSettings(BaseModel):
 
     api_id: Optional[int] = Field(None, description="Your Telegram API ID from my.telegram.org.")
     api_hash: Optional[str] = Field(None, description="Your Telegram API hash from my.telegram.org.")
-    bot_token: Optional[str] = Field(None, description="Your Telegram bot token for bot mode, from @BotFather.")
-    allowed_user_ids: List[int] = Field(
-        default_factory=list,
-        description="List of numeric Telegram user IDs allowed to interact with the bot.",
-    )
     session_path: Path = Field(
         "user.session", description="Path to the Telethon session file."
     )
+    allowed_user_ids: Optional[List[int]] = Field(
+        None, description="Optional list of user IDs allowed to interact with the bot."
+    )
 
     @field_validator("allowed_user_ids", mode="before")
-    @classmethod
-    def _parse_allowed_ids(cls, value: Any) -> list[int]:
-        """Parse a string or int of user IDs into a list of integers."""
-        if isinstance(value, str):
+    def _parse_user_ids(cls, v: Any) -> Optional[List[int]]:
+        if v is None:
+            return None
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
             try:
-                return [int(v) for v in re.split(r"[\s,]+", value.strip()) if v]
-            except ValueError as exc:
-                raise ValueError("allowed_user_ids must be a list of integers") from exc
-        if isinstance(value, int):
-            return [value]
-        return value
+                return [int(uid.strip()) for uid in v.split(",") if uid.strip()]
+            except ValueError:
+                raise ValueError(
+                    "allowed_user_ids must be a string of comma-separated integers"
+                )
+        raise ValueError(
+            "allowed_user_ids must be a list or a comma-separated string of integers"
+        )
 
 
 class NetworkSettings(BaseModel):
@@ -128,13 +130,11 @@ class FilteringSettings(BaseModel):
         default_factory=list,
         description="List of VPN protocols to fetch from sources (e.g., ['VLESS', 'SS']).",
     )
-    include_patterns: List[str] = Field(
-        default_factory=list,
-        description="List of regex patterns to apply to include configs.",
+    include_patterns: Optional[List[str]] = Field(
+        None, description="List of regex patterns to include configs by name."
     )
-    exclude_patterns: List[str] = Field(
-        default_factory=list,
-        description="List of regex patterns to apply to exclude configs.",
+    exclude_patterns: Optional[List[str]] = Field(
+        None, description="List of regex patterns to exclude configs by name."
     )
     merge_include_protocols: Set[str] = Field(
         default={"SHADOWSOCKS", "SHADOWSOCKSR", "TROJAN", "REALITY", "VMESS", "VLESS", "HYSTERIA", "HYSTERIA2", "TUIC", "NAIVE", "JUICITY", "WIREGUARD", "SHADOWTLS", "BROOK"},
@@ -143,12 +143,6 @@ class FilteringSettings(BaseModel):
     merge_exclude_protocols: Set[str] = Field(
         default={"OTHER"},
         description="Set of protocols to exclude from the final merged output.",
-    )
-    include_countries: Optional[Set[str]] = Field(
-        None, description="Set of ISO country codes to include (e.g., {'US', 'CA'}). Requires GeoIP."
-    )
-    exclude_countries: Optional[Set[str]] = Field(
-        None, description="Set of ISO country codes to exclude (e.g., {'IR', 'CN'}). Requires GeoIP."
     )
     include_isps: Optional[Set[str]] = Field(
         None, description="Set of ISP names to include (e.g., {'Google', 'Amazon'}). Requires GeoIP."
@@ -159,9 +153,6 @@ class FilteringSettings(BaseModel):
     max_ping_ms: Optional[int] = Field(
         1000, description="Maximum acceptable ping in milliseconds for a config to be included."
     )
-    tls_fragment: Optional[str] = Field(
-        None, description="Filter configs to only include those with a specific TLS fragment."
-    )
 
 
 class OutputSettings(BaseModel):
@@ -170,20 +161,12 @@ class OutputSettings(BaseModel):
     output_dir: Path = Field(
         Path("output"), description="Directory to save all output files."
     )
-    log_dir: Path = Field(Path("logs"), description="Directory to save log files.")
     log_file: Optional[Path] = Field(
         None, description="Path to a specific file for logging, instead of a directory."
     )
 
     @field_validator(
-        "output_dir",
-        "log_dir",
-        "log_file",
-        "history_db_file",
-        "surge_file",
-        "qx_file",
-        "xyz_file",
-        mode="before",
+        "output_dir", "log_file", "history_db_file", "surge_file", "qx_file", mode="before"
     )
     @classmethod
     def _validate_path_is_safe(cls, v: Any) -> Path | None:
@@ -212,9 +195,6 @@ class OutputSettings(BaseModel):
     write_base64: bool = Field(
         True, description="Whether to write a base64-encoded subscription file."
     )
-    write_singbox: bool = Field(
-        True, description="Whether to write a sing-box compatible subscription file."
-    )
     write_clash: bool = Field(
         True, description="Whether to write a Clash compatible subscription file."
     )
@@ -228,15 +208,6 @@ class OutputSettings(BaseModel):
     )
     qx_file: Optional[Path] = Field(
         None, description="Filename for Quantumult X output configuration."
-    )
-    xyz_file: Optional[Path] = Field(
-        None, description="Filename for XYZ format output configuration."
-    )
-    upload_gist: bool = Field(
-        False, description="Whether to upload output files to a GitHub Gist."
-    )
-    github_token: Optional[str] = Field(
-        None, description="GitHub personal access token for uploading gists."
     )
 
 
@@ -278,27 +249,6 @@ class ProcessingSettings(BaseModel):
     top_n: int = Field(
         0, description="Keep only the top N best configs after sorting. 0 to keep all."
     )
-    shuffle_sources: bool = Field(
-        False, description="Whether to shuffle the list of sources before fetching."
-    )
-    max_configs_per_source: int = Field(
-        75000, description="Maximum number of configs to parse from a single source."
-    )
-    stop_after_found: int = Field(
-        0, description="Stop processing after finding N unique configs. 0 to disable."
-    )
-    save_every: int = Field(
-        1000,
-        description="Save intermediate results every N configs found. 0 to disable.",
-    )
-    cumulative_batches: bool = Field(
-        False,
-        description="If true, each saved batch is a cumulative collection of all configs found so far.",
-    )
-    strict_batch: bool = Field(
-        True,
-        description="If true, save batches exactly every 'save_every' configs.",
-    )
     mux_concurrency: int = Field(8, description="Mux concurrency for supported URI configs.")
     smux_streams: int = Field(4, description="Smux streams for supported URI configs.")
     geoip_db: Optional[Path] = Field(
@@ -306,9 +256,6 @@ class ProcessingSettings(BaseModel):
     )
     resume_file: Optional[Path] = Field(
         None, description="Path to a raw or base64 subscription file to resume/retest."
-    )
-    max_retries: int = Field(
-        3, description="Maximum retry attempts for fetching subscription sources in the merger."
     )
 
 
@@ -327,7 +274,10 @@ class Settings(BaseSettings):
     config_file: Optional[Path] = Field(default=None, exclude=True)
 
     model_config = SettingsConfigDict(
-        env_prefix="", case_sensitive=False, env_nested_delimiter="__"
+        env_file=".env",
+        env_nested_delimiter="__",
+        env_prefix="CONFIGSTREAM_",
+        case_sensitive=False,
     )
 
     @classmethod
@@ -339,12 +289,14 @@ class Settings(BaseSettings):
         dotenv_settings: PydanticBaseSettingsSource,
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
-        config_file = init_settings.init_kwargs.get("config_file")
+        # Determine the config file path from init_settings if provided
+        config_file_path = init_settings.init_kwargs.get("config_file")
+
         return (
             init_settings,
+            YamlConfigSettingsSource(config_file_path),
             env_settings,
             dotenv_settings,
-            YamlConfigSettingsSource(settings_cls, yaml_file=config_file),
             file_secret_settings,
         )
 

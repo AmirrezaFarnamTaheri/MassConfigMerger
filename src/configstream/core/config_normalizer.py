@@ -114,24 +114,6 @@ def get_parser(config: str, idx: int) -> Optional[BaseParser]:
     return None
 
 
-def create_semantic_hash(
-    config: str, idx: int, max_decode_size: int = MAX_DECODE_SIZE
-) -> str:
-    """Create semantic hash for intelligent deduplication."""
-    normalized_config = _normalize_url(config, max_decode_size)
-    host, port = extract_host_port(normalized_config, max_decode_size)
-    parser = get_parser(config, idx)
-    identifier = parser.get_identifier() if parser else None
-
-    if host and port:
-        key = f"{host}:{port}"
-        if identifier:
-            key = f"{identifier}@{key}"
-    else:
-        key = normalized_config.strip()
-    return hashlib.sha256(key.encode()).hexdigest()[:16]
-
-
 def apply_tuning(config: str, settings: Settings) -> str:
     """Apply mux and smux parameters to URI-style configs."""
     try:
@@ -150,3 +132,30 @@ def apply_tuning(config: str, settings: Settings) -> str:
     except ValueError as exc:
         logging.debug("apply_tuning failed: %s", exc)
         return config
+
+
+def create_semantic_hash(config: str, idx: int) -> str:
+    """
+    Create a stable, shortened semantic hash for a configuration URL.
+    The hash focuses on functional parts (host, port, credentials) and
+    is insensitive to non-functional parts like fragments.
+    """
+    try:
+        parsed = urlparse(config)
+        if parsed.scheme in {"trojan", "ss", "shadowsocks"}:
+            key_parts = (
+                parsed.scheme or "",
+                parsed.hostname or "",
+                str(parsed.port or ""),
+                parsed.username or "",
+                parsed.password or "",
+            )
+            semantic_key = ":".join(key_parts)
+        else:
+            semantic_key = _normalize_url(config)
+        digest = hashlib.sha256(semantic_key.encode("utf-8")).hexdigest()
+        return digest[:16]
+    except Exception as e:
+        logging.debug("Semantic hash failed for '%s': %s. Falling back.", config, e)
+        fallback_key = f"{config}:{idx}"
+        return hashlib.sha256(fallback_key.encode("utf-8")).hexdigest()[:16]

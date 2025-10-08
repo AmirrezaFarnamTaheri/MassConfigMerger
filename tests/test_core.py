@@ -69,10 +69,11 @@ async def test_source_manager_check_and_update_sources(mock_choose_proxy, settin
     mock_response_fail.status = 404
 
     mock_session = MagicMock()
-    mock_session.get.return_value.__aenter__.side_effect = [
-        mock_response_ok,
-        mock_response_fail,
-    ]
+    mock_cm_ok = AsyncMock()
+    mock_cm_ok.__aenter__.return_value = mock_response_ok
+    mock_cm_fail = AsyncMock()
+    mock_cm_fail.__aenter__.return_value = mock_response_fail
+    mock_session.get.side_effect = [mock_cm_ok, mock_cm_fail]
 
     with patch("aiohttp.ClientSession", return_value=mock_session):
         valid_sources = await source_manager.check_and_update_sources(sources_file)

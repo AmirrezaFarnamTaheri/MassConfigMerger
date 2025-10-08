@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Testing & Diagnostics - ConfigStream{% endblock %}
+
+{% block head_extra %}
+<style>
+    .test-form {
+        background: linear-gradient(to right, #f8fafc, #f1f5f9);
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+    textarea {
+        width: 100%;
+        padding: 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-family: 'Monaco', 'Courier New', monospace;
+        min-height: 150px;
+        margin-bottom: 1rem;
+    }
+    button {
+        padding: 0.875rem 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .results-container {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+    }
+    .result-item {
+        padding: 1rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .result-item:last-child {
+        border-bottom: none;
+    }
+    .result-proxy {
+        font-family: 'Monaco', 'Courier New', monospace;
+        font-weight: 600;
+    }
+    .result-status {
+        font-weight: 600;
+    }
+    .status-success { color: #16a34a; }
+    .status-failure { color: #dc2626; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="test-form">
+    <h2 style="margin-bottom: 1rem;">Test Proxies</h2>
+    <textarea id="proxyInput" placeholder="Enter one proxy per line..."></textarea>
+    <button onclick="runTests()">Run Tests</button>
+</div>
+
+<div class="results-container" id="results">
+    <h3>Results will appear here...</h3>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function runTests() {
+        const input = document.getElementById('proxyInput').value || '';
+        const proxies = input.split('\n').map(p => p.trim()).filter(p => p);
+        const resultsContainer = document.getElementById('results');
+
+        if (proxies.length === 0) {
+            resultsContainer.innerHTML = '<h3>Error</h3><div class="result-item">Please enter at least one proxy.</div>';
+            return;
+        }
+
+        resultsContainer.innerHTML = '<h3>Testing...</h3>';
+
+        let response;
+        try {
+            response = await fetch('/api/test-proxies', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ proxies })
+            });
+        } catch (e) {
+            resultsContainer.innerHTML = `<h3>Error</h3><div class="result-item">Network error while contacting server.</div>`;
+            return;
+        }
+
+        let results;
+        try {
+            if (!response.ok) {
+                const errMsg = await response.text().catch(() => '');
+                resultsContainer.innerHTML = `<h3>Error</h3><div class="result-item">${errMsg || 'Request failed'}</div>`;
+                return;
+            }
+            results = await response.json();
+        } catch (e) {
+            resultsContainer.innerHTML = `<h3>Error</h3><div class="result-item">Invalid response from server.</div>`;
+            return;
+        }
+
+        resultsContainer.innerHTML = '<h3>Test Results</h3>';
+
+        if (!Array.isArray(results)) {
+            resultsContainer.innerHTML += `<div class="result-item">Unexpected response format.</div>`;
+            return;
+        }
+
+        for (const result of results) {
+            const item = document.createElement('div');
+            item.className = 'result-item';
+
+            const proxyDiv = document.createElement('div');
+            proxyDiv.className = 'result-proxy';
+            proxyDiv.textContent = result && typeof result.proxy === 'string' ? result.proxy : 'Unknown proxy';
+
+            const isReachable = result && typeof result.is_reachable === 'boolean' ? result.is_reachable : false;
+            const pingSeconds = result && typeof result.ping_time === 'number' ? result.ping_time : null;
+
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `result-status ${isReachable ? 'status-success' : 'status-failure'}`;
+            const pingTime = pingSeconds != null ? `${(pingSeconds * 1000).toFixed(2)}ms` : 'N/A';
+            statusDiv.textContent = `${isReachable ? 'Reachable' : 'Unreachable'} - Ping: ${pingTime}`;
+
+            item.appendChild(proxyDiv);
+            item.appendChild(statusDiv);
+            resultsContainer.appendChild(item);
+        }
+    }
+</script>
+{% endblock %}

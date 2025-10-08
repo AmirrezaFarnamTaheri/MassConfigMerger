@@ -19,14 +19,6 @@ BASE64_RE = re.compile(r"^[A-Za-z0-9+/=_-]+$")
 # Safety limit for base64 decoding to avoid huge payloads
 MAX_DECODE_SIZE = 256 * 1024  # 256 kB
 
-# Tuple of valid URI prefixes for initial parsing of VPN configs
-VALID_URL_PREFIXES = (
-    "vmess://", "vless://", "reality://", "ss://", "ssr://", "trojan://", "hy2://",
-    "hysteria://", "hysteria2://", "tuic://", "shadowtls://", "wireguard://",
-    "socks://", "socks4://", "socks5://", "http://", "https://", "grpc://",
-    "ws://", "wss://", "tcp://", "kcp://", "quic://", "h2://",
-)
-
 # Default file names
 CONFIG_FILE_NAME = "config.yaml"
 SOURCES_FAILURES_FILE_SUFFIX = ".failures.json"
@@ -35,7 +27,6 @@ RAW_SUBSCRIPTION_FILE_NAME = "vpn_subscription_raw.txt"
 BASE64_SUBSCRIPTION_FILE_NAME = "vpn_subscription_base64.txt"
 CLASH_PROXIES_FILE_NAME = "vpn_clash_proxies.yaml"
 CLASH_CONFIG_FILE_NAME = "clash.yaml"
-SINGBOX_CONFIG_FILE_NAME = "vpn_singbox.json"
 JSON_REPORT_FILE_NAME = "vpn_report.json"
 HTML_REPORT_FILE_NAME = "vpn_report.html"
 CSV_REPORT_FILE_NAME = "vpn_detailed.csv"

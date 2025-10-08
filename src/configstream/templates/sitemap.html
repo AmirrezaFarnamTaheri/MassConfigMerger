@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Sitemap - ConfigStream{% endblock %}
+
+{% block head_extra %}
+<style>
+    ul {
+        list-style: none;
+        padding-left: 20px;
+    }
+
+    li {
+        margin-bottom: 1rem;
+    }
+
+    a {
+        text-decoration: none;
+        color: #3b82f6;
+        font-weight: 600;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<ul>
+    <li><a href="/">/ (Dashboard)</a></li>
+    <li><a href="/sources">/sources</a></li>
+    <li><a href="/analytics">/analytics</a></li>
+    <li><a href="/history">/history</a></li>
+    <li><a href="/testing">/testing</a></li>
+    <li><a href="/backup">/backup</a></li>
+    <li><a href="/scheduler">/scheduler</a></li>
+    <li><a href="/status">/status</a></li>
+    <li><a href="/settings">/settings</a></li>
+    <li><a href="/api-docs">/api-docs</a></li>
+    <li><a href="/logs">/logs</a></li>
+    <li><a href="/help">/help</a></li>
+</ul>
+{% endblock %}

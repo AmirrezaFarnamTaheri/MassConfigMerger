@@ -81,7 +81,7 @@ def _update_settings_from_args(cfg: Settings, args: argparse.Namespace):
     # Arguments that are lists and need to be extended
     list_extend_fields = {"include_patterns", "exclude_patterns"}
 
-    for group_name, group_settings in Settings.model_fields.items():
+    for group_name, _ in Settings.model_fields.items():
         if not hasattr(cfg, group_name):
             continue
 
@@ -94,6 +94,8 @@ def _update_settings_from_args(cfg: Settings, args: argparse.Namespace):
                 value = arg_dict[field_name]
 
                 if field_name in list_extend_fields:
+                    if getattr(group, field_name) is None:
+                        setattr(group, field_name, [])
                     getattr(group, field_name).extend(value)
                     continue
 

@@ -1,4 +1,4 @@
-"""Flask web interface for ConfigStream."""
+"""Modern Flask web interface for ConfigStream with enhanced UI/UX."""
 
 from __future__ import annotations
 
@@ -12,11 +12,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import nest_asyncio
+import io
+import zipfile
+
 from flask import (
     Flask,
     abort,
     jsonify,
-    render_template_string,
+    render_template,
     request,
     send_file,
 )
@@ -36,8 +39,7 @@ from .db import Database
 from .pipeline import run_aggregation_pipeline
 from .vpn_merger import run_merger as run_merger_pipeline
 
-app = Flask(__name__)
-
+app = Flask(__name__, template_folder="templates")
 CONFIG_PATH = Path(CONFIG_FILE_NAME)
 
 
@@ -55,13 +57,12 @@ def _get_root() -> Path:
 
 
 def load_cfg():
-    """Load configuration from ``CONFIG_PATH``."""
+    """Load configuration from CONFIG_PATH."""
     return load_config(CONFIG_PATH)
 
 
 def _run_async_task(coro: asyncio.Future) -> Any:
-    """Execute *coro* in a way that tolerates nested event loops."""
-
+    """Execute coro in a way that tolerates nested event loops."""
     try:
         return asyncio.run(coro)
     except RuntimeError:
@@ -75,22 +76,25 @@ def _extract_api_token() -> Optional[str]:
     header_token = request.headers.get("X-API-Key")
     auth_header = request.headers.get("Authorization", "")
 
-    token_from_header = header_token.strip() if header_token and header_token.strip() else None
+    token_from_header = None
+    if header_token:
+        cleaned = header_token.strip()
+        if cleaned and len(cleaned) <= 256:
+            token_from_header = cleaned
 
     token_from_bearer: Optional[str] = None
     if auth_header:
         scheme, _, value = auth_header.partition(" ")
         if scheme.strip().lower() == "bearer":
             value = value.strip()
-            token_from_bearer = value if value else None
+            if value and len(value) <= 256:
+                token_from_bearer = value
 
-    # Prefer X-API-Key over Bearer if both are present
     return token_from_header or token_from_bearer
 
 
 def _get_request_settings():
     """Return settings for the current request, enforcing API token checks."""
-
     cfg = load_cfg()
     expected = getattr(cfg.security, "web_api_token", None)
     if expected:
@@ -161,393 +165,49 @@ def _serialize_history(history_data: Dict[str, Dict[str, Any]]) -> List[Dict[str
             "status": status,
             "status_class": status_class,
             "last_tested": _format_timestamp(stats.get("last_tested")),
-            "country": stats.get("country") or stats.get("location"),
-            "isp": stats.get("isp"),
-            "latency_ms": latency,
+            "country": stats.get("country") or stats.get("geo", {}).get("country"),
+            "isp": stats.get("isp") or stats.get("geo", {}).get("isp"),
+            "latency": round(latency, 2) if latency is not None else None,
         }
         entries.append(entry)
-
-    entries.sort(
-        key=lambda item: (
-            item["reliability"],
-            item["successes"],
-            -item["failures"],
-            item["key"],
-        ),
-        reverse=True,
-    )
+    entries.sort(key=lambda x: x["reliability"], reverse=True)
     return entries
 
 
 async def _read_history(db_path: Path) -> Dict[str, Dict[str, Any]]:
+    """Read proxy history from the database."""
     db = Database(db_path)
     try:
         await db.connect()
-        return await db.get_proxy_history()
+        history = await db.get_proxy_history()
+        return history
     finally:
         await db.close()
 
 
-def _load_history_preview(limit: int = 5) -> List[Dict[str, Any]]:
-    try:
-        cfg = load_cfg()
-        project_root = _get_root()
-        db_path = project_root / cfg.output.history_db_file
-        history_data = _run_async_task(_read_history(db_path))
-        entries = _serialize_history(history_data)
-        return entries[:limit]
-    except Exception:  # pragma: no cover - defensive guard for dashboard
-        logging.getLogger(__name__).debug("History preview unavailable", exc_info=True)
-        return []
-
+# ============================================================================
+# ROUTES
+# ============================================================================
 
 @app.route("/")
 def index():
-    """Display the main dashboard with quick actions."""
+    """Modern dashboard with enhanced UI."""
+    cfg = load_cfg()
+    project_root = _get_root()
+    db_path = project_root / cfg.output.history_db_file
 
-    history_preview = _load_history_preview()
-    preview_limit = len(history_preview) if history_preview else 5
-    template = """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <title>ConfigStream Control Panel</title>
-        <style>
-            :root {
-                color-scheme: light dark;
-                --bg: #f5f7fb;
-                --card-bg: rgba(255, 255, 255, 0.85);
-                --card-border: rgba(15, 23, 42, 0.08);
-                --accent: #2563eb;
-                --accent-hover: #1d4ed8;
-                --danger: #dc2626;
-                --warning: #f59e0b;
-                --success: #16a34a;
-                --text: #0f172a;
-            }
-            @media (prefers-color-scheme: dark) {
-                :root {
-                    --bg: #0f172a;
-                    --card-bg: rgba(15, 23, 42, 0.85);
-                    --card-border: rgba(148, 163, 184, 0.15);
-                    --text: #e2e8f0;
-                }
-            }
-            * { box-sizing: border-box; }
-            body {
-                margin: 0;
-                padding: 2.5rem;
-                font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-                background: linear-gradient(135deg, rgba(37,99,235,0.08), rgba(22,163,74,0.06)) var(--bg);
-                color: var(--text);
-            }
-            .container {
-                max-width: 1080px;
-                margin: 0 auto;
-            }
-            header {
-                display: flex;
-                flex-direction: column;
-                gap: 0.5rem;
-                margin-bottom: 2rem;
-            }
-            header h1 {
-                margin: 0;
-                font-size: 2.4rem;
-            }
-            header p {
-                margin: 0;
-                max-width: 60ch;
-                line-height: 1.5;
-                color: rgba(15, 23, 42, 0.7);
-            }
-            .grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: 1.5rem;
-            }
-            .card {
-                background: var(--card-bg);
-                border: 1px solid var(--card-border);
-                border-radius: 18px;
-                padding: 1.5rem;
-                backdrop-filter: blur(6px);
-                box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
-            }
-            .card h2 {
-                margin-top: 0;
-                font-size: 1.35rem;
-            }
-            .card p {
-                line-height: 1.5;
-                color: rgba(15, 23, 42, 0.75);
-            }
-            label.token-label {
-                display: block;
-                margin-top: 1rem;
-                margin-bottom: 0.35rem;
-                font-weight: 600;
-            }
-            input[type="password"] {
-                width: 100%;
-                padding: 0.65rem 0.75rem;
-                border-radius: 10px;
-                border: 1px solid rgba(148, 163, 184, 0.6);
-                background: rgba(255, 255, 255, 0.7);
-                color: inherit;
-            }
-            input[type="password"]:focus {
-                outline: 2px solid rgba(37, 99, 235, 0.45);
-                outline-offset: 2px;
-            }
-            .button-row {
-                display: flex;
-                gap: 0.75rem;
-                margin-top: 1rem;
-                flex-wrap: wrap;
-            }
-            button.action {
-                flex: 1 1 160px;
-                padding: 0.75rem 1rem;
-                border-radius: 12px;
-                border: none;
-                background: linear-gradient(135deg, var(--accent), #3b82f6);
-                color: white;
-                font-weight: 600;
-                cursor: pointer;
-                transition: transform 0.18s ease, box-shadow 0.18s ease;
-            }
-            button.action:hover:enabled {
-                transform: translateY(-2px);
-                box-shadow: 0 12px 25px rgba(37, 99, 235, 0.25);
-            }
-            button.action:disabled {
-                opacity: 0.6;
-                cursor: progress;
-            }
-            pre#actionOutput {
-                margin-top: 1rem;
-                padding: 1rem;
-                background: rgba(15, 23, 42, 0.75);
-                color: #e2e8f0;
-                border-radius: 12px;
-                max-height: 220px;
-                overflow: auto;
-                font-size: 0.9rem;
-            }
-            ul.links {
-                list-style: none;
-                padding: 0;
-                margin: 1rem 0 0;
-                display: grid;
-                gap: 0.75rem;
-            }
-            ul.links a {
-                display: inline-flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 0.75rem 1rem;
-                border-radius: 12px;
-                background: rgba(37, 99, 235, 0.08);
-                color: inherit;
-                text-decoration: none;
-                font-weight: 600;
-                transition: background 0.2s ease;
-            }
-            ul.links a:hover {
-                background: rgba(37, 99, 235, 0.16);
-            }
-            table.history {
-                width: 100%;
-                border-collapse: collapse;
-                margin-top: 1rem;
-            }
-            table.history th,
-            table.history td {
-                padding: 0.65rem 0.75rem;
-                text-align: left;
-                border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-            }
-            table.history tbody tr:hover {
-                background: rgba(148, 163, 184, 0.12);
-            }
-            .status-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 0.35rem;
-                padding: 0.35rem 0.6rem;
-                border-radius: 999px;
-                font-size: 0.78rem;
-                font-weight: 600;
-                letter-spacing: 0.01em;
-            }
-            .status-healthy { background: rgba(22, 163, 74, 0.12); color: var(--success); }
-            .status-warning { background: rgba(245, 158, 11, 0.12); color: var(--warning); }
-            .status-critical { background: rgba(220, 38, 38, 0.12); color: var(--danger); }
-            .status-untested { background: rgba(148, 163, 184, 0.18); color: rgba(15, 23, 42, 0.7); }
-            .geo { font-size: 0.82rem; color: rgba(15, 23, 42, 0.6); }
-            footer {
-                margin-top: 2rem;
-                text-align: center;
-                font-size: 0.85rem;
-                color: rgba(15, 23, 42, 0.6);
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <header>
-                <h1>ConfigStream Control Panel</h1>
-                <p>Run aggregation and merge pipelines, inspect generated reports, and monitor proxy health without leaving your browser.</p>
-            </header>
-            <div class="grid">
-                <section class="card" aria-labelledby="operations-heading">
-                    <h2 id="operations-heading">Automated Operations</h2>
-                    <p>Trigger the data aggregation and merging workflows. Provide the optional API token if enforcement is enabled in your configuration.</p>
-                    <label class="token-label" for="apiToken">API Token (optional)</label>
-                    <input id="apiToken" type="password" placeholder="Provide token if configured" autocomplete="off" />
-                    <div class="button-row">
-                        <button class="action" id="aggregateBtn">Run Aggregation</button>
-                        <button class="action" id="mergeBtn">Run Merge</button>
-                    </div>
-                    <pre id="actionOutput" aria-live="polite">Awaiting action…</pre>
-                </section>
-                <section class="card" aria-labelledby="resources-heading">
-                    <h2 id="resources-heading">Key Resources</h2>
-                    <p>Open generated artifacts and operational endpoints in new tabs.</p>
-                    <ul class="links">
-                        <li><a href="/report" rel="noopener">Latest Report<span>→</span></a></li>
-                        <li><a href="/history" rel="noopener">Detailed Proxy History<span>→</span></a></li>
-                        <li><a href="/metrics" rel="noopener">Prometheus Metrics<span>→</span></a></li>
-                        <li><a href="/health" rel="noopener">Health Check<span>→</span></a></li>
-                    </ul>
-                </section>
-                <section class="card" aria-labelledby="history-heading">
-                    <h2 id="history-heading">Top Performing Proxies</h2>
-                    <p>Recent proxy test results ranked by reliability.</p>
-                    <table class="history" aria-describedby="history-heading">
-                        <thead>
-                            <tr>
-                                <th scope="col">Proxy</th>
-                                <th scope="col">Success Rate</th>
-                                <th scope="col">Tests</th>
-                                <th scope="col">Status</th>
-                                <th scope="col">Last Tested</th>
-                            </tr>
-                        </thead>
-                        <tbody id="historyTableBody">
-                            {% if history_preview %}
-                                {% for entry in history_preview %}
-                                <tr>
-                                    <td>
-                                        <strong>{{ entry.key }}</strong>
-                                        <div class="geo">
-                                            {% if entry.country %}
-                                                {{ entry.country }}{% if entry.isp %} · {{ entry.isp }}{% endif %}
-                                            {% elif entry.isp %}
-                                                {{ entry.isp }}
-                                            {% else %}
-                                                —
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                    <td>{{ '%.2f'|format(entry.reliability_percent) }}%</td>
-                                    <td>{{ entry.tests }}</td>
-                                    <td><span class="status-badge {{ entry.status_class }}">{{ entry.status }}</span></td>
-                                    <td>{{ entry.last_tested }}</td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr><td colspan="5">No proxy history recorded yet.</td></tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </section>
-            </div>
-            <footer>
-                Metrics refreshed automatically from live data. Reload the page after running actions to view the latest summaries.
-            </footer>
-        </div>
-        <script>
-            const previewLimit = {{ preview_limit | tojson }};
-            const historyTableBody = document.getElementById('historyTableBody');
-            const output = document.getElementById('actionOutput');
-            const tokenField = document.getElementById('apiToken');
+    # Fetch top 5 proxies for preview
+    try:
+        history_data = _run_async_task(_read_history(db_path))
+        all_entries = _serialize_history(history_data)
+        preview_limit = 5
+        history_preview = all_entries[:preview_limit] if all_entries else []
+    except Exception:
+        history_preview = []
+        preview_limit = 5
 
-            function setOutput(message, isError = false) {
-                output.textContent = message;
-                output.style.background = isError ? 'rgba(220,38,38,0.85)' : 'rgba(15,23,42,0.85)';
-            }
-
-            async function callAction(endpoint, button) {
-                const btn = document.getElementById(button);
-                const token = tokenField.value.trim();
-                const headers = { 'Content-Type': 'application/json' };
-                if (token) {
-                    headers['X-API-Key'] = token;
-                }
-                setOutput('Running ' + endpoint + '…');
-                btn.disabled = true;
-                try {
-                    const response = await fetch(endpoint, {
-                        method: 'POST',
-                        headers,
-                        body: JSON.stringify(token ? { token } : {})
-                    });
-                    const payload = await response.json().catch(() => ({ error: 'Invalid JSON response' }));
-                    if (!response.ok) {
-                        throw new Error(payload.error || response.statusText);
-                    }
-                    setOutput(JSON.stringify(payload, null, 2));
-                } catch (err) {
-                    console.error(err);
-                    setOutput('Error: ' + err.message, true);
-                } finally {
-                    btn.disabled = false;
-                }
-            }
-
-            document.getElementById('aggregateBtn').addEventListener('click', () => {
-                callAction('/api/aggregate', 'aggregateBtn');
-            });
-            document.getElementById('mergeBtn').addEventListener('click', () => {
-                callAction('/api/merge', 'mergeBtn');
-            });
-
-            async function refreshHistoryPreview() {
-                try {
-                    const response = await fetch(`/api/history?limit=${previewLimit}`);
-                    if (!response.ok) {
-                        return;
-                    }
-                    const data = await response.json();
-                    const items = data.items || [];
-                    if (!items.length) {
-                        historyTableBody.innerHTML = '<tr><td colspan="5">No proxy history recorded yet.</td></tr>';
-                        return;
-                    }
-                    historyTableBody.innerHTML = items.map(entry => `
-                        <tr>
-                            <td><strong>${entry.key}</strong><div class="geo">${entry.country ? entry.country + (entry.isp ? ' · ' + entry.isp : '') : (entry.isp || '—')}</div></td>
-                            <td>${entry.reliability_percent.toFixed(2)}%</td>
-                            <td>${entry.tests}</td>
-                            <td><span class="status-badge ${entry.status_class}">${entry.status}</span></td>
-                            <td>${entry.last_tested}</td>
-                        </tr>
-                    `).join('');
-                } catch (err) {
-                    console.error('Failed to refresh history preview', err);
-                }
-            }
-
-            refreshHistoryPreview();
-        </script>
-    </body>
-    </html>
-    """
-    return render_template_string(
-        template,
+    return render_template(
+        "index.html",
         history_preview=history_preview,
         preview_limit=preview_limit,
     )
@@ -562,14 +222,13 @@ def health_check():
 @app.post("/api/aggregate")
 def aggregate_api() -> Any:
     """Run the aggregation pipeline and return the output files."""
-
     cfg = _get_request_settings()
     started = time.monotonic()
     try:
         out_dir, files = _run_async_task(
             run_aggregation_pipeline(cfg, sources_file=SOURCES_FILE)
         )
-    except Exception as exc:  # pragma: no cover - logged for diagnostics
+    except Exception as exc:
         app.logger.exception("Aggregation failed")
         return jsonify({"error": str(exc)}), 500
 
@@ -586,24 +245,9 @@ def aggregate_api() -> Any:
     )
 
 
-@app.route("/aggregate", methods=["GET"])
-def aggregate_legacy():
-    """Guide users towards the secured API endpoint."""
-
-    return (
-        jsonify(
-            {
-                "error": "Use POST /api/aggregate. Actions now require an explicit request.",
-            }
-        ),
-        405,
-    )
-
-
 @app.post("/api/merge")
 def merge_api() -> Any:
     """Run the VPN merger using the latest aggregated results."""
-
     cfg = _get_request_settings()
     project_root = _get_root()
     output_dir = project_root / cfg.output.output_dir
@@ -616,7 +260,7 @@ def merge_api() -> Any:
         _run_async_task(
             run_merger_pipeline(cfg, sources_file=SOURCES_FILE, resume_file=resume_file)
         )
-    except Exception as exc:  # pragma: no cover - logged for diagnostics
+    except Exception as exc:
         app.logger.exception("Merge failed")
         return jsonify({"error": str(exc)}), 500
 
@@ -628,20 +272,6 @@ def merge_api() -> Any:
             "completed_at": datetime.now(timezone.utc).isoformat(),
             "resume_file": str(resume_file),
         }
-    )
-
-
-@app.route("/merge", methods=["GET"])
-def merge_legacy():
-    """Guide legacy callers toward the secured merge API."""
-
-    return (
-        jsonify(
-            {
-                "error": "Use POST /api/merge. Operations must be triggered explicitly.",
-            }
-        ),
-        405,
     )
 
 
@@ -667,7 +297,6 @@ def report():
 @app.get("/api/history")
 def history_api() -> Any:
     """Return proxy history statistics as JSON."""
-
     cfg = load_cfg()
     project_root = _get_root()
     db_path = project_root / cfg.output.history_db_file
@@ -694,7 +323,6 @@ def history_api() -> Any:
 @app.route("/history")
 def history():
     """Display the proxy history from the database."""
-
     cfg = load_cfg()
     project_root = _get_root()
     db_path = project_root / cfg.output.history_db_file
@@ -707,132 +335,318 @@ def history():
         "untested": sum(1 for entry in entries if entry["status"] == "Untested"),
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
     }
+    return render_template("history.html", entries=entries, summary=summary)
 
-    template = """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <title>Proxy History</title>
-        <style>
-            body {
-                font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-                margin: 0;
-                padding: 2rem;
-                background: #0f172a;
-                color: #e2e8f0;
-            }
-            a { color: #60a5fa; }
-            .wrap { max-width: 1100px; margin: 0 auto; }
-            header { margin-bottom: 1.5rem; }
-            header h1 { margin: 0; font-size: 2rem; }
-            header p { margin: 0.35rem 0 0; color: #94a3b8; }
-            .summary {
-                display: flex;
-                gap: 1rem;
-                flex-wrap: wrap;
-                margin-bottom: 1.5rem;
-            }
-            .summary .pill {
-                padding: 0.65rem 1rem;
-                border-radius: 999px;
-                background: rgba(148, 163, 184, 0.12);
-                border: 1px solid rgba(148, 163, 184, 0.2);
-            }
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                background: rgba(15, 23, 42, 0.75);
-                border-radius: 16px;
-                overflow: hidden;
-            }
-            thead { background: rgba(15, 23, 42, 0.9); }
-            th, td {
-                padding: 0.85rem 1rem;
-                text-align: left;
-                border-bottom: 1px solid rgba(148, 163, 184, 0.12);
-            }
-            tbody tr:hover { background: rgba(59, 130, 246, 0.12); }
-            .status-badge {
-                display: inline-block;
-                padding: 0.35rem 0.7rem;
-                border-radius: 999px;
-                font-size: 0.8rem;
-                font-weight: 600;
-            }
-            .status-healthy { background: rgba(34, 197, 94, 0.18); color: #4ade80; }
-            .status-warning { background: rgba(234, 179, 8, 0.2); color: #facc15; }
-            .status-critical { background: rgba(239, 68, 68, 0.25); color: #f87171; }
-            .status-untested { background: rgba(148, 163, 184, 0.25); color: #cbd5f5; }
-            .geo { font-size: 0.82rem; color: #94a3b8; }
-        </style>
-    </head>
-    <body>
-        <div class="wrap">
-            <header>
-                <h1>Proxy History</h1>
-                <p>Reliability metrics for recently tested proxies. <a href="/">Back to dashboard</a></p>
-            </header>
-            <section class="summary">
-                <div class="pill">Total tracked: {{ summary.total }}</div>
-                <div class="pill">Healthy: {{ summary.healthy }}</div>
-                <div class="pill">Critical: {{ summary.critical }}</div>
-                <div class="pill">Untested: {{ summary.untested }}</div>
-                <div class="pill">Generated: {{ summary.generated_at }} UTC</div>
-            </section>
-            <table aria-label="Proxy History">
-                <thead>
-                    <tr>
-                        <th scope="col">Proxy</th>
-                        <th scope="col">Successes</th>
-                        <th scope="col">Failures</th>
-                        <th scope="col">Success Rate</th>
-                        <th scope="col">Tests</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Last Tested (UTC)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if entries %}
-                        {% for entry in entries %}
-                        <tr>
-                            <td>
-                                <strong>{{ entry.key }}</strong>
-                                <div class="geo">
-                                    {% if entry.country %}
-                                        {{ entry.country }}{% if entry.isp %} · {{ entry.isp }}{% endif %}
-                                    {% elif entry.isp %}
-                                        {{ entry.isp }}
-                                    {% else %}
-                                        —
-                                    {% endif %}
-                                </div>
-                            </td>
-                            <td>{{ entry.successes }}</td>
-                            <td>{{ entry.failures }}</td>
-                            <td>{{ '%.2f'|format(entry.reliability_percent) }}%</td>
-                            <td>{{ entry.tests }}</td>
-                            <td><span class="status-badge {{ entry.status_class }}">{{ entry.status }}</span></td>
-                            <td>{{ entry.last_tested }}</td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr><td colspan="7">No proxy history recorded yet.</td></tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-    </body>
-    </html>
-    """
-    return render_template_string(template, entries=entries, summary=summary)
+
+@app.route("/sources")
+def sources():
+    """Display and manage subscription sources."""
+    project_root = _get_root()
+    sources_file = project_root / SOURCES_FILE
+    if sources_file.exists():
+        sources_content = sources_file.read_text()
+    else:
+        sources_content = "# No sources file found, please create one."
+    return render_template("sources.html", sources_content=sources_content)
+
+
+@app.post("/api/sources/add")
+def add_source():
+    """Add a new subscription source."""
+    data = request.get_json(silent=True) or {}
+    raw_url = data.get("url")
+    if not raw_url or not isinstance(raw_url, str):
+        return jsonify({"error": "URL is required"}), 400
+
+    url = raw_url.strip()
+    # Basic sanitation: prevent newlines and enforce length and scheme
+    if "\n" in url or "\r" in url or len(url) > 2048:
+        return jsonify({"error": "Invalid URL format"}), 400
+
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
+        return jsonify({"error": "Only http/https URLs with host are allowed"}), 400
+
+    project_root = _get_root()
+    sources_file = project_root / SOURCES_FILE
+    existing = []
+    if sources_file.exists():
+        existing = sources_file.read_text(encoding="utf-8").splitlines()
+
+    # Avoid duplicates (compare normalized)
+    if any(line.strip() == url for line in existing):
+        return jsonify({"message": "Source already exists"}), 200
+
+    # Append safely
+    new_lines = [*existing, url] if existing else [url]
+    tmp_path = sources_file.with_suffix(sources_file.suffix + ".tmp")
+    tmp_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+    tmp_path.replace(sources_file)
+
+    return jsonify({"message": "Source added successfully"}), 200
+
+@app.post("/api/sources/remove")
+def remove_source():
+    """Remove a subscription source."""
+    data = request.get_json(silent=True) or {}
+    raw_url = data.get("url")
+    if not raw_url or not isinstance(raw_url, str):
+        return jsonify({"error": "URL is required"}), 400
+
+    url_to_remove = raw_url.strip()
+    if "\n" in url_to_remove or "\r" in url_to_remove or len(url_to_remove) > 2048:
+        return jsonify({"error": "Invalid URL format"}), 400
+
+    project_root = _get_root()
+    sources_file = project_root / SOURCES_FILE
+    if not sources_file.exists():
+        return jsonify({"error": "Sources file not found"}), 404
+
+    original = sources_file.read_text(encoding="utf-8").splitlines()
+    filtered = [line for line in original if line.strip() != url_to_remove]
+
+    if len(filtered) == len(original):
+        return jsonify({"message": "Source not found"}), 200
+
+    tmp_path = sources_file.with_suffix(sources_file.suffix + ".tmp")
+    tmp_path.write_text("\n".join(filtered) + ("\n" if filtered else ""), encoding="utf-8")
+    tmp_path.replace(sources_file)
+
+    return jsonify({"message": "Source removed successfully"}), 200
+
+
+@app.route("/settings")
+def settings():
+    """Display the current application settings."""
+    cfg = load_cfg()
+    config_path = cfg.config_file or "Default (no file loaded)"
+
+    # To display the raw config, we read it from the file
+    if cfg.config_file and cfg.config_file.exists():
+        config_content = cfg.config_file.read_text()
+    else:
+        config_content = "# No config file loaded. Using default settings."
+
+    return render_template("settings.html", config_path=config_path, config_content=config_content)
+
+
+@app.route("/logs")
+def logs():
+    """Display application logs."""
+    log_file = (_get_root() / "web_server.log").resolve()
+    root = _get_root().resolve()
+    # Ensure the file is inside project root
+    if not str(log_file).startswith(str(root)):
+        abort(400)
+
+    log_content = "Log file not found."
+    if log_file.exists() and log_file.is_file():
+        try:
+            max_bytes = 512 * 1024  # 512 KB cap
+            size = log_file.stat().st_size
+            with open(log_file, "rb") as f:
+                if size > max_bytes:
+                    f.seek(-max_bytes, 2)
+                data = f.read()
+            log_content = data.decode("utf-8", errors="replace")
+        except Exception as e:
+            log_content = f"Error reading log file: {e}"
+
+    return render_template("logs.html", log_content=log_content)
+
+
+@app.route("/backup")
+def backup():
+    """Render the backup and restore page."""
+    return render_template("backup.html")
+
+
+@app.get("/api/export-backup")
+def export_backup():
+    """Export critical application files as a zip archive."""
+    # Enforce API token if configured
+    _get_request_settings()
+
+    candidate_names = {"config.yaml", "sources.txt", "proxy_history.db"}
+    max_total_bytes = 50 * 1024 * 1024  # 50 MB cap
+
+    sizes: List[tuple[Path, int]] = []
+    for name in candidate_names:
+        if Path(name).name != name:
+            continue
+        p = (root / name).resolve()
+        # Ensure file stays within project root and is a regular file
+        if not str(p).startswith(str(root)):
+            continue
+        try:
+            st = p.lstat()
+        except OSError:
+            continue
+        # Disallow symlinks and non-regular files
+        if not p.exists() or not p.is_file() or p.is_symlink():
+            continue
+        sizes.append((p, st.st_size))
+
+    total_bytes = sum(size for _, size in sizes)
+    if total_bytes > max_total_bytes:
+        return jsonify({"error": "Backup exceeds allowed size"}), 400
+
+    memory_file = io.BytesIO()
+    compression = getattr(zipfile, "ZIP_DEFLATED", zipfile.ZIP_STORED)
+    with zipfile.ZipFile(memory_file, "w", compression) as zf:
+        for file_path, _ in sizes:
+            # Validate arcname is a simple filename
+            arcname = file_path.name
+            if Path(arcname).name != arcname:
+                continue
+            # Read content defensively
+            try:
+                with open(file_path, "rb") as f:
+                    data = f.read()
+            except OSError:
+                continue
+            # Create ZipInfo with safe permissions (rw for owner)
+            zi = zipfile.ZipInfo(arcname)
+            zi.external_attr = (0o600 & 0xFFFF) << 16
+            zf.writestr(zi, data)
+
+    memory_file.seek(0)
+        for file_path, _ in sizes:
+            zf.write(file_path, arcname=file_path.name)
+    memory_file.seek(0)
+    return send_file(
+        memory_file,
+        download_name="configstream_backup.zip",
+        as_attachment=True,
+        mimetype="application/zip",
+    )
+
+        """Import a zip archive to restore application data atomically."""
+        # Local import to avoid NameError and limit scope
+        import os
+
+        if "backup_file" not in request.files:
+            return jsonify({"error": "No file part"}), 400
+        file = request.files["backup_file"]
+        if not file or file.filename == "":
+            return jsonify({"error": "No selected file"}), 400
+
+        filename = Path(file.filename)
+        if filename.suffix.lower() != ".zip":
+            return jsonify({"error": "Invalid file type. Please upload a .zip file."}), 400
+        content_type = (file.mimetype or "").lower()
+        if content_type not in {"application/zip", "application/x-zip-compressed", "multipart/x-zip"}:
+            return jsonify({"error": "Invalid content-type for zip upload."}), 400
+
+        data = file.read()
+        if not data:
+            return jsonify({"error": "Empty archive."}), 400
+        memory_file = io.BytesIO(data)
+
+        project_root = _get_root().resolve()
+        tmp_dir = project_root / ".restore_tmp"
+        try:
+            with zipfile.ZipFile(memory_file, "r") as zf:
+                if zf.testzip() is not None:
+                    return jsonify({"error": "Corrupted zip archive."}), 400
+
+                allowed_names = {"config.yaml", "sources.txt", "proxy_history.db"}
+                max_total_uncompressed = 50 * 1024 * 1024
+                max_file_uncompressed = 10 * 1024 * 1024
+                total_uncompressed = 0
+
+                # Prepare temp dir
+                try:
+                    if tmp_dir.exists():
+                        for p in tmp_dir.iterdir():
+                            try:
+                                p.unlink()
+                            except Exception:
+                                pass
+                    else:
+                        tmp_dir.mkdir(parents=True, exist_ok=True)
+                except Exception:
+                    return jsonify({"error": "Failed to prepare temporary directory"}), 500
+
+                staged_paths: list[tuple[Path, zipfile.ZipInfo]] = []
+                for member in zf.infolist():
+                    if member.is_dir():
+                        continue
+                    member_path = Path(member.filename)
+                    if member_path.is_absolute() or member_path.drive:
+                        return jsonify({"error": f"Invalid absolute path in archive: {member.filename}"}), 400
+                    if member_path.parent != Path(".") or member_path.name not in allowed_names:
+                        return jsonify({"error": f"Disallowed file in archive: {member.filename}"}), 400
+
+                    if member.file_size is None or member.compress_size is None:
+                        return jsonify({"error": f"Invalid file metadata: {member.filename}"}), 400
+                    if member.file_size > max_file_uncompressed:
+                        return jsonify({"error": f"File too large in archive: {member.filename}"}), 400
+                    compression_ratio = (member.file_size or 1) / max(member.compress_size or 1, 1)
+                    if compression_ratio > 200:
+                        return jsonify({"error": f"Suspicious compression ratio for: {member.filename}"}), 400
+
+                    total_uncompressed += int(member.file_size)
+                    if total_uncompressed > max_total_uncompressed:
+                        return jsonify({"error": "Archive content too large"}), 400
+
+                    staged_target = (tmp_dir / member_path.name).resolve()
+                    if not str(staged_target).startswith(str(project_root)):
+                        return jsonify({"error": f"Invalid file path in archive: {member.filename}"}), 400
+
+                    with zf.open(member, "r") as src, open(staged_target, "wb") as dst:
+                        read_limit = 0
+                        while True:
+                            chunk = src.read(65536)
+                            if not chunk:
+                                break
+                            read_limit += len(chunk)
+                            if read_limit > max_file_uncompressed:
+                                return jsonify({"error": f"File too large in archive: {member.filename}"}), 400
+                            dst.write(chunk)
+                    try:
+                        os.chmod(staged_target, 0o600)
+                    except Exception:
+                        pass
+                    staged_paths.append((staged_target, member))
+
+                # Atomically replace targets
+                for staged_target, member in staged_paths:
+                    final_target = (project_root / Path(member.filename).name).resolve()
+                    if not str(final_target).startswith(str(project_root)):
+                        return jsonify({"error": f"Invalid file path in archive: {member.filename}"}), 400
+                    try:
+                        staged_target.replace(final_target)
+                    except Exception as e:
+                        return jsonify({"error": f"Failed to write file {final_target.name}: {e}"}), 500
+
+            return jsonify({"message": "Backup imported successfully."}), 200
+        except zipfile.BadZipFile:
+            return jsonify({"error": "Invalid zip file."}), 400
+        except Exception as e:
+            return jsonify({"error": f"An error occurred: {e}"}), 500
+        finally:
+            # Best-effort cleanup of temporary directory
+            try:
+                if tmp_dir.exists():
+                    for p in tmp_dir.iterdir():
+                        try:
+                            p.unlink()
+                        except Exception:
+                            pass
+                    tmp_dir.rmdir()
+            except Exception:
+                pass
+        return jsonify({"error": "Invalid zip file."}), 400
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {e}"}), 500
 
 
 def main() -> None:
     """Run the Flask development server."""
-    # Add prometheus wsgi middleware to route /metrics requests
     app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host="0.0.0.0", port=8080, debug=False)
 
 
 if __name__ == "__main__":

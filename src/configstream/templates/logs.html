@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Logs - ConfigStream{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>
+        <div class="card-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+            </svg>
+        </div>
+        Application Logs
+    </h2>
+    <p style="color: #64748b; margin-bottom: 1rem;">
+        Displaying the last 100 lines of the application log file.
+    </p>
+    <div class="log-container">
+        <pre><code>{{ log_content }}</code></pre>
+    </div>
+</div>
+<style>
+    .log-container pre {
+        background-color: #1e293b;
+        color: #e2e8f0;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 1.5rem;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}

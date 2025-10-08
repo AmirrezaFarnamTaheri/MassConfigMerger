@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Scheduler - ConfigStream{% endblock %}
+
+{% block head_extra %}
+<style>
+    .job {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .job-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    .job-details {
+        color: #64748b;
+        font-family: 'Monaco', 'Courier New', monospace;
+        font-size: 0.875rem;
+    }
+    .job-status {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+    .status-running { background: #dcfce7; color: #166534; }
+    button {
+        padding: 0.75rem 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% for job in jobs %}
+<div class="job">
+    <div>
+        <div class="job-name">{{ job.name }}</div>
+        <div class="job-details">
+            ID: {{ job.id }} | Trigger: {{ job.trigger }} | Next Run: {{ job.next_run_time }}
+        </div>
+    </div>
+    <div>
+        {% set is_running = job.is_running %}
+        <span class="job-status {{ 'status-running' if is_running else '' }}">{{ 'Running' if is_running else 'Paused' }}</span>
+        <button class="toggle-btn" data-job-id="{{ job.id }}" data-state="{{ 'running' if is_running else 'paused' }}">
+          {{ 'Pause' if is_running else 'Resume' }}
+        </button>
+    </div>
+</div>
+{% else %}
+<div class="job">
+    <div class="job-name">No scheduled jobs found.</div>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.toggle-btn');
+    if (!btn) return;
+    const jobId = btn.getAttribute('data-job-id');
+    const currentState = btn.getAttribute('data-state'); // 'running' or 'paused'
+    const action = currentState === 'running' ? 'pause' : 'resume';
+    try {
+      const resp = await fetch(`/api/scheduler/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: jobId })
+      });
+      if (!resp.ok) {
+        const msg = await resp.text().catch(() => '');
+        throw new Error(msg || 'Request failed');
+      }
+      const badge = btn.parentElement.querySelector('.job-status');
+      if (action === 'pause') {
+        btn.textContent = 'Resume';
+        btn.setAttribute('data-state', 'paused');
+        if (badge) {
+          badge.textContent = 'Paused';
+          badge.classList.remove('status-running');
+        }
+      } else {
+        btn.textContent = 'Pause';
+        btn.setAttribute('data-state', 'running');
+        if (badge) {
+          badge.textContent = 'Running';
+          badge.classList.add('status-running');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to toggle job:', err);
+      alert('Failed to update job: ' + (err.message || 'Unknown error'));
+    }
+  }, { once: false });
+</script>
+{% endblock %}
