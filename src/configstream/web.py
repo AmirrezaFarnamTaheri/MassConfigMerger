@@ -398,23 +398,32 @@ def remove_source():
     sources_file = project_root / SOURCES_FILE
     if not sources_file.exists():
         return jsonify({"error": "Sources file not found"}), 404
+        """Remove a subscription source."""
+        data = request.get_json(silent=True) or {}
+        raw_url = data.get("url")
+        if not raw_url or not isinstance(raw_url, str):
+            return jsonify({"error": "URL is required"}), 400
 
-    lines = sources_file.read_text().splitlines()
-    new_lines = [line for line in lines if line.strip() != url_to_remove.strip()]
+        url_to_remove = raw_url.strip()
+        if "\n" in url_to_remove or "\r" in url_to_remove or len(url_to_remove) > 2048:
+            return jsonify({"error": "Invalid URL format"}), 400
 
-    sources_file.write_text("\n".join(new_lines))
+        project_root = _get_root()
+        sources_file = project_root / SOURCES_FILE
+        if not sources_file.exists():
+            return jsonify({"error": "Sources file not found"}), 404
 
-    return jsonify({"message": "Source removed successfully"})
+        original = sources_file.read_text(encoding="utf-8").splitlines()
+        filtered = [line for line in original if line.strip() != url_to_remove]
 
+        if len(filtered) == len(original):
+            return jsonify({"message": "Source not found"}), 200
 
-from collections import Counter
+        tmp_path = sources_file.with_suffix(sources_file.suffix + ".tmp")
+        tmp_path.write_text("\n".join(filtered) + ("\n" if filtered else ""), encoding="utf-8")
+        tmp_path.replace(sources_file)
 
-@app.route("/analytics")
-def analytics():
-    """Display analytics dashboard."""
-    cfg = load_cfg()
-    project_root = _get_root()
-    db_path = project_root / cfg.output.history_db_file
+        return jsonify({"message": "Source removed successfully"}), 200
     history_data = _run_async_task(_read_history(db_path))
     entries = _serialize_history(history_data)
 
