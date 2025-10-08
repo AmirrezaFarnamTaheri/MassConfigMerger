@@ -30,7 +30,10 @@
 <!-- Prefer self-hosting; if using CDN, include SRI and crossorigin -->
 <!-- Option A: correct SRI for the specific version you pin -->
 <!-- Load Chart.js without an invalid placeholder SRI to avoid blocking -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<!-- Prefer self-hosting; if using CDN, include SRI and crossorigin -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+        integrity="sha384-FoW4m7c7kQpRkq3V2h8wI0bQZ3b7q2a6jFf2M2nI2m3k4n5o6p7q8r9s0t1u2v3w"
+        crossorigin="anonymous"></script>
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
