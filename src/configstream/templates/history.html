@@ -57,7 +57,7 @@
                           {% endif %}
                         </td>
                         <td>{{ entry.tests }}</td>
-                        <td><span class="status-badge {{ entry.status_class | e }}">{{ entry.status | e }}</span></td>
+                        <td><span class="status-badge {{ entry.status_class }}">{{ entry.status | e }}</span></td>
                         <td>{{ entry.last_tested | e }}</td>
                     </tr>
                     {% endfor %}
