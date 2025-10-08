@@ -37,53 +37,40 @@
     importForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const fileInput = document.getElementById('backup-file');
-        if (!fileInput.files.length) {
+        const file = fileInput.files && fileInput.files[0];
+
+        if (!file) {
             alert('Please select a file to upload.');
             return;
         }
+        if (file.type && file.type !== 'application/zip' && !file.name.toLowerCase().endsWith('.zip')) {
+            alert('Please select a .zip backup file.');
+            return;
+        }
+
         const formData = new FormData();
-        formData.append('backup_file', fileInput.files[0]);
+        formData.append('backup_file', file);
 
         try {
-            const file = fileInput.files[0];
-            if (!file) {
-                alert('Please select a file to upload.');
-                return;
+            const response = await fetch('/api/import-backup', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errText = await response.text().catch(() => '');
+                throw new Error(errText || `Import failed with status ${response.status}`);
             }
-            if (file.type && file.type !== 'application/zip' && !file.name.toLowerCase().endsWith('.zip')) {
-                alert('Please select a .zip backup file.');
-                return;
-            }
-            const formData = new FormData();
-            formData.append('backup_file', file);
 
-            try {
-                const response = await fetch('/api/import-backup', {
-                    method: 'POST',
-                    body: formData
-                });
+            const result = await response.json().catch(() => {
+                throw new Error('Invalid JSON response from server.');
+            });
 
-                if (!response.ok) {
-                    const errText = await response.text().catch(() => '');
-                    throw new Error(errText || `Import failed with status ${response.status}`);
-                }
-
-                let result;
-                try {
-                    result = await response.json();
-                } catch {
-                    throw new Error('Invalid JSON response from server.');
-                }
-
-                alert(result.message || 'Import completed.');
-                window.location.reload();
-            } catch (err) {
-                console.error('Failed to import backup:', err);
-                alert('Error: ' + err.message);
-            }
+            alert(result.message || 'Import completed.');
+            window.location.reload();
         } catch (err) {
             console.error('Failed to import backup:', err);
-            alert('An unexpected error occurred during import.');
+            alert('Error: ' + (err && err.message ? err.message : 'Unknown error'));
         }
     });
 </script>
