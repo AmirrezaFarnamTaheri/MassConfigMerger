@@ -259,6 +259,14 @@ class ProcessingSettings(BaseModel):
     )
 
 
+class SourcesSettings(BaseModel):
+    """Settings for managing subscription sources."""
+
+    sources_file: Path = Field(
+        "sources.txt", description="File containing subscription source URLs."
+    )
+
+
 class Settings(BaseSettings):
     """
     Main application configuration model.
@@ -270,6 +278,7 @@ class Settings(BaseSettings):
     output: OutputSettings = Field(default_factory=OutputSettings)
     processing: ProcessingSettings = Field(default_factory=ProcessingSettings)
     security: SecuritySettings = Field(default_factory=SecuritySettings)
+    sources: SourcesSettings = Field(default_factory=SourcesSettings)
 
     config_file: Optional[Path] = Field(default=None, exclude=True)
 
