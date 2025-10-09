@@ -173,10 +173,18 @@ def create_app(settings: Optional[Settings] = None) -> Flask:
         """Export data in various formats."""
         data = dashboard_data.get_current_results()
         filters = request.args.to_dict()
-        nodes = dashboard_data.filter_nodes(data["nodes"], filters)
+        nodes = dashboard_data.filter_nodes(data.get("nodes", []), filters)
+
+        export_fields = [
+            "protocol", "country", "city", "ip", "port", "ping_ms",
+            "organization", "is_blocked", "timestamp"
+        ]
 
         if format == "csv":
-            csv_data = dashboard_data.export_csv(nodes)
+            projected = [
+                {k: n.get(k, "") for k in export_fields} for n in nodes
+            ]
+            csv_data = dashboard_data.export_csv(projected)
             return send_file(
                 BytesIO(csv_data.encode()),
                 mimetype="text/csv",
@@ -185,7 +193,10 @@ def create_app(settings: Optional[Settings] = None) -> Flask:
             )
 
         elif format == "json":
-            json_data = dashboard_data.export_json(nodes)
+            projected = [
+                {k: n.get(k, None) for k in export_fields} for n in nodes
+            ]
+            json_data = json.dumps(projected, indent=2)
             return send_file(
                 BytesIO(json_data.encode()),
                 mimetype="application/json",

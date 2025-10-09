@@ -209,27 +209,35 @@ class ConfigProcessor:
         ):
             return results
 
+        host_to_ip_cache: dict[str, Optional[str]] = {}
+        ip_to_blocked_status: dict[str, bool] = {}
+
         async def _check(result: ConfigResult) -> Optional[ConfigResult]:
             """Check a single result for malicious IP. Returns None if malicious or uncertain."""
             if not result.is_reachable or not result.host:
                 return result
 
-            ip = None
-            try:
-                ip = await self.tester.resolve_host(result.host)
-            except Exception as exc:
-                logging.debug("Failed to resolve host %s: %s", result.host, exc)
-                return result
+            # Use cached IP if available
+            if result.host not in host_to_ip_cache:
+                try:
+                    host_to_ip_cache[result.host] = await self.tester.resolve_host(result.host)
+                except Exception as exc:
+                    logging.debug("Failed to resolve host %s: %s", result.host, exc)
+                    host_to_ip_cache[result.host] = None
 
+            ip = host_to_ip_cache[result.host]
             if not ip:
                 return result
 
-            try:
-                if await self.blocklist_checker.is_malicious(ip):
-                    return None  # Discard if malicious
-            except Exception as exc:
-                logging.debug("Blocklist check failed for %s: %s", ip, exc)
-                # Conservative default: drop on failure to check
+            # Use cached blocklist status if available
+            if ip not in ip_to_blocked_status:
+                try:
+                    ip_to_blocked_status[ip] = await self.blocklist_checker.is_malicious(ip)
+                except Exception as exc:
+                    logging.debug("Blocklist check failed for %s: %s", ip, exc)
+                    ip_to_blocked_status[ip] = True # Conservative default
+
+            if ip_to_blocked_status.get(ip, False):
                 return None
 
             return result

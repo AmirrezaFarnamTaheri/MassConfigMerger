@@ -71,3 +71,12 @@ def handle_daemon(args: argparse.Namespace, cfg: Settings):
         interval_hours=args.interval_hours,
         web_port=args.web_port,
     ))
+
+
+def handle_tui(args: argparse.Namespace, cfg: Settings):
+    """Handle the 'tui' command."""
+    from .tui import display_results
+
+    # This assumes the daemon has been run at least once to generate the results file.
+    results_file = Path(cfg.output.output_dir) / "current_results.json"
+    display_results(results_file)

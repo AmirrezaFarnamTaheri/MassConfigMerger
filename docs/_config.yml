@@ -12,3 +12,7 @@ markdown: kramdown
 kramdown:
   input: GFM
   syntax_highlighter: rouge
+
+author: Amirreza 'Farnam' Taheri
+email: taherifarnam@gmail.com
+url: https://amirrezafarnamtaheri.github.io/configStream/

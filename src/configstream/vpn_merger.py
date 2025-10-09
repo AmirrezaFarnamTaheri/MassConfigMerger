@@ -40,6 +40,7 @@ async def run_merger(
     cfg: Settings,
     sources_file: Path,
     resume_file: Optional[Path] = None,
+    write_output_files: bool = True,
 ) -> list[ConfigResult]:
     """
     Run the VPN merger pipeline to test, sort, and merge configurations.
@@ -48,6 +49,7 @@ async def run_merger(
         cfg: The application settings object.
         sources_file: The path to the file containing web source URLs.
         resume_file: An optional path to a subscription file to re-test.
+        write_output_files: Whether to write the final configuration files.
 
     Returns:
         A list of `ConfigResult` objects representing the tested and sorted nodes.
@@ -66,9 +68,10 @@ async def run_merger(
         results = await pipeline.test_configs(list(filtered_configs), cfg, history, db)
         sorted_results = pipeline.sort_and_trim_results(results, cfg)
 
-        final_configs = [r.config for r in sorted_results]
-        output_dir = Path(cfg.output.output_dir)
-        output_generator.write_outputs(final_configs, output_dir)
+        if write_output_files:
+            final_configs = [r.config for r in sorted_results]
+            output_dir = Path(cfg.output.output_dir)
+            output_generator.write_outputs(final_configs, output_dir)
 
         return sorted_results
 

@@ -28,7 +28,8 @@ dependencies = [
     "aiosqlite",
     "prometheus_client",
     "psutil",
-    "apscheduler"
+    "apscheduler",
+    "rich"
 ]
 
 [project.scripts]

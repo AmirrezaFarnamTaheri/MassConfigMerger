@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import signal
+import threading
 from pathlib import Path
 
 from .config import Settings
@@ -59,8 +60,12 @@ def main():
 
     loop = asyncio.get_event_loop()
 
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, daemon._signal_handler)
+    if threading.current_thread() is threading.main_thread():
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            try:
+                loop.add_signal_handler(sig, daemon._signal_handler)
+            except Exception as exc:
+                logger.warning(f"Could not set signal handlers: {exc}")
 
     try:
         loop.run_until_complete(daemon.start(interval_hours=2, web_port=8080))
