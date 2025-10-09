@@ -207,10 +207,11 @@ def test_parse_protocol_set_empty_input():
 
 def test_cli_no_args_prints_help(capsys):
     """Test that running the CLI with no arguments prints the help message."""
-    with pytest.raises(SystemExit) as e:
-        main([])
-    # Argparse exits with 2 when a required argument is missing
-    assert e.value.code == 2
+    with patch("sys.argv", ["configstream"]):
+        with pytest.raises(SystemExit) as e:
+            main()
+        # Argparse exits with 2 when a required argument is missing
+        assert e.value.code == 2
     captured = capsys.readouterr()
     assert "usage:" in captured.err
     assert "the following arguments are required: command" in captured.err

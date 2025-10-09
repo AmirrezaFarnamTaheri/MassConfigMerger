@@ -87,6 +87,7 @@ class ConfigResult:
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     reliability: Optional[float] = None
+    is_blocked: bool = False
 
 
 class ConfigProcessor:
@@ -230,15 +231,15 @@ class ConfigProcessor:
     async def _filter_malicious(
         self, results: List[ConfigResult]
     ) -> List[ConfigResult]:
-        """Filter out results with malicious IPs concurrently."""
+        """Tag results with malicious IPs concurrently."""
         if (
             not self.settings.security.apivoid_api_key
             or self.settings.security.blocklist_detection_threshold <= 0
         ):
             return results
 
-        async def _check(result: ConfigResult) -> Optional[ConfigResult]:
-            """Check a single result for malicious IP, with error handling."""
+        async def _check(result: ConfigResult) -> ConfigResult:
+            """Check a single result for malicious IP and update the is_blocked flag."""
             if not result.is_reachable or not result.host:
                 return result
 
@@ -246,24 +247,22 @@ class ConfigProcessor:
             try:
                 ip = await self.tester.resolve_host(result.host)
             except Exception as exc:
-                logging.debug("Failed to resolve host %s: %s",
-                              result.host, exc)
-                return result  # Keep config if DNS fails
+                logging.debug("Failed to resolve host %s: %s", result.host, exc)
+                return result
 
             if not ip:
-                return result  # Keep config if host cannot be resolved
+                return result
 
             try:
                 if await self.blocklist_checker.is_malicious(ip):
-                    return None  # Discard if malicious
-                return result  # Keep if not malicious
+                    result.is_blocked = True
             except Exception as exc:
                 logging.debug("Blocklist check failed for %s: %s", ip, exc)
-                return result  # Keep config if blocklist check fails
+
+            return result
 
         tasks = [_check(r) for r in results]
-        checked_results = await asyncio.gather(*tasks)
-        return [res for res in checked_results if res is not None]
+        return await asyncio.gather(*tasks)
 
     async def test_configs(
         self, configs: Set[str], history: dict | None = None

@@ -55,6 +55,12 @@ def build_parser() -> argparse.ArgumentParser:
     # Sources command
     cli_args.add_sources_parser(subparsers)
 
+    # Daemon command
+    daemon_p = subparsers.add_parser(
+        "daemon", help="Run the scheduler and web dashboard"
+    )
+    cli_args.add_daemon_arguments(daemon_p)
+
     return parser
 
 
@@ -115,6 +121,7 @@ HANDLERS: Dict[str, Callable[..., None]] = {
     "merge": commands.handle_merge,
     "retest": commands.handle_retest,
     "full": commands.handle_full,
+    "daemon": commands.handle_daemon,
 }
 
 
