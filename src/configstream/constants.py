@@ -9,7 +9,7 @@ PROTOCOL_RE = re.compile(
     r"\b(?:"
     r"vmess|vless|reality|ssr?|trojan|hy2|hysteria2?|tuic|"
     r"shadowtls|juicity|naive|brook|wireguard|"
-    r"socks5|socks4|socks|https|http"
+    r"socks5|socks4|socks|https"  # Keep https for things like https proxies
     r")://[^\s\"'<>()\[\]{}]+",
     re.IGNORECASE,
 )

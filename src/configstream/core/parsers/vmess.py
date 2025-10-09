@@ -4,7 +4,7 @@ import base64
 import binascii
 import json
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from urllib.parse import parse_qs, urlparse
 
 from .common import BaseParser
@@ -36,7 +36,8 @@ class VmessParser(BaseParser):
             # Primary parsing method: base64-encoded JSON
             padded = base + "=" * (-len(base) % 4)
             data = json.loads(base64.b64decode(padded).decode())
-            name = self.sanitize_str(data.get("ps") or data.get("name") or name)
+            name = self.sanitize_str(
+                data.get("ps") or data.get("name") or name)
             proxy = {
                 "name": name,
                 "type": "vmess",
@@ -57,16 +58,19 @@ class VmessParser(BaseParser):
                     proxy[key] = self.sanitize_str(data.get(key))
 
             if data.get("ws-headers"):
-                proxy["ws-headers"] = self.sanitize_headers(data.get("ws-headers"))
+                proxy["ws-headers"] = self.sanitize_headers(
+                    data.get("ws-headers"))
 
             ws_opts = data.get("ws-opts")
             if ws_opts and isinstance(ws_opts, dict) and ws_opts.get("headers"):
-                proxy["ws-headers"] = self.sanitize_headers(ws_opts.get("headers"))
+                proxy["ws-headers"] = self.sanitize_headers(
+                    ws_opts.get("headers"))
 
             return proxy
-        except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError) as e1:
+        except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError):
             # Fallback parsing method: URL-based
-            logging.debug("Fallback Clash parse for vmess: %s", self.config_uri)
+            logging.debug("Fallback Clash parse for vmess: %s",
+                          self.config_uri)
             try:
                 p = urlparse(self.config_uri)
                 q = parse_qs(p.query)
@@ -89,10 +93,12 @@ class VmessParser(BaseParser):
                     if key in q:
                         proxy[key] = self.sanitize_str(q[key][0])
                 if "ws-headers" in q:
-                    proxy["ws-headers"] = self.sanitize_headers(q["ws-headers"][0])
+                    proxy["ws-headers"] = self.sanitize_headers(
+                        q["ws-headers"][0])
                 return proxy
             except Exception as e2:
-                raise ParserError(f"Failed to parse vmess link: {self.config_uri}") from e2
+                raise ParserError(
+                    f"Failed to parse vmess link: {self.config_uri}") from e2
 
     def get_identifier(self) -> Optional[str]:
         """

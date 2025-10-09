@@ -1,3 +1,4 @@
+from configstream.exceptions import NetworkError
 import asyncio
 import base64
 import json
@@ -33,9 +34,6 @@ VALID_TROJAN = "trojan://password@1.1.1.3:443?sni=example.com#test-trojan"
 def settings():
     """Return a default Settings object for tests."""
     return Settings()
-
-
-from configstream.exceptions import NetworkError
 
 
 @pytest.mark.asyncio
@@ -89,7 +87,8 @@ def test_config_processor_filter_configs(settings):
     # Test merge rules
     settings.filtering.merge_include_protocols = {"TROJAN"}
     settings.filtering.merge_exclude_protocols = set()
-    filtered_merge = config_processor.filter_configs(configs, use_fetch_rules=False)
+    filtered_merge = config_processor.filter_configs(
+        configs, use_fetch_rules=False)
     assert VALID_TROJAN in filtered_merge
     assert VALID_VMESS not in filtered_merge
 
@@ -123,5 +122,6 @@ def test_output_generator_write_outputs(settings, tmp_path):
 
     base64_path = output_dir / "vpn_subscription_base64.txt"
     assert base64_path.exists()
-    expected_b64 = base64.b64encode(f"{VALID_VMESS}\n{VALID_VLESS}".encode()).decode()
+    expected_b64 = base64.b64encode(
+        f"{VALID_VMESS}\n{VALID_VLESS}".encode()).decode()
     assert base64_path.read_text() == expected_b64

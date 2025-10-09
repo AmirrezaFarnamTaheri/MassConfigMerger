@@ -33,7 +33,8 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # Fetch command
-    fetch_p = subparsers.add_parser("fetch", help="Run the aggregation pipeline")
+    fetch_p = subparsers.add_parser(
+        "fetch", help="Run the aggregation pipeline")
     cli_args.add_fetch_arguments(fetch_p)
 
     # Merge command
@@ -41,7 +42,8 @@ def build_parser() -> argparse.ArgumentParser:
     cli_args.add_merge_arguments(merge_p)
 
     # Retest command
-    retest_p = subparsers.add_parser("retest", help="Retest an existing subscription")
+    retest_p = subparsers.add_parser(
+        "retest", help="Retest an existing subscription")
     cli_args.add_retest_arguments(retest_p)
 
     # Full command

@@ -4,6 +4,7 @@ import pytest
 from configstream.config import TelegramSettings
 from pydantic import ValidationError
 
+
 def test_telegram_settings_parse_allowed_ids_invalid_type():
     """Test that a ValueError is raised for an invalid type."""
     with pytest.raises(ValidationError):

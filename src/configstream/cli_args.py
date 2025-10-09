@@ -69,7 +69,8 @@ def add_fetch_specific_arguments(
 ):
     """Add fetch-specific arguments to a parser under a named group."""
     group = parser.add_argument_group(group_name)
-    group.add_argument("--bot", action="store_true", help="Run in Telegram bot mode")
+    group.add_argument("--bot", action="store_true",
+                       help="Run in Telegram bot mode")
     group.add_argument(
         "--sources", default=str(SOURCES_FILE), help=f"Path to {SOURCES_FILE.name}"
     )
@@ -220,7 +221,8 @@ def add_retest_arguments(parser: argparse.ArgumentParser):
         type=str,
         help="Comma-separated protocols to exclude",
     )
-    group.add_argument("--output-dir", type=str, help="Directory to save output files")
+    group.add_argument("--output-dir", type=str,
+                       help="Directory to save output files")
     group.add_argument(
         "--no-base64", dest="write_base64", action="store_false", help="Do not save base64 file"
     )
@@ -233,7 +235,8 @@ def add_full_arguments(parser: argparse.ArgumentParser):
     """Add arguments for the 'full' command."""
     add_shared_arguments(parser, "network", "filter", "output")
     add_fetch_specific_arguments(parser, group_name="fetch arguments")
-    add_merge_specific_arguments(parser, group_name="merge arguments", add_sources=False)
+    add_merge_specific_arguments(
+        parser, group_name="merge arguments", add_sources=False)
 
 
 def add_sources_parser(subparsers: argparse._SubParsersAction):
@@ -252,7 +255,8 @@ def add_sources_parser(subparsers: argparse._SubParsersAction):
     sources_subparsers.add_parser(
         "list", help="List all sources in the sources file"
     )
-    add_p = sources_subparsers.add_parser("add", help="Add a source to the list")
+    add_p = sources_subparsers.add_parser(
+        "add", help="Add a source to the list")
     add_p.add_argument("url", help="The URL of the source to add")
     remove_p = sources_subparsers.add_parser(
         "remove", help="Remove a source from the list"

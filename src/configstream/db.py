@@ -4,6 +4,7 @@ import aiosqlite
 from pathlib import Path
 from typing import Dict, Optional
 
+
 class Database:
     def __init__(self, db_path: Path):
         self.db_path = db_path.resolve()
@@ -11,7 +12,8 @@ class Database:
 
     async def connect(self):
         if not self.db_path.parent.is_dir():
-            raise ValueError(f"Database directory not found: {self.db_path.parent}")
+            raise ValueError(
+                f"Database directory not found: {self.db_path.parent}")
         self.conn = await aiosqlite.connect(self.db_path)
         await self.conn.execute(
             """

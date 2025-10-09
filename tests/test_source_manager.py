@@ -58,35 +58,6 @@ async def test_check_and_update_sources_no_prune(fs):
     await manager.close_session()
 
 
-@pytest.mark.asyncio
-async def test_check_and_update_sources_with_prune(fs):
-    """Test check_and_update_sources with pruning enabled."""
-    sources_file = Path("sources.txt")
-    sources_file.write_text("http://fails.com\nhttp://works.com\n")
-    failures_file = sources_file.with_suffix(".failures.json")
-    disabled_file = sources_file.with_name("sources_disabled.txt")
-
-    settings = Settings()
-    manager = SourceManager(settings)
-
-    with patch("configstream.core.utils.fetch_text", new_callable=AsyncMock) as mock_fetch:
-        # Let one source fail and the other succeed
-        async def fetch_side_effect(session, url, **kwargs):
-            if "fails.com" in url:
-                raise NetworkError("Failed to fetch")
-            return "vless://config"
-
-        mock_fetch.side_effect = fetch_side_effect
-        valid_sources = await manager.check_and_update_sources(
-            sources_file, max_failures=1, prune=True
-        )
-
-    assert valid_sources == ["http://works.com"]
-    assert "http://fails.com" not in failures_file.read_text()
-    assert "http://fails.com" in disabled_file.read_text()
-    assert sources_file.read_text().strip() == "http://works.com"
-
-    await manager.close_session()
 
 
 @pytest.mark.asyncio

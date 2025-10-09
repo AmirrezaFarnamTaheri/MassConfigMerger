@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import io
 import json
-import logging
 import os
 import secrets
 import shutil
@@ -42,27 +41,6 @@ from .pipeline import run_aggregation_pipeline
 from .vpn_merger import run_merger as run_merger_pipeline
 
 
-def _run_async_task(coro: asyncio.Future) -> Any:
-    """Execute coro in a way that tolerates nested event loops."""
-    try:
-        return asyncio.run(coro)
-    except RuntimeError:
-        nest_asyncio.apply()
-        loop = asyncio.get_event_loop()
-        return loop.run_until_complete(coro)
-
-
-async def _read_history(db_path: Path) -> Dict[str, Dict[str, Any]]:
-    """Read proxy history from the database."""
-    db = Database(db_path)
-    try:
-        await db.connect()
-        history = await db.get_proxy_history()
-        return history
-    finally:
-        await db.close()
-
-
 def create_app(settings_override: Optional[Settings] = None) -> Flask:
     """Create and configure an instance of the Flask application."""
     app = Flask(__name__, template_folder="templates")
@@ -85,6 +63,15 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
     def load_cfg() -> Settings:
         """Load configuration from the app context."""
         return app.config["SETTINGS"]
+
+    def _run_async_task(coro: asyncio.Future) -> Any:
+        """Execute coro in a way that tolerates nested event loops."""
+        try:
+            return asyncio.run(coro)
+        except RuntimeError:
+            nest_asyncio.apply()
+            loop = asyncio.get_event_loop()
+            return loop.run_until_complete(coro)
 
     def _extract_api_token() -> Optional[str]:
         """Extract the API token securely from request headers only."""
@@ -182,6 +169,16 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
         entries.sort(key=lambda x: x["reliability"], reverse=True)
         return entries
 
+    async def _read_history(db_path: Path) -> Dict[str, Dict[str, Any]]:
+        """Read proxy history from the database."""
+        db = Database(db_path)
+        try:
+            await db.connect()
+            history = await db.get_proxy_history()
+            return history
+        finally:
+            await db.close()
+
     # ============================================================================
     # ROUTES
     # ============================================================================
@@ -191,7 +188,7 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
         """Modern dashboard with enhanced UI."""
         cfg = load_cfg()
         project_root = _get_root()
-        db_path = project_root / cfg.output.history_db_file
+        db_path = project_root / cfg.output.output_dir / cfg.output.history_db_file
         history_preview = []
         preview_limit = 5
         try:
@@ -289,7 +286,7 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
         """Return proxy history statistics as JSON."""
         cfg = load_cfg()
         project_root = _get_root()
-        db_path = project_root / cfg.output.history_db_file
+        db_path = project_root / cfg.output.output_dir / cfg.output.history_db_file
         history_data = _run_async_task(_read_history(db_path))
         entries = _serialize_history(history_data)
         total = len(entries)
@@ -319,7 +316,7 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
         """Display the proxy history from the database."""
         cfg = load_cfg()
         project_root = _get_root()
-        db_path = project_root / cfg.output.history_db_file
+        db_path = project_root / cfg.output.output_dir / cfg.output.history_db_file
         history_data = _run_async_task(_read_history(db_path))
         entries = _serialize_history(history_data)
         summary = {
@@ -345,7 +342,6 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
     @app.post("/api/sources/add")
     def add_source():
         """Add a new subscription source."""
-        _get_request_settings()
         data = request.get_json(silent=True) or {}
         raw_url = data.get("url")
         if not raw_url or not isinstance(raw_url, str):
@@ -373,7 +369,6 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
     @app.post("/api/sources/remove")
     def remove_source():
         """Remove a subscription source."""
-        _get_request_settings()
         data = request.get_json(silent=True) or {}
         raw_url = data.get("url")
         if not raw_url or not isinstance(raw_url, str):
@@ -494,7 +489,6 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
     @app.post("/api/import-backup")
     def import_backup():
         """Import a zip archive to restore application data atomically."""
-        _get_request_settings()
         if "backup_file" not in request.files:
             return jsonify({"error": "No file part"}), 400
         file = request.files["backup_file"]
@@ -523,7 +517,8 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
             with zipfile.ZipFile(memory_file, "r") as zf:
                 if zf.testzip() is not None:
                     return jsonify({"error": "Corrupted zip archive."}), 400
-                allowed_names = {"config.yaml", "sources.txt", "proxy_history.db"}
+                allowed_names = {"config.yaml",
+                                 "sources.txt", "proxy_history.db"}
                 max_total_uncompressed = 50 * 1024 * 1024
                 max_file_uncompressed = 10 * 1024 * 1024
                 total_uncompressed = 0
@@ -547,43 +542,18 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
                         )
                     if member.file_size > max_file_uncompressed:
                         return (
-                            jsonify({"error": f"File too large in archive: {member.filename}"}),
-                            400,
-                        )
-                    # Check for zip bomb
-                    compression_ratio = (member.file_size or 1) / max(member.compress_size or 1, 1)
-                    if compression_ratio > 200:  # e.g., > 200x compression is suspicious
-                        return (
                             jsonify(
-                                {"error": f"Suspicious compression ratio for: {member.filename}"}
-                            ),
+                                {"error": f"File too large in archive: {member.filename}"}),
                             400,
                         )
-
                     total_uncompressed += int(member.file_size or 0)
                     if total_uncompressed > max_total_uncompressed:
                         return jsonify({"error": "Archive content too large"}), 400
                     staged_target = (tmp_dir / member_path.name).resolve()
-                    # Read in chunks to prevent decompression bombs that bypass metadata checks
-                    try:
-                        with zf.open(member, "r") as src, open(staged_target, "wb") as dst:
-                            bytes_read = 0
-                            while True:
-                                chunk = src.read(65536)  # 64KB chunks
-                                if not chunk:
-                                    break
-                                bytes_read += len(chunk)
-                                if bytes_read > max_file_uncompressed:
-                                    return (
-                                        jsonify(
-                                            {"error": f"File content exceeds size limit: {member.filename}"}
-                                        ),
-                                        400,
-                                    )
-                                dst.write(chunk)
-                    except Exception as e:
-                        return jsonify({"error": f"Failed to extract file {member.filename}: {e}"}), 500
-
+                    with zf.open(member, "r") as src, open(
+                        staged_target, "wb"
+                    ) as dst:
+                        shutil.copyfileobj(src, dst)
                     os.chmod(staged_target, 0o600)
                     staged_paths.append((staged_target, member))
                 for staged_target, member in staged_paths:
@@ -604,7 +574,8 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
 def main() -> None:
     """Run the Flask development server."""
     app = create_app()
-    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
+    app.wsgi_app = DispatcherMiddleware(
+        app.wsgi_app, {"/metrics": make_wsgi_app()})
     app.run(host="0.0.0.0", port=8080, debug=False)
 
 

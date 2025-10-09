@@ -1,4 +1,5 @@
 from __future__ import annotations
+from configstream.cli import _parse_protocol_list, _parse_protocol_set
 
 import asyncio
 from pathlib import Path
@@ -44,7 +45,8 @@ def test_cli_full_command(mock_run_full_pipeline, fs):
     assert "US" in called_settings.filtering.include_patterns
     assert "RU" in called_settings.filtering.exclude_patterns
     assert set(called_settings.filtering.fetch_protocols) == {"VMESS", "SS"}
-    assert called_settings.filtering.merge_include_protocols == {"VLESS", "TROJAN"}
+    assert called_settings.filtering.merge_include_protocols == {
+        "VLESS", "TROJAN"}
     assert called_settings.filtering.merge_exclude_protocols == {"SHADOWSOCKS"}
 
 
@@ -110,11 +112,10 @@ def test_cli_sources_add_command(mock_add_source, fs):
     """Test the 'sources add' command."""
     fs.create_file("sources.txt")
     with patch("configstream.cli.services.add_new_source", mock_add_source):
-        main(["sources", "--sources-file", "sources.txt", "add", "http://example.com/source"])
-    mock_add_source.assert_called_once_with(Path("sources.txt"), "http://example.com/source")
-
-
-from configstream.cli import _parse_protocol_list, _parse_protocol_set
+        main(["sources", "--sources-file", "sources.txt",
+             "add", "http://example.com/source"])
+    mock_add_source.assert_called_once_with(
+        Path("sources.txt"), "http://example.com/source")
 
 
 @patch("configstream.services.remove_existing_source")
@@ -122,8 +123,10 @@ def test_cli_sources_remove_command(mock_remove_source, fs):
     """Test the 'sources remove' command."""
     fs.create_file("sources.txt", contents="http://example.com/source\n")
     with patch("configstream.cli.services.remove_existing_source", mock_remove_source):
-        main(["sources", "--sources-file", "sources.txt", "remove", "http://example.com/source"])
-    mock_remove_source.assert_called_once_with(Path("sources.txt"), "http://example.com/source")
+        main(["sources", "--sources-file", "sources.txt",
+             "remove", "http://example.com/source"])
+    mock_remove_source.assert_called_once_with(
+        Path("sources.txt"), "http://example.com/source")
 
 
 def test_parse_protocol_list_with_list_input():
@@ -181,8 +184,8 @@ def test_cli_sources_unknown_command(mock_list, mock_add, mock_remove, fs):
     """Test the 'sources' command with an unknown subcommand."""
     fs.create_file("sources.txt")
     with patch("configstream.cli.services.list_sources", mock_list), \
-         patch("configstream.cli.services.add_new_source", mock_add), \
-         patch("configstream.cli.services.remove_existing_source", mock_remove):
+            patch("configstream.cli.services.add_new_source", mock_add), \
+            patch("configstream.cli.services.remove_existing_source", mock_remove):
         with pytest.raises(SystemExit):
             main(["sources", "--sources-file", "sources.txt", "unknown"])
     mock_list.assert_not_called()

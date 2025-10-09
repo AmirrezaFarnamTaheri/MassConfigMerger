@@ -9,7 +9,8 @@ from configstream.core.parsers.ssr import SsrParser
 def test_parse_ssr_malformed_main_part():
     """Test parsing an SSR link with a malformed main part."""
     # This base64 string decodes to "server:port:proto:method:obfs" (5 parts, not 6)
-    malformed_main = base64.urlsafe_b64encode(b"server:port:proto:method:obfs").decode()
+    malformed_main = base64.urlsafe_b64encode(
+        b"server:port:proto:method:obfs").decode()
     config = f"ssr://{malformed_main}"
     parser = SsrParser(config, 0)
     assert parser.parse() is None
@@ -24,7 +25,8 @@ def test_parse_ssr_invalid_base64_in_param():
     query = "/?obfsparam=not-base64"
 
     string_to_encode = f"{main_part}{password_b64}{query}"
-    encoded_config = base64.urlsafe_b64encode(string_to_encode.encode()).decode()
+    encoded_config = base64.urlsafe_b64encode(
+        string_to_encode.encode()).decode()
     config = f"ssr://{encoded_config}"
 
     parser = SsrParser(config, 0)

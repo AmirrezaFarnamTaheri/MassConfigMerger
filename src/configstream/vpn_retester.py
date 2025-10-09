@@ -9,7 +9,6 @@ import base64
 import binascii
 import csv
 from pathlib import Path
-from typing import List
 
 from .config import Settings
 from .constants import (
@@ -86,7 +85,8 @@ def save_retest_results(
                 writer.writerow(
                     [
                         r.config,
-                        round(r.ping_time * 1000, 2) if r.ping_time is not None else "",
+                        round(r.ping_time * 1000,
+                              2) if r.ping_time is not None else "",
                         r.protocol,
                         r.country or "",
                     ]

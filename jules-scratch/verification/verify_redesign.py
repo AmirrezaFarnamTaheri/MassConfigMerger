@@ -1,5 +1,6 @@
 from playwright.sync_api import sync_playwright, expect
 
+
 def run():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -22,12 +23,14 @@ def run():
         history_link.click()
 
         # Wait for the history table to be visible
-        expect(page.locator("table[aria-label='Complete proxy history']")).to_be_visible()
+        expect(page.locator(
+            "table[aria-label='Complete proxy history']")).to_be_visible()
 
         # Take a screenshot of the history page
         page.screenshot(path="jules-scratch/verification/history.png")
 
         browser.close()
+
 
 if __name__ == "__main__":
     run()

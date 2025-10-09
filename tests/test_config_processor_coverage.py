@@ -1,4 +1,8 @@
 from __future__ import annotations
+from configstream.core.config_processor import ConfigResult
+import asyncio
+import logging
+from unittest.mock import AsyncMock, patch
 
 import base64
 import pytest
@@ -46,29 +50,34 @@ def test_filter_configs():
     settings_fetch = Settings()
     settings_fetch.filtering.fetch_protocols = ["VMess", "Shadowsocks"]
     processor_fetch = ConfigProcessor(settings_fetch)
-    filtered_fetch = processor_fetch.filter_configs(configs, use_fetch_rules=True)
+    filtered_fetch = processor_fetch.filter_configs(
+        configs, use_fetch_rules=True)
     assert filtered_fetch == {"vmess://config1", "ss://config3"}
 
     # Test case-insensitivity for fetch rules
     settings_fetch_case = Settings()
     settings_fetch_case.filtering.fetch_protocols = ["vmess", "shadowsocks"]
     processor_fetch_case = ConfigProcessor(settings_fetch_case)
-    filtered_fetch_case = processor_fetch_case.filter_configs(configs, use_fetch_rules=True)
+    filtered_fetch_case = processor_fetch_case.filter_configs(
+        configs, use_fetch_rules=True)
     assert filtered_fetch_case == {"vmess://config1", "ss://config3"}
 
     # Test empty fetch protocols (should return all)
     settings_fetch_empty = Settings()
     settings_fetch_empty.filtering.fetch_protocols = []
     processor_fetch_empty = ConfigProcessor(settings_fetch_empty)
-    filtered_fetch_empty = processor_fetch_empty.filter_configs(configs, use_fetch_rules=True)
+    filtered_fetch_empty = processor_fetch_empty.filter_configs(
+        configs, use_fetch_rules=True)
     assert filtered_fetch_empty == configs
 
     # 2. Test with merge rules (include/exclude)
     settings_merge = Settings()
     settings_merge.filtering.merge_include_protocols = {"VMESS", "VLESS"}
-    settings_merge.filtering.merge_exclude_protocols = {"VLESS"}  # exclude should win
+    settings_merge.filtering.merge_exclude_protocols = {
+        "VLESS"}  # exclude should win
     processor_merge = ConfigProcessor(settings_merge)
-    filtered_merge = processor_merge.filter_configs(configs, use_fetch_rules=False)
+    filtered_merge = processor_merge.filter_configs(
+        configs, use_fetch_rules=False)
     assert filtered_merge == {"vmess://config1"}
 
     # Test with no merge rules (should return all)
@@ -76,7 +85,8 @@ def test_filter_configs():
     settings_merge_all.filtering.merge_include_protocols = set()
     settings_merge_all.filtering.merge_exclude_protocols = set()
     processor_merge_all = ConfigProcessor(settings_merge_all)
-    filtered_merge_all = processor_merge_all.filter_configs(configs, use_fetch_rules=False)
+    filtered_merge_all = processor_merge_all.filter_configs(
+        configs, use_fetch_rules=False)
     assert filtered_merge_all == configs
 
 
@@ -108,27 +118,34 @@ def test_extract_host_port():
     """Test the extract_host_port method for various protocols."""
     # VMess
     vmess_b64 = base64.b64encode(b'{"add": "vmess.com", "port": 100}').decode()
-    assert config_normalizer.extract_host_port(f"vmess://{vmess_b64}") == ("vmess.com", 100)
+    assert config_normalizer.extract_host_port(
+        f"vmess://{vmess_b64}") == ("vmess.com", 100)
 
     # VLESS
     vless_b64 = base64.b64encode(b'{"add": "vless.com", "port": 200}').decode()
-    assert config_normalizer.extract_host_port(f"vless://{vless_b64}") == ("vless.com", 200)
+    assert config_normalizer.extract_host_port(
+        f"vless://{vless_b64}") == ("vless.com", 200)
 
     # SSR
     ssr_raw = "ssr.com:300:origin:aes-128-gcm:plain:cGFzcw=="
     ssr_b64 = base64.urlsafe_b64encode(ssr_raw.encode()).decode()
-    assert config_normalizer.extract_host_port(f"ssr://{ssr_b64}") == ("ssr.com", 300)
+    assert config_normalizer.extract_host_port(
+        f"ssr://{ssr_b64}") == ("ssr.com", 300)
 
     # SSR with invalid parts
     ssr_invalid_raw = "ssr.com"
-    ssr_invalid_b64 = base64.urlsafe_b64encode(ssr_invalid_raw.encode()).decode()
-    assert config_normalizer.extract_host_port(f"ssr://{ssr_invalid_b64}") == (None, None)
+    ssr_invalid_b64 = base64.urlsafe_b64encode(
+        ssr_invalid_raw.encode()).decode()
+    assert config_normalizer.extract_host_port(
+        f"ssr://{ssr_invalid_b64}") == (None, None)
 
     # Trojan
-    assert config_normalizer.extract_host_port("trojan://pass@trojan.com:400") == ("trojan.com", 400)
+    assert config_normalizer.extract_host_port(
+        "trojan://pass@trojan.com:400") == ("trojan.com", 400)
 
     # Regex fallback
-    assert config_normalizer.extract_host_port("other://user@regex.com:500/path") == ("regex.com", 500)
+    assert config_normalizer.extract_host_port(
+        "other://user@regex.com:500/path") == ("regex.com", 500)
 
     # Invalid
     assert config_normalizer.extract_host_port("invalid-link") == (None, None)
@@ -175,18 +192,12 @@ def test_create_semantic_hash():
     assert isinstance(no_host_hash, str)
 
 
-from unittest.mock import AsyncMock, patch
-import logging
-import asyncio
-
-from configstream.core.config_processor import ConfigResult
-
-
 @pytest.mark.asyncio
 async def test_filter_malicious_disabled(config_processor: ConfigProcessor):
     """Test that _filter_malicious returns all results if the check is disabled."""
     config_processor.settings.security.apivoid_api_key = None
-    results = [ConfigResult(config="c1", protocol="p1", is_reachable=True, host="h1")]
+    results = [ConfigResult(config="c1", protocol="p1",
+                            is_reachable=True, host="h1")]
 
     filtered = await config_processor._filter_malicious(results)
 
@@ -197,8 +208,10 @@ async def test_filter_malicious_disabled(config_processor: ConfigProcessor):
 async def test_filter_malicious_dns_failure(config_processor: ConfigProcessor, caplog):
     """Test that _filter_malicious keeps a config if DNS resolution fails."""
     config_processor.settings.security.apivoid_api_key = "test-key"
-    config_processor.tester.resolve_host = AsyncMock(side_effect=Exception("DNS Error"))
-    results = [ConfigResult(config="c1", protocol="p1", is_reachable=True, host="h1")]
+    config_processor.tester.resolve_host = AsyncMock(
+        side_effect=Exception("DNS Error"))
+    results = [ConfigResult(config="c1", protocol="p1",
+                            is_reachable=True, host="h1")]
 
     with caplog.at_level(logging.DEBUG):
         filtered = await config_processor._filter_malicious(results)
@@ -212,8 +225,10 @@ async def test_filter_malicious_check_failure(config_processor: ConfigProcessor,
     """Test that _filter_malicious keeps a config if the blocklist check fails."""
     config_processor.settings.security.apivoid_api_key = "test-key"
     config_processor.tester.resolve_host = AsyncMock(return_value="1.2.3.4")
-    config_processor.blocklist_checker.is_malicious = AsyncMock(side_effect=Exception("API Error"))
-    results = [ConfigResult(config="c1", protocol="p1", is_reachable=True, host="h1")]
+    config_processor.blocklist_checker.is_malicious = AsyncMock(
+        side_effect=Exception("API Error"))
+    results = [ConfigResult(config="c1", protocol="p1",
+                            is_reachable=True, host="h1")]
 
     with caplog.at_level(logging.DEBUG):
         filtered = await config_processor._filter_malicious(results)
@@ -231,7 +246,8 @@ async def test_test_configs_worker_failure(mock_tqdm, config_processor: ConfigPr
 
     mock_tqdm.gather = AsyncMock(side_effect=gather_side_effect)
 
-    config_processor._test_config = AsyncMock(side_effect=Exception("Worker failed"))
+    config_processor._test_config = AsyncMock(
+        side_effect=Exception("Worker failed"))
     config_processor.tester.close = AsyncMock()
     config_processor.blocklist_checker.close = AsyncMock()
 

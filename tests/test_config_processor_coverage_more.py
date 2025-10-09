@@ -14,9 +14,11 @@ async def test_filter_malicious_dns_failure_coverage():
     settings = Settings()
     settings.security.apivoid_api_key = "test-key"
     processor = ConfigProcessor(settings)
-    processor.tester.resolve_host = AsyncMock(side_effect=Exception("DNS Error"))
+    processor.tester.resolve_host = AsyncMock(
+        side_effect=Exception("DNS Error"))
 
-    results = [ConfigResult(config="c1", protocol="p1", is_reachable=True, host="dns-fails.com")]
+    results = [ConfigResult(config="c1", protocol="p1",
+                            is_reachable=True, host="dns-fails.com")]
     filtered = await processor._filter_malicious(results)
     assert filtered == results
     await processor.tester.close()

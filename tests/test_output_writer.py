@@ -40,6 +40,7 @@ def test_write_raw_configs(fs, sample_results: list[ConfigResult]):
     assert path.exists()
     assert path.read_text() == "vmess://config1"
 
+
 def test_write_base64_configs(fs, sample_results: list[ConfigResult]):
     fs.create_dir("/output")
     configs = [r.config for r in sample_results]
@@ -47,13 +48,23 @@ def test_write_base64_configs(fs, sample_results: list[ConfigResult]):
     assert path.exists()
     assert "dm1lc3M6Ly9jb25maWcx" in path.read_text()
 
-@patch("configstream.output_writer.config_to_clash_proxy", return_value={"name": "test"})
-def test_write_clash_proxies(mock_to_clash, fs, sample_results: list[ConfigResult]):
+
+@patch("configstream.output_writer.ProxyParser")
+def test_write_clash_proxies(MockProxyParser, fs, sample_results: list[ConfigResult]):
+    """Test writing Clash proxies with a mocked parser."""
+    mock_parser_instance = MockProxyParser.return_value
+    mock_parser_instance.config_to_clash_proxy.return_value = {"name": "test"}
+
     fs.create_dir("/output")
     path = write_clash_proxies(sample_results, Path("/output"))
     assert path.exists()
     assert "proxies:" in path.read_text()
-    mock_to_clash.assert_called()
+    assert "name: test" in path.read_text()
+
+    MockProxyParser.assert_called_once()
+    mock_parser_instance.config_to_clash_proxy.assert_called_once_with(
+        sample_results[0].config, 0, sample_results[0].protocol
+    )
 
 
 def test_write_csv_report_content(fs, sample_results: list[ConfigResult]):
@@ -63,6 +74,6 @@ def test_write_csv_report_content(fs, sample_results: list[ConfigResult]):
     assert path.exists()
     content = path.read_text()
     lines = content.strip().split('\n')
-    assert len(lines) == 2 # Header + 1 result
+    assert len(lines) == 2  # Header + 1 result
     assert lines[0] == 'config,protocol,host,port,ping_ms,reachable,source_url,country'
     assert 'vmess://config1,VMess,example.com,443,123.0,True,http://source.com,US' in lines[1]

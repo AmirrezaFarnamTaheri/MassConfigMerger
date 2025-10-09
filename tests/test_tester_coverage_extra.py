@@ -21,7 +21,6 @@ def mock_settings(tmp_path):
 async def test_geoip_import_error(mock_settings):
     """Test that NodeTester handles ImportError for geoip2."""
     with patch.dict(sys.modules, {"geoip2": None}):
-        tester = NodeTester(mock_settings)
         # We need to re-import the module to trigger the ImportError handling
         from importlib import reload
         from configstream import tester as t

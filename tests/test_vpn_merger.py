@@ -71,7 +71,8 @@ async def test_run_merger_from_sources(
 
     # Assert
     mock_db.connect.assert_awaited_once()
-    mock_source_manager.fetch_sources.assert_awaited_once_with(["http://source1"])
+    mock_source_manager.fetch_sources.assert_awaited_once_with(
+        ["http://source1"])
     mock_config_processor.filter_configs.assert_called_once_with(
         {"vless://config1", "ss://config2"}
     )

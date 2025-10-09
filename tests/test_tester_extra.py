@@ -37,7 +37,8 @@ async def test_close_resource_callable_not_coro():
     tester = NodeTester(settings)
 
     mock_resource = MagicMock()
-    mock_resource.close = MagicMock() # A regular MagicMock is callable but not a coroutine
+    # A regular MagicMock is callable but not a coroutine
+    mock_resource.close = MagicMock()
 
     await tester._close_resource(mock_resource, "TestResource")
 

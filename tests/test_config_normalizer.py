@@ -24,7 +24,8 @@ from configstream.core import config_normalizer
 )
 def test_extract_host_port_edge_cases(config, expected_host, expected_port):
     """Test edge cases for extract_host_port."""
-    host, port = config_normalizer.extract_host_port(config, max_decode_size=4096)
+    host, port = config_normalizer.extract_host_port(
+        config, max_decode_size=4096)
     assert host == expected_host
     assert port == expected_port
 
@@ -40,7 +41,7 @@ def test_extract_host_port_edge_cases(config, expected_host, expected_port):
             f"vless://{base64.b64encode(json.dumps({'add': 'test.com', 'port': 443}, sort_keys=True).encode()).decode().rstrip('=')}",
         ),
         # Vmess with invalid JSON should not be modified
-        (f"vmess://INVALID_JSON?a=1", "vmess://INVALID_JSON?a=1"),
+        ("vmess://INVALID_JSON?a=1", "vmess://INVALID_JSON?a=1"),
     ],
 )
 def test_normalize_url(config, expected_normalized):
@@ -52,7 +53,8 @@ def test_normalize_url(config, expected_normalized):
     "config1, config2, should_be_equal",
     [
         # Trojan with different fragments
-        ("trojan://pass@host.com:443#frag1", "trojan://pass@host.com:443#frag2", True),
+        ("trojan://pass@host.com:443#frag1",
+         "trojan://pass@host.com:443#frag2", True),
         # Trojan with different passwords
         ("trojan://pass1@host.com:443", "trojan://pass2@host.com:443", False),
         # SS with different fragments
@@ -90,7 +92,8 @@ def test_create_semantic_hash_protocols(config1, config2, should_be_equal):
         # Should be tuned
         ("trojan://pass@host.com:443", "trojan://pass@host.com:443?mux=8&smux=4"),
         # Should overwrite existing
-        ("trojan://pass@host.com:443?mux=1", "trojan://pass@host.com:443?mux=8&smux=4"),
+        ("trojan://pass@host.com:443?mux=1",
+         "trojan://pass@host.com:443?mux=8&smux=4"),
     ],
 )
 def test_apply_tuning(config, expected_tuned):

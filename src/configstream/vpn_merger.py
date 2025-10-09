@@ -66,7 +66,8 @@ async def run_merger(
         output_dir = Path(cfg.output.output_dir)
         output_generator.write_outputs(final_configs, output_dir)
 
-        logging.info("Merge complete. Found %d final configs.", len(final_configs))
+        logging.info("Merge complete. Found %d final configs.",
+                     len(final_configs))
 
     finally:
         await source_manager.close_session()

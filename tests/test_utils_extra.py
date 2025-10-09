@@ -44,8 +44,6 @@ def test_choose_proxy():
     assert choose_proxy(settings) == "socks5://proxy.com"
 
 
-from unittest.mock import MagicMock
-
 @pytest.mark.parametrize(
     "url, expected",
     [
@@ -154,7 +152,8 @@ async def test_fetch_text_ssrf_private_ip(mock_get_loop, mock_session):
 @patch("asyncio.get_running_loop")
 async def test_fetch_text_ssrf_dns_failure(mock_get_loop, mock_session):
     """Test that fetch_text handles DNS resolution failures."""
-    mock_get_loop.return_value.getaddrinfo = AsyncMock(side_effect=socket.gaierror)
+    mock_get_loop.return_value.getaddrinfo = AsyncMock(
+        side_effect=socket.gaierror)
 
     url = "http://nonexistent.domain.xyz"
     with pytest.raises(NetworkError, match="DNS resolution failed"):

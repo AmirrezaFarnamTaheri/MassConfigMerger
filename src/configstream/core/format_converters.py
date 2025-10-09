@@ -31,7 +31,8 @@ class FormatConverter:
                 if proxy:
                     proxies.append(proxy)
             except Exception as e:
-                logging.debug(f"Could not parse config for Clash: {config}, error: {e}")
+                logging.debug(
+                    f"Could not parse config for Clash: {config}, error: {e}")
         return proxies
 
     def to_clash_config(self) -> str:

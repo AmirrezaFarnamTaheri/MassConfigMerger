@@ -35,7 +35,8 @@ def test_metrics_generation():
     sources_fetched_before = _get_metric_value(metrics.SOURCES_FETCHED_TOTAL)
     sources_failed_before = _get_metric_value(metrics.SOURCES_FAILED_TOTAL)
     configs_tested_before = _get_metric_value(metrics.CONFIGS_TESTED_TOTAL)
-    configs_reachable_before = _get_metric_value(metrics.CONFIGS_REACHABLE_TOTAL)
+    configs_reachable_before = _get_metric_value(
+        metrics.CONFIGS_REACHABLE_TOTAL)
     latency_bucket_before = _get_histogram_bucket_value(
         metrics.CONFIG_LATENCY_SECONDS, 0.5
     )
