@@ -122,7 +122,10 @@ def test_api_current_with_filters(fs, settings):
         app, cleanup = _setup_app(fs, settings)
         client = app.test_client()
 
-        response = client.get("/api/current?protocol=vless")
+        response = client.get(
+            "/api/current?protocol=vless",
+            headers={"Authorization": f"Bearer {settings.security.web_api_token}"},
+        )
         assert response.status_code == 200
         mock_get_results.assert_called_once()
         mock_filter_nodes.assert_called_once_with(nodes, {"protocol": "vless"})
@@ -144,7 +147,10 @@ def test_api_statistics(fs, settings):
         app, cleanup = _setup_app(fs, settings)
         client = app.test_client()
 
-        response = client.get("/api/statistics")
+        response = client.get(
+            "/api/statistics",
+            headers={"Authorization": f"Bearer {settings.security.web_api_token}"},
+        )
         assert response.status_code == 200
         stats = response.get_json()
         assert stats["total_nodes"] == 4
@@ -197,7 +203,10 @@ def test_api_export_csv(fs, settings):
         app, cleanup = _setup_app(fs, settings)
         client = app.test_client()
 
-        response = client.get("/api/export/csv")
+        response = client.get(
+            "/api/export/csv",
+            headers={"Authorization": f"Bearer {settings.security.web_api_token}"},
+        )
         assert response.status_code == 200
         assert response.mimetype == "text/csv"
         assert "attachment" in response.headers["Content-Disposition"]
@@ -217,7 +226,10 @@ def test_api_export_json(fs, settings):
         app, cleanup = _setup_app(fs, settings)
         client = app.test_client()
 
-        response = client.get("/api/export/json")
+        response = client.get(
+            "/api/export/json",
+            headers={"Authorization": f"Bearer {settings.security.web_api_token}"},
+        )
         assert response.status_code == 200
         assert response.mimetype == "application/json"
         assert "attachment" in response.headers["Content-Disposition"]
@@ -229,7 +241,10 @@ def test_api_export_unsupported(fs, settings):
     """Test exporting with an unsupported format."""
     app, cleanup = _setup_app(fs, settings)
     client = app.test_client()
-    response = client.get("/api/export/xml")
+    response = client.get(
+        "/api/export/xml",
+        headers={"Authorization": f"Bearer {settings.security.web_api_token}"},
+    )
     assert response.status_code == 400
     assert response.get_json() == {"error": "Unsupported format"}
     cleanup()
@@ -324,9 +339,23 @@ def test_dashboard_data_filter_nodes():
 def test_dashboard_data_export_json():
     """Test DashboardData.export_json method."""
     dashboard_data = DashboardData(Settings())
-    nodes = [{"protocol": "vless", "ping_ms": 100}]
+    nodes = [{"protocol": "vless", "ping_ms": 100, "config": "some_secret_config"}]
     json_output = dashboard_data.export_json(nodes)
-    assert json.loads(json_output) == nodes
+    exported_data = json.loads(json_output)
+    expected_data = [
+        {
+            "protocol": "vless",
+            "ping_ms": 100,
+            "country": None,
+            "city": None,
+            "organization": None,
+            "ip": None,
+            "port": None,
+            "is_blocked": None,
+            "timestamp": None,
+        }
+    ]
+    assert exported_data == expected_data
 
 
 def test_helper_functions():

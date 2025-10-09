@@ -231,15 +231,15 @@ class ConfigProcessor:
     async def _filter_malicious(
         self, results: List[ConfigResult]
     ) -> List[ConfigResult]:
-        """Tag results with malicious IPs concurrently."""
+        """Filter out results with malicious IPs concurrently."""
         if (
             not self.settings.security.apivoid_api_key
             or self.settings.security.blocklist_detection_threshold <= 0
         ):
             return results
 
-        async def _check(result: ConfigResult) -> ConfigResult:
-            """Check a single result for malicious IP and update the is_blocked flag."""
+        async def _check(result: ConfigResult) -> Optional[ConfigResult]:
+            """Check a single result for malicious IP. Returns None if malicious."""
             if not result.is_reachable or not result.host:
                 return result
 
@@ -255,14 +255,15 @@ class ConfigProcessor:
 
             try:
                 if await self.blocklist_checker.is_malicious(ip):
-                    result.is_blocked = True
+                    return None  # Discard if malicious
             except Exception as exc:
                 logging.debug("Blocklist check failed for %s: %s", ip, exc)
 
             return result
 
         tasks = [_check(r) for r in results]
-        return await asyncio.gather(*tasks)
+        checked_results = await asyncio.gather(*tasks)
+        return [res for res in checked_results if res is not None]
 
     async def test_configs(
         self, configs: Set[str], history: dict | None = None

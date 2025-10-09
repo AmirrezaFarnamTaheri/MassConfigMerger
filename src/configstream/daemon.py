@@ -22,7 +22,7 @@ class ConfigStreamDaemon:
         self.settings = settings
         self.scheduler = AppScheduler(settings)
 
-    def start(self, interval_hours: int = 2, web_port: int = 8080, web_host: str = "0.0.0.0"):
+    def start(self, interval_hours: int = 2, web_port: int = 8080, web_host: str = "127.0.0.1"):
         """Start the daemon with scheduler and web server."""
         logger.info("Starting ConfigStream Daemon")
 

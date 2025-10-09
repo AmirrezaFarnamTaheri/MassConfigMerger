@@ -6,7 +6,6 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -70,13 +69,14 @@ class AppScheduler:
             }
 
             # Save current results (overwrite)
-            self.current_results_file.write_text(
-                json.dumps(test_data, indent=2),
-                encoding="utf-8"
-            )
+            current_results_json = json.dumps(test_data, indent=2)
+            self.current_results_file.write_text(current_results_json, encoding="utf-8")
 
             # Append to history using a robust read-then-write pattern
-            logger.info(f"Attempting to write to history file at absolute path: {self.history_file.resolve()}")
+            logger.info(
+                "Attempting to write to history file at absolute path: %s",
+                self.history_file.resolve()
+            )
             history_content = ""
             if self.history_file.exists():
                 history_content = self.history_file.read_text(encoding="utf-8")
@@ -84,11 +84,14 @@ class AppScheduler:
             history_content += json.dumps(test_data) + "\n"
             self.history_file.write_text(history_content, encoding="utf-8")
 
-            logger.info(f"Test cycle completed: {test_data['successful']} successful, "
-                       f"{test_data['failed']} failed")
+            logger.info(
+                "Test cycle completed: %s successful, %s failed",
+                test_data['successful'],
+                test_data['failed']
+            )
 
         except Exception as e:
-            logger.error(f"Error during test cycle: {e}", exc_info=True)
+            logger.error("Error during test cycle: %s", e, exc_info=True)
 
     def start(self, interval_hours: int = 2):
         """Start the scheduler with specified interval."""
@@ -107,7 +110,7 @@ class AppScheduler:
         )
 
         self.scheduler.start()
-        logger.info(f"Scheduler started with {interval_hours}h interval")
+        logger.info("Scheduler started with %sh interval", interval_hours)
 
     def stop(self):
         """Stop the scheduler."""

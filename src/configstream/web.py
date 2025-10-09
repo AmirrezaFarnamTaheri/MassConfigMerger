@@ -41,17 +41,16 @@ from .core.file_utils import find_project_root
 from .db import Database
 from .pipeline import run_aggregation_pipeline
 from .vpn_merger import run_merger as run_merger_pipeline
-from .web_utils import (
-    _classify_reliability,
-    _coerce_float,
-    _coerce_int,
-    _format_timestamp,
-    _serialize_history,
-)
+from .web_utils import _serialize_history
 
 
 class DashboardData:
     """Manages dashboard data and filtering."""
+
+    EXPORT_FIELD_WHITELIST = [
+        "protocol", "ping_ms", "country", "city", "organization",
+        "ip", "port", "is_blocked", "timestamp"
+    ]
 
     def __init__(self, settings: Settings):
         self.settings = settings
@@ -117,21 +116,30 @@ class DashboardData:
 
         return filtered
 
+    def _filter_for_export(self, nodes: list[dict]) -> list[dict]:
+        """Filter node fields for export to only include whitelisted fields."""
+        return [
+            {key: node.get(key) for key in self.EXPORT_FIELD_WHITELIST}
+            for node in nodes
+        ]
+
     def export_csv(self, nodes: list[dict]) -> str:
         """Export nodes to CSV format."""
         output = StringIO()
-        if not nodes:
+        nodes_for_export = self._filter_for_export(nodes)
+        if not nodes_for_export:
             return ""
 
-        headers = list(nodes[0].keys())
+        headers = self.EXPORT_FIELD_WHITELIST
         writer = csv.DictWriter(output, fieldnames=headers)
         writer.writeheader()
-        writer.writerows(nodes)
+        writer.writerows(nodes_for_export)
         return output.getvalue()
 
     def export_json(self, nodes: list[dict]) -> str:
         """Export nodes to JSON format."""
-        return json.dumps(nodes, indent=2)
+        nodes_for_export = self._filter_for_export(nodes)
+        return json.dumps(nodes_for_export, indent=2)
 
 
 def create_app(settings_override: Optional[Settings] = None) -> Flask:
@@ -222,6 +230,7 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
     @app.route("/api/current")
     def api_current():
         """API endpoint for current results."""
+        _get_request_settings()
         data = dashboard_data.get_current_results()
         filters = request.args.to_dict()
 
@@ -233,6 +242,7 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
     @app.route("/api/statistics")
     def api_statistics():
         """API endpoint for aggregated statistics."""
+        _get_request_settings()
         data = dashboard_data.get_current_results()
         nodes = data.get("nodes", [])
 
@@ -268,6 +278,7 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
     @app.route("/api/export/<format>")
     def api_export(format: str):
         """Export data in various formats."""
+        _get_request_settings()
         data = dashboard_data.get_current_results()
         filters = request.args.to_dict()
         nodes = dashboard_data.filter_nodes(data["nodes"], filters)

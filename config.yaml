@@ -1,0 +1,2 @@
+security:
+  web_api_token: "test-token"

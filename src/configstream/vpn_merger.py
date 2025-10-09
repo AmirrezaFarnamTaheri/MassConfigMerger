@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Optional, Set
 
 from .config import Settings
-from .core.config_processor import ConfigProcessor
+from .core.config_processor import ConfigProcessor, ConfigResult
 from .core.output_generator import OutputGenerator
 from .core.source_manager import SourceManager
 from .db import Database
@@ -33,9 +33,6 @@ async def _load_configs(
     with sources_file.open() as f:
         sources = [line.strip() for line in f if line.strip()]
     return await source_manager.fetch_sources(sources)
-
-
-from .core.config_processor import ConfigResult
 
 
 async def run_merger(
