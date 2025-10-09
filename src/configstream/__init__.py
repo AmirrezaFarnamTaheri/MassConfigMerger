@@ -1,6 +1,7 @@
-"""A toolchain for collecting, testing, and merging free VPN configurations from public sources."""
+"""
+ConfigStream: A tool for aggregating and managing VPN configurations.
+"""
 
-from __future__ import annotations
-
-import asyncio
-import aiohttp
+__version__ = "0.1.0"
+__author__ = "Your Name"
+__email__ = "your.email@example.com"

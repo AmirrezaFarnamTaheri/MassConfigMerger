@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from urllib.parse import parse_qs, urlparse
 
 from .common import BaseParser

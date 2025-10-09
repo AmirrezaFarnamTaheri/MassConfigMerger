@@ -26,6 +26,7 @@ def test_generate_clash_proxies_exception_handling(caplog):
         assert "Could not parse config for Clash" in caplog.text
         assert "Test parsing error" in caplog.text
 
+
 def test_to_clash_config_no_proxies():
     """Test to_clash_config returns an empty string when there are no proxies."""
     # Arrange
@@ -36,6 +37,7 @@ def test_to_clash_config_no_proxies():
 
     # Assert
     assert result == ""
+
 
 def test_to_clash_proxies_no_proxies():
     """Test to_clash_proxies returns an empty string when there are no proxies."""

@@ -68,11 +68,14 @@ def test_proximity_sorting():
 
     results = [
         # Los Angeles (close)
-        ConfigResult(config="c1", protocol="p1", is_reachable=True, latitude=34.0522, longitude=-118.2437),
+        ConfigResult(config="c1", protocol="p1", is_reachable=True,
+                     latitude=34.0522, longitude=-118.2437),
         # New York (far)
-        ConfigResult(config="c2", protocol="p2", is_reachable=True, latitude=40.7128, longitude=-74.0060),
+        ConfigResult(config="c2", protocol="p2", is_reachable=True,
+                     latitude=40.7128, longitude=-74.0060),
         # No location data
-        ConfigResult(config="c3", protocol="p3", is_reachable=True, latitude=None, longitude=None),
+        ConfigResult(config="c3", protocol="p3", is_reachable=True,
+                     latitude=None, longitude=None),
     ]
 
     key_func = get_sort_key(settings)

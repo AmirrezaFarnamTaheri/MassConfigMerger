@@ -99,7 +99,7 @@ async def test_close_session_logic():
 
     # Scenario 1: Session does not exist
     source_manager = SourceManager(settings)
-    await source_manager.close_session() # Should not raise
+    await source_manager.close_session()  # Should not raise
 
     # Scenario 2: Session is already closed
     source_manager = SourceManager(settings)

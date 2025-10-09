@@ -17,7 +17,8 @@ async def test_filter_malicious_unresolved_host(fs):
     processor = ConfigProcessor(settings)
     processor.tester.resolve_host = AsyncMock(return_value=None)
 
-    results = [ConfigResult(config="c1", protocol="p1", is_reachable=True, host="unresolved.com")]
+    results = [ConfigResult(config="c1", protocol="p1",
+                            is_reachable=True, host="unresolved.com")]
     filtered = await processor._filter_malicious(results)
     assert filtered == results  # Should not filter if host can't be resolved
     await processor.tester.close()
@@ -31,7 +32,6 @@ async def test_test_configs_filter_malicious_exception(fs):
     processor._filter_malicious = AsyncMock(side_effect=Exception("API error"))
     processor.tester.close = AsyncMock()
     processor.blocklist_checker.close = AsyncMock()
-
 
     with patch("configstream.core.config_processor.logging.debug") as mock_debug:
         results = await processor.test_configs(["vless://config"], {})

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from urllib.parse import parse_qs, urlparse
 
 from .common import BaseParser
@@ -29,7 +29,8 @@ class HysteriaParser(BaseParser):
         p = urlparse(self.config_uri)
         name = self.sanitize_str(p.fragment or f"{self.scheme}-{self.idx}")
         if not p.hostname or not p.port:
-            raise ParserError(f"Missing hostname or port in Hysteria link: {self.config_uri}")
+            raise ParserError(
+                f"Missing hostname or port in Hysteria link: {self.config_uri}")
 
         q = parse_qs(p.query)
         proxy = {

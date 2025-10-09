@@ -68,7 +68,8 @@ async def test_scrape_telegram_success(
         for msg in [mock_msg1, mock_msg2]:
             yield msg
 
-    mock_client.iter_messages.side_effect = [message_generator(), message_generator()]
+    mock_client.iter_messages.side_effect = [
+        message_generator(), message_generator()]
 
     # Mock aiohttp session and its context manager
     mock_session = MockClientSession.return_value.__aenter__.return_value
@@ -125,6 +126,7 @@ async def test_scrape_telegram_proxy_conversion(MockTelegramClient: MagicMock, f
     mock_client.start = AsyncMock()
     mock_client.is_connected.return_value = True
     mock_client.disconnect = AsyncMock()
+
     async def empty_iterator(*args, **kwargs):
         if False:
             yield

@@ -1,5 +1,9 @@
 """Pytest configuration and shared fixtures."""
 
+from configstream.config import Settings
+import pytest
+import importlib.util
+import importlib
 import asyncio
 import os
 import shutil
@@ -12,12 +16,6 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC_PATH = ROOT / "src"
 if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
-
-import importlib
-import importlib.util
-
-import pytest
-from configstream.config import Settings
 
 
 def _load_optional_plugin(name: str) -> Optional[str]:
@@ -40,7 +38,8 @@ pytest_plugins = [
 
 def pytest_addoption(parser):
     """Register compatibility ini options when pytest-asyncio is unavailable."""
-    parser.addini("asyncio_mode", "Compatibility shim for pytest-asyncio", default="auto")
+    parser.addini("asyncio_mode",
+                  "Compatibility shim for pytest-asyncio", default="auto")
 
 
 @pytest.fixture
@@ -62,7 +61,8 @@ def settings(fs) -> Settings:
     """Create a Settings object with a relative output directory in the fake FS."""
     output_dir_name = "test_output"
     fs.create_dir(output_dir_name)
-    fs.create_file("config.yaml", contents=f"output:\n  output_dir: {output_dir_name}")
+    fs.create_file(
+        "config.yaml", contents=f"output:\n  output_dir: {output_dir_name}")
 
     settings_obj = Settings(
         output={"output_dir": output_dir_name},
@@ -96,7 +96,8 @@ def app(fs, settings):
 
     from werkzeug.middleware.dispatcher import DispatcherMiddleware
     from prometheus_client import make_wsgi_app
-    app_instance.wsgi_app = DispatcherMiddleware(app_instance.wsgi_app, {"/metrics": make_wsgi_app()})
+    app_instance.wsgi_app = DispatcherMiddleware(
+        app_instance.wsgi_app, {"/metrics": make_wsgi_app()})
 
     yield app_instance
 

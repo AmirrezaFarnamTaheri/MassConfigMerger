@@ -58,12 +58,14 @@ class OutputGenerator:
 
         if self.settings.output.write_clash:
             clash_config_path = output_dir / CLASH_CONFIG_FILE_NAME
-            clash_config_path.write_text(converter.to_clash_config(), encoding="utf-8")
+            clash_config_path.write_text(
+                converter.to_clash_config(), encoding="utf-8")
             written_files.append(clash_config_path)
 
         if self.settings.output.write_clash_proxies:
             clash_proxies_path = output_dir / CLASH_PROXIES_FILE_NAME
-            clash_proxies_path.write_text(converter.to_clash_proxies(), encoding="utf-8")
+            clash_proxies_path.write_text(
+                converter.to_clash_proxies(), encoding="utf-8")
             written_files.append(clash_proxies_path)
 
         return written_files

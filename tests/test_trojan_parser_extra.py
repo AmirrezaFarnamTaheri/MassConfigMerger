@@ -34,7 +34,8 @@ def test_parse_trojan_full_config():
     config = (
         "trojan://password@example.com:443?sni=sni.host&security=tls&type=ws&mode=gun"
         "&host=ws.host&path=/path&alpn=h2&flow=xtls-rprx-vision&serviceName=my-service"
-        "&ws-headers=eyJIb3N0IjogImV4YW1wbGUuY29tIn0"  # {"Host": "example.com"}
+        # {"Host": "example.com"}
+        "&ws-headers=eyJIb3N0IjogImV4YW1wbGUuY29tIn0"
     )
 
     parser = TrojanParser(config, 1)

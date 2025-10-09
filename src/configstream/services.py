@@ -6,7 +6,6 @@ such as fetching, merging, and retesting configurations.
 """
 from __future__ import annotations
 
-import asyncio
 import logging
 from pathlib import Path
 from urllib.parse import urlparse

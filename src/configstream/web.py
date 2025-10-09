@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import io
 import json
-import logging
 import os
 import secrets
 import shutil
@@ -518,7 +517,8 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
             with zipfile.ZipFile(memory_file, "r") as zf:
                 if zf.testzip() is not None:
                     return jsonify({"error": "Corrupted zip archive."}), 400
-                allowed_names = {"config.yaml", "sources.txt", "proxy_history.db"}
+                allowed_names = {"config.yaml",
+                                 "sources.txt", "proxy_history.db"}
                 max_total_uncompressed = 50 * 1024 * 1024
                 max_file_uncompressed = 10 * 1024 * 1024
                 total_uncompressed = 0
@@ -542,7 +542,8 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
                         )
                     if member.file_size > max_file_uncompressed:
                         return (
-                            jsonify({"error": f"File too large in archive: {member.filename}"}),
+                            jsonify(
+                                {"error": f"File too large in archive: {member.filename}"}),
                             400,
                         )
                     total_uncompressed += int(member.file_size or 0)
@@ -573,7 +574,8 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
 def main() -> None:
     """Run the Flask development server."""
     app = create_app()
-    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
+    app.wsgi_app = DispatcherMiddleware(
+        app.wsgi_app, {"/metrics": make_wsgi_app()})
     app.run(host="0.0.0.0", port=8080, debug=False)
 
 

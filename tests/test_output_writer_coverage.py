@@ -6,6 +6,7 @@ from configstream.config import Settings
 from configstream.output_writer import write_clash_proxies
 from configstream.core.config_processor import ConfigResult
 
+
 @pytest.fixture
 def mock_results() -> list[ConfigResult]:
     """Fixture for mock ConfigResult objects."""
@@ -22,6 +23,7 @@ def mock_results() -> list[ConfigResult]:
         )
     ]
 
+
 @pytest.fixture
 def mock_settings_fs() -> Settings:
     """Fixture for a default Settings object with a fake output directory for pyfakefs tests."""
@@ -29,8 +31,16 @@ def mock_settings_fs() -> Settings:
     settings.output.output_dir = Path("/fake_output")
     return settings
 
-@patch("configstream.output_writer.config_to_clash_proxy", return_value=None)
-def test_write_clash_proxies_no_valid_proxies(mock_clash_proxy, tmp_path: Path, mock_results: list[ConfigResult]):
+
+@patch("configstream.output_writer.ProxyParser")
+def test_write_clash_proxies_no_valid_proxies(
+    MockProxyParser, tmp_path: Path, mock_results: list[ConfigResult]
+):
     """Test write_clash_proxies when no configs can be converted."""
+    mock_parser_instance = MockProxyParser.return_value
+    mock_parser_instance.config_to_clash_proxy.return_value = None
+
     output_file = write_clash_proxies(mock_results, tmp_path)
-    assert 'proxies: []' in output_file.read_text()
+    assert "proxies: []" in output_file.read_text()
+    MockProxyParser.assert_called_once()
+    mock_parser_instance.config_to_clash_proxy.assert_called_once()

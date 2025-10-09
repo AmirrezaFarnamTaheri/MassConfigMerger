@@ -33,7 +33,8 @@ def test_extract_host_port_failures(config: str):
     "config",
     [
         "vless://test",  # Invalid base64
-        "vmess://" + base64.b64encode(b'{"add": "host"}').decode(),  # Incomplete JSON
+        # Incomplete JSON
+        "vmess://" + base64.b64encode(b'{"add": "host"}').decode(),
         "vmess://" + "a" * 5000,
     ],
 )
@@ -51,8 +52,6 @@ def test_apply_tuning_invalid_uri():
     settings = Settings()
     # This should trigger a ValueError and return the original config
     assert apply_tuning(config, settings) == config
-
-
 
 
 def test_extract_host_port_vless_fallback():

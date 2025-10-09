@@ -6,9 +6,8 @@ like 'merge' and 'retest'.
 """
 from __future__ import annotations
 
-import asyncio
 import logging
-from typing import Any, List
+from typing import Any
 
 from ..config import Settings
 from ..core.config_processor import ConfigProcessor, ConfigResult

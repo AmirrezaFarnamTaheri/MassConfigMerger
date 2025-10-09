@@ -45,7 +45,8 @@ class SourceManager:
         self.settings = settings
         self.session: aiohttp.ClientSession | None = None
         # Circuit Breaker state
-        self._circuit_states: Dict[str, str] = {}  # "CLOSED", "OPEN", "HALF_OPEN"
+        # "CLOSED", "OPEN", "HALF_OPEN"
+        self._circuit_states: Dict[str, str] = {}
         self._failure_counts: Dict[str, int] = {}
         self._last_failure_time: Dict[str, float] = {}
         # Circuit Breaker parameters
@@ -133,7 +134,8 @@ class SourceManager:
             except NetworkError as e:
                 # Failure
                 metrics.SOURCES_FAILED_TOTAL.inc()
-                self._failure_counts[url] = self._failure_counts.get(url, 0) + 1
+                self._failure_counts[url] = self._failure_counts.get(
+                    url, 0) + 1
                 if self._failure_counts[url] >= self.FAILURE_THRESHOLD:
                     self._circuit_states[url] = "OPEN"
                     self._last_failure_time[url] = time.time()
@@ -152,7 +154,8 @@ class SourceManager:
         safe_sources = [s for s in sources if is_safe_url(s)]
         invalid_count = len(sources) - len(safe_sources)
         if invalid_count > 0:
-            logging.warning("Skipped %d invalid or unsafe source URLs.", invalid_count)
+            logging.warning(
+                "Skipped %d invalid or unsafe source URLs.", invalid_count)
 
         tasks = [asyncio.create_task(fetch_one(u)) for u in safe_sources]
         if not tasks:
@@ -193,7 +196,8 @@ class SourceManager:
             logging.warning("sources file not found: %s", path)
             return []
 
-        failures_path = path.with_suffix(constants.SOURCES_FAILURES_FILE_SUFFIX)
+        failures_path = path.with_suffix(
+            constants.SOURCES_FAILURES_FILE_SUFFIX)
         try:
             failures = json.loads(failures_path.read_text())
         except (OSError, json.JSONDecodeError):
@@ -237,7 +241,8 @@ class SourceManager:
                 except asyncio.CancelledError:
                     raise
                 except Exception as e:
-                    logging.debug("Unhandled exception in source check for %s: %s", url, e)
+                    logging.debug(
+                        "Unhandled exception in source check for %s: %s", url, e)
                     return url, False
             tasks.append(asyncio.create_task(_wrapped_check(u)))
         if not tasks:
@@ -271,7 +276,8 @@ class SourceManager:
                     f.write(f"{url}\n")
 
             if removed:
-                disabled_path = path.with_name(constants.SOURCES_DISABLED_FILE_NAME)
+                disabled_path = path.with_name(
+                    constants.SOURCES_DISABLED_FILE_NAME)
                 with disabled_path.open("a") as f:
                     for url in removed:
                         f.write(f"{url}\n")

@@ -17,8 +17,10 @@ class VlessParser(BaseParser):
 
     def _parse_reality_opts(self, q: Dict[str, Any]) -> Dict[str, Any]:
         """Helper to parse and build the reality-opts dictionary."""
-        pbk_q = q.get("pbk") or q.get("public-key") or q.get("publicKey") or q.get("public_key") or q.get("publickey")
-        sid_q = q.get("sid") or q.get("short-id") or q.get("shortId") or q.get("short_id") or q.get("shortid")
+        pbk_q = q.get("pbk") or q.get(
+            "public-key") or q.get("publicKey") or q.get("public_key") or q.get("publickey")
+        sid_q = q.get("sid") or q.get(
+            "short-id") or q.get("shortId") or q.get("short_id") or q.get("shortid")
         spider_q = q.get("spiderX") or q.get("spider-x") or q.get("spider_x")
 
         pbk = self.sanitize_str(pbk_q[0]) if pbk_q else None

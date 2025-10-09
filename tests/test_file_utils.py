@@ -16,7 +16,8 @@ def test_find_project_root_success(fs, monkeypatch):
     fs.create_file(project_root / "pyproject.toml")
 
     # Patch the __file__ attribute to control the starting point of the search
-    monkeypatch.setattr(file_utils_module, "__file__", str(src_dir / "file.py"))
+    monkeypatch.setattr(file_utils_module, "__file__",
+                        str(src_dir / "file.py"))
 
     # Call the function and assert the result
     assert file_utils_module.find_project_root() == project_root
@@ -28,7 +29,8 @@ def test_find_project_root_not_found(fs, monkeypatch):
     src_dir = Path("/home/user/project/src")
     fs.create_dir(src_dir)
 
-    monkeypatch.setattr(file_utils_module, "__file__", str(src_dir / "file.py"))
+    monkeypatch.setattr(file_utils_module, "__file__",
+                        str(src_dir / "file.py"))
 
     with pytest.raises(FileNotFoundError, match="Project root marker 'pyproject.toml' not found."):
         file_utils_module.find_project_root()
@@ -41,7 +43,8 @@ def test_find_project_root_custom_marker(fs, monkeypatch):
     fs.create_dir(src_dir)
     fs.create_file(project_root / ".git")  # Custom marker
 
-    monkeypatch.setattr(file_utils_module, "__file__", str(src_dir / "file.py"))
+    monkeypatch.setattr(file_utils_module, "__file__",
+                        str(src_dir / "file.py"))
 
     assert file_utils_module.find_project_root(marker=".git") == project_root
 
@@ -52,7 +55,8 @@ def test_find_project_root_at_root(fs, monkeypatch):
     fs.create_dir(src_dir)
     fs.create_file("/pyproject.toml")
 
-    monkeypatch.setattr(file_utils_module, "__file__", str(src_dir / "file.py"))
+    monkeypatch.setattr(file_utils_module, "__file__",
+                        str(src_dir / "file.py"))
 
     assert file_utils_module.find_project_root() == Path("/")
 

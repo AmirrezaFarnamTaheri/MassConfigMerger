@@ -4,6 +4,7 @@ import base64
 
 from configstream.core.proxy_parser import ProxyParser
 
+
 def test_parse_ss_base64_encoded():
     """Test parsing of a base64-encoded Shadowsocks link."""
     parser = ProxyParser()

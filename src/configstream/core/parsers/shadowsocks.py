@@ -64,10 +64,12 @@ class ShadowsocksParser(BaseParser):
                 server = self.sanitize_str(server_str)
                 port = int(port_str)
             except (ValueError, IndexError) as e:
-                raise ParserError(f"Invalid ss link format: {self.config_uri}") from e
+                raise ParserError(
+                    f"Invalid ss link format: {self.config_uri}") from e
 
         if not all([server, port, method, password]):
-            raise ParserError(f"Missing components in ss link: {self.config_uri}")
+            raise ParserError(
+                f"Missing components in ss link: {self.config_uri}")
 
         return {
             "name": name,

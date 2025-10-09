@@ -7,6 +7,7 @@ from configstream.core.config_normalizer import (
     extract_host_port,
 )
 
+
 @patch("configstream.core.config_normalizer.logging.debug")
 def test_extract_host_port_vless_fallback_failure(mock_logging_debug):
     """Test that the vless host/port extraction fallback logs on failure."""

@@ -1,4 +1,7 @@
 from __future__ import annotations
+from configstream.tester import is_ip_address
+import logging
+import socket
 
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -96,7 +99,8 @@ async def test_lookup_geo_data_success(
     mock_city_response.traits.isp = "Google"
     mock_city_response.location.latitude = 37.7749
     mock_city_response.location.longitude = -122.4194
-    type(mock_reader_instance).city = MagicMock(return_value=mock_city_response)
+    type(mock_reader_instance).city = MagicMock(
+        return_value=mock_city_response)
 
     country, isp, lat, lon = await tester.lookup_geo_data("example.com")
 
@@ -146,13 +150,10 @@ async def test_close():
         assert tester._geoip_reader is None
 
 
-import socket
-import logging
-from configstream.tester import is_ip_address
-
 def test_is_ip_address_invalid():
     """Test that is_ip_address returns False for an invalid IP."""
     assert not is_ip_address("not-an-ip")
+
 
 @patch("configstream.tester.AsyncResolver", side_effect=Exception("Resolver Error"))
 def test_get_resolver_init_failure(MockAsyncResolver, caplog):
@@ -163,6 +164,7 @@ def test_get_resolver_init_failure(MockAsyncResolver, caplog):
     assert tester._get_resolver() is None
     assert "AsyncResolver init failed" in caplog.text
 
+
 @patch("configstream.tester.Reader", side_effect=OSError("GeoIP DB not found"))
 def test_get_geoip_reader_init_failure(MockReader, caplog):
     """Test that the GeoIP reader is not created if initialization fails."""
@@ -172,6 +174,7 @@ def test_get_geoip_reader_init_failure(MockReader, caplog):
     tester = NodeTester(settings)
     assert tester._get_geoip_reader() is None
     assert "GeoIP reader init failed" in caplog.text
+
 
 @pytest.mark.asyncio
 @patch("configstream.tester.AsyncResolver")
@@ -193,6 +196,7 @@ async def test_resolve_host_all_failures(MockAsyncResolver, caplog):
         assert "Async DNS resolve failed" in caplog.text
         assert "Standard DNS lookup failed" in caplog.text
 
+
 @pytest.mark.asyncio
 @patch("configstream.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value="1.2.3.4")
 @patch("asyncio.open_connection", side_effect=OSError("Connection failed"))
@@ -204,6 +208,7 @@ async def test_test_connection_failure(mock_open_connection, mock_resolve_host, 
     latency = await tester.test_connection("example.com", 443)
     assert latency is None
     assert "Connection test failed for example.com:443" in caplog.text
+
 
 @pytest.mark.asyncio
 @patch("configstream.tester.Reader")
@@ -217,11 +222,13 @@ async def test_lookup_geo_data_geoip_error(mock_resolve_host, MockReader, caplog
     tester = NodeTester(settings)
 
     mock_reader_instance = MockReader.return_value
-    type(mock_reader_instance).city = MagicMock(side_effect=AddressNotFoundError("IP not found"))
+    type(mock_reader_instance).city = MagicMock(
+        side_effect=AddressNotFoundError("IP not found"))
 
     geo_data = await tester.lookup_geo_data("example.com")
     assert geo_data == (None, None, None, None)
     assert "GeoIP lookup failed" in caplog.text
+
 
 @pytest.mark.asyncio
 async def test_close_resource_failure(caplog):
@@ -236,6 +243,7 @@ async def test_close_resource_failure(caplog):
     await tester._close_resource(mock_resource, "TestResource")
     assert "TestResource close failed: Close error" in caplog.text
 
+
 @patch("configstream.tester.Reader", None)
 def test_geoip_not_installed():
     """Test that lookup_country returns None if geoip2 is not installed."""
@@ -243,6 +251,7 @@ def test_geoip_not_installed():
     settings.processing.geoip_db = "dummy.mmdb"
     tester = NodeTester(settings)
     assert tester._get_geoip_reader() is None
+
 
 @patch("configstream.tester.AsyncResolver", None)
 @pytest.mark.asyncio

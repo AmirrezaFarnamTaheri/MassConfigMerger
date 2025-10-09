@@ -14,8 +14,7 @@ from typing import Any, Dict, List
 
 import yaml
 
-from .clash_utils import config_to_clash_proxy
-from .config import Settings
+from .core.proxy_parser import ProxyParser
 from .constants import (
     BASE64_SUBSCRIPTION_FILE_NAME,
     CLASH_PROXIES_FILE_NAME,
@@ -23,8 +22,6 @@ from .constants import (
     RAW_SUBSCRIPTION_FILE_NAME,
 )
 from .core.config_processor import ConfigResult
-from .format_converters_extra import generate_qx_conf, generate_surge_conf
-from .report_generator import generate_html_report, generate_json_report
 
 
 def write_raw_configs(configs: List[str], output_dir: Path, prefix: str = "") -> Path:
@@ -39,7 +36,8 @@ def write_raw_configs(configs: List[str], output_dir: Path, prefix: str = "") ->
 def write_base64_configs(configs: List[str], output_dir: Path, prefix: str = "") -> Path:
     """Write base64-encoded config links to a file."""
     base64_file = output_dir / f"{prefix}{BASE64_SUBSCRIPTION_FILE_NAME}"
-    base64_content = base64.b64encode("\n".join(configs).encode("utf-8")).decode("utf-8")
+    base64_content = base64.b64encode(
+        "\n".join(configs).encode("utf-8")).decode("utf-8")
     base64_file.write_text(base64_content, encoding="utf-8")
     return base64_file
 
@@ -62,7 +60,8 @@ def write_csv_report(results: List[ConfigResult], output_dir: Path, prefix: str 
             ]
         )
         for result in results:
-            ping_ms = round(result.ping_time * 1000, 2) if result.ping_time else None
+            ping_ms = round(result.ping_time * 1000,
+                            2) if result.ping_time else None
             writer.writerow(
                 [
                     result.config,
@@ -82,9 +81,10 @@ def write_clash_proxies(
     results: List[ConfigResult], output_dir: Path, prefix: str = ""
 ) -> Path:
     """Generate and write a Clash proxies-only file."""
+    parser = ProxyParser()
     proxies: List[Dict[str, Any]] = []
     for idx, r in enumerate(results):
-        proxy = config_to_clash_proxy(r.config, idx, r.protocol)
+        proxy = parser.config_to_clash_proxy(r.config, idx, r.protocol)
         if proxy:
             proxies.append(proxy)
 

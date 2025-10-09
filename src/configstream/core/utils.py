@@ -10,14 +10,13 @@ from __future__ import annotations
 import asyncio
 import base64
 import binascii
-import json
 import logging
 import math
 import random
 import re
 import socket
 from ipaddress import ip_address
-from typing import Any, Callable, Optional, Set
+from typing import Any, Callable, Set
 from urllib.parse import urlparse
 
 import aiohttp
@@ -72,7 +71,8 @@ def get_sort_key(
         user_lat = settings.processing.proximity_latitude
         user_lon = settings.processing.proximity_longitude
         if user_lat is None or user_lon is None:
-            raise ValueError("Proximity sorting requires user latitude and longitude.")
+            raise ValueError(
+                "Proximity sorting requires user latitude and longitude.")
 
         return lambda r: (
             not r.is_reachable,
@@ -189,7 +189,8 @@ def choose_proxy(cfg: Settings) -> str | None:
     socks_proxy = (cfg.network.socks_proxy or "").strip() or None
 
     if http_proxy and socks_proxy:
-        raise ConfigError("http_proxy and socks_proxy cannot be used simultaneously")
+        raise ConfigError(
+            "http_proxy and socks_proxy cannot be used simultaneously")
     return socks_proxy or http_proxy
 
 
@@ -232,7 +233,8 @@ async def fetch_text(
     # --- SSRF Mitigation ---
     hostname = parsed.hostname
     if not hostname or hostname in BLOCKED_HOSTS:
-        raise NetworkError(f"Blocked or invalid hostname for security reasons: {hostname}")
+        raise NetworkError(
+            f"Blocked or invalid hostname for security reasons: {hostname}")
     if parsed.scheme not in SAFE_URL_SCHEMES:
         raise NetworkError(f"Invalid URL scheme: {parsed.scheme}")
 
@@ -259,7 +261,8 @@ async def fetch_text(
     # Reconstruct the URL with the resolved IP and set the Host header
     port = parsed.port or (443 if parsed.scheme == "https" else 80)
     path = parsed.path or "/"
-    request_url = parsed._replace(netloc=f"{safe_ip}:{port}", path=path).geturl()
+    request_url = parsed._replace(
+        netloc=f"{safe_ip}:{port}", path=path).geturl()
     request_headers = {"Host": hostname}
     # --- End SSRF Mitigation ---
 
@@ -307,7 +310,8 @@ async def fetch_text(
         )
         await asyncio.sleep(sleep_duration)
 
-    raise NetworkError(f"Failed to fetch {url} after {retries} retries.") from last_exc
+    raise NetworkError(
+        f"Failed to fetch {url} after {retries} retries.") from last_exc
 
 
 def is_safe_url(url: str) -> bool:

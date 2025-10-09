@@ -132,7 +132,8 @@ class ConfigProcessor:
         """
         if use_fetch_rules:
             # Use fetch_protocols for simple inclusion filtering.
-            include_protos = {p.upper() for p in self.settings.filtering.fetch_protocols}
+            include_protos = {p.upper()
+                              for p in self.settings.filtering.fetch_protocols}
             if not include_protos:
                 return configs
             return {
@@ -209,7 +210,8 @@ class ConfigProcessor:
         stats = history.get(key)
         reliability = None
         if stats and (stats["successes"] + stats["failures"]) > 0:
-            reliability = stats["successes"] / (stats["successes"] + stats["failures"])
+            reliability = stats["successes"] / \
+                (stats["successes"] + stats["failures"])
 
         return ConfigResult(
             config=cfg,
@@ -244,7 +246,8 @@ class ConfigProcessor:
             try:
                 ip = await self.tester.resolve_host(result.host)
             except Exception as exc:
-                logging.debug("Failed to resolve host %s: %s", result.host, exc)
+                logging.debug("Failed to resolve host %s: %s",
+                              result.host, exc)
                 return result  # Keep config if DNS fails
 
             if not ip:
@@ -287,7 +290,8 @@ class ConfigProcessor:
                 try:
                     return await self._test_config(cfg, history)
                 except Exception as exc:
-                    logging.debug("test_configs worker failed for %s: %s", cfg, exc)
+                    logging.debug(
+                        "test_configs worker failed for %s: %s", cfg, exc)
                     return None
 
         tasks = [asyncio.create_task(safe_worker(c)) for c in configs]

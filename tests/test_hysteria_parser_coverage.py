@@ -1,12 +1,14 @@
 import pytest
 from configstream.core.parsers.hysteria import HysteriaParser
 
+
 def test_hysteria_parser_username_as_password():
     """Test that username is used as password if password is not present."""
     config = "hysteria://user@example.com:443"
     parser = HysteriaParser(config, 0, "hysteria")
     result = parser.parse()
     assert result["password"] == "user"
+
 
 def test_hysteria_parser_up_down_mbps():
     """Test parsing of upmbps and downmbps aliases."""
@@ -21,6 +23,7 @@ def test_hysteria_parser_up_down_mbps():
     result2 = parser2.parse()
     assert result2["upmbps"] == "20"
     assert result2["downmbps"] == "60"
+
 
 def test_hysteria_get_identifier():
     """Test the get_identifier method for HysteriaParser."""

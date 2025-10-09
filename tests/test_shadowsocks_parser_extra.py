@@ -17,7 +17,8 @@ from configstream.exceptions import ParserError
 )
 def test_parse_malformed_base64(malformed_base64_content: str):
     """Test that the ss parser raises ParserError for malformed base64 content."""
-    encoded_content = base64.b64encode(malformed_base64_content.encode()).decode()
+    encoded_content = base64.b64encode(
+        malformed_base64_content.encode()).decode()
     config = f"ss://{encoded_content}"
     parser = ShadowsocksParser(config, 0)
     with pytest.raises(ParserError):

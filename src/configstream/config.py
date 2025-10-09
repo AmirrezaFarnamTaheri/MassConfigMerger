@@ -10,7 +10,6 @@ sources, including YAML files and environment variables.
 from __future__ import annotations
 
 import logging
-import re
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Set, Type
 
@@ -39,7 +38,8 @@ class YamlConfigSettingsSource:
         if self._data is None:
             if self._yaml_file and self._yaml_file.exists():
                 try:
-                    self._data = yaml.safe_load(self._yaml_file.read_text()) or {}
+                    self._data = yaml.safe_load(
+                        self._yaml_file.read_text()) or {}
                 except (yaml.YAMLError, IOError) as e:
                     logging.warning(
                         "Could not read or parse YAML config from %s: %s",
@@ -55,8 +55,10 @@ class YamlConfigSettingsSource:
 class TelegramSettings(BaseModel):
     """Settings for Telegram integration."""
 
-    api_id: Optional[int] = Field(None, description="Your Telegram API ID from my.telegram.org.")
-    api_hash: Optional[str] = Field(None, description="Your Telegram API hash from my.telegram.org.")
+    api_id: Optional[int] = Field(
+        None, description="Your Telegram API ID from my.telegram.org.")
+    api_hash: Optional[str] = Field(
+        None, description="Your Telegram API hash from my.telegram.org.")
     session_path: Path = Field(
         "user.session", description="Path to the Telethon session file."
     )
@@ -85,7 +87,8 @@ class TelegramSettings(BaseModel):
 class NetworkSettings(BaseModel):
     """Settings related to network requests, timeouts, and proxies."""
 
-    request_timeout: int = Field(10, description="General timeout for HTTP requests in seconds.")
+    request_timeout: int = Field(
+        10, description="General timeout for HTTP requests in seconds.")
     concurrent_limit: int = Field(
         20, description="Maximum number of concurrent HTTP requests."
     )
@@ -137,7 +140,8 @@ class FilteringSettings(BaseModel):
         None, description="List of regex patterns to exclude configs by name."
     )
     merge_include_protocols: Set[str] = Field(
-        default={"SHADOWSOCKS", "SHADOWSOCKSR", "TROJAN", "REALITY", "VMESS", "VLESS", "HYSTERIA", "HYSTERIA2", "TUIC", "NAIVE", "JUICITY", "WIREGUARD", "SHADOWTLS", "BROOK"},
+        default={"SHADOWSOCKS", "SHADOWSOCKSR", "TROJAN", "REALITY", "VMESS", "VLESS",
+                 "HYSTERIA", "HYSTERIA2", "TUIC", "NAIVE", "JUICITY", "WIREGUARD", "SHADOWTLS", "BROOK"},
         description="Set of protocols to include in the final merged output.",
     )
     merge_exclude_protocols: Set[str] = Field(
@@ -183,7 +187,8 @@ class OutputSettings(BaseModel):
 
         # Reject absolute paths and parent traversal anywhere in parts
         if p.is_absolute() or ".." in p.parts:
-            raise ValueError(f"Path cannot be absolute or contain '..': {path_str}")
+            raise ValueError(
+                f"Path cannot be absolute or contain '..': {path_str}")
 
         # Allow drive letters if not absolute (e.g., 'C:folder' on Windows)
         return p
@@ -198,8 +203,10 @@ class OutputSettings(BaseModel):
     write_clash: bool = Field(
         True, description="Whether to write a Clash compatible subscription file."
     )
-    write_csv: bool = Field(True, description="Whether to write a detailed CSV report.")
-    write_html: bool = Field(False, description="Whether to write an HTML report.")
+    write_csv: bool = Field(
+        True, description="Whether to write a detailed CSV report.")
+    write_html: bool = Field(
+        False, description="Whether to write an HTML report.")
     write_clash_proxies: bool = Field(
         True, description="Whether to write a simple Clash proxies-only file."
     )
@@ -249,8 +256,10 @@ class ProcessingSettings(BaseModel):
     top_n: int = Field(
         0, description="Keep only the top N best configs after sorting. 0 to keep all."
     )
-    mux_concurrency: int = Field(8, description="Mux concurrency for supported URI configs.")
-    smux_streams: int = Field(4, description="Smux streams for supported URI configs.")
+    mux_concurrency: int = Field(
+        8, description="Mux concurrency for supported URI configs.")
+    smux_streams: int = Field(
+        4, description="Smux streams for supported URI configs.")
     geoip_db: Optional[Path] = Field(
         None, description="Path to the GeoLite2 Country MMDB file for GeoIP lookups."
     )
