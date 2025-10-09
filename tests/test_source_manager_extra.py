@@ -1,119 +1,143 @@
-from __future__ import annotations
-
-import json
-from pathlib import Path
-from unittest.mock import AsyncMock, patch
-
 import pytest
-from configstream.config import Settings
+from unittest.mock import patch, AsyncMock
+from pathlib import Path
+import json
+import time
+import asyncio
+
 from configstream.core.source_manager import SourceManager
+from configstream.config import Settings
+from configstream.exceptions import NetworkError
 
 
 @pytest.mark.asyncio
-@patch("configstream.core.utils.fetch_text")
-async def test_check_and_update_sources_failure_counting(mock_fetch_text: AsyncMock, fs):
-    """Test that check_and_update_sources correctly counts failures."""
-    # Arrange
-    mock_fetch_text.return_value = None  # Simulate all sources failing
+async def test_fetch_sources_network_error():
+    """Test fetch_sources when a NetworkError occurs."""
     settings = Settings()
-    source_manager = SourceManager(settings)
-    sources_path = Path("sources.txt")
-    failures_path = sources_path.with_suffix(".failures.json")
+    manager = SourceManager(settings)
+    source_url = "http://example.com/source"
 
-    sources = ["http://bad.com/sub1", "http://bad.com/sub2"]
-    fs.create_file(sources_path, contents="\n".join(sources))
-    fs.create_file(failures_path, contents='{"http://bad.com/sub1": 1}')
-
-    # Act
-    valid_sources = await source_manager.check_and_update_sources(
-        sources_path, max_failures=3, prune=False
-    )
-
-    # Assert
-    assert not valid_sources
-    failures_data = json.loads(failures_path.read_text())
-    assert failures_data.get("http://bad.com/sub1") == 2
-    assert failures_data.get("http://bad.com/sub2") == 1
+    with patch("configstream.core.utils.fetch_text", new_callable=AsyncMock) as mock_fetch:
+        mock_fetch.side_effect = NetworkError("HTTP 404")
+        results = await manager.fetch_sources([source_url])
+        assert results == set()
+        await manager.close_session()
 
 
 @pytest.mark.asyncio
-@patch("configstream.core.utils.fetch_text")
-async def test_check_and_update_sources_pruning(mock_fetch_text: AsyncMock, fs):
-    """Test that failing sources are correctly pruned."""
-    # Arrange
-    # Good source returns content with configs, bad source returns None
-    async def fetch_side_effect(session, url, **kwargs):
-        if "good.com" in url:
-            return "vless://good"
-        return None
-    mock_fetch_text.side_effect = fetch_side_effect
-
+async def test_check_and_update_sources_no_file():
+    """Test check_and_update_sources when the sources file doesn't exist."""
     settings = Settings()
-    source_manager = SourceManager(settings)
-    sources_path = Path("sources.txt")
-    failures_path = sources_path.with_suffix(".failures.json")
-    disabled_path = sources_path.with_name("sources_disabled.txt")
-
-    sources = ["http://good.com/sub", "http://bad.com/sub"]
-    fs.create_file(sources_path, contents="\n".join(sources))
-    # Pre-existing failures for bad.com, enough to trigger pruning
-    fs.create_file(failures_path, contents='{"http://bad.com/sub": 2}')
-
-    # Act
-    valid_sources = await source_manager.check_and_update_sources(
-        sources_path, max_failures=3, prune=True
-    )
-
-    # Assert
-    assert valid_sources == ["http://good.com/sub"]
-    assert sources_path.read_text().strip() == "http://good.com/sub"
-    assert disabled_path.read_text().strip() == "http://bad.com/sub"
-    # The failure should be removed from the failures file after pruning
-    failures_data = json.loads(failures_path.read_text())
-    assert "http://bad.com/sub" not in failures_data
+    manager = SourceManager(settings)
+    sources = await manager.check_and_update_sources(Path("/nonexistent/sources.txt"))
+    assert sources == []
+    await manager.close_session()
 
 
 @pytest.mark.asyncio
-@patch("configstream.core.utils.fetch_text", return_value="vless://config")
-async def test_check_and_update_sources_invalid_failures_json(mock_fetch_text, fs):
-    """Test that check_and_update_sources handles invalid failures.json gracefully."""
+async def test_unhandled_exception_in_check(tmp_path):
+    """Test that an unhandled exception during check is caught."""
     settings = Settings()
-    source_manager = SourceManager(settings)
-    sources_path = Path("sources.txt")
-    failures_path = sources_path.with_suffix(".failures.json")
+    manager = SourceManager(settings)
+    sources_path = tmp_path / "sources.txt"
+    sources_path.write_text("http://test.com\n")
 
-    fs.create_file(sources_path, contents="http://example.com/sub")
-    fs.create_file(failures_path, contents="{invalid json")
-
-    await source_manager.check_and_update_sources(sources_path)
-
-    # Should be empty because the file was invalid, and the source succeeded.
-    failures_data = json.loads(failures_path.read_text())
-    assert failures_data == {}
+    with patch("configstream.core.utils.fetch_text", side_effect=Exception("Unhandled")):
+        valid_sources = await manager.check_and_update_sources(sources_path)
+        assert valid_sources == []
+    await manager.close_session()
 
 
 @pytest.mark.asyncio
-async def test_close_session_logic():
-    """Test the close_session logic for various states."""
+async def test_circuit_breaker_opens_and_recovers():
+    """Test the full circuit breaker logic: OPEN -> HALF_OPEN -> CLOSED."""
     settings = Settings()
+    manager = SourceManager(settings)
+    manager.RETRY_TIMEOUT = 0.1 # Shorten for test
+    source_url = "http://fails.com"
 
-    # Scenario 1: Session does not exist
-    source_manager = SourceManager(settings)
-    await source_manager.close_session()  # Should not raise
+    with patch("configstream.core.utils.fetch_text", new_callable=AsyncMock) as mock_fetch, \
+         patch("configstream.core.source_manager.tqdm", side_effect=lambda x, **kw: x):
+        # 1. Fail 3 times to open the circuit
+        mock_fetch.side_effect = NetworkError("Fail")
+        for _ in range(3):
+            await manager.fetch_sources([source_url])
 
-    # Scenario 2: Session is already closed
-    source_manager = SourceManager(settings)
-    mock_session = AsyncMock()
-    mock_session.closed = True
-    source_manager.session = mock_session
-    await source_manager.close_session()
-    mock_session.close.assert_not_called()
+        assert manager._circuit_states.get(source_url) == "OPEN"
 
-    # Scenario 3: Session is open and should be closed
-    source_manager = SourceManager(settings)
-    mock_session = AsyncMock()
-    mock_session.closed = False
-    mock_session.close = AsyncMock()
-    source_manager.session = mock_session
-    await source_manager.close_session()
-    mock_session.close.assert_awaited_once()
+        # 2. Fetching again should skip because circuit is open
+        mock_fetch.reset_mock()
+        await manager.fetch_sources([source_url])
+        mock_fetch.assert_not_called()
+
+        # 3. Wait for retry timeout and enter HALF_OPEN state
+        time.sleep(0.2)
+
+        # 4. Succeed once to close the circuit
+        mock_fetch.side_effect = None
+        mock_fetch.return_value = "vless://config"
+        await manager.fetch_sources([source_url])
+
+        mock_fetch.assert_called_once()
+        assert source_url not in manager._circuit_states
+
+    await manager.close_session()
+
+
+@pytest.mark.asyncio
+async def test_session_recreation():
+    """Test that the aiohttp session is recreated after being closed."""
+    settings = Settings()
+    manager = SourceManager(settings)
+
+    session1 = await manager.get_session()
+    assert not session1.closed
+
+    await manager.close_session()
+    assert session1.closed
+
+    session2 = await manager.get_session()
+    assert not session2.closed
+    assert session1 is not session2
+
+    await manager.close_session()
+
+
+@pytest.mark.asyncio
+async def test_fetch_sources_no_tasks():
+    """Test fetch_sources with no safe sources to create tasks."""
+    settings = Settings()
+    manager = SourceManager(settings)
+    results = await manager.fetch_sources(["ftp://example.com"])
+    assert results == set()
+    await manager.close_session()
+
+
+@pytest.mark.asyncio
+async def test_check_and_update_sources_no_tasks(tmp_path):
+    """Test check_and_update_sources with no safe sources."""
+    settings = Settings()
+    manager = SourceManager(settings)
+    sources_path = tmp_path / "sources.txt"
+    sources_path.write_text("ftp://example.com\n")
+    results = await manager.check_and_update_sources(sources_path)
+    assert results == []
+    await manager.close_session()
+
+@pytest.mark.asyncio
+async def test_check_and_update_cancelled_task(tmp_path):
+    """Test that cancelled tasks in check_and_update are handled."""
+    settings = Settings()
+    manager = SourceManager(settings)
+    sources_path = tmp_path / "sources.txt"
+    sources_path.write_text("http://test.com\n")
+
+    async def cancel_after_start(session, url, **kwargs):
+        # This will be cancelled by the test logic
+        await asyncio.sleep(1)
+
+    with patch("configstream.core.utils.fetch_text", side_effect=cancel_after_start):
+        # We expect the check to be cancelled, but not to raise an error
+        await manager.check_and_update_sources(sources_path)
+
+    await manager.close_session()

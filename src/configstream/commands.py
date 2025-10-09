@@ -11,6 +11,8 @@ from pathlib import Path
 
 from . import services
 from .config import Settings
+from .main_daemon import ConfigStreamDaemon
+from .tui import display_results
 
 
 def handle_fetch(args: argparse.Namespace, cfg: Settings) -> None:
@@ -59,10 +61,6 @@ def handle_full(args: argparse.Namespace, cfg: Settings) -> None:
 
 def handle_daemon(args: argparse.Namespace, cfg: Settings):
     """Handle the 'daemon' command."""
-    from .main_daemon import ConfigStreamDaemon
-    from pathlib import Path
-    import asyncio
-
     data_dir = Path("./data")
     data_dir.mkdir(exist_ok=True)
 
@@ -85,9 +83,6 @@ def handle_daemon(args: argparse.Namespace, cfg: Settings):
 
 def handle_tui(args: argparse.Namespace, cfg: Settings):
     """Handle the 'tui' command."""
-    from .tui import display_results
-    from pathlib import Path
-
     # This assumes the daemon has been run at least once to generate the results file.
     results_file = Path(cfg.output.output_dir) / "current_results.json"
     display_results(results_file)
