@@ -284,3 +284,8 @@ def add_daemon_arguments(parser: argparse.ArgumentParser):
         default="0.0.0.0",
         help="The host to run the web dashboard on.",
     )
+
+
+def add_tui_arguments(subparsers: argparse._SubParsersAction):
+    """Add arguments for the 'tui' command."""
+    subparsers.add_parser("tui", help="Display a terminal user interface")

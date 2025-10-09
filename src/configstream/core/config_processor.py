@@ -58,36 +58,7 @@ def categorize_protocol(config: str) -> str:
     return "Other"
 
 
-@dataclass
-class ConfigResult:
-    """
-    Data class for holding the result of processing a single VPN configuration.
-
-    Attributes:
-        config: The original configuration string.
-        protocol: The detected protocol (e.g., "VMess", "Shadowsocks").
-        host: The server hostname or IP address.
-        port: The server port.
-        ping_time: The latency in seconds, or None if unreachable.
-        is_reachable: A boolean indicating if the server is connectable.
-        source_url: The URL from which the configuration was fetched.
-        country: The ISO 3166-1 alpha-2 country code of the server.
-        reliability: A score indicating the historical reliability of the proxy.
-    """
-
-    config: str
-    protocol: str
-    host: Optional[str] = None
-    port: Optional[int] = None
-    ping_time: Optional[float] = None
-    is_reachable: bool = False
-    source_url: str = ""
-    country: Optional[str] = None
-    isp: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    reliability: Optional[float] = None
-    is_blocked: bool = False
+from .types import ConfigResult
 
 
 class ConfigProcessor:
@@ -231,38 +202,49 @@ class ConfigProcessor:
     async def _filter_malicious(
         self, results: List[ConfigResult]
     ) -> List[ConfigResult]:
-        """Tag results with malicious IPs concurrently."""
+        """Filter out results with malicious IPs concurrently."""
         if (
             not self.settings.security.apivoid_api_key
             or self.settings.security.blocklist_detection_threshold <= 0
         ):
             return results
 
-        async def _check(result: ConfigResult) -> ConfigResult:
-            """Check a single result for malicious IP and update the is_blocked flag."""
+        host_to_ip_cache: dict[str, Optional[str]] = {}
+        ip_to_blocked_status: dict[str, bool] = {}
+
+        async def _check(result: ConfigResult) -> Optional[ConfigResult]:
+            """Check a single result for malicious IP. Returns None if malicious or uncertain."""
             if not result.is_reachable or not result.host:
                 return result
 
-            ip = None
-            try:
-                ip = await self.tester.resolve_host(result.host)
-            except Exception as exc:
-                logging.debug("Failed to resolve host %s: %s", result.host, exc)
-                return result
+            # Use cached IP if available
+            if result.host not in host_to_ip_cache:
+                try:
+                    host_to_ip_cache[result.host] = await self.tester.resolve_host(result.host)
+                except Exception as exc:
+                    logging.debug("Failed to resolve host %s: %s", result.host, exc)
+                    host_to_ip_cache[result.host] = None
 
+            ip = host_to_ip_cache[result.host]
             if not ip:
                 return result
 
-            try:
-                if await self.blocklist_checker.is_malicious(ip):
-                    result.is_blocked = True
-            except Exception as exc:
-                logging.debug("Blocklist check failed for %s: %s", ip, exc)
+            # Use cached blocklist status if available
+            if ip not in ip_to_blocked_status:
+                try:
+                    ip_to_blocked_status[ip] = await self.blocklist_checker.is_malicious(ip)
+                except Exception as exc:
+                    logging.debug("Blocklist check failed for %s: %s", ip, exc)
+                    ip_to_blocked_status[ip] = True # Conservative default
+
+            if ip_to_blocked_status.get(ip, False):
+                return None
 
             return result
 
         tasks = [_check(r) for r in results]
-        return await asyncio.gather(*tasks)
+        checked_results = await asyncio.gather(*tasks)
+        return [res for res in checked_results if res is not None]
 
     async def test_configs(
         self, configs: Set[str], history: dict | None = None

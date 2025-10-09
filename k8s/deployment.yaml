@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: configstream
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: configstream
+  template:
+    metadata:
+      labels:
+        app: configstream
+    spec:
+      containers:
+      - name: configstream
+        image: configstream:latest
+        ports:
+        - containerPort: 8080
+        - containerPort: 9090
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: configstream-data

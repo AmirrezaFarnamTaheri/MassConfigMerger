@@ -61,6 +61,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     cli_args.add_daemon_arguments(daemon_p)
 
+    # TUI command
+    cli_args.add_tui_arguments(subparsers)
+
     return parser
 
 
@@ -122,6 +125,7 @@ HANDLERS: Dict[str, Callable[..., None]] = {
     "retest": commands.handle_retest,
     "full": commands.handle_full,
     "daemon": commands.handle_daemon,
+    "tui": commands.handle_tui,
 }
 
 

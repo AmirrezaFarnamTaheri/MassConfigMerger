@@ -5,7 +5,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from configstream.config import Settings
-from configstream.core.config_processor import ConfigProcessor, ConfigResult
+from configstream.core.config_processor import ConfigProcessor
+from configstream.core.types import ConfigResult
 from configstream.db import Database
 
 
@@ -32,7 +33,7 @@ async def test_filter_malicious_not_reachable(processor: ConfigProcessor):
 
 @pytest.mark.asyncio
 async def test_filter_malicious_is_malicious(settings: Settings):
-    """Test that _filter_malicious tags malicious results."""
+    """Test that _filter_malicious removes malicious results."""
     # Enable the security check
     settings.security.apivoid_api_key = "test_key"
     settings.security.blocklist_detection_threshold = 1
@@ -48,8 +49,7 @@ async def test_filter_malicious_is_malicious(settings: Settings):
         )
     ]
     filtered = await processor._filter_malicious(results)
-    assert len(filtered) == 1
-    assert filtered[0].is_blocked is True
+    assert len(filtered) == 0
 
 
 @pytest.mark.asyncio

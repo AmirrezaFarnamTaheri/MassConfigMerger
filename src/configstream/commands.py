@@ -59,10 +59,24 @@ def handle_full(args: argparse.Namespace, cfg: Settings) -> None:
 
 def handle_daemon(args: argparse.Namespace, cfg: Settings):
     """Handle the 'daemon' command."""
-    from .daemon import ConfigStreamDaemon
-    daemon = ConfigStreamDaemon(settings=cfg)
-    daemon.start(
+    from .main_daemon import ConfigStreamDaemon
+    from pathlib import Path
+    import asyncio
+
+    data_dir = Path("./data")
+    data_dir.mkdir(exist_ok=True)
+
+    daemon = ConfigStreamDaemon(settings=cfg, data_dir=data_dir)
+    asyncio.run(daemon.start(
         interval_hours=args.interval_hours,
         web_port=args.web_port,
-        web_host=args.web_host,
-    )
+    ))
+
+
+def handle_tui(args: argparse.Namespace, cfg: Settings):
+    """Handle the 'tui' command."""
+    from .tui import display_results
+
+    # This assumes the daemon has been run at least once to generate the results file.
+    results_file = Path(cfg.output.output_dir) / "current_results.json"
+    display_results(results_file)
