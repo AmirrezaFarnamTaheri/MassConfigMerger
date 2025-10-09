@@ -4,10 +4,11 @@ from __future__ import annotations
 import asyncio
 import json
 from datetime import datetime, timedelta
+from functools import wraps
+from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Any, Optional
 import csv
-from io import StringIO, BytesIO
 
 from flask import Flask, jsonify, render_template, request, send_file
 from hypercorn.asyncio import serve
@@ -110,12 +111,31 @@ def create_app(settings: Optional[Settings] = None) -> Flask:
 
     dashboard_data = DashboardData(settings)
 
+    def require_api_key(f):
+        """Decorator to protect endpoints with an API key."""
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            api_key = app.config["SETTINGS"].security.api_key
+            if api_key:
+                provided_key = request.headers.get("X-API-Key")
+                # Also check Authorization header for Bearer token
+                if not provided_key:
+                    auth_header = request.headers.get("Authorization")
+                    if auth_header and auth_header.startswith("Bearer "):
+                        provided_key = auth_header.split(" ", 1)[1]
+
+                if not provided_key or provided_key != api_key:
+                    return jsonify({"error": "Unauthorized"}), 401
+            return f(*args, **kwargs)
+        return decorated_function
+
     @app.route("/")
     def index():
         """Serve the main dashboard page."""
         return render_template("dashboard.html")
 
     @app.route("/api/current")
+    @require_api_key
     def api_current():
         """API endpoint for current results."""
         data = dashboard_data.get_current_results()
@@ -127,6 +147,7 @@ def create_app(settings: Optional[Settings] = None) -> Flask:
         return jsonify(data)
 
     @app.route("/api/history")
+    @require_api_key
     def api_history():
         """API endpoint for historical data."""
         hours = int(request.args.get("hours", 24))
@@ -134,6 +155,7 @@ def create_app(settings: Optional[Settings] = None) -> Flask:
         return jsonify(history)
 
     @app.route("/api/statistics")
+    @require_api_key
     def api_statistics():
         """API endpoint for aggregated statistics."""
         data = dashboard_data.get_current_results()
@@ -169,6 +191,7 @@ def create_app(settings: Optional[Settings] = None) -> Flask:
         })
 
     @app.route("/api/export/<format>")
+    @require_api_key
     def api_export(format: str):
         """Export data in various formats."""
         data = dashboard_data.get_current_results()
@@ -209,7 +232,7 @@ def create_app(settings: Optional[Settings] = None) -> Flask:
     return app
 
 
-async def run_dashboard(host: str = "0.0.0.0", port: int = 8080):
+async def run_dashboard(host: str = "127.0.0.1", port: int = 8080):
     """Run the dashboard server asynchronously."""
     app = create_app()
     config = Config()

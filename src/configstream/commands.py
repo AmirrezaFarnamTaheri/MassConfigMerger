@@ -67,15 +67,26 @@ def handle_daemon(args: argparse.Namespace, cfg: Settings):
     data_dir.mkdir(exist_ok=True)
 
     daemon = ConfigStreamDaemon(settings=cfg, data_dir=data_dir)
-    asyncio.run(daemon.start(
-        interval_hours=args.interval_hours,
-        web_port=args.web_port,
-    ))
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # No running loop; safe to use asyncio.run
+        asyncio.run(daemon.start(
+            interval_hours=args.interval_hours,
+            web_port=args.web_port,
+        ))
+    else:
+        # A loop is already running; schedule the task
+        loop.create_task(daemon.start(
+            interval_hours=args.interval_hours,
+            web_port=args.web_port,
+        ))
 
 
 def handle_tui(args: argparse.Namespace, cfg: Settings):
     """Handle the 'tui' command."""
     from .tui import display_results
+    from pathlib import Path
 
     # This assumes the daemon has been run at least once to generate the results file.
     results_file = Path(cfg.output.output_dir) / "current_results.json"
