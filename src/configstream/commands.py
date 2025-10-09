@@ -61,12 +61,13 @@ def handle_daemon(args: argparse.Namespace, cfg: Settings):
     """Handle the 'daemon' command."""
     from .main_daemon import ConfigStreamDaemon
     from pathlib import Path
+    import asyncio
 
     data_dir = Path("./data")
     data_dir.mkdir(exist_ok=True)
 
     daemon = ConfigStreamDaemon(settings=cfg, data_dir=data_dir)
-    daemon.start(
+    asyncio.run(daemon.start(
         interval_hours=args.interval_hours,
         web_port=args.web_port,
-    )
+    ))

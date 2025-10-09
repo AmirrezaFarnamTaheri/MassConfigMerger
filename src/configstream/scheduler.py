@@ -47,7 +47,7 @@ class TestScheduler:
                     {
                         "config": r.config,
                         "protocol": r.protocol,
-                        "ping_ms": int(r.ping_time * 1000) if r.ping_time is not None else -1,
+                        "ping_ms": int(r.ping_time * 1000) if (r.ping_time is not None and r.ping_time > 0) else -1,
                         "country": r.country or "Unknown",
                         "city": "Unknown",
                         "organization": r.isp or "Unknown",

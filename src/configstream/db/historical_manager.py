@@ -37,9 +37,9 @@ class HistoricalManager:
     async def initialize(self):
         """Initialize database schema."""
         async with aiosqlite.connect(self.db_path) as db:
-            schema = Path("src/configstream/db/historical_schema.sql")
+            schema = Path(__file__).with_name("historical_schema.sql")
             if schema.exists():
-                await db.executescript(schema.read_text())
+                await db.executescript(schema.read_text(encoding="utf-8"))
             await db.commit()
 
     async def record_test(self, test_data: dict):

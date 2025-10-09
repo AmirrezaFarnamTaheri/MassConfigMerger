@@ -210,7 +210,7 @@ class ConfigProcessor:
             return results
 
         async def _check(result: ConfigResult) -> Optional[ConfigResult]:
-            """Check a single result for malicious IP. Returns None if malicious."""
+            """Check a single result for malicious IP. Returns None if malicious or uncertain."""
             if not result.is_reachable or not result.host:
                 return result
 
@@ -229,6 +229,8 @@ class ConfigProcessor:
                     return None  # Discard if malicious
             except Exception as exc:
                 logging.debug("Blocklist check failed for %s: %s", ip, exc)
+                # Conservative default: drop on failure to check
+                return None
 
             return result
 
