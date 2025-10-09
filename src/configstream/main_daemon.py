@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import signal
-import threading
+import sys
 from pathlib import Path
 
 from .config import Settings
@@ -24,31 +24,30 @@ class ConfigStreamDaemon:
         self.settings = settings
         self.data_dir = data_dir
         self.scheduler = TestScheduler(settings, data_dir)
-        self.shutdown_event = asyncio.Event()
+        self.running = False
 
-    async def start(self, interval_hours: int = 2, web_port: int = 8080):
+    def start(self, interval_hours: int = 2, web_port: int = 8080):
         """Start the daemon with scheduler and web server."""
         logger.info("Starting ConfigStream Daemon")
 
+        # Setup signal handlers
+        signal.signal(signal.SIGINT, self._signal_handler)
+        signal.signal(signal.SIGTERM, self._signal_handler)
+
         # Start scheduler
         self.scheduler.start(interval_hours)
+        self.running = True
 
-        # Start web dashboard
-        web_task = asyncio.create_task(run_dashboard(port=web_port))
+        # Start web dashboard (blocking)
+        logger.info(f"Starting web dashboard on port {web_port}")
+        run_dashboard(port=web_port)
 
-        logger.info(f"Web dashboard scheduled to run on port {web_port}")
-
-        await self.shutdown_event.wait()
-
-        # Cleanup
-        web_task.cancel()
-        self.scheduler.stop()
-        logger.info("Daemon has been shut down.")
-
-    def _signal_handler(self):
+    def _signal_handler(self, signum, frame):
         """Handle shutdown signals."""
-        logger.info("Shutdown signal received, initiating graceful shutdown...")
-        self.shutdown_event.set()
+        logger.info(f"Received signal {signum}, shutting down...")
+        self.scheduler.stop()
+        self.running = False
+        sys.exit(0)
 
 def main():
     """Entry point for daemon."""
@@ -57,20 +56,7 @@ def main():
     data_dir.mkdir(exist_ok=True)
 
     daemon = ConfigStreamDaemon(settings, data_dir)
-
-    loop = asyncio.get_event_loop()
-
-    if threading.current_thread() is threading.main_thread():
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            try:
-                loop.add_signal_handler(sig, daemon._signal_handler)
-            except Exception as exc:
-                logger.warning(f"Could not set signal handlers: {exc}")
-
-    try:
-        loop.run_until_complete(daemon.start(interval_hours=2, web_port=8080))
-    finally:
-        loop.close()
+    daemon.start(interval_hours=2, web_port=8080)
 
 if __name__ == "__main__":
     main()

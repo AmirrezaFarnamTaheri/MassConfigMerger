@@ -1,85 +1,95 @@
-from __future__ import annotations
-
-import json
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
-
 import pytest
+from unittest.mock import patch, MagicMock, AsyncMock
+from pathlib import Path
+import json
+from datetime import datetime
 
-from configstream.config import Settings
 from configstream.scheduler import TestScheduler
+from configstream.config import Settings
+from configstream.core.config_processor import ConfigResult
 
 
 @pytest.fixture
-def settings() -> Settings:
-    """Fixture for a Settings instance."""
+def mock_settings():
+    """Fixture for mock Settings object."""
     return Settings()
 
 
-@pytest.fixture
-def output_dir(tmp_path: Path) -> Path:
-    """Fixture for a temporary output directory."""
-    return tmp_path
-
-
-@pytest.fixture
-def scheduler(settings: Settings, output_dir: Path) -> TestScheduler:
-    """Fixture for a TestScheduler instance."""
-    return TestScheduler(settings, output_dir)
-
-
 @pytest.mark.asyncio
-async def test_run_test_cycle(scheduler: TestScheduler, output_dir: Path):
-    """Test the run_test_cycle method."""
-    with patch("configstream.scheduler.run_merger", new_callable=AsyncMock) as mock_run_merger:
-        # Mock the return value of run_merger
-        mock_result = MagicMock()
-        mock_result.ping_time = 0.1  # 100 ms
-        mock_result.config = "test_config"
-        mock_result.protocol = "test_protocol"
-        mock_result.country = "US"
-        mock_result.city = "Test City"
-        mock_result.isp = "Test Org"
-        mock_result.host = "1.1.1.1"
-        mock_result.port = 1234
-        mock_result.is_blocked = False
-        mock_run_merger.return_value = [mock_result]
+async def test_scheduler_run_test_cycle(mock_settings, tmp_path):
+    """Test a single run of the test cycle."""
+    output_dir = tmp_path
+    scheduler = TestScheduler(settings=mock_settings, output_dir=output_dir)
 
-        # Run the test cycle
+    mock_results = [
+        ConfigResult(
+            config="vless://test",
+            protocol="VLESS",
+            ping_ms=100,
+            country_code="US",
+            city="New York",
+            organization="Test Org",
+            ip="1.1.1.1",
+            port=443,
+            is_blocked=False,
+            raw_config="vless://test",
+        )
+    ]
+
+    with patch(
+        "configstream.scheduler.run_merger", new_callable=AsyncMock
+    ) as mock_run_merger:
+        mock_run_merger.return_value = mock_results
         await scheduler.run_test_cycle()
 
-        # Check that the results were saved correctly
-        current_results_file = output_dir / "current_results.json"
+        # Check that current_results.json was written correctly
+        current_results_path = output_dir / "current_results.json"
+        assert current_results_path.exists()
+        data = json.loads(current_results_path.read_text())
+        assert data["successful"] == 1
+        assert len(data["nodes"]) == 1
+        assert data["nodes"][0]["protocol"] == "VLESS"
+
+        # Check that history.jsonl was appended
         history_file = output_dir / "history.jsonl"
-
-        assert current_results_file.exists()
         assert history_file.exists()
-
-        # Check the content of the current results file
-        current_results = json.loads(current_results_file.read_text())
-        assert current_results["total_tested"] == 1
-        assert current_results["successful"] == 1
-        assert current_results["nodes"][0]["protocol"] == "test_protocol"
-        assert current_results["nodes"][0]["ping_ms"] == 100
-
-        # Check the content of the history file
-        history_content = history_file.read_text()
-        history_data = json.loads(history_content)
+        history_data = json.loads(history_file.read_text())
         assert history_data["total_tested"] == 1
 
 
-def test_start_and_stop(scheduler: TestScheduler):
-    """Test the start and stop methods of the scheduler."""
-    with patch("apscheduler.schedulers.asyncio.AsyncIOScheduler.add_job") as mock_add_job, \
-         patch("apscheduler.schedulers.asyncio.AsyncIOScheduler.start") as mock_start, \
-         patch("apscheduler.schedulers.asyncio.AsyncIOScheduler.shutdown") as mock_shutdown, \
-         patch('apscheduler.schedulers.asyncio.AsyncIOScheduler.running', new_callable=PropertyMock) as mock_running:
+@pytest.mark.asyncio
+async def test_scheduler_run_test_cycle_exception(mock_settings, tmp_path):
+    """Test that the test cycle handles exceptions gracefully."""
+    output_dir = tmp_path
+    scheduler = TestScheduler(settings=mock_settings, output_dir=output_dir)
 
-        mock_running.return_value = False
-        scheduler.start(interval_hours=1)
-        mock_add_job.assert_called()
+    with patch(
+        "configstream.scheduler.run_merger", new_callable=AsyncMock
+    ) as mock_run_merger:
+        mock_run_merger.side_effect = Exception("Test error")
+        # This should not raise an exception
+        await scheduler.run_test_cycle()
+
+        # Verify that no files were written
+        assert not (output_dir / "current_results.json").exists()
+        assert not (output_dir / "history.jsonl").exists()
+
+
+def test_scheduler_start_and_stop(mock_settings, tmp_path):
+    """Test the start and stop methods of the scheduler."""
+    scheduler = TestScheduler(settings=mock_settings, output_dir=tmp_path)
+
+    with patch.object(scheduler.scheduler, "add_job") as mock_add_job, \
+         patch.object(scheduler.scheduler, "start") as mock_start, \
+         patch.object(scheduler.scheduler, "shutdown") as mock_shutdown:
+
+        scheduler.start(interval_hours=5)
+
+        # Verify that jobs were added for the interval and initial run
+        assert mock_add_job.call_count == 2
         mock_start.assert_called_once()
 
-        mock_running.return_value = True
+        # Simulate the scheduler running
+        scheduler.scheduler.running = True
         scheduler.stop()
         mock_shutdown.assert_called_once()
