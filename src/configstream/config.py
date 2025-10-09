@@ -236,9 +236,9 @@ class SecuritySettings(BaseModel):
         1,
         description="Number of blacklist detections required to consider an IP malicious. 0 to disable.",
     )
-    web_api_token: Optional[str] = Field(
+    api_key: Optional[str] = Field(
         None,
-        description="Optional token required by the web dashboard to trigger aggregation or merge actions.",
+        description="Optional API key to protect API endpoints. If set, it must be provided in the 'X-API-Key' header.",
     )
 
 

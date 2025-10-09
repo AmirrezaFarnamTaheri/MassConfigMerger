@@ -213,11 +213,12 @@ class ConfigProcessor:
         ip_to_blocked_status: dict[str, bool] = {}
 
         async def _check(result: ConfigResult) -> Optional[ConfigResult]:
-            """Check a single result for malicious IP. Returns None if malicious or uncertain."""
+            """Check a single result for malicious IP. Returns None only if confirmed malicious."""
             if not result.is_reachable or not result.host:
+                result.is_blocked = False
                 return result
 
-            # Use cached IP if available
+            # Resolve host to IP (cache results)
             if result.host not in host_to_ip_cache:
                 try:
                     host_to_ip_cache[result.host] = await self.tester.resolve_host(result.host)
@@ -227,18 +228,22 @@ class ConfigProcessor:
 
             ip = host_to_ip_cache[result.host]
             if not ip:
+                result.is_blocked = False
                 return result
 
-            # Use cached blocklist status if available
+            # Check blocklist (cache results)
             if ip not in ip_to_blocked_status:
                 try:
                     ip_to_blocked_status[ip] = await self.blocklist_checker.is_malicious(ip)
                 except Exception as exc:
                     logging.debug("Blocklist check failed for %s: %s", ip, exc)
-                    ip_to_blocked_status[ip] = True # Conservative default
+                    # On error, do not drop the node; treat as not blocked
+                    ip_to_blocked_status[ip] = False
 
-            if ip_to_blocked_status.get(ip, False):
-                return None
+            is_blocked = ip_to_blocked_status.get(ip, False)
+            result.is_blocked = is_blocked
+            if is_blocked:
+                return None  # remove confirmed malicious
 
             return result
 
