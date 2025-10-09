@@ -5,7 +5,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from configstream.config import Settings
-from configstream.core.config_processor import ConfigProcessor, ConfigResult
+from configstream.core.config_processor import ConfigProcessor
+from configstream.core.types import ConfigResult
 from configstream.db import Database
 
 

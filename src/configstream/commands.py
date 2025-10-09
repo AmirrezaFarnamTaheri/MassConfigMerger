@@ -59,10 +59,14 @@ def handle_full(args: argparse.Namespace, cfg: Settings) -> None:
 
 def handle_daemon(args: argparse.Namespace, cfg: Settings):
     """Handle the 'daemon' command."""
-    from .daemon import ConfigStreamDaemon
-    daemon = ConfigStreamDaemon(settings=cfg)
+    from .main_daemon import ConfigStreamDaemon
+    from pathlib import Path
+
+    data_dir = Path("./data")
+    data_dir.mkdir(exist_ok=True)
+
+    daemon = ConfigStreamDaemon(settings=cfg, data_dir=data_dir)
     daemon.start(
         interval_hours=args.interval_hours,
         web_port=args.web_port,
-        web_host=args.web_host,
     )

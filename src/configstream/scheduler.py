@@ -6,8 +6,9 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from .config import Settings
@@ -15,35 +16,26 @@ from .vpn_merger import run_merger
 
 logger = logging.getLogger(__name__)
 
-class AppScheduler:
+class TestScheduler:
     """Manages periodic testing of VPN configurations."""
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, output_dir: Path):
         self.settings = settings
-        self.scheduler = BackgroundScheduler()
-        self.current_results_file = self.settings.output.current_results_file
-        self.history_file = self.settings.output.history_file
+        self.output_dir = output_dir
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.scheduler = AsyncIOScheduler()
+        self.current_results_file = self.output_dir / "current_results.json"
+        self.history_file = self.output_dir / "history.jsonl"
 
-        # Ensure the data directory exists
-        self.history_file.parent.mkdir(parents=True, exist_ok=True)
-
-    def run_test_cycle(self):
-        """Synchronous wrapper to run the async test cycle."""
-        logger.info("Scheduler triggered. Running test cycle in asyncio event loop.")
-        try:
-            asyncio.run(self._async_run_test_cycle())
-        except Exception as e:
-            logger.error(f"An error occurred in the scheduler's test cycle runner: {e}", exc_info=True)
-
-    async def _async_run_test_cycle(self):
+    async def run_test_cycle(self):
         """Execute a full test cycle and save results."""
         logger.info("Starting scheduled test cycle")
         start_time = datetime.now()
 
         try:
-            # Run the merger pipeline using keyword arguments for clarity and robustness
-            sources_path = Path(self.settings.sources.sources_file)
-            results = await run_merger(cfg=self.settings, sources_file=sources_path, resume_file=None)
+            # Run the merger pipeline
+            sources_file = Path(self.settings.sources.sources_file)
+            results = await run_merger(self.settings, sources_file=sources_file, resume_file=None)
 
             # Prepare data for storage
             test_data = {
@@ -55,9 +47,9 @@ class AppScheduler:
                     {
                         "config": r.config,
                         "protocol": r.protocol,
-                        "ping_ms": int(r.ping_time * 1000) if r.ping_time and r.ping_time > 0 else -1,
+                        "ping_ms": int(r.ping_time * 1000) if r.ping_time is not None else -1,
                         "country": r.country or "Unknown",
-                        "city": "Unknown",  # TODO: Add city data when available in ConfigResult
+                        "city": "Unknown",
                         "organization": r.isp or "Unknown",
                         "ip": r.host,
                         "port": r.port,
@@ -69,29 +61,20 @@ class AppScheduler:
             }
 
             # Save current results (overwrite)
-            current_results_json = json.dumps(test_data, indent=2)
-            self.current_results_file.write_text(current_results_json, encoding="utf-8")
-
-            # Append to history using a robust read-then-write pattern
-            logger.info(
-                "Attempting to write to history file at absolute path: %s",
-                self.history_file.resolve()
+            self.current_results_file.write_text(
+                json.dumps(test_data, indent=2),
+                encoding="utf-8"
             )
-            history_content = ""
-            if self.history_file.exists():
-                history_content = self.history_file.read_text(encoding="utf-8")
 
-            history_content += json.dumps(test_data) + "\n"
-            self.history_file.write_text(history_content, encoding="utf-8")
+            # Append to history (for historical tracking)
+            with open(self.history_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(test_data) + "\n")
 
-            logger.info(
-                "Test cycle completed: %s successful, %s failed",
-                test_data['successful'],
-                test_data['failed']
-            )
+            logger.info(f"Test cycle completed: {test_data['successful']} successful, "
+                       f"{test_data['failed']} failed")
 
         except Exception as e:
-            logger.error("Error during test cycle: %s", e, exc_info=True)
+            logger.error(f"Error during test cycle: {e}", exc_info=True)
 
     def start(self, interval_hours: int = 2):
         """Start the scheduler with specified interval."""
@@ -110,7 +93,7 @@ class AppScheduler:
         )
 
         self.scheduler.start()
-        logger.info("Scheduler started with %sh interval", interval_hours)
+        logger.info(f"Scheduler started with {interval_hours}h interval")
 
     def stop(self):
         """Stop the scheduler."""

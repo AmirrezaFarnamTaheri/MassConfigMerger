@@ -21,7 +21,7 @@ from .constants import (
     CSV_REPORT_FILE_NAME,
     RAW_SUBSCRIPTION_FILE_NAME,
 )
-from .core.config_processor import ConfigResult
+from .core.types import ConfigResult
 
 
 def write_raw_configs(configs: List[str], output_dir: Path, prefix: str = "") -> Path:

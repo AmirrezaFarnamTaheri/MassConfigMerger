@@ -50,7 +50,8 @@ dev = [
 web = [
     "Flask",
     "prometheus_client",
-    "asgiref"
+    "asgiref",
+    "hypercorn"
 ]
 
 [tool.setuptools.packages.find]

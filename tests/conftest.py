@@ -80,11 +80,11 @@ def settings(fs) -> Settings:
 @pytest.fixture
 def app(fs, settings):
     """Create and configure a new app instance for each test."""
-    from configstream.web import create_app
+    from configstream.web_dashboard import create_app
 
     fs.add_real_directory(str(Path(SRC_PATH, "configstream", "templates")))
 
-    app_instance = create_app(settings_override=settings)
+    app_instance = create_app(settings=settings)
     app_instance.config.update({"TESTING": True})
 
     def _get_werkzeug_version() -> str:

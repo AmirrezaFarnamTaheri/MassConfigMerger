@@ -58,36 +58,7 @@ def categorize_protocol(config: str) -> str:
     return "Other"
 
 
-@dataclass
-class ConfigResult:
-    """
-    Data class for holding the result of processing a single VPN configuration.
-
-    Attributes:
-        config: The original configuration string.
-        protocol: The detected protocol (e.g., "VMess", "Shadowsocks").
-        host: The server hostname or IP address.
-        port: The server port.
-        ping_time: The latency in seconds, or None if unreachable.
-        is_reachable: A boolean indicating if the server is connectable.
-        source_url: The URL from which the configuration was fetched.
-        country: The ISO 3166-1 alpha-2 country code of the server.
-        reliability: A score indicating the historical reliability of the proxy.
-    """
-
-    config: str
-    protocol: str
-    host: Optional[str] = None
-    port: Optional[int] = None
-    ping_time: Optional[float] = None
-    is_reachable: bool = False
-    source_url: str = ""
-    country: Optional[str] = None
-    isp: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    reliability: Optional[float] = None
-    is_blocked: bool = False
+from .types import ConfigResult
 
 
 class ConfigProcessor:
