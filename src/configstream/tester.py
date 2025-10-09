@@ -69,7 +69,7 @@ class NodeTester:
 
     def _get_resolver(self) -> Optional[AsyncResolver]:
         """Lazily initialize and return the asynchronous DNS resolver."""
-        if self._resolver is None and "aiodns" in sys.modules and AsyncResolver:
+        if self._resolver is None and sys.modules.get("aiodns") and AsyncResolver:
             try:
                 self._resolver = AsyncResolver()
             except Exception as exc:

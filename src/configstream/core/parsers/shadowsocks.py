@@ -81,17 +81,25 @@ class ShadowsocksParser(BaseParser):
         }
 
         # Parse query parameters for plugin, tfo, udp
-        query_params = {k: v[0] for k, v in parse_qs(p.query).items()}
-        if query_params.get("plugin"):
-            plugin_val = query_params["plugin"]
+        query_params = {k: (v[0] if v else "") for k, v in parse_qs(p.query).items()}
+
+        plugin_val = (query_params.get("plugin") or "").strip()
+        if plugin_val:
             if ";" in plugin_val:
-                proxy["plugin"], proxy["plugin-opts"] = plugin_val.split(";", 1)
+                plugin_name, plugin_opts = plugin_val.split(";", 1)
+                if plugin_name.strip():
+                    proxy["plugin"] = plugin_name.strip()
+                if plugin_opts.strip():
+                    proxy["plugin-opts"] = plugin_opts.strip()
             else:
                 proxy["plugin"] = plugin_val
 
-        if query_params.get("tfo", "false").lower() == "true":
+        tfo_val = str(query_params.get("tfo", "false")).lower()
+        if tfo_val == "true":
             proxy["tfo"] = True
-        if query_params.get("udp", "false").lower() == "true":
+
+        udp_val = str(query_params.get("udp", "false")).lower()
+        if udp_val == "true":
             proxy["udp"] = True
 
         return proxy

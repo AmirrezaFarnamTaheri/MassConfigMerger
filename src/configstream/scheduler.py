@@ -60,11 +60,10 @@ class TestScheduler:
                 ]
             }
 
-            # Save current results (overwrite)
-            self.current_results_file.write_text(
-                json.dumps(test_data, indent=2),
-                encoding="utf-8"
-            )
+            # Save current results atomically
+            tmp_file = self.current_results_file.with_suffix(".json.tmp")
+            tmp_file.write_text(json.dumps(test_data, indent=2), encoding="utf-8")
+            tmp_file.replace(self.current_results_file)
 
             # Append to history (for historical tracking)
             with open(self.history_file, "a", encoding="utf-8") as f:
