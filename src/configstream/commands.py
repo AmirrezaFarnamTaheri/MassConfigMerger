@@ -55,3 +55,14 @@ def handle_full(args: argparse.Namespace, cfg: Settings) -> None:
             prune=not args.no_prune,
         )
     )
+
+
+def handle_daemon(args: argparse.Namespace, cfg: Settings):
+    """Handle the 'daemon' command."""
+    from .daemon import ConfigStreamDaemon
+    daemon = ConfigStreamDaemon(settings=cfg)
+    daemon.start(
+        interval_hours=args.interval_hours,
+        web_port=args.web_port,
+        web_host=args.web_host,
+    )

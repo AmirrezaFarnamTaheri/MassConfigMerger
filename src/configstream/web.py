@@ -10,9 +10,11 @@ import secrets
 import shutil
 import time
 import zipfile
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+import csv
+from io import StringIO, BytesIO
 
 import nest_asyncio
 import yaml
@@ -39,14 +41,106 @@ from .core.file_utils import find_project_root
 from .db import Database
 from .pipeline import run_aggregation_pipeline
 from .vpn_merger import run_merger as run_merger_pipeline
+from .web_utils import (
+    _classify_reliability,
+    _coerce_float,
+    _coerce_int,
+    _format_timestamp,
+    _serialize_history,
+)
+
+
+class DashboardData:
+    """Manages dashboard data and filtering."""
+
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        self.current_file = settings.output.current_results_file
+        self.history_file = settings.output.history_file
+
+    def get_current_results(self) -> dict[str, Any]:
+        """Load current test results."""
+        if not self.current_file.exists():
+            return {"timestamp": None, "nodes": []}
+        return json.loads(self.current_file.read_text())
+
+    def get_history(self, hours: int = 24) -> list[dict]:
+        """Load historical results for specified time period."""
+        if not self.history_file.exists():
+            return []
+
+        cutoff_time = datetime.now() - timedelta(hours=hours)
+        history = []
+
+        with open(self.history_file, "r") as f:
+            for line in f:
+                data = json.loads(line)
+                timestamp = datetime.fromisoformat(data["timestamp"])
+                if timestamp >= cutoff_time:
+                    history.append(data)
+
+        return history
+
+    def filter_nodes(self, nodes: list[dict], filters: dict) -> list[dict]:
+        """Apply filters to node list."""
+        filtered = nodes
+
+        if protocol := filters.get("protocol"):
+            filtered = [n for n in filtered if n["protocol"].lower() == protocol.lower()]
+
+        if country := filters.get("country"):
+            filtered = [n for n in filtered if n["country"].lower() == country.lower()]
+
+        if min_ping := filters.get("min_ping"):
+            try:
+                filtered = [n for n in filtered if n["ping_ms"] >= int(min_ping)]
+            except (ValueError, TypeError):
+                pass
+
+        if max_ping := filters.get("max_ping"):
+            try:
+                filtered = [n for n in filtered if 0 < n["ping_ms"] <= int(max_ping)]
+            except (ValueError, TypeError):
+                pass
+
+        if filters.get("exclude_blocked"):
+            filtered = [n for n in filtered if not n.get("is_blocked")]
+
+        if search := filters.get("search"):
+            search = search.lower()
+            filtered = [
+                n for n in filtered
+                if search in n.get("city", "").lower()
+                or search in n.get("organization", "").lower()
+                or search in n.get("ip", "")
+            ]
+
+        return filtered
+
+    def export_csv(self, nodes: list[dict]) -> str:
+        """Export nodes to CSV format."""
+        output = StringIO()
+        if not nodes:
+            return ""
+
+        headers = list(nodes[0].keys())
+        writer = csv.DictWriter(output, fieldnames=headers)
+        writer.writeheader()
+        writer.writerows(nodes)
+        return output.getvalue()
+
+    def export_json(self, nodes: list[dict]) -> str:
+        """Export nodes to JSON format."""
+        return json.dumps(nodes, indent=2)
 
 
 def create_app(settings_override: Optional[Settings] = None) -> Flask:
     """Create and configure an instance of the Flask application."""
     app = Flask(__name__, template_folder="templates")
 
-    # Use provided settings or load default
     app.config["SETTINGS"] = settings_override or load_config()
+
+    dashboard_data = DashboardData(app.config["SETTINGS"])
 
     @app.context_processor
     def inject_utility_functions():
@@ -101,74 +195,6 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
                 abort(401, description="Missing or invalid API token")
         return cfg
 
-    def _coerce_int(value: Any) -> int:
-        try:
-            return int(value or 0)
-        except (TypeError, ValueError):
-            return 0
-
-    def _coerce_float(value: Any) -> Optional[float]:
-        try:
-            if value is None:
-                return None
-            return float(value)
-        except (TypeError, ValueError):
-            return None
-
-    def _format_timestamp(value: Any) -> str:
-        try:
-            ts = int(value)
-        except (TypeError, ValueError):
-            return "N/A"
-        try:
-            return datetime.fromtimestamp(ts, tz=timezone.utc).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-        except (OSError, OverflowError, ValueError):
-            return "N/A"
-
-    def _classify_reliability(successes: int, failures: int) -> tuple[str, str]:
-        total = successes + failures
-        if total == 0:
-            return "Untested", "status-untested"
-        reliability = successes / total
-        if reliability >= 0.75:
-            return "Healthy", "status-healthy"
-        if reliability >= 0.5:
-            return "Warning", "status-warning"
-        return "Critical", "status-critical"
-
-    def _serialize_history(
-        history_data: Dict[str, Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
-        entries: List[Dict[str, Any]] = []
-        for key, stats in history_data.items():
-            successes = _coerce_int(stats.get("successes"))
-            failures = _coerce_int(stats.get("failures"))
-            total = successes + failures
-            reliability = (successes / total) if total else 0.0
-            status, status_class = _classify_reliability(successes, failures)
-            latency = _coerce_float(stats.get("latency_ms")) or _coerce_float(
-                stats.get("latency")
-            )
-            entry = {
-                "key": key,
-                "successes": successes,
-                "failures": failures,
-                "tests": total,
-                "reliability": reliability,
-                "reliability_percent": round(reliability * 100, 2),
-                "status": status,
-                "status_class": status_class,
-                "last_tested": _format_timestamp(stats.get("last_tested")),
-                "country": stats.get("country") or stats.get("geo", {}).get("country"),
-                "isp": stats.get("isp") or stats.get("geo", {}).get("isp"),
-                "latency": round(latency, 2) if latency is not None else None,
-            }
-            entries.append(entry)
-        entries.sort(key=lambda x: x["reliability"], reverse=True)
-        return entries
-
     async def _read_history(db_path: Path) -> Dict[str, Dict[str, Any]]:
         """Read proxy history from the database."""
         db = Database(db_path)
@@ -185,29 +211,86 @@ def create_app(settings_override: Optional[Settings] = None) -> Flask:
 
     @app.route("/")
     def index():
-        """Modern dashboard with enhanced UI."""
-        cfg = load_cfg()
-        project_root = _get_root()
-        db_path = project_root / cfg.output.output_dir / cfg.output.history_db_file
-        history_preview = []
-        preview_limit = 5
-        try:
-            if db_path.exists():
-                history_data = _run_async_task(_read_history(db_path))
-                all_entries = _serialize_history(history_data)
-                history_preview = all_entries[:preview_limit]
-        except Exception as e:
-            app.logger.warning("Could not fetch history for dashboard: %s", e)
-        return render_template(
-            "index.html",
-            history_preview=history_preview,
-            preview_limit=preview_limit,
-        )
+        """Serve the main dashboard page."""
+        return render_template("dashboard.html")
 
     @app.route("/health")
     def health_check():
         """Return a simple health check response."""
         return jsonify({"status": "ok"})
+
+    @app.route("/api/current")
+    def api_current():
+        """API endpoint for current results."""
+        data = dashboard_data.get_current_results()
+        filters = request.args.to_dict()
+
+        if filters:
+            data["nodes"] = dashboard_data.filter_nodes(data["nodes"], filters)
+
+        return jsonify(data)
+
+    @app.route("/api/statistics")
+    def api_statistics():
+        """API endpoint for aggregated statistics."""
+        data = dashboard_data.get_current_results()
+        nodes = data.get("nodes", [])
+
+        protocols = {}
+        countries = {}
+        avg_ping_by_country = {}
+
+        for node in nodes:
+            if node["ping_ms"] > 0:
+                proto = node["protocol"]
+                protocols[proto] = protocols.get(proto, 0) + 1
+
+                country = node["country"]
+                countries[country] = countries.get(country, 0) + 1
+
+                if country not in avg_ping_by_country:
+                    avg_ping_by_country[country] = []
+                avg_ping_by_country[country].append(node["ping_ms"])
+
+        for country, pings in avg_ping_by_country.items():
+            if pings:
+                avg_ping_by_country[country] = sum(pings) / len(pings)
+
+        return jsonify({
+            "total_nodes": len(nodes),
+            "successful_nodes": len([n for n in nodes if n["ping_ms"] > 0]),
+            "protocols": protocols,
+            "countries": countries,
+            "avg_ping_by_country": avg_ping_by_country,
+            "last_update": data.get("timestamp")
+        })
+
+    @app.route("/api/export/<format>")
+    def api_export(format: str):
+        """Export data in various formats."""
+        data = dashboard_data.get_current_results()
+        filters = request.args.to_dict()
+        nodes = dashboard_data.filter_nodes(data["nodes"], filters)
+
+        if format == "csv":
+            csv_data = dashboard_data.export_csv(nodes)
+            return send_file(
+                BytesIO(csv_data.encode()),
+                mimetype="text/csv",
+                as_attachment=True,
+                download_name=f"vpn_nodes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            )
+
+        elif format == "json":
+            json_data = dashboard_data.export_json(nodes)
+            return send_file(
+                BytesIO(json_data.encode()),
+                mimetype="application/json",
+                as_attachment=True,
+                download_name=f"vpn_nodes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            )
+
+        return jsonify({"error": "Unsupported format"}), 400
 
     @app.post("/api/aggregate")
     def aggregate_api() -> Any:

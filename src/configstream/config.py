@@ -216,6 +216,14 @@ class OutputSettings(BaseModel):
     qx_file: Optional[Path] = Field(
         None, description="Filename for Quantumult X output configuration."
     )
+    current_results_file: Path = Field(
+        Path("data/current_results.json"),
+        description="File to store the latest test results for the dashboard."
+    )
+    history_file: Path = Field(
+        Path("data/history.jsonl"),
+        description="File to store the historical test results for the dashboard."
+    )
 
 
 class SecuritySettings(BaseModel):

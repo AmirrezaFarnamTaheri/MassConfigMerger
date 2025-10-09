@@ -35,11 +35,14 @@ async def _load_configs(
     return await source_manager.fetch_sources(sources)
 
 
+from .core.config_processor import ConfigResult
+
+
 async def run_merger(
     cfg: Settings,
     sources_file: Path,
     resume_file: Optional[Path] = None,
-) -> None:
+) -> list[ConfigResult]:
     """
     Run the VPN merger pipeline to test, sort, and merge configurations.
 
@@ -47,6 +50,9 @@ async def run_merger(
         cfg: The application settings object.
         sources_file: The path to the file containing web source URLs.
         resume_file: An optional path to a subscription file to re-test.
+
+    Returns:
+        A list of `ConfigResult` objects representing the tested and sorted nodes.
     """
     source_manager = SourceManager(cfg)
     config_processor = ConfigProcessor(cfg)
@@ -66,8 +72,7 @@ async def run_merger(
         output_dir = Path(cfg.output.output_dir)
         output_generator.write_outputs(final_configs, output_dir)
 
-        logging.info("Merge complete. Found %d final configs.",
-                     len(final_configs))
+        return sorted_results
 
     finally:
         await source_manager.close_session()
