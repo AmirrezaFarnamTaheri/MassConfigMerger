@@ -145,7 +145,6 @@ def test_api_export_json(fs, settings):
         nodes = [{"protocol": "vless", "ping_ms": 100}]
         mock_dashboard_data_instance.get_current_results.return_value = {"nodes": nodes}
         mock_dashboard_data_instance.filter_nodes.return_value = nodes
-        mock_dashboard_data_instance.export_json.return_value = json.dumps(nodes)
 
         app, cleanup = _setup_app(fs, settings)
         client = app.test_client()
@@ -154,7 +153,20 @@ def test_api_export_json(fs, settings):
         assert response.status_code == 200
         assert response.mimetype == "application/json"
         assert "attachment" in response.headers["Content-Disposition"]
-        assert response.get_json() == nodes
+        expected_data = [
+            {
+                "protocol": "vless",
+                "country": None,
+                "city": None,
+                "ip": None,
+                "port": None,
+                "ping_ms": 100,
+                "organization": None,
+                "is_blocked": None,
+                "timestamp": None,
+            }
+        ]
+        assert response.get_json() == expected_data
         cleanup()
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 import binascii
 from typing import Any, Dict, Optional
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 from .common import BaseParser
 from ...exceptions import ParserError
@@ -71,7 +71,7 @@ class ShadowsocksParser(BaseParser):
             raise ParserError(
                 f"Missing components in ss link: {self.config_uri}")
 
-        return {
+        proxy = {
             "name": name,
             "type": "ss",
             "server": server,
@@ -79,6 +79,22 @@ class ShadowsocksParser(BaseParser):
             "cipher": method,
             "password": password,
         }
+
+        # Parse query parameters for plugin, tfo, udp
+        query_params = {k: v[0] for k, v in parse_qs(p.query).items()}
+        if query_params.get("plugin"):
+            plugin_val = query_params["plugin"]
+            if ";" in plugin_val:
+                proxy["plugin"], proxy["plugin-opts"] = plugin_val.split(";", 1)
+            else:
+                proxy["plugin"] = plugin_val
+
+        if query_params.get("tfo", "false").lower() == "true":
+            proxy["tfo"] = True
+        if query_params.get("udp", "false").lower() == "true":
+            proxy["udp"] = True
+
+        return proxy
 
     def get_identifier(self) -> Optional[str]:
         """

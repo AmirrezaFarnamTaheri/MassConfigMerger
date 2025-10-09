@@ -1,6 +1,7 @@
 import pytest
 from pathlib import Path
 from unittest.mock import patch
+from typing import List
 
 from configstream.config import Settings
 from configstream.output_writer import write_clash_proxies
@@ -8,7 +9,7 @@ from configstream.core.config_processor import ConfigResult
 
 
 @pytest.fixture
-def mock_results() -> list[ConfigResult]:
+def mock_results() -> List[ConfigResult]:
     """Fixture for mock ConfigResult objects."""
     return [
         ConfigResult(
@@ -34,7 +35,7 @@ def mock_settings_fs() -> Settings:
 
 @patch("configstream.output_writer.ProxyParser")
 def test_write_clash_proxies_no_valid_proxies(
-    MockProxyParser, tmp_path: Path, mock_results: list[ConfigResult]
+    MockProxyParser, tmp_path: Path, mock_results: List[ConfigResult]
 ):
     """Test write_clash_proxies when no configs can be converted."""
     mock_parser_instance = MockProxyParser.return_value
