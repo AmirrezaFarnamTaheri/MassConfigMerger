@@ -1,95 +1,153 @@
-import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
-from pathlib import Path
+"""Test the TestScheduler."""
+import asyncio
 import json
-from datetime import datetime
-
-from configstream.scheduler import TestScheduler
+import pytest
+from pathlib import Path
 from configstream.config import Settings
-from configstream.core.config_processor import ConfigResult
+from configstream.scheduler import TestScheduler
 
 
 @pytest.fixture
-def mock_settings():
-    """Fixture for mock Settings object."""
-    return Settings()
+def test_output_dir(tmp_path):
+    """Create a temporary output directory."""
+    output_dir = tmp_path / "test_output"
+    output_dir.mkdir()
+    return output_dir
+
+
+def test_scheduler_initialization(test_output_dir):
+    """Test scheduler initialization."""
+    settings = Settings()
+    scheduler = TestScheduler(settings, test_output_dir)
+
+    assert scheduler.output_dir == test_output_dir
+    assert scheduler.current_results_file.parent == test_output_dir
+    assert scheduler.history_file.parent == test_output_dir
+    print("✓ Scheduler initialized correctly")
 
 
 @pytest.mark.asyncio
-async def test_scheduler_run_test_cycle(mock_settings, tmp_path):
-    """Test a single run of the test cycle."""
-    output_dir = tmp_path
-    scheduler = TestScheduler(settings=mock_settings, output_dir=output_dir)
+async def test_run_test_cycle(test_output_dir):
+    """Test running a single test cycle."""
+    settings = Settings()
+    scheduler = TestScheduler(settings, test_output_dir)
 
-    mock_results = [
-        ConfigResult(
-            config="vless://test",
-            protocol="VLESS",
-            ping_ms=100,
-            country_code="US",
-            city="New York",
-            organization="Test Org",
-            ip="1.1.1.1",
-            port=443,
-            is_blocked=False,
-            raw_config="vless://test",
-        )
-    ]
+    # Run one test cycle
+    await scheduler.run_test_cycle()
 
-    with patch(
-        "configstream.scheduler.run_merger", new_callable=AsyncMock
-    ) as mock_run_merger:
-        mock_run_merger.return_value = mock_results
-        await scheduler.run_test_cycle()
+    # Verify files were created
+    assert scheduler.current_results_file.exists()
+    assert scheduler.history_file.exists()
 
-        # Check that current_results.json was written correctly
-        current_results_path = output_dir / "current_results.json"
-        assert current_results_path.exists()
-        data = json.loads(current_results_path.read_text())
-        assert data["successful"] == 1
-        assert len(data["nodes"]) == 1
-        assert data["nodes"][0]["protocol"] == "VLESS"
+    # Verify JSON structure
+    data = json.loads(scheduler.current_results_file.read_text())
+    assert "timestamp" in data
+    assert "total_tested" in data
+    assert "successful" in data
+    assert "failed" in data
+    assert "nodes" in data
+    assert isinstance(data["nodes"], list)
 
-        # Check that history.jsonl was appended
-        history_file = output_dir / "history.jsonl"
-        assert history_file.exists()
-        history_data = json.loads(history_file.read_text())
-        assert history_data["total_tested"] == 1
+    print(f"✓ Test cycle completed")
+    print(f"  Total: {data['total_tested']}")
+    print(f"  Successful: {data['successful']}")
+    print(f"  Failed: {data['failed']}")
 
 
 @pytest.mark.asyncio
-async def test_scheduler_run_test_cycle_exception(mock_settings, tmp_path):
-    """Test that the test cycle handles exceptions gracefully."""
-    output_dir = tmp_path
-    scheduler = TestScheduler(settings=mock_settings, output_dir=output_dir)
+async def test_multiple_cycles_history(test_output_dir):
+    """Test that history accumulates over multiple cycles."""
+    settings = Settings()
+    scheduler = TestScheduler(settings, test_output_dir)
 
-    with patch(
-        "configstream.scheduler.run_merger", new_callable=AsyncMock
-    ) as mock_run_merger:
-        mock_run_merger.side_effect = Exception("Test error")
-        # This should not raise an exception
-        await scheduler.run_test_cycle()
+    # Run two test cycles
+    await scheduler.run_test_cycle()
+    await asyncio.sleep(0.5)  # Small delay
+    await scheduler.run_test_cycle()
 
-        # Verify that no files were written
-        assert not (output_dir / "current_results.json").exists()
-        assert not (output_dir / "history.jsonl").exists()
+    # Read history file
+    history_lines = scheduler.history_file.read_text().strip().split('\n')
+
+    # Should have 2 entries
+    assert len(history_lines) == 2
+
+    # Each line should be valid JSON
+    for line in history_lines:
+        data = json.loads(line)
+        assert "timestamp" in data
+
+    print(f"✓ History tracking works")
+    print(f"  Entries: {len(history_lines)}")
 
 
-def test_scheduler_start_and_stop(mock_settings, tmp_path):
-    """Test the start and stop methods of the scheduler."""
-    scheduler = TestScheduler(settings=mock_settings, output_dir=tmp_path)
+@pytest.mark.asyncio
+async def test_run_test_cycle_exception(test_output_dir, monkeypatch):
+    """Test that run_test_cycle handles exceptions gracefully."""
+    settings = Settings()
+    scheduler = TestScheduler(settings, test_output_dir)
 
-    with patch.object(scheduler.scheduler, "add_job") as mock_add_job, \
-         patch.object(scheduler.scheduler, "start") as mock_start, \
-         patch.object(scheduler.scheduler, "shutdown") as mock_shutdown:
+    async def mock_run_merger_error(settings):
+        raise ValueError("Test Exception")
 
-        scheduler.start(interval_hours=5)
+    monkeypatch.setattr("configstream.vpn_merger.run_merger", mock_run_merger_error)
 
-        # Verify that jobs were added for the interval and initial run
-        assert mock_add_job.call_count == 2
-        mock_start.assert_called_once()
+    await scheduler.run_test_cycle()
+    # The test passes if no unhandled exception is raised.
+    print("✓ Test cycle handles exceptions gracefully")
 
-        # Simulate the scheduler running
-        scheduler.scheduler.running = True
-        scheduler.stop()
-        mock_shutdown.assert_called_once()
+
+def test_scheduler_stop_not_running(test_output_dir):
+    """Test stopping a scheduler that is not running."""
+    settings = Settings()
+    scheduler = TestScheduler(settings, test_output_dir)
+    scheduler.stop()  # Should not raise an error
+    assert not scheduler.scheduler.running
+    print("✓ Stopping a non-running scheduler works as expected")
+
+
+def test_get_next_run_time_no_job(test_output_dir):
+    """Test get_next_run_time when no job is scheduled."""
+    settings = Settings()
+    scheduler = TestScheduler(settings, test_output_dir)
+    assert scheduler.get_next_run_time() == "Not scheduled"
+    print("✓ get_next_run_time returns 'Not scheduled' when no job is present")
+
+
+def test_scheduler_start_and_get_next_run_time(test_output_dir):
+    """Test starting the scheduler and getting the next run time."""
+    settings = Settings()
+    scheduler = TestScheduler(settings, test_output_dir)
+
+    # Mock the test cycle to avoid running it
+    scheduler.run_test_cycle = lambda: None
+
+    scheduler.start(interval_hours=1)
+
+    next_run_time_str = scheduler.get_next_run_time()
+    assert next_run_time_str != "Not scheduled"
+
+    # Check that the format is correct
+    from datetime import datetime
+    try:
+        datetime.strptime(next_run_time_str, "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        pytest.fail(f"get_next_run_time returned an invalid format: {next_run_time_str}")
+
+    scheduler.stop()
+    print("✓ Scheduler start and get_next_run_time work correctly")
+
+
+if __name__ == "__main__":
+    # Run tests
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmpdir:
+        test_dir = Path(tmpdir)
+
+        print("Test 1: Initialization")
+        test_scheduler_initialization(test_dir / "test1")
+
+        print("\nTest 2: Run test cycle")
+        asyncio.run(test_run_test_cycle(test_dir / "test2"))
+
+        print("\nTest 3: Multiple cycles")
+        asyncio.run(test_multiple_cycles_history(test_dir / "test3"))

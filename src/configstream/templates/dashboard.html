@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ConfigStream Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,10 +15,11 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background: #0f1419;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
             color: #e1e8ed;
             line-height: 1.6;
+            min-height: 100vh;
         }
 
         .container {
@@ -29,7 +33,7 @@
             padding: 30px;
             border-radius: 12px;
             margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
         }
 
         h1 {
@@ -38,6 +42,12 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #8899a6;
+            font-size: 1.1em;
         }
 
         .stats-grid {
@@ -48,28 +58,34 @@
         }
 
         .stat-card {
-            background: #1a1f2e;
+            background: linear-gradient(135deg, #1a1f2e 0%, #252d3d 100%);
             padding: 25px;
             border-radius: 12px;
             border: 1px solid #2d3748;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.3s ease;
         }
 
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.2);
+            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
         }
 
         .stat-label {
             color: #8899a6;
             font-size: 0.9em;
             margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .stat-value {
             font-size: 2.2em;
             font-weight: bold;
-            color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .filters {
@@ -78,6 +94,11 @@
             border-radius: 12px;
             margin-bottom: 30px;
             border: 1px solid #2d3748;
+        }
+
+        .filters h2 {
+            margin-bottom: 20px;
+            color: #667eea;
         }
 
         .filter-group {
@@ -107,6 +128,15 @@
             background: #0f1419;
             color: #e1e8ed;
             font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
         }
 
         input[type="checkbox"] {
@@ -119,6 +149,8 @@
             display: flex;
             align-items: center;
             margin-top: 10px;
+            color: #e1e8ed;
+            cursor: pointer;
         }
 
         .button-group {
@@ -133,7 +165,8 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 1em;
-            transition: all 0.2s;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
 
         .btn-primary {
@@ -143,7 +176,7 @@
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
         }
 
         .btn-secondary {
@@ -180,22 +213,38 @@
         th {
             font-weight: 600;
             color: #667eea;
+            position: sticky;
+            top: 0;
+            background: #2d3748;
+        }
+
+        tbody tr {
+            transition: all 0.2s ease-in-out;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #161b22;
         }
 
         tbody tr:hover {
-            background: #252d3d;
+            background-color: #252d3d;
+            transform: scale(1.01);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
         .ping-good {
             color: #4ade80;
+            font-weight: 600;
         }
 
         .ping-medium {
             color: #fbbf24;
+            font-weight: 600;
         }
 
         .ping-bad {
             color: #f87171;
+            font-weight: 600;
         }
 
         .badge {
@@ -207,7 +256,7 @@
         }
 
         .badge-protocol {
-            background: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
 
@@ -227,14 +276,66 @@
             font-size: 0.9em;
             margin-top: 10px;
         }
+
+        .auto-refresh-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+            margin-left: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #667eea;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            color: #8899a6;
+            font-size: 0.9em;
+            border-top: 1px solid #2d3748;
+        }
+
+        footer a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        footer a:hover {
+            color: #a3bffa;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🌐 ConfigStream Dashboard</h1>
-            <p>Real-time VPN Node Monitoring & Testing</p>
-            <p class="last-update" id="lastUpdate">Loading...</p>
+            <p class="subtitle">Real-time VPN Node Monitoring & Testing</p>
+            <p class="last-update" id="lastUpdate">
+                Loading...
+                <span class="auto-refresh-indicator"></span>
+            </p>
         </header>
 
         <div class="stats-grid" id="statsGrid">
@@ -257,31 +358,31 @@
         </div>
 
         <div class="filters">
-            <h2 style="margin-bottom: 20px;">🔍 Filters</h2>
+            <h2>🔍 Filters</h2>
             <div class="filter-group">
                 <div class="filter-control">
-                    <label>Protocol</label>
+                    <label for="protocolFilter">Protocol</label>
                     <select id="protocolFilter">
                         <option value="">All Protocols</option>
                     </select>
                 </div>
                 <div class="filter-control">
-                    <label>Country</label>
+                    <label for="countryFilter">Country</label>
                     <select id="countryFilter">
                         <option value="">All Countries</option>
                     </select>
                 </div>
                 <div class="filter-control">
-                    <label>Min Ping (ms)</label>
+                    <label for="minPingFilter">Min Ping (ms)</label>
                     <input type="number" id="minPingFilter" placeholder="0">
                 </div>
                 <div class="filter-control">
-                    <label>Max Ping (ms)</label>
+                    <label for="maxPingFilter">Max Ping (ms)</label>
                     <input type="number" id="maxPingFilter" placeholder="1000">
                 </div>
                 <div class="filter-control">
-                    <label>Search</label>
-                    <input type="text" id="searchFilter" placeholder="City, IP, or org...">
+                    <label for="searchFilter">Search</label>
+                    <input type="text" id="searchFilter" placeholder="City, IP, or organization...">
                 </div>
             </div>
             <div class="checkbox-label">
@@ -291,8 +392,8 @@
             <div class="button-group" style="margin-top: 15px;">
                 <button class="btn-primary" onclick="applyFilters()">Apply Filters</button>
                 <button class="btn-secondary" onclick="clearFilters()">Clear</button>
-                <button class="btn-secondary" onclick="exportData('csv')">Export CSV</button>
-                <button class="btn-secondary" onclick="exportData('json')">Export JSON</button>
+                <button class="btn-secondary" onclick="exportData('csv')">📥 Export CSV</button>
+                <button class="btn-secondary" onclick="exportData('json')">📥 Export JSON</button>
             </div>
         </div>
 
@@ -311,23 +412,45 @@
                 </thead>
                 <tbody id="nodesTableBody">
                     <tr>
-                        <td colspan="7" class="loading">Loading data...</td>
+                        <td colspan="7" class="loading">
+                            <div class="spinner"></div>
+                            <p>Loading initial data...</p>
+                        </td>
                     </tr>
                 </tbody>
             </table>
         </div>
+
+        <footer>
+            <p>
+                Developed by
+                <a href="https://amirrezafarnamtaheri.github.io/configStream/" target="_blank">Amirreza 'Farnam' Taheri</a>.
+            </p>
+        </footer>
     </div>
 
     <script>
         let currentData = null;
         let currentFilters = {};
 
-        // Auto-refresh every 2 minutes
-        setInterval(loadData, 120000);
+        // Auto-refresh every 2 minutes (120000 ms)
+        const REFRESH_INTERVAL = 120000;
+        let refreshTimer;
 
-        // Initial load
-        loadData();
-        loadStatistics();
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            loadStatistics();
+            startAutoRefresh();
+        });
+
+        function startAutoRefresh() {
+            refreshTimer = setInterval(() => {
+                console.log('Auto-refreshing data...');
+                loadData();
+                loadStatistics();
+            }, REFRESH_INTERVAL);
+        }
 
         async function loadData() {
             try {
@@ -340,6 +463,8 @@
                 populateFilterOptions(currentData.nodes);
             } catch (error) {
                 console.error('Error loading data:', error);
+                document.getElementById('nodesTableBody').innerHTML =
+                    '<tr><td colspan="7" class="loading">Error loading data. Retrying...</td></tr>';
             }
         }
 
@@ -365,10 +490,12 @@
         }
 
         function updateLastUpdate(timestamp) {
+            const updateElement = document.getElementById('lastUpdate');
             if (timestamp) {
                 const date = new Date(timestamp);
-                document.getElementById('lastUpdate').textContent =
-                    `Last updated: ${date.toLocaleString()}`;
+                updateElement.innerHTML = `Last updated: ${date.toLocaleString()} <span class="auto-refresh-indicator"></span>`;
+            } else {
+                updateElement.innerHTML = `No data available <span class="auto-refresh-indicator"></span>`;
             }
         }
 
@@ -376,13 +503,16 @@
             const tbody = document.getElementById('nodesTableBody');
 
             if (nodes.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="loading">No nodes found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="loading">No nodes found matching filters</td></tr>';
                 return;
             }
 
             tbody.innerHTML = nodes.map(node => {
-                const pingClass = node.ping_ms < 100 ? 'ping-good' :
+                const pingClass = node.ping_ms < 0 ? 'ping-bad' :
+                                 node.ping_ms < 100 ? 'ping-good' :
                                  node.ping_ms < 300 ? 'ping-medium' : 'ping-bad';
+
+                const pingDisplay = node.ping_ms > 0 ? `${node.ping_ms} ms` : 'Failed';
 
                 return `
                     <tr>
@@ -390,7 +520,7 @@
                         <td>${node.country}</td>
                         <td>${node.city}</td>
                         <td>${node.ip}:${node.port}</td>
-                        <td class="${pingClass}">${node.ping_ms > 0 ? node.ping_ms + ' ms' : 'Failed'}</td>
+                        <td class="${pingClass}">${pingDisplay}</td>
                         <td>${node.organization}</td>
                         <td>${node.is_blocked ? '<span class="badge badge-blocked">Blocked</span>' : '✓'}</td>
                     </tr>
