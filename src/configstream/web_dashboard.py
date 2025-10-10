@@ -76,12 +76,14 @@ class DashboardData:
                 for line in f:
                     if not line.strip():
                         continue
+                    try:
+                        data = json.loads(line)
+                        timestamp = datetime.fromisoformat(data["timestamp"])
 
-                    data = json.loads(line)
-                    timestamp = datetime.fromisoformat(data["timestamp"])
-
-                    if timestamp >= cutoff_time:
-                        history.append(data)
+                        if timestamp >= cutoff_time:
+                            history.append(data)
+                    except (json.JSONDecodeError, KeyError) as e:
+                        logger.warning(f"Skipping malformed line in history file: {e}")
         except Exception as e:
             logger.error(f"Error loading history: {e}")
 

@@ -167,5 +167,112 @@ def test_api_export_json(client, setup_test_data):
     print("✓ JSON export works")
 
 
+from datetime import datetime
+
+@pytest.mark.parametrize(
+    "endpoint", ["/api/current", "/api/history", "/api/statistics", "/api/export/csv"]
+)
+def test_api_endpoints_general_exception(client, setup_test_data, monkeypatch, endpoint):
+    """Test that API endpoints handle general exceptions gracefully."""
+    # Mock a function inside the route to raise an exception
+    if endpoint in ["/api/current", "/api/statistics", "/api/export/csv"]:
+        monkeypatch.setattr(
+            "configstream.web_dashboard.dashboard_data.get_current_results",
+            lambda: exec('raise Exception("Test Exception")'),
+        )
+    elif endpoint == "/api/history":
+        monkeypatch.setattr(
+            "configstream.web_dashboard.dashboard_data.get_history",
+            lambda hours: exec('raise Exception("Test Exception")'),
+        )
+
+    response = client.get(endpoint)
+    assert response.status_code == 500
+    data = json.loads(response.data)
+    assert "error" in data
+    assert data["error"] == "Test Exception"
+    print(f"✓ {endpoint} handles exceptions correctly")
+
+
+def test_api_export_unsupported_format(client, setup_test_data):
+    """Test /api/export with an unsupported format."""
+    response = client.get("/api/export/unsupported")
+    assert response.status_code == 400
+    data = json.loads(response.data)
+    assert "error" in data
+    assert "Unsupported format" in data["error"]
+    print("✓ /api/export handles unsupported formats")
+
+
+def test_dashboard_data_current_results_no_file(tmp_path):
+    """Test get_current_results when the file doesn't exist."""
+    data_dir = tmp_path
+    dashboard_data.data_dir = data_dir
+    dashboard_data.current_file = data_dir / "non_existent.json"
+    results = dashboard_data.get_current_results()
+    assert results["nodes"] == []
+    assert results["timestamp"] is None
+    print("✓ get_current_results handles missing file")
+
+
+def test_dashboard_data_current_results_invalid_json(tmp_path):
+    """Test get_current_results with invalid JSON."""
+    data_dir = tmp_path
+    dashboard_data.data_dir = data_dir
+    dashboard_data.current_file = data_dir / "invalid.json"
+    dashboard_data.current_file.write_text("{invalid json}")
+    results = dashboard_data.get_current_results()
+    assert results["nodes"] == []
+    assert results["timestamp"] is None
+    print("✓ get_current_results handles invalid JSON")
+
+
+def test_dashboard_data_history_no_file(tmp_path):
+    """Test get_history when the file doesn't exist."""
+    data_dir = tmp_path
+    dashboard_data.data_dir = data_dir
+    dashboard_data.history_file = data_dir / "non_existent.jsonl"
+    history = dashboard_data.get_history()
+    assert history == []
+    print("✓ get_history handles missing file")
+
+
+def test_dashboard_data_history_invalid_json_line(tmp_path):
+    """Test get_history with a line of invalid JSON."""
+    data_dir = tmp_path
+    dashboard_data.data_dir = data_dir
+    dashboard_data.history_file = data_dir / "history.jsonl"
+    valid_entry = {"timestamp": datetime.now().isoformat(), "total_tested": 1, "nodes": []}
+    with open(dashboard_data.history_file, "w") as f:
+        f.write("{invalid json}\n")
+        f.write(json.dumps(valid_entry) + "\n")
+        f.write("\n") # empty line
+
+    history = dashboard_data.get_history()
+    assert len(history) == 1
+    assert history[0]["total_tested"] == 1
+    print("✓ get_history handles invalid JSON lines")
+
+
+def test_filter_nodes_invalid_ping(setup_test_data):
+    """Test filter_nodes with invalid (non-integer) ping values."""
+    nodes = setup_test_data["nodes"]
+
+    # Invalid min_ping should be ignored
+    filtered = dashboard_data.filter_nodes(nodes, {"min_ping": "abc"})
+    assert len(filtered) == len(nodes)
+
+    # Invalid max_ping should be ignored
+    filtered = dashboard_data.filter_nodes(nodes, {"max_ping": "xyz"})
+    assert len(filtered) == len(nodes)
+    print("✓ filter_nodes ignores invalid ping values")
+
+def test_export_csv_empty(setup_test_data):
+    """Test exporting an empty list of nodes to CSV."""
+    csv_output = dashboard_data.export_csv([])
+    assert csv_output == ""
+    print("✓ export_csv handles empty node list")
+
+
 if __name__ == "__main__":
     pytest.main([__file__, '-v', '-s'])

@@ -14,7 +14,9 @@ import sys
 
 from . import services
 from .config import Settings
+from .scheduler import TestScheduler
 from .tui import display_results
+from .web_dashboard import app
 
 
 def handle_fetch(args: argparse.Namespace, cfg: Settings) -> None:
@@ -70,9 +72,6 @@ def cmd_daemon(args: argparse.Namespace, cfg: Settings):
 
     The daemon runs until interrupted (Ctrl+C or kill signal).
     """
-    from .scheduler import TestScheduler
-    from .web_dashboard import app
-
     # Setup data directory
     data_dir = Path(args.data_dir)
     data_dir.mkdir(parents=True, exist_ok=True)

@@ -80,6 +80,63 @@ async def test_multiple_cycles_history(test_output_dir):
     print(f"  Entries: {len(history_lines)}")
 
 
+@pytest.mark.asyncio
+async def test_run_test_cycle_exception(test_output_dir, monkeypatch):
+    """Test that run_test_cycle handles exceptions gracefully."""
+    settings = Settings()
+    scheduler = TestScheduler(settings, test_output_dir)
+
+    async def mock_run_merger_error(settings):
+        raise ValueError("Test Exception")
+
+    monkeypatch.setattr("configstream.vpn_merger.run_merger", mock_run_merger_error)
+
+    await scheduler.run_test_cycle()
+    # The test passes if no unhandled exception is raised.
+    print("✓ Test cycle handles exceptions gracefully")
+
+
+def test_scheduler_stop_not_running(test_output_dir):
+    """Test stopping a scheduler that is not running."""
+    settings = Settings()
+    scheduler = TestScheduler(settings, test_output_dir)
+    scheduler.stop()  # Should not raise an error
+    assert not scheduler.scheduler.running
+    print("✓ Stopping a non-running scheduler works as expected")
+
+
+def test_get_next_run_time_no_job(test_output_dir):
+    """Test get_next_run_time when no job is scheduled."""
+    settings = Settings()
+    scheduler = TestScheduler(settings, test_output_dir)
+    assert scheduler.get_next_run_time() == "Not scheduled"
+    print("✓ get_next_run_time returns 'Not scheduled' when no job is present")
+
+
+def test_scheduler_start_and_get_next_run_time(test_output_dir):
+    """Test starting the scheduler and getting the next run time."""
+    settings = Settings()
+    scheduler = TestScheduler(settings, test_output_dir)
+
+    # Mock the test cycle to avoid running it
+    scheduler.run_test_cycle = lambda: None
+
+    scheduler.start(interval_hours=1)
+
+    next_run_time_str = scheduler.get_next_run_time()
+    assert next_run_time_str != "Not scheduled"
+
+    # Check that the format is correct
+    from datetime import datetime
+    try:
+        datetime.strptime(next_run_time_str, "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        pytest.fail(f"get_next_run_time returned an invalid format: {next_run_time_str}")
+
+    scheduler.stop()
+    print("✓ Scheduler start and get_next_run_time work correctly")
+
+
 if __name__ == "__main__":
     # Run tests
     import tempfile

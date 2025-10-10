@@ -32,6 +32,9 @@ dependencies = [
     "rich"
 ]
 
+[project.urls]
+Homepage = "https://amirrezafarnamtaheri.github.io/configStream/"
+
 [project.scripts]
 configstream = "configstream.cli:main"
 
