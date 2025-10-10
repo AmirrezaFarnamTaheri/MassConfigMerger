@@ -145,6 +145,18 @@ class HistoricalManager:
             ))
             await db.commit()
 
+    def _calculate_reliability_score(self, uptime: float, avg_ping: float, avg_quality: float) -> float:
+        """Calculate the reliability score."""
+        ping_score = max(0, 100 - (avg_ping or 0) / 5) if avg_ping else 50
+        quality_score = avg_quality or 50
+        return uptime * 0.4 + ping_score * 0.3 + quality_score * 0.3
+
+    def _calculate_stability_score(self, avg_jitter: float, avg_loss: float) -> float:
+        """Calculate the stability score."""
+        jitter_score = max(0, 100 - (avg_jitter or 0) * 2)
+        loss_score = max(0, 100 - (avg_loss or 0) * 10)
+        return (jitter_score + loss_score) / 2
+
     async def update_reliability(
         self,
         config_hash: str,
@@ -188,28 +200,9 @@ class HistoricalManager:
                  avg_loss, avg_jitter, avg_quality, avg_download, avg_upload,
                  first, last, last_success) = row
 
-                # Calculate uptime percentage
                 uptime = (successful / total * 100) if total > 0 else 0
-
-                # Calculate reliability score (0-100)
-                # Factors:
-                # - Uptime (40% weight)
-                # - Ping quality (30% weight)
-                # - Network quality (30% weight)
-
-                ping_score = max(0, 100 - (avg_ping or 0) / 5) if avg_ping else 50
-                quality_score = avg_quality or 50
-
-                reliability = (
-                    uptime * 0.4 +
-                    ping_score * 0.3 +
-                    quality_score * 0.3
-                )
-
-                # Calculate stability score based on jitter and packet loss
-                jitter_score = max(0, 100 - (avg_jitter or 0) * 2)
-                loss_score = max(0, 100 - (avg_loss or 0) * 10)
-                stability = (jitter_score + loss_score) / 2
+                reliability = self._calculate_reliability_score(uptime, avg_ping, avg_quality)
+                stability = self._calculate_stability_score(avg_jitter, avg_loss)
 
                 # Get latest node info
                 cursor = await db.execute("""

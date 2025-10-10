@@ -56,6 +56,13 @@ async def test_check_abuseipdb_api_error():
     result = await checker.check_abuseipdb("1.1.1.1")
     assert "error" in result
 
+@pytest.mark.asyncio
+async def test_check_ipqualityscore_api_error():
+    """Test that check_ipqualityscore handles API errors."""
+    checker = IPReputationChecker(api_keys={"ipqualityscore": "invalid_key"})
+    result = await checker.check_ipqualityscore("1.1.1.1")
+    assert result.get("success") is False
+
 
 @pytest.mark.asyncio
 @pytest.mark.skipif(

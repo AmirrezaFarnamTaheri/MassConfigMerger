@@ -68,3 +68,17 @@ async def test_update_and_get_reliability(db_path: Path):
     assert node.total_tests == 3
     assert node.successful_tests == 2
     assert round(node.uptime_percent) == 67
+
+def test_calculate_reliability_score():
+    """Test the reliability score calculation."""
+    manager = HistoricalManager(Path("/tmp/test.db"))
+    assert manager._calculate_reliability_score(100, 50, 90) == 94.0
+    assert manager._calculate_reliability_score(50, 200, 50) == 53.0
+    assert manager._calculate_reliability_score(0, 500, 0) == 15.0
+
+def test_calculate_stability_score():
+    """Test the stability score calculation."""
+    manager = HistoricalManager(Path("/tmp/test.db"))
+    assert manager._calculate_stability_score(10, 0) == 90.0
+    assert manager._calculate_stability_score(50, 5) == 25.0
+    assert manager._calculate_stability_score(100, 10) == 0.0

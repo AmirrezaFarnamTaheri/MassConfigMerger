@@ -1,7 +1,8 @@
 """Test certificate validation."""
 import pytest
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
+from unittest.mock import patch
 from configstream.security.cert_validator import (
     CertificateValidator,
     CertificateInfo
@@ -91,6 +92,24 @@ async def test_validate_timeout():
     print("✓ Timeout handled correctly")
 
 
+@pytest.mark.asyncio
+async def test_validate_expired_certificate():
+    """Test validation of an expired certificate."""
+    validator = CertificateValidator()
+    # expired.badssl.com has an expired certificate
+    cert_info = await validator.validate("expired.badssl.com", 443)
+    assert cert_info.valid is False
+    assert any("expired" in e for e in cert_info.errors)
+
+@pytest.mark.asyncio
+async def test_validate_self_signed_certificate():
+    """Test validation of a self-signed certificate."""
+    validator = CertificateValidator()
+    # self-signed.badssl.com has a self-signed certificate
+    cert_info = await validator.validate("self-signed.badssl.com", 443)
+    assert cert_info.valid is False
+    assert any("self-signed" in e for e in cert_info.errors)
+
 if __name__ == "__main__":
     print("Running certificate validation tests...\n")
 
@@ -99,3 +118,5 @@ if __name__ == "__main__":
     asyncio.run(test_validate_invalid_host())
     asyncio.run(test_validate_non_https_port())
     asyncio.run(test_validate_timeout())
+    asyncio.run(test_validate_expired_certificate())
+    asyncio.run(test_validate_self_signed_certificate())
