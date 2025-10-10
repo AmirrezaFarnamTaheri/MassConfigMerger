@@ -1,7 +1,6 @@
 """Automated testing scheduler for periodic VPN node testing."""
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 from datetime import datetime
@@ -12,7 +11,6 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from .config import Settings
-from .processing import pipeline
 from .vpn_merger import run_merger
 
 logger = logging.getLogger(__name__)
@@ -25,6 +23,7 @@ class TestScheduler:
         self.output_dir = output_dir
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.scheduler = AsyncIOScheduler()
+        self.sources_file = Path(settings.sources.sources_file)
         self.current_results_file = self.output_dir / "current_results.json"
         self.history_file = self.output_dir / "history.jsonl"
 
@@ -34,24 +33,24 @@ class TestScheduler:
         start_time = datetime.now()
 
         try:
-            # Run the merger pipeline
-            results = await run_merger(self.settings)
+            # Run the merger pipeline, providing the required sources_file
+            results = await run_merger(self.settings, sources_file=self.sources_file)
 
-            # Prepare data for storage
+            # Prepare data for storage, correctly mapping ConfigResult fields
             test_data = {
                 "timestamp": start_time.isoformat(),
                 "total_tested": len(results),
-                "successful": len([r for r in results if r.ping_ms > 0]),
-                "failed": len([r for r in results if r.ping_ms < 0]),
+                "successful": len([r for r in results if r.is_reachable]),
+                "failed": len([r for r in results if not r.is_reachable]),
                 "nodes": [
                     {
-                        "config": r.raw_config,
+                        "config": r.config,
                         "protocol": r.protocol,
-                        "ping_ms": r.ping_ms,
-                        "country": r.country_code or "Unknown",
-                        "city": r.city or "Unknown",
-                        "organization": r.organization or "Unknown",
-                        "ip": r.ip,
+                        "ping_ms": int(r.ping_time * 1000) if r.ping_time is not None else -1,
+                        "country": r.country or "Unknown",
+                        "city": "N/A",  # City data is not available in the current data model
+                        "organization": r.isp or "Unknown", # Map ISP to Organization for the UI
+                        "ip": r.host,
                         "port": r.port,
                         "is_blocked": r.is_blocked,
                         "timestamp": start_time.isoformat()
@@ -84,14 +83,11 @@ class TestScheduler:
             id="test_cycle",
             replace_existing=True
         )
-
-        # Run immediately on start
         self.scheduler.add_job(
             self.run_test_cycle,
             id="initial_test",
             replace_existing=True
         )
-
         self.scheduler.start()
         logger.info(f"Scheduler started with {interval_hours}h interval")
 

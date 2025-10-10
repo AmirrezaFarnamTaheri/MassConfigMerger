@@ -25,8 +25,10 @@ def mock_args():
     args.no_prune = False
     args.resume_file = "resume.json"
     args.input = "input.txt"
-    args.interval_hours = 2
-    args.web_port = 8080
+    args.interval = 2
+    args.port = 8080
+    args.host = "0.0.0.0"
+    args.data_dir = "./data"
     return args
 
 
@@ -102,7 +104,9 @@ def test_handle_daemon_no_running_loop(mock_asyncio, mock_daemon_cls, mock_args,
 
     mock_daemon_cls.assert_called_once()
     mock_daemon_instance.start.assert_called_once_with(
-        interval_hours=mock_args.interval_hours, web_port=mock_args.web_port
+        interval_hours=mock_args.interval,
+        web_host=mock_args.host,
+        web_port=mock_args.port,
     )
     mock_asyncio.run.assert_called_once_with(mock_daemon_instance.start.return_value)
 
@@ -119,7 +123,9 @@ def test_handle_daemon_with_running_loop(mock_asyncio, mock_daemon_cls, mock_arg
 
     mock_daemon_cls.assert_called_once()
     mock_daemon_instance.start.assert_called_once_with(
-        interval_hours=mock_args.interval_hours, web_port=mock_args.web_port
+        interval_hours=mock_args.interval,
+        web_host=mock_args.host,
+        web_port=mock_args.port,
     )
     mock_loop.create_task.assert_called_once_with(mock_daemon_instance.start.return_value)
 
