@@ -1,3 +1,10 @@
+# ConfigStream
+# Copyright (C) 2025 Amirreza "Farnam" Taheri
+# This program comes with ABSOLUTELY NO WARRANTY; for details type `show w`.
+# This is free software, and you are welcome to redistribute it
+# under certain conditions; type `show c` for details.
+# For more information, see <https://amirrezafarnamtaheri.github.io/configStream/>.
+
 """Automated testing scheduler for periodic VPN node testing."""
 from __future__ import annotations
 
@@ -41,23 +48,22 @@ class TestScheduler:
             test_data = {
                 "timestamp": start_time.isoformat(),
                 "total_tested": len(results),
-                "successful": len([r for r in results if r.ping_ms > 0]),
-                "failed": len([r for r in results if r.ping_ms < 0]),
+                "successful": len([r for r in results if r.is_reachable]),
+                "failed": len([r for r in results if not r.is_reachable]),
                 "nodes": [
                     {
-                        "config": r.raw_config,
+                        "config": r.config,
                         "protocol": r.protocol,
-                        "ping_ms": r.ping_ms,
-                        "country": r.country_code or "Unknown",
-                        "city": r.city or "Unknown",
-                        "organization": r.organization or "Unknown",
-                        "ip": r.ip,
+                        "ping_time": r.ping_time,
+                        "country": r.country or "Unknown",
+                        "isp": r.isp or "Unknown",
+                        "host": r.host,
                         "port": r.port,
                         "is_blocked": r.is_blocked,
-                        "timestamp": start_time.isoformat()
+                        "timestamp": start_time.isoformat(),
                     }
                     for r in results
-                ]
+                ],
             }
 
             # Save current results (overwrite)

@@ -1,3 +1,10 @@
+# ConfigStream
+# Copyright (C) 2025 Amirreza "Farnam" Taheri
+# This program comes with ABSOLUTELY NO WARRANTY; for details type `show w`.
+# This is free software, and you are welcome to redistribute it
+# under certain conditions; type `show c` for details.
+# For more information, see <https://amirrezafarnamtaheri.github.io/configStream/>.
+
 """Handles scraping configurations from Telegram channels.
 
 This module provides a single entry point, `scrape_telegram_configs`, which
