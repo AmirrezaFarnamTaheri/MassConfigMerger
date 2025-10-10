@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from flask import Flask, jsonify, render_template, request, send_file
+from flask import Flask, jsonify, render_template, request, send_file, current_app
 import csv
 from io import StringIO, BytesIO
 
@@ -86,9 +86,8 @@ def create_app(settings: Settings) -> Flask:
     """Create and configure the Flask application."""
     app = Flask(__name__, template_folder="templates")
 
-    # Use a data directory from settings, or a default
     data_dir = Path(settings.output.output_dir if settings.output.output_dir else "./data")
-    dashboard_data = DashboardData(data_dir)
+    app.config["DASHBOARD_DATA"] = DashboardData(data_dir)
 
     @app.route("/")
     def index():
@@ -96,6 +95,7 @@ def create_app(settings: Settings) -> Flask:
 
     @app.route("/api/current")
     def api_current():
+        dashboard_data = current_app.config["DASHBOARD_DATA"]
         data = dashboard_data.get_current_results()
         filters = request.args.to_dict()
         if filters:
@@ -104,12 +104,14 @@ def create_app(settings: Settings) -> Flask:
 
     @app.route("/api/history")
     def api_history():
+        dashboard_data = current_app.config["DASHBOARD_DATA"]
         hours = int(request.args.get("hours", 24))
         history = dashboard_data.get_history(hours)
         return jsonify(history)
 
     @app.route("/api/statistics")
     def api_statistics():
+        dashboard_data = current_app.config["DASHBOARD_DATA"]
         data = dashboard_data.get_current_results()
         nodes = data.get("nodes", [])
         protocols, countries, avg_ping_by_country = {}, {}, {}
@@ -135,6 +137,7 @@ def create_app(settings: Settings) -> Flask:
 
     @app.route("/api/export/<format>")
     def api_export(format: str):
+        dashboard_data = current_app.config["DASHBOARD_DATA"]
         data = dashboard_data.get_current_results()
         filters = request.args.to_dict()
         nodes = dashboard_data.filter_nodes(data["nodes"], filters)

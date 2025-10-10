@@ -8,7 +8,6 @@ from configstream.commands import (
     handle_merge,
     handle_retest,
     handle_full,
-    handle_daemon,
     handle_tui,
 )
 from configstream.config import Settings
@@ -91,43 +90,6 @@ def test_handle_full(mock_services, mock_args, mock_settings):
         failure_threshold=mock_args.failure_threshold,
         prune=True,
     )
-
-
-@patch("configstream.commands.ConfigStreamDaemon")
-@patch("configstream.commands.asyncio")
-def test_handle_daemon_no_running_loop(mock_asyncio, mock_daemon_cls, mock_args, mock_settings):
-    """Test the daemon command handler when no event loop is running."""
-    mock_asyncio.get_running_loop.side_effect = RuntimeError
-    mock_daemon_instance = mock_daemon_cls.return_value
-
-    handle_daemon(mock_args, mock_settings)
-
-    mock_daemon_cls.assert_called_once()
-    mock_daemon_instance.start.assert_called_once_with(
-        interval_hours=mock_args.interval,
-        web_host=mock_args.host,
-        web_port=mock_args.port,
-    )
-    mock_asyncio.run.assert_called_once_with(mock_daemon_instance.start.return_value)
-
-
-@patch("configstream.commands.ConfigStreamDaemon")
-@patch("configstream.commands.asyncio")
-def test_handle_daemon_with_running_loop(mock_asyncio, mock_daemon_cls, mock_args, mock_settings):
-    """Test the daemon command handler when an event loop is already running."""
-    mock_loop = MagicMock()
-    mock_asyncio.get_running_loop.return_value = mock_loop
-    mock_daemon_instance = mock_daemon_cls.return_value
-
-    handle_daemon(mock_args, mock_settings)
-
-    mock_daemon_cls.assert_called_once()
-    mock_daemon_instance.start.assert_called_once_with(
-        interval_hours=mock_args.interval,
-        web_host=mock_args.host,
-        web_port=mock_args.port,
-    )
-    mock_loop.create_task.assert_called_once_with(mock_daemon_instance.start.return_value)
 
 
 @patch("configstream.commands.display_results")

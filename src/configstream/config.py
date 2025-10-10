@@ -226,6 +226,14 @@ class OutputSettings(BaseModel):
     )
 
 
+class TestingSettings(BaseModel):
+    """Settings for advanced testing features."""
+    enable_advanced_tests: bool = Field(False, description="Enable advanced tests like network quality and bandwidth.")
+    advanced_test_top_n: int = Field(10, description="Number of top nodes to run advanced tests on.")
+    test_bandwidth: bool = Field(False, description="Enable bandwidth testing (can be slow).")
+    test_network_quality: bool = Field(True, description="Enable network quality (jitter, packet loss) testing.")
+
+
 class SecuritySettings(BaseModel):
     """Settings for security-related features like blocklist checking."""
 
@@ -294,6 +302,7 @@ class Settings(BaseSettings):
     filtering: FilteringSettings = Field(default_factory=FilteringSettings)
     output: OutputSettings = Field(default_factory=OutputSettings)
     processing: ProcessingSettings = Field(default_factory=ProcessingSettings)
+    testing: TestingSettings = Field(default_factory=TestingSettings)
     security: SecuritySettings = Field(default_factory=SecuritySettings)
     sources: SourcesSettings = Field(default_factory=SourcesSettings)
 
