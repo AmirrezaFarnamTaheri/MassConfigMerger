@@ -291,6 +291,12 @@ def add_daemon_arguments(parser: argparse.ArgumentParser):
         default="0.0.0.0",
         help="The host to run the web dashboard on.",
     )
+    parser.add_argument(
+        "--data-dir",
+        type=str,
+        default="./data",
+        help="Directory for storing test results (default: ./data)"
+    )
 
 
 def add_tui_arguments(subparsers: argparse._SubParsersAction):

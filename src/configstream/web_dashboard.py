@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
 from datetime import datetime, timedelta
 from io import BytesIO, StringIO
 from pathlib import Path
@@ -19,73 +20,83 @@ from flask import Flask, jsonify, render_template, request, send_file
 
 from .config import Settings, load_config
 
+logger = logging.getLogger(__name__)
+
 
 class DashboardData:
     """Manages dashboard data and filtering."""
 
     def __init__(self, settings: Settings):
-        """Initialize with application settings."""
+        """Initialize dashboard data manager."""
         self.settings = settings
         self.current_file = settings.output.current_results_file
         self.history_file = settings.output.history_file
-        self.data_dir = self.current_file.parent
 
     def get_current_results(self) -> dict[str, Any]:
         """Load current test results."""
         if not self.current_file.exists():
+            return {"timestamp": None, "total_tested": 0, "successful": 0, "failed": 0, "nodes": []}
+        try:
+            return json.loads(self.current_file.read_text(encoding="utf-8"))
+        except Exception as e:
+            logger.error(f"Error loading current results: {e}")
             return {"timestamp": None, "nodes": []}
-        return json.loads(self.current_file.read_text())
 
     def get_history(self, hours: int = 24) -> list[dict]:
-        """Load historical results for specified time period."""
+        """Load historical results."""
         if not self.history_file.exists():
             return []
-
         cutoff_time = datetime.now() - timedelta(hours=hours)
         history = []
-
-        with open(self.history_file, "r") as f:
-            for line in f:
-                try:
+        try:
+            with open(self.history_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    if not line.strip():
+                        continue
                     data = json.loads(line)
                     timestamp = datetime.fromisoformat(data["timestamp"])
                     if timestamp >= cutoff_time:
                         history.append(data)
-                except (json.JSONDecodeError, KeyError):
-                    continue  # Skip corrupted lines
-
+        except Exception as e:
+            logger.error(f"Error loading history: {e}")
         return history
 
     def filter_nodes(self, nodes: list[dict], filters: dict) -> list[dict]:
         """Apply filters to node list."""
         filtered = nodes
-
         if protocol := filters.get("protocol"):
             filtered = [n for n in filtered if n.get("protocol", "").lower() == protocol.lower()]
         if country := filters.get("country"):
             filtered = [n for n in filtered if n.get("country", "").lower() == country.lower()]
         if min_ping := filters.get("min_ping"):
-            filtered = [n for n in filtered if n.get("ping_ms", 0) >= int(min_ping)]
+            try:
+                min_val = int(min_ping)
+                filtered = [n for n in filtered if n.get("ping_time", 0) >= min_val]
+            except (ValueError, TypeError):
+                pass
         if max_ping := filters.get("max_ping"):
-            filtered = [n for n in filtered if 0 < n.get("ping_ms", 0) <= int(max_ping)]
+            try:
+                max_val = int(max_ping)
+                filtered = [n for n in filtered if n.get("ping_time", 0) is not None and 0 < n["ping_time"] <= max_val]
+            except (ValueError, TypeError):
+                pass
         if filters.get("exclude_blocked"):
             filtered = [n for n in filtered if not n.get("is_blocked")]
-        if search := filters.get("search", "").lower():
+        if search := filters.get("search"):
+            search_lower = search.lower()
             filtered = [
-                n
-                for n in filtered
-                if search in n.get("city", "").lower()
-                or search in n.get("organization", "").lower()
-                or search in n.get("ip", "")
+                n for n in filtered
+                if search_lower in n.get("city", "").lower()
+                or search_lower in n.get("organization", "").lower()
+                or search_lower in n.get("host", "")
             ]
-
         return filtered
 
     def export_csv(self, nodes: list[dict]) -> str:
         """Export nodes to CSV format."""
+        output = StringIO()
         if not nodes:
             return ""
-        output = StringIO()
         fieldnames = sorted(list(nodes[0].keys()))
         writer = csv.DictWriter(output, fieldnames=fieldnames)
         writer.writeheader()
@@ -107,82 +118,82 @@ def create_app(settings: Settings | None = None) -> Flask:
 
     @app.route("/")
     def index():
-        """Serve the main dashboard page."""
         return render_template("dashboard.html")
 
     @app.route("/api/current")
     def api_current():
-        """API endpoint for current results."""
-        data = dashboard_data.get_current_results()
-        filters = request.args.to_dict()
-        if filters:
-            data["nodes"] = dashboard_data.filter_nodes(data["nodes"], filters)
-        return jsonify(data)
+        try:
+            data = dashboard_data.get_current_results()
+            filters = request.args.to_dict()
+            if filters:
+                data["nodes"] = dashboard_data.filter_nodes(data["nodes"], filters)
+                data["total_tested"] = len(data["nodes"])
+                successful_nodes = [n for n in data["nodes"] if n.get("ping_time") is not None and n["ping_time"] > 0]
+                data["successful"] = len(successful_nodes)
+                data["failed"] = data["total_tested"] - data["successful"]
+            return jsonify(data)
+        except Exception as e:
+            logger.error(f"Error in api_current: {e}", exc_info=True)
+            return jsonify({"error": str(e)}), 500
 
     @app.route("/api/history")
     def api_history():
-        """API endpoint for historical data."""
-        hours = int(request.args.get("hours", 24))
-        history = dashboard_data.get_history(hours)
-        return jsonify(history)
+        try:
+            hours = int(request.args.get("hours", 24))
+            history = dashboard_data.get_history(hours)
+            return jsonify(history)
+        except Exception as e:
+            logger.error(f"Error in api_history: {e}", exc_info=True)
+            return jsonify({"error": str(e)}), 500
 
     @app.route("/api/statistics")
     def api_statistics():
-        """API endpoint for aggregated statistics."""
-        data = dashboard_data.get_current_results()
-        nodes = data.get("nodes", [])
-        protocols, countries, avg_ping_by_country = {}, {}, {}
-
-        for node in nodes:
-            if node.get("ping_ms", 0) > 0:
-                proto = node.get("protocol")
-                if proto:
+        try:
+            data = dashboard_data.get_current_results()
+            nodes = data.get("nodes", [])
+            protocols, countries, avg_ping_by_country = {}, {}, {}
+            successful_nodes = [n for n in nodes if n.get("ping_time") is not None and n["ping_time"] > 0]
+            for node in successful_nodes:
+                if proto := node.get("protocol"):
                     protocols[proto] = protocols.get(proto, 0) + 1
-                country = node.get("country")
-                if country:
+                if country := node.get("country"):
                     countries[country] = countries.get(country, 0) + 1
                     if country not in avg_ping_by_country:
                         avg_ping_by_country[country] = []
-                    avg_ping_by_country[country].append(node["ping_ms"])
-
-        for country, pings in avg_ping_by_country.items():
-            avg_ping_by_country[country] = sum(pings) / len(pings) if pings else 0
-
-        return jsonify({
-            "total_nodes": len(nodes),
-            "successful_nodes": len([n for n in nodes if n.get("ping_ms", 0) > 0]),
-            "protocols": protocols,
-            "countries": countries,
-            "avg_ping_by_country": avg_ping_by_country,
-            "last_update": data.get("timestamp"),
-        })
+                    if ping := node.get("ping_time"):
+                        avg_ping_by_country[country].append(ping)
+            for country, pings in avg_ping_by_country.items():
+                avg_ping_by_country[country] = round(sum(pings) / len(pings), 2) if pings else 0
+            return jsonify({
+                "total_nodes": len(nodes),
+                "successful_nodes": len(successful_nodes),
+                "protocols": protocols,
+                "countries": countries,
+                "avg_ping_by_country": avg_ping_by_country,
+                "last_update": data.get("timestamp")
+            })
+        except Exception as e:
+            logger.error(f"Error in api_statistics: {e}", exc_info=True)
+            return jsonify({"error": str(e)}), 500
 
     @app.route("/api/export/<file_format>")
     def api_export(file_format: str):
-        """Export data in various formats."""
-        data = dashboard_data.get_current_results()
-        filters = request.args.to_dict()
-        nodes = dashboard_data.filter_nodes(data.get("nodes", []), filters)
-        now = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-        if file_format == "csv":
-            csv_data = dashboard_data.export_csv(nodes)
-            return send_file(
-                BytesIO(csv_data.encode()),
-                mimetype="text/csv",
-                as_attachment=True,
-                download_name=f"configstream_nodes_{now}.csv",
-            )
-        elif file_format == "json":
-            json_data = dashboard_data.export_json(nodes)
-            return send_file(
-                BytesIO(json_data.encode()),
-                mimetype="application/json",
-                as_attachment=True,
-                download_name=f"configstream_nodes_{now}.json",
-            )
-
-        return jsonify({"error": "Unsupported format"}), 400
+        try:
+            data = dashboard_data.get_current_results()
+            filters = request.args.to_dict()
+            nodes = dashboard_data.filter_nodes(data.get("nodes", []), filters)
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            if file_format == "csv":
+                csv_data = dashboard_data.export_csv(nodes)
+                return send_file(BytesIO(csv_data.encode('utf-8')), mimetype="text/csv", as_attachment=True, download_name=f"configstream_nodes_{timestamp}.csv")
+            elif file_format == "json":
+                json_data = dashboard_data.export_json(nodes)
+                return send_file(BytesIO(json_data.encode('utf-8')), mimetype="application/json", as_attachment=True, download_name=f"configstream_nodes_{timestamp}.json")
+            else:
+                return jsonify({"error": f"Unsupported format: {file_format}"}), 400
+        except Exception as e:
+            logger.error(f"Error in api_export: {e}", exc_info=True)
+            return jsonify({"error": str(e)}), 500
 
     return app
 

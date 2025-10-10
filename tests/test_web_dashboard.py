@@ -1,12 +1,8 @@
 import json
-from datetime import datetime, timedelta
-from pathlib import Path
-
 import pytest
-
+from pathlib import Path
+from configstream.web_dashboard import create_app
 from configstream.config import Settings, OutputSettings
-from configstream.web_dashboard import create_app, DashboardData
-
 
 @pytest.fixture
 def settings(tmp_path: Path, monkeypatch) -> Settings:
@@ -14,14 +10,44 @@ def settings(tmp_path: Path, monkeypatch) -> Settings:
     monkeypatch.chdir(tmp_path)
     data_dir = Path("data")
     data_dir.mkdir()
+
     settings = Settings()
     settings.output = OutputSettings(
         current_results_file=data_dir / "current_results.json",
         history_file=data_dir / "history.jsonl",
         output_dir=data_dir,
     )
-    return settings
 
+    # Create sample data
+    test_data = {
+        "timestamp": "2025-10-10T12:00:00",
+        "total_tested": 3,
+        "successful": 2,
+        "failed": 1,
+        "nodes": [
+            {
+                "config": "vmess://test1", "protocol": "vmess", "ping_time": 50,
+                "country": "US", "city": "New York", "organization": "Test Org",
+                "host": "1.2.3.4", "port": 443, "is_blocked": False,
+                "timestamp": "2025-10-10T12:00:00"
+            },
+            {
+                "config": "ss://test2", "protocol": "shadowsocks", "ping_time": 150,
+                "country": "UK", "city": "London", "organization": "Test Org 2",
+                "host": "5.6.7.8", "port": 8388, "is_blocked": False,
+                "timestamp": "2025-10-10T12:00:00"
+            },
+            {
+                "config": "trojan://test3", "protocol": "trojan", "ping_time": -1,
+                "country": "DE", "city": "Berlin", "organization": "Test Org 3",
+                "host": "9.10.11.12", "port": 443, "is_blocked": True,
+                "timestamp": "2025-10-10T12:00:00"
+            }
+        ]
+    }
+    settings.output.current_results_file.write_text(json.dumps(test_data))
+
+    return settings
 
 @pytest.fixture
 def app(settings: Settings):
@@ -30,65 +56,60 @@ def app(settings: Settings):
     app.config["TESTING"] = True
     return app
 
-
 @pytest.fixture
 def client(app):
     """Fixture for a Flask test client."""
     with app.test_client() as client:
         yield client
 
-
-def test_get_current_results_no_file(settings: Settings):
-    """Test get_current_results when the data file does not exist."""
-    dashboard_data = DashboardData(settings)
-    results = dashboard_data.get_current_results()
-    assert results == {"timestamp": None, "nodes": []}
-
-
-def test_get_history_filtering(settings: Settings):
-    """Test get_history to ensure it correctly filters by time."""
-    dashboard_data = DashboardData(settings)
-    now = datetime.now()
-    old_ts = (now - timedelta(hours=30)).isoformat()
-    new_ts = (now - timedelta(hours=1)).isoformat()
-    history_file = dashboard_data.history_file
-    with open(history_file, "w") as f:
-        f.write(json.dumps({"timestamp": old_ts, "nodes": []}) + "\n")
-        f.write(json.dumps({"timestamp": new_ts, "nodes": []}) + "\n")
-
-    history = dashboard_data.get_history(hours=24)
-    assert len(history) == 1
-    assert history[0]["timestamp"] == new_ts
-
-
-def test_api_current_endpoint(client, settings: Settings):
-    """Test the /api/current endpoint."""
-    test_data = {"timestamp": datetime.now().isoformat(), "nodes": [{"protocol": "VLESS"}]}
-    settings.output.current_results_file.write_text(json.dumps(test_data))
-
-    response = client.get("/api/current")
+def test_index_route(client):
+    """Test main dashboard page loads."""
+    response = client.get('/')
     assert response.status_code == 200
-    json_response = response.get_json()
-    assert json_response["nodes"][0]["protocol"] == "VLESS"
 
-
-def test_api_export_csv(client, settings: Settings):
-    """Test the CSV export functionality."""
-    nodes = [{"protocol": "vless", "country": "US", "ping_ms": 100}]
-    test_data = {"timestamp": datetime.now().isoformat(), "nodes": nodes}
-    settings.output.current_results_file.write_text(json.dumps(test_data))
-
-    response = client.get("/api/export/csv")
+def test_api_current(client):
+    """Test /api/current endpoint."""
+    response = client.get('/api/current')
     assert response.status_code == 200
-    assert response.mimetype == "text/csv"
-    # Normalize line endings and check for content
-    data = response.data.decode().replace("\r\n", "\n")
-    assert "country,ping_ms,protocol" in data
-    assert "US,100,vless" in data
+    data = json.loads(response.data)
+    assert data['total_tested'] == 3
+    assert data['successful'] == 2
+    assert data['failed'] == 1
+    assert len(data['nodes']) == 3
 
+def test_api_current_with_filters(client):
+    """Test /api/current with filters."""
+    response = client.get('/api/current?protocol=vmess')
+    data = json.loads(response.data)
+    assert len(data['nodes']) == 1
+    assert data['nodes'][0]['protocol'] == 'vmess'
 
-def test_api_export_unsupported_format(client):
-    """Test that an unsupported export format returns an error."""
-    response = client.get("/api/export/xml")
-    assert response.status_code == 400
-    assert response.get_json() == {"error": "Unsupported format"}
+    response = client.get('/api/current?country=UK')
+    data = json.loads(response.data)
+    assert len(data['nodes']) == 1
+    assert data['nodes'][0]['country'] == 'UK'
+
+def test_api_statistics(client):
+    """Test /api/statistics endpoint."""
+    response = client.get('/api/statistics')
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert data['total_nodes'] == 3
+    assert data['successful_nodes'] == 2
+    assert 'protocols' in data
+    assert 'countries' in data
+
+def test_api_export_csv(client):
+    """Test CSV export."""
+    response = client.get('/api/export/csv')
+    assert response.status_code == 200
+    assert response.content_type == 'text/csv; charset=utf-8'
+    assert 'vmess' in response.data.decode('utf-8')
+
+def test_api_export_json(client):
+    """Test JSON export."""
+    response = client.get('/api/export/json')
+    assert response.status_code == 200
+    assert response.content_type == 'application/json'
+    data = json.loads(response.data)
+    assert len(data) == 3

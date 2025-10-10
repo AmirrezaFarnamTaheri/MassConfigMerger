@@ -44,40 +44,39 @@ async def _load_configs(
 
 
 async def run_merger(
-    cfg: Settings,
-    sources_file: Path,
-    resume_file: Optional[Path] = None,
+    settings: Settings,
     write_output_files: bool = True,
 ) -> list[ConfigResult]:
     """
     Run the VPN merger pipeline to test, sort, and merge configurations.
 
     Args:
-        cfg: The application settings object.
-        sources_file: The path to the file containing web source URLs.
-        resume_file: An optional path to a subscription file to re-test.
+        settings: The application settings object.
         write_output_files: Whether to write the final configuration files.
 
     Returns:
         A list of `ConfigResult` objects representing the tested and sorted nodes.
     """
-    source_manager = SourceManager(cfg)
-    config_processor = ConfigProcessor(cfg)
-    output_generator = OutputGenerator(cfg)
-    db = Database(cfg.output.history_db_file)
+    source_manager = SourceManager(settings)
+    config_processor = ConfigProcessor(settings)
+    output_generator = OutputGenerator(settings)
+    db = Database(settings.output.history_db_file)
     await db.connect()
+
+    sources_file = Path(settings.sources.sources_file)
+    resume_file = Path(settings.processing.resume_file) if settings.processing.resume_file else None
 
     try:
         configs = await _load_configs(source_manager, sources_file, resume_file)
         history = await db.get_proxy_history()
         filtered_configs = config_processor.filter_configs(configs)
 
-        results = await pipeline.test_configs(list(filtered_configs), cfg, history, db)
-        sorted_results = pipeline.sort_and_trim_results(results, cfg)
+        results = await pipeline.test_configs(list(filtered_configs), settings, history, db)
+        sorted_results = pipeline.sort_and_trim_results(results, settings)
 
         if write_output_files:
             final_configs = [r.config for r in sorted_results]
-            output_dir = Path(cfg.output.output_dir)
+            output_dir = Path(settings.output.output_dir)
             output_generator.write_outputs(final_configs, output_dir)
 
         return sorted_results
