@@ -70,10 +70,10 @@ def test_api_statistics(fs, settings):
     with patch("configstream.web_dashboard.DashboardData.get_current_results") as mock_get_results:
         mock_get_results.return_value = {
             "nodes": [
-                {"protocol": "vless", "country": "US", "ping_ms": 100},
-                {"protocol": "vless", "country": "DE", "ping_ms": 200},
-                {"protocol": "ss", "country": "US", "ping_ms": 150},
-                {"protocol": "vless", "country": "US", "ping_ms": -1},
+                {"protocol": "vless", "country": "US", "ping_time": 100},
+                {"protocol": "vless", "country": "DE", "ping_time": 200},
+                {"protocol": "ss", "country": "US", "ping_time": 150},
+                {"protocol": "vless", "country": "US", "ping_time": -1},
             ]
         }
 
@@ -100,7 +100,7 @@ def test_get_current_results_file_not_found(fs):
     dashboard_data.data_dir = data_dir
     dashboard_data.current_file = data_dir / "current_results.json"
     results = dashboard_data.get_current_results()
-    assert results == {"timestamp": None, "nodes": []}
+    assert results == {"timestamp": None, "total_tested": 0, "successful": 0, "failed": 0, "nodes": []}
 
 
 def test_filter_nodes_no_filters():
@@ -122,10 +122,10 @@ def test_api_export_csv(fs, settings):
     """Test exporting data as CSV."""
     with patch("configstream.web_dashboard.DashboardData") as mock_dashboard_data_cls:
         mock_dashboard_data_instance = mock_dashboard_data_cls.return_value
-        nodes = [{"protocol": "vless", "ping_ms": 100}]
+        nodes = [{"protocol": "vless", "ping_time": 100}]
         mock_dashboard_data_instance.get_current_results.return_value = {"nodes": nodes}
         mock_dashboard_data_instance.filter_nodes.return_value = nodes
-        mock_dashboard_data_instance.export_csv.return_value = "protocol,ping_ms\nvless,100"
+        mock_dashboard_data_instance.export_csv.return_value = "protocol,ping_time\nvless,100"
 
         app, cleanup = _setup_app(fs, settings)
         client = app.test_client()
@@ -134,7 +134,7 @@ def test_api_export_csv(fs, settings):
         assert response.status_code == 200
         assert response.mimetype == "text/csv"
         assert "attachment" in response.headers["Content-Disposition"]
-        assert response.data == b"protocol,ping_ms\nvless,100"
+        assert response.data == b"protocol,ping_time\nvless,100"
         cleanup()
 
 
@@ -142,7 +142,7 @@ def test_api_export_json(fs, settings):
     """Test exporting data as JSON."""
     with patch("configstream.web_dashboard.DashboardData") as mock_dashboard_data_cls:
         mock_dashboard_data_instance = mock_dashboard_data_cls.return_value
-        nodes = [{"protocol": "vless", "ping_ms": 100}]
+        nodes = [{"protocol": "vless", "ping_time": 100}]
         mock_dashboard_data_instance.get_current_results.return_value = {"nodes": nodes}
         mock_dashboard_data_instance.filter_nodes.return_value = nodes
         mock_dashboard_data_instance.export_json.return_value = json.dumps(nodes)
@@ -164,7 +164,7 @@ def test_api_export_unsupported(fs, settings):
     client = app.test_client()
     response = client.get("/api/export/xml")
     assert response.status_code == 400
-    assert response.get_json() == {"error": "Unsupported format"}
+    assert response.get_json() == {"error": "Unsupported format: xml"}
     cleanup()
 
 

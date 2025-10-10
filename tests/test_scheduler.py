@@ -51,7 +51,7 @@ async def test_run_test_cycle(test_output_dir, mock_settings, mock_results):
     """Test running a single test cycle."""
     scheduler = TestScheduler(mock_settings, test_output_dir)
 
-    with patch("configstream.scheduler.run_merger", new_callable=AsyncMock) as mock_run_merger:
+    with patch("configstream.vpn_merger.run_merger", new_callable=AsyncMock) as mock_run_merger:
         mock_run_merger.return_value = mock_results
         await scheduler.run_test_cycle()
 
@@ -74,7 +74,7 @@ async def test_multiple_cycles_history(test_output_dir, mock_settings, mock_resu
     """Test that history accumulates over multiple cycles."""
     scheduler = TestScheduler(mock_settings, test_output_dir)
 
-    with patch("configstream.scheduler.run_merger", new_callable=AsyncMock) as mock_run_merger:
+    with patch("configstream.vpn_merger.run_merger", new_callable=AsyncMock) as mock_run_merger:
         mock_run_merger.return_value = mock_results
 
         # Run two test cycles

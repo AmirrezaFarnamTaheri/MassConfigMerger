@@ -79,15 +79,35 @@ def test_api_current(client):
 
 def test_api_current_with_filters(client):
     """Test /api/current with filters."""
+    # Test protocol filter
     response = client.get('/api/current?protocol=vmess')
     data = json.loads(response.data)
     assert len(data['nodes']) == 1
     assert data['nodes'][0]['protocol'] == 'vmess'
 
+    # Test country filter
     response = client.get('/api/current?country=UK')
     data = json.loads(response.data)
     assert len(data['nodes']) == 1
     assert data['nodes'][0]['country'] == 'UK'
+
+    # Test combined filters
+    response = client.get('/api/current?protocol=shadowsocks&country=UK')
+    data = json.loads(response.data)
+    assert len(data['nodes']) == 1
+    assert data['nodes'][0]['protocol'] == 'shadowsocks'
+    assert data['nodes'][0]['country'] == 'UK'
+
+def test_get_current_results_malformed_json(settings: Settings):
+    """Test that get_current_results handles malformed JSON."""
+    settings.output.current_results_file.write_text("{malformed_json")
+    app = create_app(settings=settings)
+    with app.test_client() as client:
+        response = client.get('/api/current')
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data['nodes'] == []
+        assert data['total_tested'] == 0
 
 def test_api_statistics(client):
     """Test /api/statistics endpoint."""

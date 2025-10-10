@@ -67,7 +67,7 @@ async def test_run_merger_from_sources(
 
     with patch("configstream.processing.pipeline.sort_and_trim_results", side_effect=lambda r, c: sorted(r, key=lambda x: not x.is_reachable)):
         # Act
-        await run_merger(settings, Path("sources.txt"))
+        await run_merger(settings)
 
     # Assert
     mock_db.connect.assert_awaited_once()
@@ -143,7 +143,8 @@ async def test_run_merger_with_resume(
 
     # Act
     with patch("configstream.processing.pipeline.sort_and_trim_results", side_effect=lambda r, c: sorted(r, key=lambda x: not x.is_reachable)[:c.processing.top_n or None]):
-        await run_merger(settings, Path("dummy_sources.txt"), resume_file=Path("resume.txt"))
+        settings.processing.resume_file = Path("resume.txt")
+        await run_merger(settings)
 
     # Assert
     mock_db.connect.assert_awaited_once()

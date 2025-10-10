@@ -34,13 +34,14 @@ class DashboardData:
 
     def get_current_results(self) -> dict[str, Any]:
         """Load current test results."""
+        default_response = {"timestamp": None, "total_tested": 0, "successful": 0, "failed": 0, "nodes": []}
         if not self.current_file.exists():
-            return {"timestamp": None, "total_tested": 0, "successful": 0, "failed": 0, "nodes": []}
+            return default_response
         try:
             return json.loads(self.current_file.read_text(encoding="utf-8"))
-        except Exception as e:
-            logger.error(f"Error loading current results: {e}")
-            return {"timestamp": None, "nodes": []}
+        except json.JSONDecodeError as e:
+            logger.warning(f"Could not decode current_results.json: {e}. Returning empty results.")
+            return default_response
 
     def get_history(self, hours: int = 24) -> list[dict]:
         """Load historical results."""

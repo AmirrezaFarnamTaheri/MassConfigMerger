@@ -28,7 +28,7 @@ async def test_daemon_start(mock_settings, tmp_path):
 
         MockScheduler.assert_called_once_with(mock_settings, tmp_path)
         mock_scheduler_instance.start.assert_called_once_with(1)
-        mock_run_dashboard.assert_called_once_with(port=9000)
+        mock_run_dashboard.assert_called_once_with(host='0.0.0.0', port=9000)
 
         # Check that signal handlers were set
         assert mock_signal.call_count == 2

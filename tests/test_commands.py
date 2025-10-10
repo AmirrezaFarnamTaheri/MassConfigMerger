@@ -27,6 +27,8 @@ def mock_args():
     args.input = "input.txt"
     args.interval_hours = 2
     args.web_port = 8080
+    args.web_host = "0.0.0.0"
+    args.data_dir = "./data"
     return args
 
 
@@ -92,36 +94,18 @@ def test_handle_full(mock_services, mock_args, mock_settings):
 
 
 @patch("configstream.commands.ConfigStreamDaemon")
-@patch("configstream.commands.asyncio")
-def test_handle_daemon_no_running_loop(mock_asyncio, mock_daemon_cls, mock_args, mock_settings):
-    """Test the daemon command handler when no event loop is running."""
-    mock_asyncio.get_running_loop.side_effect = RuntimeError
+def test_handle_daemon(mock_daemon_cls, mock_args, mock_settings):
+    """Test the daemon command handler."""
     mock_daemon_instance = mock_daemon_cls.return_value
 
     handle_daemon(mock_args, mock_settings)
 
-    mock_daemon_cls.assert_called_once()
+    mock_daemon_cls.assert_called_once_with(settings=mock_settings, data_dir=Path(mock_args.data_dir))
     mock_daemon_instance.start.assert_called_once_with(
-        interval_hours=mock_args.interval_hours, web_port=mock_args.web_port
+        interval_hours=mock_args.interval_hours,
+        web_port=mock_args.web_port,
+        web_host=mock_args.web_host,
     )
-    mock_asyncio.run.assert_called_once_with(mock_daemon_instance.start.return_value)
-
-
-@patch("configstream.commands.ConfigStreamDaemon")
-@patch("configstream.commands.asyncio")
-def test_handle_daemon_with_running_loop(mock_asyncio, mock_daemon_cls, mock_args, mock_settings):
-    """Test the daemon command handler when an event loop is already running."""
-    mock_loop = MagicMock()
-    mock_asyncio.get_running_loop.return_value = mock_loop
-    mock_daemon_instance = mock_daemon_cls.return_value
-
-    handle_daemon(mock_args, mock_settings)
-
-    mock_daemon_cls.assert_called_once()
-    mock_daemon_instance.start.assert_called_once_with(
-        interval_hours=mock_args.interval_hours, web_port=mock_args.web_port
-    )
-    mock_loop.create_task.assert_called_once_with(mock_daemon_instance.start.return_value)
 
 
 @patch("configstream.commands.display_results")

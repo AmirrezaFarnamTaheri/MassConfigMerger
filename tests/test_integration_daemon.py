@@ -46,17 +46,18 @@ def test_full_daemon_workflow(tmp_path):
     daemon_process.start()
 
     try:
-        # Wait for daemon to start and run first test
-        # Increased wait time to allow for network requests
-        print("Waiting for daemon to start and run first test (up to 60s)...")
-        time.sleep(60)
-
-        # Check data files exist
+        # Wait for the initial test cycle to complete by polling for the results file
         current_file = data_dir / "current_results.json"
         history_file = data_dir / "history.jsonl"
 
-        assert current_file.exists(), "current_results.json not created"
-        assert history_file.exists(), "history.jsonl not created"
+        print("Waiting for daemon to create results file (up to 60s)...")
+        for _ in range(60):
+            if current_file.exists() and history_file.exists():
+                break
+            time.sleep(1)
+
+        assert current_file.exists(), "current_results.json was not created after 60 seconds"
+        assert history_file.exists(), "history.jsonl was not created after 60 seconds"
 
         # Load and verify data
         data = json.loads(current_file.read_text())
