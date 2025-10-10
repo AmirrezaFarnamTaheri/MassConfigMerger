@@ -13,7 +13,8 @@ def mock_settings():
     return Settings()
 
 
-def test_daemon_start(mock_settings, tmp_path):
+@pytest.mark.asyncio
+async def test_daemon_start(mock_settings, tmp_path):
     """Test the start method of the daemon."""
     daemon = ConfigStreamDaemon(settings=mock_settings, data_dir=tmp_path)
 
@@ -26,7 +27,8 @@ def test_daemon_start(mock_settings, tmp_path):
         # We need to stop the blocking run_dashboard call to test the rest
         mock_run_dashboard.side_effect = lambda port: None
 
-        daemon.start(interval_hours=1, web_port=9000)
+        daemon.running = True
+        await daemon.start(interval_hours=1, web_port=9000)
 
         MockScheduler.assert_called_once_with(mock_settings, tmp_path)
         mock_scheduler_instance.start.assert_called_once_with(1)

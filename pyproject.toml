@@ -14,10 +14,6 @@ authors = [{name = "Amirreza 'Farnam' Taheri", email = "taherifarnam@gmail.com"}
 description = "VPN subscription aggregator and merger"
 readme = "README.md"
 requires-python = ">=3.8"
-homepage = "https://amirrezafarnamtaheri.github.io/configStream/"
-[project.urls]
-"Homepage" = "https://amirrezafarnamtaheri.github.io/configStream/"
-"Source" = "https://github.com/amirrezafarnamtaheri/configStream/"
 dependencies = [
     "aiohttp",
     "aiodns",
@@ -35,6 +31,10 @@ dependencies = [
     "apscheduler",
     "rich"
 ]
+
+[project.urls]
+"Homepage" = "https://amirrezafarnamtaheri.github.io/configStream/"
+"Source" = "https://github.com/amirrezafarnamtaheri/configStream/"
 
 [project.scripts]
 configstream = "configstream.cli:main"

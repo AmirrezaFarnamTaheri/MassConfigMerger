@@ -48,18 +48,15 @@ class TestScheduler:
             test_data = {
                 "timestamp": start_time.isoformat(),
                 "total_tested": len(results),
-                "successful": len([r for r in results if r.ping_ms > 0]),
-                "failed": len([r for r in results if r.ping_ms < 0]),
+                "successful": len([r for r in results if r.ping_time > 0]),
+                "failed": len([r for r in results if r.ping_time < 0]),
                 "nodes": [
                     {
-                        "config": r.raw_config,
+                        "config": r.config,
                         "protocol": r.protocol,
-                        "ping_ms": r.ping_ms,
-                        "country": r.country_code or "Unknown",
-                        "city": r.city or "Unknown",
-                        "organization": r.organization or "Unknown",
-                        "ip": r.ip,
-                        "port": r.port,
+                        "ping_time": r.ping_time,
+                        "country": r.country or "Unknown",
+                        "is_reachable": r.is_reachable,
                         "is_blocked": r.is_blocked,
                         "timestamp": start_time.isoformat()
                     }
