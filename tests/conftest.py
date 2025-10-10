@@ -1,4 +1,12 @@
 """Pytest configuration and shared fixtures."""
+import sys
+from pathlib import Path
+
+# Ensure the source directory is in the path
+ROOT = Path(__file__).resolve().parents[1]
+SRC_PATH = ROOT / "src"
+if str(SRC_PATH) not in sys.path:
+    sys.path.insert(0, str(SRC_PATH))
 
 from configstream.config import Settings
 import pytest
@@ -7,15 +15,8 @@ import importlib
 import asyncio
 import os
 import shutil
-import sys
-from pathlib import Path
 from typing import Optional
 from unittest.mock import patch
-
-ROOT = Path(__file__).resolve().parents[1]
-SRC_PATH = ROOT / "src"
-if str(SRC_PATH) not in sys.path:
-    sys.path.insert(0, str(SRC_PATH))
 
 
 def _load_optional_plugin(name: str) -> Optional[str]:

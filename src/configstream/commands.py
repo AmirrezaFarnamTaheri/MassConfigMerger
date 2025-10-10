@@ -9,9 +9,11 @@ import argparse
 import asyncio
 from pathlib import Path
 
+import signal
+import sys
+
 from . import services
 from .config import Settings
-from .main_daemon import ConfigStreamDaemon
 from .tui import display_results
 
 
@@ -59,26 +61,66 @@ def handle_full(args: argparse.Namespace, cfg: Settings) -> None:
     )
 
 
-def handle_daemon(args: argparse.Namespace, cfg: Settings):
-    """Handle the 'daemon' command."""
-    data_dir = Path("./data")
-    data_dir.mkdir(exist_ok=True)
+def cmd_daemon(args: argparse.Namespace, cfg: Settings):
+    """Run the ConfigStream daemon with automated testing and web dashboard.
 
-    daemon = ConfigStreamDaemon(settings=cfg, data_dir=data_dir)
+    This command starts:
+    1. A scheduler that runs VPN tests every N hours
+    2. A web server with the monitoring dashboard
+
+    The daemon runs until interrupted (Ctrl+C or kill signal).
+    """
+    from .scheduler import TestScheduler
+    from .web_dashboard import app
+
+    # Setup data directory
+    data_dir = Path(args.data_dir)
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    print("=" * 70)
+    print("ConfigStream Daemon Starting")
+    print("=" * 70)
+    print(f"Data directory: {data_dir.absolute()}")
+    print(f"Test interval: {args.interval} hours")
+    print(f"Web dashboard: http://{args.host}:{args.port}")
+    print("=" * 70)
+
+    # Initialize scheduler
+    scheduler = TestScheduler(cfg, data_dir)
+
+    # Setup signal handlers for graceful shutdown
+    def signal_handler(signum, frame):
+        print("\n" + "=" * 70)
+        print("Shutting down gracefully...")
+        print("=" * 70)
+        scheduler.stop()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    # Start scheduler
+    scheduler.start(interval_hours=args.interval)
+
+    print("\n✓ Scheduler started")
+    print(f"  Initial test: running now")
+    print(f"  Next test: in {args.interval} hours")
+    print(f"\nStarting web dashboard...")
+    print(f"  URL: http://{args.host}:{args.port}")
+    print(f"  Press Ctrl+C to stop\n")
+
+    # Start Flask app (this blocks)
     try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        # No running loop; safe to use asyncio.run
-        asyncio.run(daemon.start(
-            interval_hours=args.interval_hours,
-            web_port=args.web_port,
-        ))
-    else:
-        # A loop is already running; schedule the task
-        loop.create_task(daemon.start(
-            interval_hours=args.interval_hours,
-            web_port=args.web_port,
-        ))
+        app.run(
+            host=args.host,
+            port=args.port,
+            debug=False,  # Don't use debug mode in daemon
+            use_reloader=False  # Don't use reloader (conflicts with scheduler)
+        )
+    except Exception as e:
+        print(f"Error starting web server: {e}")
+        scheduler.stop()
+        sys.exit(1)
 
 
 def handle_tui(args: argparse.Namespace, cfg: Settings):

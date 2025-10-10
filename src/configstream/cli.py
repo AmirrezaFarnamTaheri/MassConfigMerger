@@ -124,7 +124,7 @@ HANDLERS: Dict[str, Callable[..., None]] = {
     "merge": commands.handle_merge,
     "retest": commands.handle_retest,
     "full": commands.handle_full,
-    "daemon": commands.handle_daemon,
+    "daemon": commands.cmd_daemon,
     "tui": commands.handle_tui,
 }
 

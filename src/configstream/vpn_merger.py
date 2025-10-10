@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 from typing import Optional, Set
 
-from .config import Settings
+from .config import Settings, load_config
 from .core.config_processor import ConfigProcessor
 from .core.types import ConfigResult
 from .core.output_generator import OutputGenerator
@@ -36,7 +36,7 @@ async def _load_configs(
     return await source_manager.fetch_sources(sources)
 
 
-async def run_merger(
+async def _run_merger_detailed(
     cfg: Settings,
     sources_file: Path,
     resume_file: Optional[Path] = None,
@@ -78,3 +78,30 @@ async def run_merger(
     finally:
         await source_manager.close_session()
         await db.close()
+
+
+async def run_merger(settings: Settings) -> list[ConfigResult]:
+    """Run the VPN merger pipeline.
+
+    Returns:
+        list[ConfigResult]: List of tested VPN configurations with their results.
+    """
+    logger = logging.getLogger(__name__)
+    logger.info("Starting VPN merger pipeline")
+
+    # Ensure file paths are Path objects
+    sources_path = Path(settings.sources.sources_file)
+    resume_path = (
+        Path(settings.processing.resume_file)
+        if settings.processing.resume_file
+        else None
+    )
+
+    results = await _run_merger_detailed(
+        cfg=settings,
+        sources_file=sources_path,
+        resume_file=resume_path,
+        write_output_files=False,  # Scheduler handles output
+    )
+
+    return results
