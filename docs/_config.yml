@@ -1,8 +1,7 @@
 theme: jekyll-theme-cayman
 title: ConfigStream
 description: Advanced VPN Configuration Aggregator & Monitor
-baseurl: "/configstream"
-url: "https://yourusername.github.io"
+url: "https://amirrezafarnamtaheri.github.io/configStream/"
 
 plugins:
   - jekyll-sitemap
