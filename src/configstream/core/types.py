@@ -1,10 +1,3 @@
-# ConfigStream
-# Copyright (C) 2025 Amirreza "Farnam" Taheri
-# This program comes with ABSOLUTELY NO WARRANTY; for details type `show w`.
-# This is free software, and you are welcome to redistribute it
-# under certain conditions; type `show c` for details.
-# For more information, see <https://amirrezafarnamtaheri.github.io/configStream/>.
-
 """Shared data types for the ConfigStream application."""
 from __future__ import annotations
 
@@ -30,11 +23,3 @@ class ConfigResult:
     longitude: Optional[float] = None
     reliability: Optional[float] = None
     is_blocked: bool = False
-
-    # Advanced testing results
-    packet_loss_percent: float = 0.0
-    jitter_ms: float = 0.0
-    download_mbps: float = 0.0
-    upload_mbps: float = 0.0
-    quality_score: float = 0.0
-    network_stable: bool = False

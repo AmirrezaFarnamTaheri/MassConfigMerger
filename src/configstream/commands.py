@@ -68,15 +68,24 @@ def handle_full(args: argparse.Namespace, cfg: Settings) -> None:
 
 def handle_daemon(args: argparse.Namespace, cfg: Settings):
     """Handle the 'daemon' command."""
-    data_dir = Path(args.data_dir)
+    data_dir = Path("./data")
     data_dir.mkdir(exist_ok=True)
 
     daemon = ConfigStreamDaemon(settings=cfg, data_dir=data_dir)
-    daemon.start(
-        interval=args.interval,
-        port=args.port,
-        host=args.host,
-    )
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # No running loop; safe to use asyncio.run
+        asyncio.run(daemon.start(
+            interval_hours=args.interval_hours,
+            web_port=args.web_port,
+        ))
+    else:
+        # A loop is already running; schedule the task
+        loop.create_task(daemon.start(
+            interval_hours=args.interval_hours,
+            web_port=args.web_port,
+        ))
 
 
 def handle_tui(args: argparse.Namespace, cfg: Settings):
