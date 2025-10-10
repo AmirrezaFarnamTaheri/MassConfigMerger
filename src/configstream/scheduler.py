@@ -18,6 +18,8 @@ from typing import TYPE_CHECKING
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
+from .db.historical_manager import HistoricalManager
+
 if TYPE_CHECKING:
     from .config import Settings
     from .core.types import ConfigResult
@@ -55,6 +57,7 @@ class TestScheduler:
         self.history_file = self.output_dir / "history.jsonl"
 
         self.scheduler = BackgroundScheduler()
+        self.historical_manager = HistoricalManager(self.settings.output.history_db_file)
 
         logger.info(f"TestScheduler initialized with output_dir: {self.output_dir}")
 
@@ -165,6 +168,15 @@ class TestScheduler:
             logger.info(f"Appending to history at {self.history_file}")
             with open(self.history_file, "a", encoding="utf-8") as f:
                 f.write(json.dumps(test_data) + "\n")
+
+            # Record results in the database
+            for result in results:
+                config_hash = self.historical_manager.hash_config(result.config)
+                await self.historical_manager.record_test({
+                    "config_hash": config_hash,
+                    **self._serialize_result(result, timestamp)
+                })
+                await self.historical_manager.update_reliability(config_hash)
 
             duration = (datetime.now() - start_time).total_seconds()
             avg_ping = sum(r.ping_time for r in successful if r.ping_time) / len(successful) if successful else 0
