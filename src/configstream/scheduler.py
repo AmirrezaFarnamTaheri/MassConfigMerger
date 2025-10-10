@@ -125,7 +125,7 @@ class TestScheduler:
 
         try:
             # Run the merger pipeline
-            results = await run_merger(self.settings, self.settings.sources.sources_file)
+            results = await run_merger(self.settings, Path(self.settings.sources.sources_file))
 
             # NEW: Run advanced tests on top nodes
             if self.settings.testing.enable_advanced_tests:
