@@ -20,9 +20,9 @@ def run_daemon_process(data_dir, port):
     sys.argv = [
         'configstream',
         'daemon',
-        '--interval-hours', '1',
+        '--interval', '1',
         '--data-dir', str(data_dir),
-        '--web-port', str(port)
+        '--port', str(port)
     ]
     cli_main()
 

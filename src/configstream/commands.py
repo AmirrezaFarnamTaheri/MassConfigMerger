@@ -73,9 +73,9 @@ def handle_daemon(args: argparse.Namespace, cfg: Settings):
 
     daemon = ConfigStreamDaemon(settings=cfg, data_dir=data_dir)
     daemon.start(
-        interval_hours=args.interval_hours,
-        web_port=args.web_port,
-        web_host=args.web_host,
+        interval=args.interval,
+        port=args.port,
+        host=args.host,
     )
 
 

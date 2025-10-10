@@ -16,30 +16,6 @@ from configstream.web_dashboard import DashboardData, create_app
 SRC_PATH = Path(__file__).resolve().parents[1] / "src"
 
 
-@pytest.fixture
-def settings(tmp_path: Path, monkeypatch) -> Settings:
-    """Fixture for a Settings object with a temporary data directory."""
-    monkeypatch.chdir(tmp_path)
-    data_dir = Path("data")
-    data_dir.mkdir()
-    settings = Settings()
-    settings.output.current_results_file=data_dir / "current_results.json"
-    settings.output.history_file=data_dir / "history.jsonl"
-    settings.output.output_dir=data_dir
-    return settings
-
-@pytest.fixture
-def app(settings: Settings):
-    """Fixture for a Flask app instance."""
-    app = create_app(settings=settings)
-    app.config["TESTING"] = True
-    return app
-
-@pytest.fixture
-def client(app):
-    """Fixture for a Flask test client."""
-    with app.test_client() as client:
-        yield client
 
 def test_index_route(client):
     """Test the index route."""

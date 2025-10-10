@@ -33,7 +33,7 @@ class ConfigStreamDaemon:
         self.scheduler = TestScheduler(settings, data_dir)
         self.running = False
 
-    def start(self, interval_hours: int = 2, web_port: int = 8080, web_host: str = "0.0.0.0"):
+    def start(self, interval: int = 2, port: int = 8080, host: str = "0.0.0.0"):
         """Start the daemon with scheduler and web server."""
         logger.info("Starting ConfigStream Daemon")
 
@@ -42,12 +42,12 @@ class ConfigStreamDaemon:
         signal.signal(signal.SIGTERM, self._signal_handler)
 
         # Start scheduler
-        self.scheduler.start(interval_hours)
+        self.scheduler.start(interval)
         self.running = True
 
         # Start web dashboard (blocking)
-        logger.info(f"Starting web dashboard on http://{web_host}:{web_port}")
-        run_dashboard(host=web_host, port=web_port)
+        logger.info(f"Starting web dashboard on http://{host}:{port}")
+        run_dashboard(host=host, port=port)
 
     def _signal_handler(self, signum, frame):
         """Handle shutdown signals."""
@@ -63,7 +63,7 @@ def main():
     data_dir.mkdir(exist_ok=True)
 
     daemon = ConfigStreamDaemon(settings, data_dir)
-    daemon.start(interval_hours=2, web_port=8080)
+    daemon.start(interval=2, port=8080)
 
 if __name__ == "__main__":
     main()

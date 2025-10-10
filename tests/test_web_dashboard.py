@@ -5,19 +5,8 @@ from configstream.web_dashboard import create_app
 from configstream.config import Settings, OutputSettings
 
 @pytest.fixture
-def settings(tmp_path: Path, monkeypatch) -> Settings:
-    """Fixture for a Settings object with a temporary data directory."""
-    monkeypatch.chdir(tmp_path)
-    data_dir = Path("data")
-    data_dir.mkdir()
-
-    settings = Settings()
-    settings.output = OutputSettings(
-        current_results_file=data_dir / "current_results.json",
-        history_file=data_dir / "history.jsonl",
-        output_dir=data_dir,
-    )
-
+def app(settings: Settings):
+    """Fixture for a Flask app instance."""
     # Create sample data
     test_data = {
         "timestamp": "2025-10-10T12:00:00",
@@ -47,11 +36,6 @@ def settings(tmp_path: Path, monkeypatch) -> Settings:
     }
     settings.output.current_results_file.write_text(json.dumps(test_data))
 
-    return settings
-
-@pytest.fixture
-def app(settings: Settings):
-    """Fixture for a Flask app instance."""
     app = create_app(settings=settings)
     app.config["TESTING"] = True
     return app
@@ -133,3 +117,13 @@ def test_api_export_json(client):
     assert response.content_type == 'application/json'
     data = json.loads(response.data)
     assert len(data) == 3
+
+def test_get_history_empty(settings: Settings):
+    """Test that get_history handles an empty history file."""
+    settings.output.history_file.write_text("")
+    app = create_app(settings=settings)
+    with app.test_client() as client:
+        response = client.get('/api/history')
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data == []

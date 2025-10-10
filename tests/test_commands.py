@@ -25,9 +25,9 @@ def mock_args():
     args.no_prune = False
     args.resume_file = "resume.json"
     args.input = "input.txt"
-    args.interval_hours = 2
-    args.web_port = 8080
-    args.web_host = "0.0.0.0"
+    args.interval = 2
+    args.port = 8080
+    args.host = "0.0.0.0"
     args.data_dir = "./data"
     return args
 
@@ -102,9 +102,9 @@ def test_handle_daemon(mock_daemon_cls, mock_args, mock_settings):
 
     mock_daemon_cls.assert_called_once_with(settings=mock_settings, data_dir=Path(mock_args.data_dir))
     mock_daemon_instance.start.assert_called_once_with(
-        interval_hours=mock_args.interval_hours,
-        web_port=mock_args.web_port,
-        web_host=mock_args.web_host,
+        interval=mock_args.interval,
+        port=mock_args.port,
+        host=mock_args.host,
     )
 
 

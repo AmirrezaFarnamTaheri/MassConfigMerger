@@ -49,6 +49,13 @@ async def test_check_all_without_keys():
     print(f"✓ Check completed: {result.score.value}")
     print(f"  Services checked: {result.checked_services}")
 
+@pytest.mark.asyncio
+async def test_check_abuseipdb_api_error():
+    """Test that check_abuseipdb handles API errors."""
+    checker = IPReputationChecker(api_keys={"abuseipdb": "invalid_key"})
+    result = await checker.check_abuseipdb("1.1.1.1")
+    assert "error" in result
+
 
 @pytest.mark.asyncio
 @pytest.mark.skipif(
