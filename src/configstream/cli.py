@@ -11,12 +11,16 @@ from __future__ import annotations
 
 import argparse
 import sys
+import signal
+import asyncio
 from pathlib import Path
 from typing import Callable, Dict
 
 from pydantic import BaseModel
 
 from . import cli_args, commands, services
+from .scheduler import TestScheduler
+from .web_dashboard import create_app
 from .config import Settings, load_config
 from .constants import CONFIG_FILE_NAME
 from .core.utils import print_public_source_warning
@@ -119,12 +123,74 @@ def _update_settings_from_args(cfg: Settings, args: argparse.Namespace):
                 setattr(group, field_name, value)
 
 
+def cmd_daemon(args: argparse.Namespace, cfg: Settings):
+    """Run the ConfigStream daemon with automated testing and web dashboard."""
+    data_dir = Path(args.data_dir)
+
+    print("=" * 70)
+    print("ConfigStream Daemon Starting")
+    print("=" * 70)
+    print(f"Data directory: {data_dir.absolute()}")
+    print(f"Test interval: {args.interval} hours")
+    print(f"Web dashboard: http://{args.host}:{args.port}")
+    print("=" * 70)
+
+    # Initialize scheduler
+    scheduler = TestScheduler(cfg, data_dir)
+
+    # Create the Flask app
+    app = create_app(cfg)
+
+    # Setup signal handlers for graceful shutdown
+    shutdown_event = asyncio.Event()
+
+    def _signal_handler(signum, frame):
+        print("\n" + "=" * 70)
+        print("Shutdown signal received. Shutting down gracefully...")
+        print("=" * 70)
+        shutdown_event.set()
+
+    signal.signal(signal.SIGINT, _signal_handler)
+    signal.signal(signal.SIGTERM, _signal_handler)
+
+    async def main_loop():
+        # Start scheduler
+        scheduler.start(interval_hours=args.interval)
+        print("\n✓ Scheduler started")
+        print(f"  Initial test: running now")
+        print(f"  Next test: in {args.interval} hours")
+
+        # Configure and run Hypercorn for a production-ready server
+        from hypercorn.config import Config as HypercornConfig
+        from hypercorn.asyncio import serve
+
+        hypercorn_config = HypercornConfig()
+        hypercorn_config.bind = [f"{args.host}:{args.port}"]
+
+        print(f"\nStarting web dashboard...")
+        print(f"  URL: http://{args.host}:{args.port}")
+        print(f"  Press Ctrl+C to stop\n")
+
+        server_task = asyncio.create_task(
+            serve(app, hypercorn_config, shutdown_trigger=shutdown_event.wait)
+        )
+
+        await shutdown_event.wait()
+        scheduler.stop()
+        await server_task
+
+    try:
+        asyncio.run(main_loop())
+    except (KeyboardInterrupt, SystemExit):
+        print("Daemon stopped.")
+
+
 HANDLERS: Dict[str, Callable[..., None]] = {
     "fetch": commands.handle_fetch,
     "merge": commands.handle_merge,
     "retest": commands.handle_retest,
     "full": commands.handle_full,
-    "daemon": commands.handle_daemon,
+    "daemon": cmd_daemon,
     "tui": commands.handle_tui,
 }
 

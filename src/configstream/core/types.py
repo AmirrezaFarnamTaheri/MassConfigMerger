@@ -23,3 +23,11 @@ class ConfigResult:
     longitude: Optional[float] = None
     reliability: Optional[float] = None
     is_blocked: bool = False
+
+    # Advanced testing results
+    packet_loss_percent: float = 0.0
+    jitter_ms: float = 0.0
+    download_mbps: float = 0.0
+    upload_mbps: float = 0.0
+    quality_score: float = 0.0
+    network_stable: bool = False

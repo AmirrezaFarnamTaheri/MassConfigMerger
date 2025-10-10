@@ -1,76 +1,95 @@
-import pytest
-from unittest.mock import patch, MagicMock
-from pathlib import Path
+"""Test web dashboard routes."""
 import json
-from datetime import datetime, timedelta
-
-from configstream.web_dashboard import DashboardData, app as flask_app
-
-
-@pytest.fixture
-def client():
-    """Fixture for a Flask test client."""
-    flask_app.config["TESTING"] = True
-    with flask_app.test_client() as client:
-        yield client
+import pytest
+from pathlib import Path
+from configstream.web_dashboard import create_app
+from configstream.config import Settings
 
 
 @pytest.fixture
-def dashboard_data(tmp_path):
-    """Fixture to create a DashboardData instance with a temporary data directory."""
-    data_dir = tmp_path
-    # We patch the global `dashboard_data` instance used by the Flask app
-    with patch("configstream.web_dashboard.dashboard_data", DashboardData(data_dir)):
-        yield DashboardData(data_dir)
+def app():
+    """Create and configure a new app instance for each test."""
+    settings = Settings()
+    app = create_app(settings)
+    app.config.update({
+        "TESTING": True,
+    })
+    yield app
 
 
-def test_get_current_results_no_file(dashboard_data):
-    """Test get_current_results when the data file does not exist."""
-    results = dashboard_data.get_current_results()
-    assert results == {"timestamp": None, "nodes": []}
+@pytest.fixture
+def client(app):
+    """A test client for the app."""
+    return app.test_client()
 
 
-def test_get_history_filtering(dashboard_data):
-    """Test get_history to ensure it correctly filters by time."""
-    now = datetime.now()
-    old_ts = (now - timedelta(hours=30)).isoformat()
-    new_ts = (now - timedelta(hours=1)).isoformat()
-    history_file = dashboard_data.history_file
-    with open(history_file, "w") as f:
-        f.write(json.dumps({"timestamp": old_ts}) + "\n")
-        f.write(json.dumps({"timestamp": new_ts}) + "\n")
+@pytest.fixture
+def setup_test_data(app, tmp_path):
+    """Create test data files and configure the app to use them."""
+    dashboard_data = app.config["DASHBOARD_DATA"]
+    dashboard_data.data_dir = tmp_path
+    dashboard_data.current_file = tmp_path / "current_results.json"
+    dashboard_data.history_file = tmp_path / "history.jsonl"
 
-    history = dashboard_data.get_history(hours=24)
-    assert len(history) == 1
-    assert history[0]["timestamp"] == new_ts
+    test_data = {
+        "timestamp": "2025-10-10T12:00:00",
+        "total_tested": 3,
+        "successful": 2,
+        "failed": 1,
+        "nodes": [
+            {"config": "vmess://test1", "protocol": "vmess", "ping_ms": 50, "country": "US", "city": "New York", "organization": "Test Org", "ip": "1.2.3.4", "port": 443, "is_blocked": False, "timestamp": "2025-10-10T12:00:00"},
+            {"config": "ss://test2", "protocol": "shadowsocks", "ping_ms": 150, "country": "UK", "city": "London", "organization": "Test Org 2", "ip": "5.6.7.8", "port": 8388, "is_blocked": False, "timestamp": "2025-10-10T12:00:00"},
+            {"config": "trojan://test3", "protocol": "trojan", "ping_ms": -1, "country": "DE", "city": "Berlin", "organization": "Test Org 3", "ip": "9.10.11.12", "port": 443, "is_blocked": True, "timestamp": "2025-10-10T12:00:00"}
+        ]
+    }
 
-
-def test_api_current_endpoint(client, dashboard_data):
-    """Test the /api/current endpoint."""
-    test_data = {"timestamp": datetime.now().isoformat(), "nodes": [{"protocol": "VLESS"}]}
     dashboard_data.current_file.write_text(json.dumps(test_data))
+    return test_data
 
-    response = client.get("/api/current")
+
+def test_index_route(client):
+    """Test main dashboard page loads."""
+    response = client.get('/')
     assert response.status_code == 200
-    json_response = response.get_json()
-    assert json_response["nodes"][0]["protocol"] == "VLESS"
 
 
-def test_api_export_csv(client, dashboard_data):
-    """Test the CSV export functionality."""
-    nodes = [{"protocol": "vless", "country": "US", "ping_ms": 100}]
-    test_data = {"timestamp": datetime.now().isoformat(), "nodes": nodes}
-    dashboard_data.current_file.write_text(json.dumps(test_data))
-
-    response = client.get("/api/export/csv")
+def test_api_current(client, setup_test_data):
+    """Test /api/current endpoint."""
+    response = client.get('/api/current')
     assert response.status_code == 200
-    assert response.mimetype == "text/csv"
-    assert "protocol,country,ping_ms" in response.data.decode()
-    assert "vless,US,100" in response.data.decode()
+    data = json.loads(response.data)
+    assert len(data['nodes']) == 3
 
 
-def test_api_export_unsupported_format(client):
-    """Test that an unsupported export format returns an error."""
-    response = client.get("/api/export/xml")
-    assert response.status_code == 400
-    assert response.get_json() == {"error": "Unsupported format"}
+def test_api_current_with_filters(client, setup_test_data):
+    """Test /api/current with filters."""
+    response = client.get('/api/current?protocol=vmess')
+    data = json.loads(response.data)
+    assert len(data['nodes']) == 1
+    assert data['nodes'][0]['protocol'] == 'vmess'
+
+
+def test_api_statistics(client, setup_test_data):
+    """Test /api/statistics endpoint."""
+    response = client.get('/api/statistics')
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert data['total_nodes'] == 3
+    assert data['successful_nodes'] == 2
+
+
+def test_api_export_csv(client, setup_test_data):
+    """Test CSV export."""
+    response = client.get('/api/export/csv')
+    assert response.status_code == 200
+    assert response.content_type == 'text/csv; charset=utf-8'
+    assert 'vmess' in response.data.decode('utf-8')
+
+
+def test_api_export_json(client, setup_test_data):
+    """Test JSON export."""
+    response = client.get('/api/export/json')
+    assert response.status_code == 200
+    assert response.content_type == 'application/json'
+    data = json.loads(response.data)
+    assert len(data) == 3

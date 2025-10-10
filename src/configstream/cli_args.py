@@ -267,22 +267,28 @@ def add_sources_parser(subparsers: argparse._SubParsersAction):
 def add_daemon_arguments(parser: argparse.ArgumentParser):
     """Add arguments for the 'daemon' command."""
     parser.add_argument(
-        "--interval-hours",
+        "--interval",
         type=int,
         default=2,
-        help="The interval in hours for the automated testing cycle.",
+        help="Hours between test cycles (default: 2)",
     )
     parser.add_argument(
-        "--web-port",
-        type=int,
-        default=8080,
-        help="The port to run the web dashboard on.",
+        "--data-dir",
+        type=str,
+        default="./data",
+        help="Directory for storing test results (default: ./data)",
     )
     parser.add_argument(
-        "--web-host",
+        "--host",
         type=str,
         default="0.0.0.0",
-        help="The host to run the web dashboard on.",
+        help="Web server host (default: 0.0.0.0)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8080,
+        help="Web server port (default: 8080)",
     )
 
 
