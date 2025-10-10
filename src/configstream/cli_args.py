@@ -271,6 +271,31 @@ def add_sources_parser(subparsers: argparse._SubParsersAction):
     remove_p.add_argument("url", help="The URL of the source to remove")
 
 
+def add_testing_arguments(parser: argparse.ArgumentParser):
+    """Add arguments for testing."""
+    group = parser.add_argument_group("testing arguments")
+    group.add_argument(
+        "--enable-advanced-tests",
+        action="store_true",
+        help="Enable advanced testing (bandwidth, jitter, etc.).",
+    )
+    group.add_argument(
+        "--advanced-test-top-n",
+        type=int,
+        help="Number of top nodes to run advanced tests on.",
+    )
+    group.add_argument(
+        "--test-bandwidth",
+        action="store_true",
+        help="Enable bandwidth testing.",
+    )
+    group.add_argument(
+        "--test-network-quality",
+        action="store_true",
+        help="Enable network quality testing (packet loss, jitter).",
+    )
+
+
 def add_daemon_arguments(parser: argparse.ArgumentParser):
     """Add arguments for the 'daemon' command."""
     parser.add_argument(
@@ -291,6 +316,7 @@ def add_daemon_arguments(parser: argparse.ArgumentParser):
         default="0.0.0.0",
         help="The host to run the web dashboard on.",
     )
+    add_testing_arguments(parser)
 
 
 def add_tui_arguments(subparsers: argparse._SubParsersAction):

@@ -9,17 +9,17 @@ from configstream.core.config_processor import ConfigProcessor, ConfigResult
 
 
 @pytest.mark.asyncio
-async def test_filter_malicious_dns_failure_coverage():
-    """Test _filter_malicious when DNS resolution fails to improve coverage."""
+async def test_run_security_checks_dns_failure_coverage():
+    """Test _run_security_checks when DNS resolution fails to improve coverage."""
     settings = Settings()
-    settings.security.apivoid_api_key = "test-key"
+    settings.security.api_keys = {"abuseipdb": "test-key"}
     processor = ConfigProcessor(settings)
     processor.tester.resolve_host = AsyncMock(
         side_effect=Exception("DNS Error"))
 
     results = [ConfigResult(config="c1", protocol="p1",
                             is_reachable=True, host="dns-fails.com")]
-    filtered = await processor._filter_malicious(results)
+    filtered = await processor._run_security_checks(results)
     assert filtered == results
     await processor.tester.close()
 

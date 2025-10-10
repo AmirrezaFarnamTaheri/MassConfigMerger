@@ -33,7 +33,13 @@ def test_get_current_results_file_not_found(tmp_path):
     """Test get_current_results when the file doesn't exist."""
     dashboard_data = DashboardData(tmp_path)
     results = dashboard_data.get_current_results()
-    assert results == {"timestamp": None, "nodes": []}
+    assert results == {
+        "timestamp": None,
+        "total_tested": 0,
+        "successful": 0,
+        "failed": 0,
+        "nodes": []
+    }
 
 def test_get_history_file_not_found(tmp_path):
     """Test get_history when the file doesn't exist."""
@@ -58,4 +64,4 @@ def test_api_export_unsupported_format(client):
     """Test that an unsupported export format returns an error."""
     response = client.get("/api/export/xml")
     assert response.status_code == 400
-    assert response.get_json() == {"error": "Unsupported format"}
+    assert response.get_json() == {"error": "Unsupported format: xml"}

@@ -30,7 +30,7 @@ class ConfigStreamDaemon:
     def __init__(self, settings: Settings, data_dir: Path):
         self.settings = settings
         self.data_dir = data_dir
-        self.scheduler = TestScheduler(settings, data_dir)
+        self.scheduler = TestScheduler(settings=settings, output_dir=data_dir)
         self.running = False
 
     def start(self, interval_hours: int = 2, web_port: int = 8080):

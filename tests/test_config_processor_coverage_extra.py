@@ -10,31 +10,31 @@ from configstream.exceptions import NetworkError
 
 
 @pytest.mark.asyncio
-async def test_filter_malicious_unresolved_host(fs):
-    """Test that _filter_malicious handles unresolved hosts gracefully."""
+async def test_run_security_checks_unresolved_host(fs):
+    """Test that _run_security_checks handles unresolved hosts gracefully."""
     settings = Settings()
-    settings.security.apivoid_api_key = "test-key"
+    settings.security.api_keys = {"abuseipdb": "test-key"}
     processor = ConfigProcessor(settings)
     processor.tester.resolve_host = AsyncMock(return_value=None)
 
     results = [ConfigResult(config="c1", protocol="p1",
                             is_reachable=True, host="unresolved.com")]
-    filtered = await processor._filter_malicious(results)
+    filtered = await processor._run_security_checks(results)
     assert filtered == results  # Should not filter if host can't be resolved
     await processor.tester.close()
 
 
 @pytest.mark.asyncio
-async def test_test_configs_filter_malicious_exception(fs):
-    """Test that test_configs handles exceptions from _filter_malicious."""
+async def test_test_configs_run_security_checks_exception(fs):
+    """Test that test_configs handles exceptions from _run_security_checks."""
     settings = Settings()
     processor = ConfigProcessor(settings)
-    processor._filter_malicious = AsyncMock(side_effect=Exception("API error"))
+    processor._run_security_checks = AsyncMock(side_effect=Exception("API error"))
     processor.tester.close = AsyncMock()
     processor.blocklist_checker.close = AsyncMock()
 
     with patch("configstream.core.config_processor.logging.debug") as mock_debug:
-        results = await processor.test_configs(["vless://config"], {})
+        results = await processor.test_configs({"vless://config"}, {})
         assert results == []
 
         # We can't compare exception objects directly, so we check the call arguments

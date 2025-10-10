@@ -247,6 +247,10 @@ class SecuritySettings(BaseModel):
         None,
         description="Optional API key to protect API endpoints. If set, it must be provided in the 'X-API-Key' header.",
     )
+    api_keys: Dict[str, str] = Field(
+        default_factory=dict,
+        description="API keys for various security services.",
+    )
 
 
 class ProcessingSettings(BaseModel):
@@ -283,6 +287,14 @@ class ProcessingSettings(BaseModel):
     )
 
 
+class TestingSettings(BaseModel):
+    """Testing configuration."""
+    enable_advanced_tests: bool = False
+    advanced_test_top_n: int = 10
+    test_bandwidth: bool = False
+    test_network_quality: bool = True
+
+
 class SourcesSettings(BaseModel):
     """Settings for managing subscription sources."""
 
@@ -301,6 +313,7 @@ class Settings(BaseSettings):
     filtering: FilteringSettings = Field(default_factory=FilteringSettings)
     output: OutputSettings = Field(default_factory=OutputSettings)
     processing: ProcessingSettings = Field(default_factory=ProcessingSettings)
+    testing: TestingSettings = Field(default_factory=TestingSettings)
     security: SecuritySettings = Field(default_factory=SecuritySettings)
     sources: SourcesSettings = Field(default_factory=SourcesSettings)
 
