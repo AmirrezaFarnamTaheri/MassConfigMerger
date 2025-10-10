@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock, AsyncMock, PropertyMock
 from pathlib import Path
 import json
 from datetime import datetime
@@ -25,14 +25,9 @@ async def test_scheduler_run_test_cycle(mock_settings, tmp_path):
         ConfigResult(
             config="vless://test",
             protocol="VLESS",
-            ping_ms=100,
-            country_code="US",
-            city="New York",
-            organization="Test Org",
-            ip="1.1.1.1",
-            port=443,
-            is_blocked=False,
-            raw_config="vless://test",
+            ping_time=100,
+            country="US",
+            is_reachable=True,
         )
     ]
 
@@ -90,6 +85,7 @@ def test_scheduler_start_and_stop(mock_settings, tmp_path):
         mock_start.assert_called_once()
 
         # Simulate the scheduler running
-        scheduler.scheduler.running = True
-        scheduler.stop()
-        mock_shutdown.assert_called_once()
+        with patch('apscheduler.schedulers.base.BaseScheduler.running', new_callable=PropertyMock) as mock_running:
+            mock_running.return_value = True
+            scheduler.stop()
+            mock_shutdown.assert_called_once()

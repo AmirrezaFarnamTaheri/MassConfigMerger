@@ -19,19 +19,13 @@ SRC_PATH = Path(__file__).resolve().parents[1] / "src"
 def _setup_app(fs, settings):
     """Helper to replicate app setup from conftest.py."""
     fs.add_real_directory(str(Path(SRC_PATH, "configstream", "templates")))
-    app = create_app(settings=settings)
-    app.config.update({"TESTING": True})
-
-    def _get_werkzeug_version() -> str:
-        return "3.0.3"
-
-    original_get_version = testing._get_werkzeug_version
-    testing._get_werkzeug_version = _get_werkzeug_version
-
-    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
+    with patch("importlib.metadata.version", return_value="3.0.3"):
+        app = create_app(settings=settings)
+        app.config.update({"TESTING": True})
+        app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
 
     def cleanup():
-        testing._get_werkzeug_version = original_get_version
+        pass
 
     return app, cleanup
 
@@ -70,10 +64,10 @@ def test_api_statistics(fs, settings):
     with patch("configstream.web_dashboard.DashboardData.get_current_results") as mock_get_results:
         mock_get_results.return_value = {
             "nodes": [
-                {"protocol": "vless", "country": "US", "ping_ms": 100},
-                {"protocol": "vless", "country": "DE", "ping_ms": 200},
-                {"protocol": "ss", "country": "US", "ping_ms": 150},
-                {"protocol": "vless", "country": "US", "ping_ms": -1},
+                {"protocol": "vless", "country": "US", "ping_time": 100},
+                {"protocol": "vless", "country": "DE", "ping_time": 200},
+                {"protocol": "ss", "country": "US", "ping_time": 150},
+                {"protocol": "vless", "country": "US", "ping_time": -1},
             ]
         }
 
@@ -95,17 +89,14 @@ def test_get_current_results_file_not_found(fs):
     """Test get_current_results when the file doesn't exist."""
     data_dir = Path("/test_data")
     data_dir.mkdir(exist_ok=True)
-    settings = Settings()
-    dashboard_data = DashboardData(settings)
-    dashboard_data.data_dir = data_dir
-    dashboard_data.current_file = data_dir / "current_results.json"
+    dashboard_data = DashboardData(data_dir)
     results = dashboard_data.get_current_results()
     assert results == {"timestamp": None, "nodes": []}
 
 
 def test_filter_nodes_no_filters():
     """Test that filtering with no filters returns the original node list."""
-    dashboard_data = DashboardData(Settings())
+    dashboard_data = DashboardData(Path("/data"))
     nodes = [{"id": 1}, {"id": 2}]
     filtered = dashboard_data.filter_nodes(nodes, {})
     assert filtered == nodes
@@ -113,7 +104,7 @@ def test_filter_nodes_no_filters():
 
 def test_export_csv_empty_nodes():
     """Test that exporting an empty list of nodes returns an empty string."""
-    dashboard_data = DashboardData(Settings())
+    dashboard_data = DashboardData(Path("/data"))
     result = dashboard_data.export_csv([])
     assert result == ""
 
@@ -122,10 +113,10 @@ def test_api_export_csv(fs, settings):
     """Test exporting data as CSV."""
     with patch("configstream.web_dashboard.DashboardData") as mock_dashboard_data_cls:
         mock_dashboard_data_instance = mock_dashboard_data_cls.return_value
-        nodes = [{"protocol": "vless", "ping_ms": 100}]
+        nodes = [{"protocol": "vless", "ping_time": 100}]
         mock_dashboard_data_instance.get_current_results.return_value = {"nodes": nodes}
         mock_dashboard_data_instance.filter_nodes.return_value = nodes
-        mock_dashboard_data_instance.export_csv.return_value = "protocol,ping_ms\nvless,100"
+        mock_dashboard_data_instance.export_csv.return_value = "protocol,ping_time\nvless,100"
 
         app, cleanup = _setup_app(fs, settings)
         client = app.test_client()
@@ -134,7 +125,7 @@ def test_api_export_csv(fs, settings):
         assert response.status_code == 200
         assert response.mimetype == "text/csv"
         assert "attachment" in response.headers["Content-Disposition"]
-        assert response.data == b"protocol,ping_ms\nvless,100"
+        assert response.data == b"protocol,ping_time\nvless,100"
         cleanup()
 
 
@@ -142,9 +133,10 @@ def test_api_export_json(fs, settings):
     """Test exporting data as JSON."""
     with patch("configstream.web_dashboard.DashboardData") as mock_dashboard_data_cls:
         mock_dashboard_data_instance = mock_dashboard_data_cls.return_value
-        nodes = [{"protocol": "vless", "ping_ms": 100}]
+        nodes = [{"protocol": "vless", "ping_time": 100}]
         mock_dashboard_data_instance.get_current_results.return_value = {"nodes": nodes}
         mock_dashboard_data_instance.filter_nodes.return_value = nodes
+        mock_dashboard_data_instance.export_json.return_value = json.dumps(nodes)
 
         app, cleanup = _setup_app(fs, settings)
         client = app.test_client()
@@ -153,20 +145,7 @@ def test_api_export_json(fs, settings):
         assert response.status_code == 200
         assert response.mimetype == "application/json"
         assert "attachment" in response.headers["Content-Disposition"]
-        expected_data = [
-            {
-                "protocol": "vless",
-                "country": None,
-                "city": None,
-                "ip": None,
-                "port": None,
-                "ping_ms": 100,
-                "organization": None,
-                "is_blocked": None,
-                "timestamp": None,
-            }
-        ]
-        assert response.get_json() == expected_data
+        assert response.get_json() == nodes
         cleanup()
 
 
@@ -184,11 +163,8 @@ def test_dashboard_data_get_history(fs):
     """Test DashboardData.get_history method."""
     data_dir = Path("/data")
     data_dir.mkdir(exist_ok=True)
-    settings = Settings()
-    dashboard_data = DashboardData(settings)
-    dashboard_data.data_dir = data_dir
+    dashboard_data = DashboardData(data_dir)
     history_file = data_dir / "history.jsonl"
-    dashboard_data.history_file = history_file
 
     now = datetime.now()
     old_ts = (now - timedelta(hours=30)).isoformat()
