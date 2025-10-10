@@ -291,6 +291,22 @@ class SourcesSettings(BaseModel):
     )
 
 
+class TestingSettings(BaseModel):
+    """Testing configuration."""
+    enable_advanced_tests: bool = Field(
+        False, description="Enable advanced testing (bandwidth, jitter, etc.)."
+    )
+    advanced_test_top_n: int = Field(
+        10, description="Number of top nodes to run advanced tests on."
+    )
+    test_bandwidth: bool = Field(
+        False, description="Enable bandwidth testing."
+    )
+    test_network_quality: bool = Field(
+        True, description="Enable network quality testing (packet loss, jitter)."
+    )
+
+
 class Settings(BaseSettings):
     """
     Main application configuration model.
@@ -303,6 +319,7 @@ class Settings(BaseSettings):
     processing: ProcessingSettings = Field(default_factory=ProcessingSettings)
     security: SecuritySettings = Field(default_factory=SecuritySettings)
     sources: SourcesSettings = Field(default_factory=SourcesSettings)
+    testing: TestingSettings = Field(default_factory=TestingSettings)
 
     config_file: Optional[Path] = Field(default=None, exclude=True)
 

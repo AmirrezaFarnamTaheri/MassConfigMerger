@@ -109,13 +109,15 @@ class DashboardData:
         return json.dumps(nodes, indent=2)
 
 
-def create_app(settings: Settings | None = None) -> Flask:
+def create_app(settings: Settings | None = None, dashboard_data: DashboardData | None = None) -> Flask:
     """Create and configure the Flask application."""
     if settings is None:
         settings = load_config()
 
+    if dashboard_data is None:
+        dashboard_data = DashboardData(settings)
+
     app = Flask(__name__, template_folder="templates", static_folder="static")
-    dashboard_data = DashboardData(settings)
 
     @app.route("/")
     def index():

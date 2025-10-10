@@ -5,17 +5,23 @@
 # under certain conditions; type `show c` for details.
 # For more information, see <https://amirrezafarnamtaheri.github.io/configStream/>.
 
-"""IP reputation checking against multiple services."""
+"""IP reputation checking against multiple services.
+
+This module integrates with various IP reputation services to identify
+potentially malicious or compromised VPN nodes.
+"""
 from __future__ import annotations
 
 import asyncio
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
+from typing import Dict, Optional, Any, List
 
 import aiohttp
 
 logger = logging.getLogger(__name__)
+
 
 class ReputationScore(Enum):
     """IP reputation scores."""
@@ -24,23 +30,67 @@ class ReputationScore(Enum):
     MALICIOUS = "malicious"
     UNKNOWN = "unknown"
 
+
 @dataclass
 class ReputationResult:
-    """Result from IP reputation check."""
+    """Result from IP reputation check.
+
+    Attributes:
+        score: Overall reputation score
+        abuse_confidence: Confidence score from AbuseIPDB (0-100)
+        is_tor: Whether IP is a Tor exit node
+        is_proxy: Whether IP is a known proxy
+        is_vpn: Whether IP is a known VPN
+        threat_types: List of threat types detected
+        checked_services: List of services that were checked
+        details: Raw details from all services
+    """
     score: ReputationScore
-    details: dict[str, any]
-    checked_services: list[str]
+    abuse_confidence: int = 0
+    is_tor: bool = False
+    is_proxy: bool = False
+    is_vpn: bool = False
+    threat_types: List[str] = field(default_factory=list)
+    checked_services: List[str] = field(default_factory=list)
+    details: Dict[str, Any] = field(default_factory=dict)
+
 
 class IPReputationChecker:
-    """Checks IP reputation against multiple services."""
+    """Checks IP reputation against multiple services.
 
-    def __init__(self, api_keys: dict[str, str] | None = None):
+    Supports:
+    - AbuseIPDB (requires API key)
+    - IPQualityScore (requires API key)
+    - ip-api.com (free, no key required)
+
+    Example:
+        >>> checker = IPReputationChecker(
+        ...     api_keys={"abuseipdb": "your-key"}
+        ... )
+        >>> result = await checker.check_all("1.2.3.4")
+        >>> print(f"Score: {result.score}")
+    """
+
+    def __init__(self, api_keys: Optional[Dict[str, str]] = None):
+        """Initialize reputation checker.
+
+        Args:
+            api_keys: Dictionary of API keys for various services
+                     Format: {"service_name": "api_key"}
+        """
         self.api_keys = api_keys or {}
 
-    async def check_abuseipdb(self, ip: str) -> dict:
-        """Check AbuseIPDB (requires API key)."""
+    async def check_abuseipdb(self, ip: str) -> Dict[str, Any]:
+        """Check AbuseIPDB for IP reputation.
+
+        Args:
+            ip: IP address to check
+
+        Returns:
+            Dictionary with abuse information
+        """
         if "abuseipdb" not in self.api_keys:
-            return {"error": "No API key"}
+            return {"error": "No API key configured"}
 
         try:
             url = "https://api.abuseipdb.com/api/v2/check"
@@ -48,74 +98,188 @@ class IPReputationChecker:
                 "Key": self.api_keys["abuseipdb"],
                 "Accept": "application/json"
             }
-            params = {"ipAddress": ip, "maxAgeInDays": 90}
+            params = {
+                "ipAddress": ip,
+                "maxAgeInDays": 90,
+                "verbose": ""
+            }
 
             async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers, params=params) as resp:
+                async with session.get(
+                    url,
+                    headers=headers,
+                    params=params,
+                    timeout=aiohttp.ClientTimeout(total=10)
+                ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
                         return data.get("data", {})
+                    else:
+                        return {"error": f"HTTP {resp.status}"}
 
         except Exception as e:
             logger.error(f"AbuseIPDB check failed: {e}")
+            return {"error": str(e)}
 
-        return {"error": "Check failed"}
+    async def check_ipapi(self, ip: str) -> Dict[str, Any]:
+        """Check ip-api.com for IP information (free service).
 
-    async def check_virustotal(self, ip: str) -> dict:
-        """Check VirusTotal (requires API key)."""
-        if "virustotal" not in self.api_keys:
-            return {"error": "No API key"}
+        Args:
+            ip: IP address to check
 
+        Returns:
+            Dictionary with IP information
+        """
         try:
-            url = f"https://www.virustotal.com/api/v3/ip_addresses/{ip}"
-            headers = {"x-apikey": self.api_keys["virustotal"]}
+            url = f"http://ip-api.com/json/{ip}"
+            params = {
+                "fields": "status,message,country,countryCode,region,regionName,"
+                         "city,zip,lat,lon,timezone,isp,org,as,proxy,hosting"
+            }
 
             async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers) as resp:
+                async with session.get(
+                    url,
+                    params=params,
+                    timeout=aiohttp.ClientTimeout(total=10)
+                ) as resp:
                     if resp.status == 200:
                         return await resp.json()
+                    else:
+                        return {"error": f"HTTP {resp.status}"}
 
         except Exception as e:
-            logger.error(f"VirusTotal check failed: {e}")
+            logger.error(f"ip-api check failed: {e}")
+            return {"error": str(e)}
 
-        return {"error": "Check failed"}
+    async def check_ipqualityscore(self, ip: str) -> Dict[str, Any]:
+        """Check IPQualityScore for fraud/proxy detection.
+
+        Args:
+            ip: IP address to check
+
+        Returns:
+            Dictionary with quality score information
+        """
+        if "ipqualityscore" not in self.api_keys:
+            return {"error": "No API key configured"}
+
+        try:
+            key = self.api_keys["ipqualityscore"]
+            url = f"https://ipqualityscore.com/api/json/ip/{key}/{ip}"
+            params = {
+                "strictness": 0,
+                "allow_public_access_points": "true"
+            }
+
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    url,
+                    params=params,
+                    timeout=aiohttp.ClientTimeout(total=10)
+                ) as resp:
+                    if resp.status == 200:
+                        return await resp.json()
+                    else:
+                        return {"error": f"HTTP {resp.status}"}
+
+        except Exception as e:
+            logger.error(f"IPQualityScore check failed: {e}")
+            return {"error": str(e)}
 
     async def check_all(self, ip: str) -> ReputationResult:
-        """Check IP against all available services."""
+        """Check IP against all available services.
+
+        Args:
+            ip: IP address to check
+
+        Returns:
+            ReputationResult with aggregated data
+        """
+        logger.info(f"Checking reputation for {ip}")
+
+        # Run all checks in parallel
         results = await asyncio.gather(
             self.check_abuseipdb(ip),
-            self.check_virustotal(ip),
+            self.check_ipapi(ip),
+            self.check_ipqualityscore(ip),
             return_exceptions=True
         )
 
-        # Analyze results
-        abuse_score = 0
+        # Initialize result
+        abuse_confidence = 0
+        is_proxy = False
+        is_vpn = False
+        is_tor = False
+        threat_types = []
+        checked_services = []
         details = {}
-        checked = []
 
-        # AbuseIPDB
+        # Process AbuseIPDB results
         if isinstance(results[0], dict) and "error" not in results[0]:
-            abuse_score = results[0].get("abuseConfidenceScore", 0)
+            abuse_confidence = results[0].get("abuseConfidenceScore", 0)
             details["abuseipdb"] = results[0]
-            checked.append("AbuseIPDB")
+            checked_services.append("AbuseIPDB")
 
-        # VirusTotal
-        if isinstance(results[1], dict) and "error" not in results[1]:
-            details["virustotal"] = results[1]
-            checked.append("VirusTotal")
+            # Extract threat information
+            if results[0].get("isWhitelisted"):
+                threat_types.append("whitelisted")
+            if results[0].get("isTor"):
+                is_tor = True
+                threat_types.append("tor")
 
-        # Determine overall score
-        if abuse_score > 75:
+        # Process ip-api results
+        if isinstance(results[1], dict) and results[1].get("status") == "success":
+            is_proxy = results[1].get("proxy", False)
+            is_vpn = results[1].get("hosting", False)  # Hosting often indicates VPN/proxy
+            details["ipapi"] = results[1]
+            checked_services.append("ip-api")
+
+            if is_proxy:
+                threat_types.append("proxy")
+            if is_vpn:
+                threat_types.append("hosting/vpn")
+
+        # Process IPQualityScore results
+        if isinstance(results[2], dict) and "error" not in results[2]:
+            if results[2].get("proxy"):
+                is_proxy = True
+            if results[2].get("vpn"):
+                is_vpn = True
+            if results[2].get("tor"):
+                is_tor = True
+
+            details["ipqualityscore"] = results[2]
+            checked_services.append("IPQualityScore")
+
+            fraud_score = results[2].get("fraud_score", 0)
+            if fraud_score > 75:
+                threat_types.append("high_fraud_score")
+
+        # Determine overall reputation score
+        if abuse_confidence > 75:
             score = ReputationScore.MALICIOUS
-        elif abuse_score > 25:
+        elif abuse_confidence > 25 or len(threat_types) > 2:
             score = ReputationScore.SUSPICIOUS
-        elif checked:
+        elif checked_services:
             score = ReputationScore.CLEAN
         else:
             score = ReputationScore.UNKNOWN
 
-        return ReputationResult(
+        result = ReputationResult(
             score=score,
-            details=details,
-            checked_services=checked
+            abuse_confidence=abuse_confidence,
+            is_tor=is_tor,
+            is_proxy=is_proxy,
+            is_vpn=is_vpn,
+            threat_types=threat_types,
+            checked_services=checked_services,
+            details=details
         )
+
+        logger.info(
+            f"Reputation check complete for {ip}: {score.value} "
+            f"(confidence: {abuse_confidence})"
+        )
+
+        return result

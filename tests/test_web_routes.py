@@ -16,25 +16,30 @@ from configstream.web_dashboard import DashboardData, create_app
 SRC_PATH = Path(__file__).resolve().parents[1] / "src"
 
 
-def _setup_app(fs, settings):
-    """Helper to replicate app setup from conftest.py."""
-    fs.add_real_directory(str(Path(SRC_PATH, "configstream", "templates")))
+@pytest.fixture
+def settings(tmp_path: Path, monkeypatch) -> Settings:
+    """Fixture for a Settings object with a temporary data directory."""
+    monkeypatch.chdir(tmp_path)
+    data_dir = Path("data")
+    data_dir.mkdir()
+    settings = Settings()
+    settings.output.current_results_file=data_dir / "current_results.json"
+    settings.output.history_file=data_dir / "history.jsonl"
+    settings.output.output_dir=data_dir
+    return settings
+
+@pytest.fixture
+def app(settings: Settings):
+    """Fixture for a Flask app instance."""
     app = create_app(settings=settings)
-    app.config.update({"TESTING": True})
+    app.config["TESTING"] = True
+    return app
 
-    def _get_werkzeug_version() -> str:
-        return "3.0.3"
-
-    original_get_version = testing._get_werkzeug_version
-    testing._get_werkzeug_version = _get_werkzeug_version
-
-    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
-
-    def cleanup():
-        testing._get_werkzeug_version = original_get_version
-
-    return app, cleanup
-
+@pytest.fixture
+def client(app):
+    """Fixture for a Flask test client."""
+    with app.test_client() as client:
+        yield client
 
 def test_index_route(client):
     """Test the index route."""
@@ -43,7 +48,7 @@ def test_index_route(client):
     assert b"ConfigStream Dashboard" in response.data
 
 
-def test_api_current_with_filters(fs, settings):
+def test_api_current_with_filters(client, settings):
     """Test the /api/current endpoint with filters."""
     with patch("configstream.web_dashboard.DashboardData.get_current_results") as mock_get_results, patch(
         "configstream.web_dashboard.DashboardData.filter_nodes"
@@ -55,17 +60,13 @@ def test_api_current_with_filters(fs, settings):
         }
         mock_filter_nodes.return_value = nodes
 
-        app, cleanup = _setup_app(fs, settings)
-        client = app.test_client()
-
         response = client.get("/api/current?protocol=vless")
         assert response.status_code == 200
         mock_get_results.assert_called_once()
         mock_filter_nodes.assert_called_once_with(nodes, {"protocol": "vless"})
-        cleanup()
 
 
-def test_api_statistics(fs, settings):
+def test_api_statistics(client, settings):
     """Test the /api/statistics endpoint."""
     with patch("configstream.web_dashboard.DashboardData.get_current_results") as mock_get_results:
         mock_get_results.return_value = {
@@ -77,9 +78,6 @@ def test_api_statistics(fs, settings):
             ]
         }
 
-        app, cleanup = _setup_app(fs, settings)
-        client = app.test_client()
-
         response = client.get("/api/statistics")
         assert response.status_code == 200
         stats = response.get_json()
@@ -88,17 +86,12 @@ def test_api_statistics(fs, settings):
         assert stats["protocols"] == {"vless": 2, "ss": 1}
         assert stats["countries"] == {"US": 2, "DE": 1}
         assert round(stats["avg_ping_by_country"]["US"]) == 125
-        cleanup()
 
 
-def test_get_current_results_file_not_found(fs):
+def test_get_current_results_file_not_found(settings):
     """Test get_current_results when the file doesn't exist."""
-    data_dir = Path("/test_data")
-    data_dir.mkdir(exist_ok=True)
-    settings = Settings()
     dashboard_data = DashboardData(settings)
-    dashboard_data.data_dir = data_dir
-    dashboard_data.current_file = data_dir / "current_results.json"
+    dashboard_data.current_file = Path("/nonexistent/file.json")
     results = dashboard_data.get_current_results()
     assert results == {"timestamp": None, "total_tested": 0, "successful": 0, "failed": 0, "nodes": []}
 
@@ -118,65 +111,53 @@ def test_export_csv_empty_nodes():
     assert result == ""
 
 
-def test_api_export_csv(fs, settings):
+def test_api_export_csv(settings):
     """Test exporting data as CSV."""
-    with patch("configstream.web_dashboard.DashboardData") as mock_dashboard_data_cls:
-        mock_dashboard_data_instance = mock_dashboard_data_cls.return_value
-        nodes = [{"protocol": "vless", "ping_time": 100}]
-        mock_dashboard_data_instance.get_current_results.return_value = {"nodes": nodes}
-        mock_dashboard_data_instance.filter_nodes.return_value = nodes
-        mock_dashboard_data_instance.export_csv.return_value = "protocol,ping_time\nvless,100"
+    mock_dashboard_data = DashboardData(settings)
+    nodes = [{"protocol": "vless", "ping_time": 100}]
+    mock_dashboard_data.get_current_results = lambda: {"nodes": nodes}
+    mock_dashboard_data.filter_nodes = lambda nodes, filters: nodes
+    mock_dashboard_data.export_csv = lambda nodes: "protocol,ping_time\nvless,100"
 
-        app, cleanup = _setup_app(fs, settings)
-        client = app.test_client()
-
-        response = client.get("/api/export/csv")
-        assert response.status_code == 200
-        assert response.mimetype == "text/csv"
-        assert "attachment" in response.headers["Content-Disposition"]
-        assert response.data == b"protocol,ping_time\nvless,100"
-        cleanup()
-
-
-def test_api_export_json(fs, settings):
-    """Test exporting data as JSON."""
-    with patch("configstream.web_dashboard.DashboardData") as mock_dashboard_data_cls:
-        mock_dashboard_data_instance = mock_dashboard_data_cls.return_value
-        nodes = [{"protocol": "vless", "ping_time": 100}]
-        mock_dashboard_data_instance.get_current_results.return_value = {"nodes": nodes}
-        mock_dashboard_data_instance.filter_nodes.return_value = nodes
-        mock_dashboard_data_instance.export_json.return_value = json.dumps(nodes)
-
-        app, cleanup = _setup_app(fs, settings)
-        client = app.test_client()
-
-        response = client.get("/api/export/json")
-        assert response.status_code == 200
-        assert response.mimetype == "application/json"
-        assert "attachment" in response.headers["Content-Disposition"]
-        assert response.get_json() == nodes
-        cleanup()
-
-
-def test_api_export_unsupported(fs, settings):
-    """Test exporting with an unsupported format."""
-    app, cleanup = _setup_app(fs, settings)
+    app = create_app(settings=settings, dashboard_data=mock_dashboard_data)
     client = app.test_client()
+
+    response = client.get("/api/export/csv")
+    assert response.status_code == 200
+    assert response.mimetype == "text/csv"
+    assert "attachment" in response.headers["Content-Disposition"]
+    assert response.data == b"protocol,ping_time\nvless,100"
+
+
+def test_api_export_json(settings):
+    """Test exporting data as JSON."""
+    mock_dashboard_data = DashboardData(settings)
+    nodes = [{"protocol": "vless", "ping_time": 100}]
+    mock_dashboard_data.get_current_results = lambda: {"nodes": nodes}
+    mock_dashboard_data.filter_nodes = lambda nodes, filters: nodes
+    mock_dashboard_data.export_json = lambda nodes: json.dumps(nodes)
+
+    app = create_app(settings=settings, dashboard_data=mock_dashboard_data)
+    client = app.test_client()
+
+    response = client.get("/api/export/json")
+    assert response.status_code == 200
+    assert response.mimetype == "application/json"
+    assert "attachment" in response.headers["Content-Disposition"]
+    assert response.get_json() == nodes
+
+
+def test_api_export_unsupported(client, settings):
+    """Test exporting with an unsupported format."""
     response = client.get("/api/export/xml")
     assert response.status_code == 400
     assert response.get_json() == {"error": "Unsupported format: xml"}
-    cleanup()
 
 
-def test_dashboard_data_get_history(fs):
+def test_dashboard_data_get_history(settings):
     """Test DashboardData.get_history method."""
-    data_dir = Path("/data")
-    data_dir.mkdir(exist_ok=True)
-    settings = Settings()
     dashboard_data = DashboardData(settings)
-    dashboard_data.data_dir = data_dir
-    history_file = data_dir / "history.jsonl"
-    dashboard_data.history_file = history_file
+    history_file = dashboard_data.history_file
 
     now = datetime.now()
     old_ts = (now - timedelta(hours=30)).isoformat()
