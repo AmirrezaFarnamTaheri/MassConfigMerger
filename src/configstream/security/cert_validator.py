@@ -77,7 +77,39 @@ class CertificateValidator:
             )
 
         except ssl.SSLError as e:
-            errors.append(f"SSL error: {str(e)}")
+            errors.append(f"SSL verification failed: {str(e)}")
+            logger.debug(f"Retrying {host}:{port} with unverified context to fetch cert details.")
+            reader = writer = None
+            try:
+                unverified_context = ssl.create_default_context()
+                unverified_context.check_hostname = False
+                unverified_context.verify_mode = ssl.CERT_NONE
+                reader, writer = await asyncio.wait_for(
+                    asyncio.open_connection(host, port, ssl=unverified_context),
+                    timeout=10.0
+                )
+                ssl_object = writer.get_extra_info('ssl_object') if writer else None
+                if not ssl_object:
+                    errors.append("Unverified fetch failed: no SSL object available")
+                else:
+                    cert = ssl_object.getpeercert()
+                    try:
+                        _ = self._parse_certificate(cert, errors)
+                    except Exception as parse_e:
+                        errors.append(f"Certificate parse failed: {parse_e}")
+            except Exception as unverified_e:
+                errors.append(f"Unverified fetch failed: {unverified_e}")
+            finally:
+                try:
+                    if writer is not None:
+                        writer.close()
+                        await writer.wait_closed()
+                    if reader is not None:
+                        reader.feed_eof()
+                except Exception as close_e:
+                    errors.append(f"Connection close failed: {close_e}")
+            return CertificateInfo(valid=False, errors=errors, subject={}, issuer={}, not_before=datetime.now(), not_after=datetime.now(), days_until_expiry=0)
+
         except asyncio.TimeoutError:
             errors.append("Connection timeout")
         except Exception as e:

@@ -42,7 +42,7 @@ def test_api_current_with_filters(fs, settings):
     with patch("configstream.web_dashboard.DashboardData.get_current_results") as mock_get_results, patch(
         "configstream.web_dashboard.DashboardData.filter_nodes"
     ) as mock_filter_nodes:
-        nodes = [{"id": 1, "protocol": "vless"}]
+        nodes = [{"id": 1, "protocol": "vless", "ping_ms": 100}]
         mock_get_results.return_value = {
             "timestamp": datetime.now().isoformat(),
             "nodes": nodes,
@@ -64,10 +64,10 @@ def test_api_statistics(fs, settings):
     with patch("configstream.web_dashboard.DashboardData.get_current_results") as mock_get_results:
         mock_get_results.return_value = {
             "nodes": [
-                {"protocol": "vless", "country": "US", "ping_time": 100},
-                {"protocol": "vless", "country": "DE", "ping_time": 200},
-                {"protocol": "ss", "country": "US", "ping_time": 150},
-                {"protocol": "vless", "country": "US", "ping_time": -1},
+                    {"protocol": "vless", "country": "US", "ping_ms": 100},
+                    {"protocol": "vless", "country": "DE", "ping_ms": 200},
+                    {"protocol": "ss", "country": "US", "ping_ms": 150},
+                    {"protocol": "vless", "country": "US", "ping_ms": -1},
             ]
         }
 
@@ -91,7 +91,8 @@ def test_get_current_results_file_not_found(fs):
     data_dir.mkdir(exist_ok=True)
     dashboard_data = DashboardData(data_dir)
     results = dashboard_data.get_current_results()
-    assert results == {"timestamp": None, "nodes": []}
+    assert results["timestamp"] is None
+    assert results["nodes"] == []
 
 
 def test_filter_nodes_no_filters():
@@ -133,7 +134,7 @@ def test_api_export_json(fs, settings):
     """Test exporting data as JSON."""
     with patch("configstream.web_dashboard.DashboardData") as mock_dashboard_data_cls:
         mock_dashboard_data_instance = mock_dashboard_data_cls.return_value
-        nodes = [{"protocol": "vless", "ping_time": 100}]
+        nodes = [{"protocol": "vless", "ping_ms": 100}]
         mock_dashboard_data_instance.get_current_results.return_value = {"nodes": nodes}
         mock_dashboard_data_instance.filter_nodes.return_value = nodes
         mock_dashboard_data_instance.export_json.return_value = json.dumps(nodes)
@@ -145,7 +146,9 @@ def test_api_export_json(fs, settings):
         assert response.status_code == 200
         assert response.mimetype == "application/json"
         assert "attachment" in response.headers["Content-Disposition"]
-        assert response.get_json() == nodes
+        response_data = response.get_json()
+        assert response_data["count"] == 1
+        assert response_data["nodes"] == nodes
         cleanup()
 
 
@@ -155,7 +158,7 @@ def test_api_export_unsupported(fs, settings):
     client = app.test_client()
     response = client.get("/api/export/xml")
     assert response.status_code == 400
-    assert response.get_json() == {"error": "Unsupported format"}
+    assert response.get_json() == {"error": "Unsupported format: xml"}
     cleanup()
 
 

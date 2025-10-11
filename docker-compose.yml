@@ -1,51 +1,54 @@
 version: '3.8'
+
 services:
-  vpn_merger:
+  configstream:
     build: .
-    image: vpn-merger
-    volumes:
-      - ./output:/app/output
-    command: >
-      sh -c "while true; do \
-                python vpn_merger.py && echo 'Waiting for next run'; \
-                sleep ${MERGE_INTERVAL:-86400}; \
-             done"
-    environment:
-      - MERGE_INTERVAL=86400
-
-  aggregator:
-    profiles: ["aggregator"]
-    build: .
-    image: vpn-merger
-    volumes:
-      - ./output:/app/output
-    command: >
-      sh -c "while true; do \
-                python aggregator_tool.py --with-merger && echo 'Waiting for next aggregation'; \
-                sleep ${AGGREGATE_INTERVAL:-43200}; \
-             done"
-    environment:
-      - AGGREGATE_INTERVAL=43200
-
-  vpn_retester:
-    profiles: ["retester"]
-    build: .
-    image: vpn-merger
-    volumes:
-      - ./output:/app/output
-    command: >
-      sh -c "while true; do \
-                python vpn_retester.py && echo 'Waiting for next retest'; \
-                sleep ${RETEST_INTERVAL:-86400}; \
-             done"
-    environment:
-      - RETEST_INTERVAL=86400
-
-  web:
-    build: .
-    image: vpn-merger
+    container_name: configstream
     ports:
       - "8080:8080"
+      - "9090:9090"
     volumes:
-      - ./output:/app/output
-    command: python -m src.configstream.web
+      - configstream_data:/app/data
+      - configstream_config:/app/config
+    environment:
+      - CONFIGSTREAM_INTERVAL=2
+      - CONFIGSTREAM_PORT=8080
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/api/statistics"]  # fails if non-2xx
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  configstream_data:
+  configstream_config:
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:

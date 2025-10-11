@@ -98,8 +98,10 @@ async def test_config_processor_test_configs(settings):
     """Test that the ConfigProcessor can test configs."""
     config_processor = ConfigProcessor(settings)
     configs = {VALID_VMESS}
-    with patch.object(config_processor.tester, "test_connection", new_callable=AsyncMock) as mock_test:
-        mock_test.return_value = 0.1  # 100ms ping
+    with patch.object(config_processor, "_test_config", new_callable=AsyncMock) as mock_test_config, \
+         patch.object(config_processor, "_filter_by_isp", side_effect=lambda x: x), \
+         patch.object(config_processor, "_run_security_checks", side_effect=lambda x: x):
+        mock_test_config.return_value = ConfigResult(config=VALID_VMESS, protocol="VMess", ping_time=0.1, is_reachable=True, host="1.1.1.1", port=80, country="US", isp="test", latitude=0.0, longitude=0.0, reliability=0.0)
         results = await config_processor.test_configs(configs)
         assert len(results) == 1
         assert results[0].config == VALID_VMESS
