@@ -420,10 +420,12 @@
             nodes.forEach(node => {
                 const tr = document.createElement('tr');
 
-                const pingClass = node.ping_ms < 0 ? 'ping-bad' :
-                                  node.ping_ms < 100 ? 'ping-good' :
-                                  node.ping_ms < 300 ? 'ping-medium' : 'ping-bad';
-                const pingDisplay = node.ping_ms > 0 ? `${node.ping_ms} ms` : 'Failed';
+                const rawPing = Number(node.ping_ms);
+                const pingVal = Number.isFinite(rawPing) ? rawPing : -1;
+                const pingClass = pingVal < 0 ? 'ping-bad' :
+                                  pingVal < 100 ? 'ping-good' :
+                                  pingVal < 300 ? 'ping-medium' : 'ping-bad';
+                const pingDisplay = pingVal > 0 ? `${pingVal} ms` : 'Failed';
 
                 const tdProtocol = document.createElement('td');
                 const protocolBadge = document.createElement('span');
