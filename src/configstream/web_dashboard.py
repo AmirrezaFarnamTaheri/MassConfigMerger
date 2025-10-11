@@ -204,8 +204,20 @@ def create_app(settings=None) -> Flask:
             if filters:
                 data["nodes"] = dashboard_data.filter_nodes(data["nodes"], filters)
                 data["total_tested"] = len(data["nodes"])
-                data["successful"] = len([n for n in data["nodes"] if n["ping_ms"] > 0])
-                data["failed"] = len([n for n in data["nodes"] if n["ping_ms"] < 0])
+                def _is_success(node):
+                    try:
+                        v = node.get("ping_ms")
+                        return isinstance(v, (int, float)) and v > 0
+                    except Exception:
+                        return False
+                def _is_failed(node):
+                    try:
+                        v = node.get("ping_ms")
+                        return isinstance(v, (int, float)) and v < 0
+                    except Exception:
+                        return False
+                data["successful"] = sum(1 for n in data["nodes"] if _is_success(n))
+                data["failed"] = sum(1 for n in data["nodes"] if _is_failed(n))
             return jsonify(data)
         except Exception as e:
             logger.error(f"Error in api_current: {e}", exc_info=True)
