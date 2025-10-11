@@ -92,9 +92,8 @@ class CertificateValidator:
                 else:
                     cert = ssl_object.getpeercert()
                     try:
-                        # Parse but do not early-return to preserve error aggregation consistency
-                        parsed = self._parse_certificate(cert, errors)
-                        return parsed
+                        # Parse cert only to enrich error context; do not return success
+                        _ = self._parse_certificate(cert, errors)
                     except Exception as parse_e:
                         errors.append(f"Certificate parse failed: {parse_e}")
             except Exception as unverified_e:
@@ -106,6 +105,7 @@ class CertificateValidator:
                         await writer.wait_closed()
                 except Exception as close_e:
                     errors.append(f"Connection close failed: {close_e}")
+            # Do not return here; let the function handle the failure state consistently
 
         except asyncio.TimeoutError:
             errors.append("Connection timeout")
