@@ -79,21 +79,33 @@ class CertificateValidator:
         except ssl.SSLError as e:
             errors.append(f"SSL verification failed: {str(e)}")
             logger.debug(f"Retrying {host}:{port} with unverified context to fetch cert details.")
-            # Retry unverified to retrieve the certificate details
+            reader = writer = None
             try:
                 unverified_context = ssl._create_unverified_context()
                 reader, writer = await asyncio.wait_for(
                     asyncio.open_connection(host, port, ssl=unverified_context),
                     timeout=10.0
                 )
-                ssl_object = writer.get_extra_info('ssl_object')
-                cert = ssl_object.getpeercert()
-                writer.close()
-                await writer.wait_closed()
-                # Re-run parsing logic with the retrieved cert
-                return self._parse_certificate(cert, errors)
+                ssl_object = writer.get_extra_info('ssl_object') if writer else None
+                if not ssl_object:
+                    errors.append("Unverified fetch failed: no SSL object available")
+                else:
+                    cert = ssl_object.getpeercert()
+                    try:
+                        # Parse but do not early-return to preserve error aggregation consistency
+                        parsed = self._parse_certificate(cert, errors)
+                        return parsed
+                    except Exception as parse_e:
+                        errors.append(f"Certificate parse failed: {parse_e}")
             except Exception as unverified_e:
                 errors.append(f"Unverified fetch failed: {unverified_e}")
+            finally:
+                try:
+                    if writer:
+                        writer.close()
+                        await writer.wait_closed()
+                except Exception as close_e:
+                    errors.append(f"Connection close failed: {close_e}")
 
         except asyncio.TimeoutError:
             errors.append("Connection timeout")
