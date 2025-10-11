@@ -45,13 +45,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /api/statistics
-            port: 8080
+            port: http
           initialDelaySeconds: 30
           periodSeconds: 30
         readinessProbe:
           httpGet:
             path: /api/statistics
-            port: 8080
+            port: http
           initialDelaySeconds: 10
           periodSeconds: 10
       volumes:
