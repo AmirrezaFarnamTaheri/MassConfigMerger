@@ -60,57 +60,16 @@ class BandwidthTester:
         test_url: str = "https://speedtest.tele2.net",
         proxy: Optional[str] = None
     ):
+        """Initialize bandwidth tester.
+
+        Args:
+            test_url: Base URL for speed test server
+            proxy: Optional proxy URL (e.g., "http://127.0.0.1:1080")
+        """
         if not test_url.startswith("https://"):
             raise ValueError("test_url must use HTTPS")
-        self.test_url = test_url.rstrip("/")
+        self.test_url = test_url
         self.proxy = proxy
-
-    async def test_upload(self) -> float:
-        """Test upload speed in Mbps."""
-        try:
-            data_size = self.UPLOAD_SIZE_MB * 1024 * 1024
-            data = b'0' * data_size
-
-            connector = aiohttp.TCPConnector(
-                limit=1,
-                limit_per_host=1,
-                force_close=True
-            )
-            timeout = aiohttp.ClientTimeout(total=self.TIMEOUT_SECONDS)
-            async with aiohttp.ClientSession(
-                connector=connector,
-                timeout=timeout
-            ) as session:
-                start_time = time.time()
-
-                upload_url = f"{self.test_url}/upload"
-                resp = await session.options(upload_url, proxy=self.proxy)
-                if resp.status >= 400:
-                    logger.error(f"Upload endpoint not available at {upload_url} (HTTP {resp.status})")
-                    return 0.0
-
-                async with session.post(
-                    upload_url,
-                    data=data,
-                    proxy=self.proxy
-                ) as response:
-                    if response.status >= 400:
-                        logger.error(f"Upload failed (HTTP {response.status})")
-                        return 0.0
-                    await response.read()
-
-                elapsed = time.time() - start_time
-                mbps = (data_size * 8) / (elapsed * 1_000_000)
-                logger.debug(
-                    f"Upload test: {data_size} bytes in {elapsed:.2f}s = {mbps:.2f} Mbps"
-                )
-                return round(mbps, 2)
-        except asyncio.TimeoutError:
-            logger.warning("Upload test timed out")
-            return 0.0
-        except Exception as e:
-            logger.error(f"Upload test failed: {e}")
-            return 0.0
 
     async def test_download(self) -> float:
         """Test download speed in Mbps.
@@ -187,51 +146,46 @@ class BandwidthTester:
     async def test_upload(self) -> float:
         """Test upload speed in Mbps.
 
-        Uploads random data and measures throughput.
-
-        Returns:
-            Upload speed in megabits per second, or 0.0 on failure
+        Uploads incompressible data and measures throughput accurately.
         """
         try:
-            # Generate random data for upload
             data_size = self.UPLOAD_SIZE_MB * 1024 * 1024
-            # Use bytearray of zeros for efficiency (compresses well)
-            data = b'0' * data_size
+            # Use random/incompressible bytes to avoid compression skew
+            import os as _os
+            data = _os.urandom(data_size)
 
             connector = aiohttp.TCPConnector(
                 limit=1,
                 limit_per_host=1,
                 force_close=True
             )
-
             timeout = aiohttp.ClientTimeout(total=self.TIMEOUT_SECONDS)
             async with aiohttp.ClientSession(
                 connector=connector,
                 timeout=timeout
             ) as session:
-
                 start_time = time.time()
 
-                # Upload data
-                # Note: Some speed test servers have upload endpoints
-                # This is a simplified version - adjust URL as needed
+                upload_url = f"{self.test_url}/upload.php"
                 async with session.post(
-                    f"{self.test_url}/upload.php",
+                    upload_url,
                     data=data,
-                    proxy=self.proxy
+                    proxy=self.proxy,
+                    headers={
+                        "Content-Encoding": "identity",
+                        "Accept-Encoding": "identity",
+                        "Cache-Control": "no-store",
+                    }
                 ) as response:
-                    # Read response to ensure upload completes
+                    response.raise_for_status()
                     await response.read()
 
                 elapsed = time.time() - start_time
                 mbps = (data_size * 8) / (elapsed * 1_000_000)
-
                 logger.debug(
                     f"Upload test: {data_size} bytes in {elapsed:.2f}s = {mbps:.2f} Mbps"
                 )
-
                 return round(mbps, 2)
-
         except asyncio.TimeoutError:
             logger.warning("Upload test timed out")
             return 0.0

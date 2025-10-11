@@ -1,5 +1,5 @@
 """Example plugin: WireGuard configuration parser."""
-from configstream.plugins.base import ParserPlugin, PluginMetadata, OutputPlugin
+from configstream.plugins.base import ParserPlugin, PluginMetadata
 
 
 class WireGuardParser(ParserPlugin):
@@ -27,20 +27,30 @@ class WireGuardParser(ParserPlugin):
 
         Format: wireguard://publickey@host:port?privatekey=XXX
         """
+        # Remove protocol
         config = config.replace("wireguard://", "")
+
+        # Split into parts
         if "@" not in config:
             raise ValueError("Invalid WireGuard config format")
+
         public_key, rest = config.split("@", 1)
+
+        # Extract host and port
         if ":" not in rest:
             raise ValueError("Port not specified")
+
         host_port, params = rest.split("?", 1) if "?" in rest else (rest, "")
         host, port = host_port.rsplit(":", 1)
+
+        # Parse parameters
         param_dict = {}
         if params:
             for param in params.split("&"):
                 if "=" in param:
                     key, value = param.split("=", 1)
                     param_dict[key] = value
+
         return {
             "protocol": "wireguard",
             "host": host,
@@ -70,12 +80,14 @@ class TomlOutputPlugin(OutputPlugin):
     def format(self, nodes: list) -> str:
         """Format nodes as TOML."""
         lines = ["# ConfigStream Output", ""]
+
         for i, node in enumerate(nodes):
-            lines.append(f"[[nodes]]")
+            lines.append("[[nodes]]")
             lines.append(f'protocol = "{node.get("protocol")}"')
             lines.append(f'ip = "{node.get("ip")}"')
             lines.append(f'port = {node.get("port")}')
             lines.append(f'ping_ms = {node.get("ping_ms")}')
             lines.append(f'country = "{node.get("country", "Unknown")}"')
             lines.append("")
+
         return "\n".join(lines)

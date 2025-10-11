@@ -4,52 +4,20 @@ TUIC is a proxy protocol based on QUIC.
 """
 from __future__ import annotations
 
-import json
 from typing import Dict, Any
 from urllib.parse import parse_qs, urlparse
 
 
 def parse_tuic(config: str) -> Dict[str, Any]:
-    """Parse TUIC configuration.
-
-    Format: tuic://uuid:password@host:port?...params
-
-    Args:
-        config: TUIC configuration string
-
-    Returns:
-        Dictionary with parsed configuration
-    """
+    """Parse TUIC configuration."""
     if not config.startswith("tuic://"):
         raise ValueError("Not a TUIC configuration")
 
-    # Remove protocol
-    config = config.replace("tuic://", "")
-
-    # Extract credentials and host
-    if "@" in config:
-        creds, host_part = config.split("@", 1)
-        uuid, password = creds.split(":", 1) if ":" in creds else (creds, "")
-    else:
-        uuid = ""
-        password = ""
-        host_part = config
-
-    # Extract host and port
-    if "?" in host_part:
-        host_port, params_str = host_part.split("?", 1)
-        params = parse_qs(params_str)
-    else:
-        host_port = host_part
-        params = {}
-
-    # Use urlparse to robustly handle IPv6 and percent-encoding
-    original = config
-    parsed = urlparse("tuic://" + original if not original.startswith("tuic://") else original)
+    # Parse once to robustly handle IPv6 and percent-encoding
+    parsed = urlparse(config)
     if parsed.scheme != "tuic":
         raise ValueError("Not a TUIC configuration")
 
-    # Extract userinfo safely
     uuid = parsed.username or ""
     password = parsed.password or ""
 

@@ -7,7 +7,6 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
-from typing import Optional
 
 from rich.console import Console
 from rich.layout import Layout

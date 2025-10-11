@@ -4,8 +4,6 @@ Hysteria is a modern protocol optimized for lossy networks.
 """
 from __future__ import annotations
 
-import base64
-import json
 from typing import Dict, Any
 from urllib.parse import parse_qs, urlparse
 
@@ -30,14 +28,6 @@ def parse_hysteria(config: str) -> Dict[str, Any]:
     # Extract host and port
     host = parsed.hostname
     port = parsed.port or 443
-    if not host:
-        raise ValueError("Hysteria configuration missing host")
-    try:
-        port = int(port)
-        if port < 1 or port > 65535:
-            raise ValueError
-    except Exception:
-        raise ValueError(f"Invalid port in Hysteria configuration: {parsed.netloc or port}")
 
     # Parse query parameters
     params = parse_qs(parsed.query)

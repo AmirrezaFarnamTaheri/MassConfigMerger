@@ -8,7 +8,6 @@
 """Main daemon for running scheduled tests and web dashboard."""
 from __future__ import annotations
 
-import asyncio
 import logging
 import signal
 import sys

@@ -20,6 +20,7 @@ from . import services
 from .config import Settings
 from .main_daemon import ConfigStreamDaemon
 from .tui import display_results
+from .db.historical_manager import HistoricalManager
 
 
 def handle_fetch(args: argparse.Namespace, cfg: Settings) -> None:
@@ -88,8 +89,6 @@ def handle_daemon(args: argparse.Namespace, cfg: Settings):
         ))
 
 
-from .db.historical_manager import HistoricalManager
-
 def handle_tui(args: argparse.Namespace, cfg: Settings):
     """Handle the 'tui' command."""
     # This assumes the daemon has been run at least once to generate the results file.
@@ -106,24 +105,28 @@ def handle_history(args: argparse.Namespace, cfg: Settings):
 
     manager = HistoricalManager(db_path)
 
-    async def query_history():
-        nodes = await manager.get_reliable_nodes(
-            min_score=args.min_score,
-            limit=args.limit,
-            days_active=args.days_active,
-        )
-        if not nodes:
-            print("No reliable nodes found matching the criteria.")
-            return
-
-        print(f"Top {len(nodes)} reliable nodes:")
-        for node in nodes:
-            print(
-                f"  - {node.protocol}://{node.ip}:{node.port} "
-                f"(Score: {node.reliability_score:.1f}, Uptime: {node.uptime_percent:.1f}%)"
+    async def query_and_print():
+        try:
+            await manager.initialize()
+            nodes = await manager.get_reliable_nodes(
+                min_score=args.min_score,
+                limit=args.limit,
+                days_active=args.days_active,
             )
+            if not nodes:
+                print("No reliable nodes found matching the criteria.")
+                return
 
-    asyncio.run(query_history())
+            print(f"Top {len(nodes)} reliable nodes:")
+            for node in nodes:
+                print(
+                    f"  - {node.protocol}://{node.ip}:{node.port} "
+                    f"(Score: {node.reliability_score:.1f}, Uptime: {node.uptime_percent:.1f}%)"
+                )
+        finally:
+            await manager.close()
+
+    asyncio.run(query_and_print())
 
 
 def handle_prometheus(args: argparse.Namespace, cfg: Settings):

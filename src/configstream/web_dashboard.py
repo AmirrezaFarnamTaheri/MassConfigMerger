@@ -6,7 +6,7 @@ import csv
 from io import StringIO, BytesIO
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict
 import logging
 
 from flask import Flask, jsonify, render_template, request, send_file
@@ -37,7 +37,7 @@ class DashboardData:
         self.current_file = data_dir / "current_results.json"
         self.history_file = data_dir / "history.jsonl"
 
-    def get_current_results(self) -> dict[str, Any]:
+    def get_current_results(self) -> Dict[str, Any]:
         """Load current test results.
 
         Returns:
@@ -142,25 +142,23 @@ class DashboardData:
         return filtered
 
     def export_csv(self, nodes: list[dict]) -> str:
-        """Export nodes to CSV format.
-
-        Args:
-            nodes: List of node dictionaries
-
-        Returns:
-            CSV formatted string
-        """
+        """Export nodes to CSV format."""
         output = StringIO()
         if not nodes:
             return ""
 
-        # Get all unique keys from nodes
-        fieldnames = list(nodes[0].keys())
+        # Aggregate all keys across nodes to avoid missing columns
+        all_keys = set()
+        for n in nodes:
+            all_keys.update(n.keys())
+        fieldnames = sorted(all_keys)
 
-        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore")
         writer.writeheader()
-        writer.writerows(nodes)
-
+        for n in nodes:
+            # Ensure all keys exist to avoid KeyError and keep columns aligned
+            row = {k: n.get(k, "") for k in fieldnames}
+            writer.writerow(row)
         return output.getvalue()
 
     def export_json(self, nodes: list[dict]) -> str:
@@ -204,20 +202,8 @@ def create_app(settings=None) -> Flask:
             if filters:
                 data["nodes"] = dashboard_data.filter_nodes(data["nodes"], filters)
                 data["total_tested"] = len(data["nodes"])
-                def _is_success(node):
-                    try:
-                        v = node.get("ping_ms")
-                        return isinstance(v, (int, float)) and v > 0
-                    except Exception:
-                        return False
-                def _is_failed(node):
-                    try:
-                        v = node.get("ping_ms")
-                        return isinstance(v, (int, float)) and v < 0
-                    except Exception:
-                        return False
-                data["successful"] = sum(1 for n in data["nodes"] if _is_success(n))
-                data["failed"] = sum(1 for n in data["nodes"] if _is_failed(n))
+                data["successful"] = len([n for n in data["nodes"] if n["ping_ms"] > 0])
+                data["failed"] = len([n for n in data["nodes"] if n["ping_ms"] < 0])
             return jsonify(data)
         except Exception as e:
             logger.error(f"Error in api_current: {e}", exc_info=True)

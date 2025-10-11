@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from dataclasses import dataclass
 from functools import lru_cache
 from typing import List, Optional, Set
 

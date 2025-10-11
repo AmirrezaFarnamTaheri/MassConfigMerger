@@ -81,7 +81,9 @@ class CertificateValidator:
             logger.debug(f"Retrying {host}:{port} with unverified context to fetch cert details.")
             reader = writer = None
             try:
-                unverified_context = ssl._create_unverified_context()
+                unverified_context = ssl.create_default_context()
+                unverified_context.check_hostname = False
+                unverified_context.verify_mode = ssl.CERT_NONE
                 reader, writer = await asyncio.wait_for(
                     asyncio.open_connection(host, port, ssl=unverified_context),
                     timeout=10.0
@@ -100,12 +102,11 @@ class CertificateValidator:
                 errors.append(f"Unverified fetch failed: {unverified_e}")
             finally:
                 try:
-                    if writer:
+                    if writer is not None:
                         writer.close()
                         await writer.wait_closed()
                 except Exception as close_e:
                     errors.append(f"Connection close failed: {close_e}")
-            # Do not return here; let the function handle the failure state consistently
 
         except asyncio.TimeoutError:
             errors.append("Connection timeout")

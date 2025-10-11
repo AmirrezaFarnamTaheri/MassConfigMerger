@@ -6,12 +6,11 @@ historical VPN node performance data.
 from __future__ import annotations
 
 import hashlib
-import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import List, Dict, Any
 
 import aiosqlite
 
@@ -332,3 +331,8 @@ class HistoricalManager:
 
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
+
+    async def close(self):
+        """Close the database connection."""
+        # aiosqlite connections are managed by context managers, so no explicit close is needed
+        pass

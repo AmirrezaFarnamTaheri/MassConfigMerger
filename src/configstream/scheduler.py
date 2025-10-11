@@ -13,17 +13,14 @@ import json
 import logging
 import os
 import threading
-from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from .config import Settings
 from .db.historical_manager import HistoricalManager
-from .processing import pipeline
 from .vpn_merger import run_merger
 
 logger = logging.getLogger(__name__)
@@ -86,8 +83,7 @@ class TestScheduler:
             # Save current results (overwrite)
             self.current_results_file.write_text(
                 json.dumps(test_data, indent=2),
-                encoding="utf-8"
-            )
+                encoding="utf-8")
 
             # Append to history (for historical tracking)
             with _history_lock:

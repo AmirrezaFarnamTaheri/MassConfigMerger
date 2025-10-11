@@ -14,8 +14,7 @@ from prometheus_client import (
     Gauge,
     Histogram,
     Info,
-    start_http_server,
-    REGISTRY
+    start_http_server
 )
 
 logger = logging.getLogger(__name__)

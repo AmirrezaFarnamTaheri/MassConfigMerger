@@ -8,14 +8,13 @@ import importlib
 import logging
 import sys
 from pathlib import Path
-from typing import Dict, List, Type
+from typing import List
 
 from .base import (
     ParserPlugin,
     OutputPlugin,
     FilterPlugin,
-    TestPlugin,
-    PluginMetadata
+    TestPlugin
 )
 
 logger = logging.getLogger(__name__)

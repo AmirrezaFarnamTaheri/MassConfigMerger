@@ -54,8 +54,8 @@ class NetworkQualityTester:
             await asyncio.sleep(0.1)  # Small delay between pings
 
         # Calculate metrics
-        successful = [l for l in latencies if l > 0]
-        failed = len([l for l in latencies if l < 0])
+        successful = [lat for lat in latencies if lat > 0]
+        failed = len([lat for lat in latencies if lat < 0])
 
         if not successful:
             return NetworkQualityResult(
