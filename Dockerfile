@@ -22,7 +22,14 @@ EXPOSE 8080 9090
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8080/api/statistics')"
+    CMD python - <<'PY' || exit 1
+import sys, urllib.request
+try:
+    with urllib.request.urlopen('http://localhost:8080/api/statistics', timeout=5) as r:
+        sys.exit(0 if r.status == 200 else 1)
+except Exception:
+    sys.exit(1)
+PY
 
 # Run daemon
 CMD ["configstream", "daemon", "--interval", "2", "--port", "8080", "--data-dir", "/app/data"]
