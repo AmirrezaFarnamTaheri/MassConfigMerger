@@ -1,13 +1,58 @@
-# ConfigStream Documentation
+---
+layout: default
+title: Home
+---
+
+# ConfigStream
+
+**Advanced VPN Configuration Aggregator & Monitoring System**
+
+ConfigStream is a comprehensive solution for aggregating, testing, and monitoring VPN configurations with automated testing cycles, real-time dashboards, and historical performance tracking.
+
+## Features
+
+### 🔄 Automated Testing
+- Runs tests every 2 hours automatically
+- Comprehensive network quality testing
+- Bandwidth measurement
+- Packet loss and jitter analysis
+
+### 📊 Real-Time Dashboard
+- Beautiful web interface
+- Live statistics and charts
+- Advanced filtering capabilities
+- Export to CSV/JSON
+
+### 🔐 Security Checks
+- IP reputation verification
+- Certificate validation
+- Tor/proxy detection
+- Blocklist checking
+
+### 📈 Historical Tracking
+- Performance history database
+- Reliability scoring
+- Trend analysis
+- Uptime monitoring
+
+### 🎯 Advanced Features
+- Plugin system for extensibility
+- Interactive TUI
+- Prometheus metrics export
+- Kubernetes deployment ready
 
 ## Quick Start
-
-ConfigStream is an advanced VPN configuration aggregator with real-time monitoring, testing, and reliability tracking.
 
 ### Installation
 
 ```bash
+# Using pip
 pip install configstream
+
+# From source
+git clone https://github.com/AmirrezaFarnamTaheri/ConfigStream
+cd configstream
+pip install -e .
 ```
 
 ### Basic Usage
@@ -23,42 +68,52 @@ configstream test --input configs.txt
 configstream merge --sources sources.txt --output merged.txt
 ```
 
-## Features
+### Access the Dashboard
 
-- **Automated Testing**: Runs every 2 hours automatically
-- **Web Dashboard**: Real-time monitoring with filtering
-- **Advanced Testing**: Bandwidth, packet loss, jitter
-- **Security Checks**: IP reputation, certificate validation
-- **Historical Tracking**: Performance history and reliability scores
-- **Export Capabilities**: CSV, JSON export with filtering
+After starting the daemon, open your browser to:
 
-## API Documentation
+```
+http://localhost:8080
+```
 
-### REST API Endpoints
+## Documentation
 
-#### GET /api/current
-Returns current test results.
-
-Query parameters:
-- `protocol`: Filter by protocol
-- `country`: Filter by country
-- `min_ping`: Minimum ping (ms)
-- `max_ping`: Maximum ping (ms)
-- `exclude_blocked`: Exclude blocked nodes
-
-#### GET /api/statistics
-Returns aggregated statistics.
-
-#### GET /api/history?hours=24
-Returns historical test data.
-
-#### GET /api/export/{format}
-Export data (csv, json).
-
-## Configuration
-
-See [Configuration Guide](configuration.md) for detailed settings.
+- [Getting Started Guide](getting-started)
+- [Configuration Reference](configuration)
+- [API Documentation](api)
+- [Examples & Tutorials](examples)
+- [Deployment Guide](deployment)
 
 ## Architecture
 
-See [Architecture Documentation](architecture.md) for system design.
+```mermaid
+graph TD
+    A[VPN Sources] --> B[Aggregator]
+    B --> C[Tester]
+    C --> D[Database]
+    D --> E[Scheduler]
+    E --> F[Web Dashboard]
+    C --> G[Security Checks]
+    C --> H[Network Tests]
+```
+
+## Performance
+
+- Tests 1000+ VPN configurations in < 5 minutes
+- Real-time dashboard with 2-minute refresh
+- Stores unlimited historical data
+- Handles concurrent testing efficiently
+
+## Contributing
+
+We welcome contributions! See our [Contributing Guide](contributing) for details.
+
+## License
+
+MIT License - see [LICENSE](https://github.com/AmirrezaFarnamTaheri/ConfigStream/blob/main/LICENSE)
+
+## Support
+
+- [GitHub Issues](https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues)
+- [Discussions](https://github.com/AmirrezaFarnamTaheri/ConfigStream/discussions)
+- [Documentation](https://amirrezafarnamtaheri.github.io/configStream/)

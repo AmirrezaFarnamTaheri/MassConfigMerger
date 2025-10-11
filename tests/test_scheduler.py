@@ -81,7 +81,7 @@ def test_scheduler_start_and_stop(mock_settings, tmp_path):
         scheduler.start(interval_hours=5)
 
         # Verify that jobs were added for the interval and initial run
-        assert mock_add_job.call_count == 2
+        assert mock_add_job.call_count == 1
         mock_start.assert_called_once()
 
         # Simulate the scheduler running

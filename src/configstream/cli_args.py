@@ -296,3 +296,28 @@ def add_daemon_arguments(parser: argparse.ArgumentParser):
 def add_tui_arguments(subparsers: argparse._SubParsersAction):
     """Add arguments for the 'tui' command."""
     subparsers.add_parser("tui", help="Display a terminal user interface")
+
+
+def add_history_arguments(subparsers: argparse._SubParsersAction):
+    """Add arguments for the 'history' command."""
+    history_p = subparsers.add_parser(
+        "history", help="Query historical performance data"
+    )
+    history_p.add_argument(
+        "--min-score",
+        type=float,
+        default=70.0,
+        help="Minimum reliability score to include (0-100).",
+    )
+    history_p.add_argument(
+        "--limit",
+        type=int,
+        default=100,
+        help="Maximum number of nodes to return.",
+    )
+    history_p.add_argument(
+        "--days-active",
+        type=int,
+        default=7,
+        help="Only include nodes seen in the last N days.",
+    )

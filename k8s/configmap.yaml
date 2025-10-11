@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configstream-config
+data:
+  sources.txt: |
+    https://raw.githubusercontent.com/example/vpn/main/configs.txt
+    https://example.com/vpn-list.json
+  config.yaml: |
+    testing:
+      max_concurrent_tests: 50
+      test_timeout: 5
+      enable_advanced_tests: false
+
+    filtering:
+      max_ping_ms: 1000
+      exclude_blocked: true
+
+    output:
+      formats:
+        - base64
+        - json
