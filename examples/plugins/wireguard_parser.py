@@ -79,35 +79,3 @@ class TomlOutputPlugin(OutputPlugin):
             lines.append(f'country = "{node.get("country", "Unknown")}"')
             lines.append("")
         return "\n".join(lines)
-
-
-class TomlOutputPlugin(OutputPlugin):
-    """Output plugin for TOML format."""
-
-    @property
-    def metadata(self) -> PluginMetadata:
-        return PluginMetadata(
-            name="toml",
-            version="1.0.0",
-            author="ConfigStream Team",
-            description="Outputs configurations in TOML format"
-        )
-
-    @property
-    def file_extension(self) -> str:
-        return ".toml"
-
-    def format(self, nodes: list) -> str:
-        """Format nodes as TOML."""
-        lines = ["# ConfigStream Output", ""]
-
-        for i, node in enumerate(nodes):
-            lines.append(f"[[nodes]]")
-            lines.append(f'protocol = "{node.get("protocol")}"')
-            lines.append(f'ip = "{node.get("ip")}"')
-            lines.append(f'port = {node.get("port")}')
-            lines.append(f'ping_ms = {node.get("ping_ms")}')
-            lines.append(f'country = "{node.get("country", "Unknown")}"')
-            lines.append("")
-
-        return "\n".join(lines)
