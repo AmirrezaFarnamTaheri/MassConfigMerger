@@ -180,6 +180,10 @@
         th {
             font-weight: 600;
             color: #667eea;
+            position: sticky;
+            top: 0;
+            background: #2d3748;
+            z-index: 1;
         }
 
         tbody tr:hover {
@@ -322,12 +326,28 @@
         let currentData = null;
         let currentFilters = {};
 
-        // Auto-refresh every 2 minutes
-        setInterval(loadData, 120000);
+        let refreshTimer;
+
+        // Auto-refresh every 2 minutes (120000 ms)
+        const REFRESH_INTERVAL = 120000;
+
+        function startAutoRefresh() {
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+            }
+            refreshTimer = setInterval(() => {
+                // console.log('Auto-refreshing data...');
+                loadData();
+                loadStatistics();
+            }, REFRESH_INTERVAL);
+        }
 
         // Initial load
-        loadData();
-        loadStatistics();
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            loadStatistics();
+            startAutoRefresh();
+        });
 
         async function loadData() {
             try {
@@ -365,10 +385,24 @@
         }
 
         function updateLastUpdate(timestamp) {
+            const updateElement = document.getElementById('lastUpdate');
+            // Clear existing children
+            while (updateElement.firstChild) {
+                updateElement.removeChild(updateElement.firstChild);
+            }
+
+            const indicator = document.createElement('span');
+            indicator.className = 'auto-refresh-indicator';
+
             if (timestamp) {
                 const date = new Date(timestamp);
-                document.getElementById('lastUpdate').textContent =
-                    `Last updated: ${date.toLocaleString()}`;
+                const text = document.createTextNode(`Last updated: ${date.toLocaleString()} `);
+                updateElement.appendChild(text);
+                updateElement.appendChild(indicator);
+            } else {
+                const text = document.createTextNode('No data available ');
+                updateElement.appendChild(text);
+                updateElement.appendChild(indicator);
             }
         }
 
@@ -380,22 +414,59 @@
                 return;
             }
 
-            tbody.innerHTML = nodes.map(node => {
-                const pingClass = node.ping_ms < 100 ? 'ping-good' :
-                                 node.ping_ms < 300 ? 'ping-medium' : 'ping-bad';
+            // Clear existing rows
+            tbody.innerHTML = '';
 
-                return `
-                    <tr>
-                        <td><span class="badge badge-protocol">${node.protocol}</span></td>
-                        <td>${node.country}</td>
-                        <td>${node.city}</td>
-                        <td>${node.ip}:${node.port}</td>
-                        <td class="${pingClass}">${node.ping_ms > 0 ? node.ping_ms + ' ms' : 'Failed'}</td>
-                        <td>${node.organization}</td>
-                        <td>${node.is_blocked ? '<span class="badge badge-blocked">Blocked</span>' : '✓'}</td>
-                    </tr>
-                `;
-            }).join('');
+            nodes.forEach(node => {
+                const tr = document.createElement('tr');
+
+                const pingClass = node.ping_ms < 0 ? 'ping-bad' :
+                                  node.ping_ms < 100 ? 'ping-good' :
+                                  node.ping_ms < 300 ? 'ping-medium' : 'ping-bad';
+                const pingDisplay = node.ping_ms > 0 ? `${node.ping_ms} ms` : 'Failed';
+
+                const tdProtocol = document.createElement('td');
+                const protocolBadge = document.createElement('span');
+                protocolBadge.className = 'badge badge-protocol';
+                protocolBadge.textContent = String(node.protocol ?? '');
+                tdProtocol.appendChild(protocolBadge);
+
+                const tdCountry = document.createElement('td');
+                tdCountry.textContent = String(node.country ?? '');
+
+                const tdCity = document.createElement('td');
+                tdCity.textContent = String(node.city ?? '');
+
+                const tdIpPort = document.createElement('td');
+                tdIpPort.textContent = `${String(node.ip ?? '')}:${String(node.port ?? '')}`;
+
+                const tdPing = document.createElement('td');
+                tdPing.className = pingClass;
+                tdPing.textContent = String(pingDisplay);
+
+                const tdOrg = document.createElement('td');
+                tdOrg.textContent = String(node.organization ?? '');
+
+                const tdStatus = document.createElement('td');
+                if (node.is_blocked) {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge badge-blocked';
+                    badge.textContent = 'Blocked';
+                    tdStatus.appendChild(badge);
+                } else {
+                    tdStatus.textContent = '✓';
+                }
+
+                tr.appendChild(tdProtocol);
+                tr.appendChild(tdCountry);
+                tr.appendChild(tdCity);
+                tr.appendChild(tdIpPort);
+                tr.appendChild(tdPing);
+                tr.appendChild(tdOrg);
+                tr.appendChild(tdStatus);
+
+                tbody.appendChild(tr);
+            });
         }
 
         function populateFilterOptions(nodes) {
