@@ -25,15 +25,11 @@ def client(app):
     return app.test_client()
 
 
-@pytest.fixture
-def setup_test_data(tmp_path):
-    """Create test data files."""
-    data_dir = tmp_path / "data"
-    data_dir.mkdir()
-    current_file = data_dir / "current_results.json"
-    history_file = data_dir / "history.jsonl"
+import copy
 
-    # Create sample data
+@pytest.fixture
+def setup_test_data():
+    """Mocks the dashboard data source and provides a deep copy of test data."""
     test_data = {
         "timestamp": "2025-10-10T12:00:00",
         "total_tested": 3,
@@ -79,10 +75,9 @@ def setup_test_data(tmp_path):
         ]
     }
 
-    current_file.write_text(json.dumps(test_data))
-
-    with patch("configstream.web_dashboard.DashboardData.get_current_results", return_value=test_data):
-        yield test_data
+    # Patch the method to return a new deep copy on each call to ensure test isolation
+    with patch("configstream.web_dashboard.DashboardData.get_current_results", side_effect=lambda: copy.deepcopy(test_data)):
+        yield copy.deepcopy(test_data)
 
 
 def test_index_route(client):

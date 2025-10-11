@@ -316,6 +316,17 @@ def add_daemon_arguments(parser: argparse.ArgumentParser):
         default="0.0.0.0",
         help="The host to run the web dashboard on.",
     )
+    parser.add_argument(
+        "--sources",
+        type=str,
+        help="Path to the sources JSON file (overrides settings).",
+    )
+    parser.add_argument(
+        "--data-dir",
+        type=str,
+        default="./data",
+        help="Directory to store data and results.",
+    )
     add_testing_arguments(parser)
 
 

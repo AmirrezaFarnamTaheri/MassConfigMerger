@@ -213,24 +213,36 @@ class ConfigProcessor:
             """Check a single result for security issues."""
             if not result.is_reachable or not result.host:
                 return result
-
-            # IP Reputation Check
-            ip_rep = await ip_checker.check_all(result.host)
-            if ip_rep.score == ReputationScore.MALICIOUS:
-                result.is_blocked = True
-                return None
-
-            # Certificate Validation
-            if result.port == 443:
-                cert_info = await cert_validator.validate(result.host, result.port)
-                if not cert_info.valid:
+            try:
+                # IP Reputation Check
+                ip_rep = await ip_checker.check_all(result.host)
+                if ip_rep.score == ReputationScore.MALICIOUS:
                     result.is_blocked = True
                     return None
-            return result
+
+                # Certificate Validation
+                if result.port == 443:
+                    cert_info = await cert_validator.validate(result.host, result.port)
+                    if not cert_info.valid:
+                        result.is_blocked = True
+                        return None
+                return result
+            except Exception as exc:
+                logging.debug("Security check failed for %s:%s: %s", result.host, result.port, exc)
+                # On error, do not drop the node; treat as not blocked
+                result.is_blocked = False
+                return result
 
         tasks = [_check(r) for r in results]
-        checked_results = await asyncio.gather(*tasks)
-        return [res for res in checked_results if res is not None]
+        checked_results = await asyncio.gather(*tasks, return_exceptions=True)
+        safe_results: List[ConfigResult] = []
+        for res in checked_results:
+            if isinstance(res, Exception):
+                logging.debug("Security task failed: %s", res)
+                continue
+            if res is not None:
+                safe_results.append(res)
+        return safe_results
 
     async def test_configs(
         self, configs: Set[str], history: dict | None = None

@@ -68,8 +68,11 @@ def handle_full(args: argparse.Namespace, cfg: Settings) -> None:
 
 def handle_daemon(args: argparse.Namespace, cfg: Settings):
     """Handle the 'daemon' command."""
-    data_dir = Path("./data")
-    data_dir.mkdir(exist_ok=True)
+    if args.sources:
+        cfg.sources.sources_file = args.sources
+
+    data_dir = Path(args.data_dir)
+    data_dir.mkdir(parents=True, exist_ok=True)
 
     daemon = ConfigStreamDaemon(settings=cfg, data_dir=data_dir)
     try:

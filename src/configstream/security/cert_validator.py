@@ -65,36 +65,39 @@ class CertificateValidator:
         port: int = 443,
         timeout: float = None
     ) -> CertificateInfo:
-        """Validate SSL certificate for host.
-
-        Args:
-            host: Hostname to check
-            port: Port number (default: 443)
-            timeout: Connection timeout in seconds
-
-        Returns:
-            CertificateInfo with validation results
-        """
+        """Validate SSL certificate for host."""
         if timeout is None:
             timeout = self.DEFAULT_TIMEOUT
 
-        errors = []
+        errors: List[str] = []
 
         try:
-            # Create SSL context that will verify certificates
             context = ssl.create_default_context()
-
-            # Also create unverified context to get cert even if invalid
             unverified_context = ssl._create_unverified_context()
+
+            # Determine if SNI should be used (hostname, not raw IP)
+            use_sni = True
+            try:
+                # Very simple heuristic: if host contains only digits and dots/colons, treat as IP
+                # (do not attempt full IP parsing to avoid extra deps)
+                use_sni = any(c.isalpha() for c in host)
+            except Exception:
+                use_sni = True
 
             # Try verified connection first
             try:
-                reader, writer = await asyncio.wait_for(
-                    asyncio.open_connection(host, port, ssl=context),
-                    timeout=timeout
-                )
+                if use_sni:
+                    reader, writer = await asyncio.wait_for(
+                        asyncio.open_connection(host, port, ssl=context, server_hostname=host),
+                        timeout=timeout
+                    )
+                else:
+                    reader, writer = await asyncio.wait_for(
+                        asyncio.open_connection(host, port, ssl=context),
+                        timeout=timeout
+                    )
+                    errors.append("SNI not used (IP address); hostname verification may be limited")
 
-                # Get SSL object and certificate
                 ssl_object = writer.get_extra_info('ssl_object')
                 cert = ssl_object.getpeercert()
 
@@ -102,13 +105,18 @@ class CertificateValidator:
                 await writer.wait_closed()
 
             except ssl.SSLError as e:
-                # Certificate verification failed, try to get cert anyway
                 errors.append(f"SSL verification failed: {str(e)}")
-
-                reader, writer = await asyncio.wait_for(
-                    asyncio.open_connection(host, port, ssl=unverified_context),
-                    timeout=timeout
-                )
+                # Retry unverified to retrieve the certificate details
+                if use_sni:
+                    reader, writer = await asyncio.wait_for(
+                        asyncio.open_connection(host, port, ssl=unverified_context, server_hostname=host),
+                        timeout=timeout
+                    )
+                else:
+                    reader, writer = await asyncio.wait_for(
+                        asyncio.open_connection(host, port, ssl=unverified_context),
+                        timeout=timeout
+                    )
 
                 ssl_object = writer.get_extra_info('ssl_object')
                 cert = ssl_object.getpeercert()
@@ -116,7 +124,6 @@ class CertificateValidator:
                 writer.close()
                 await writer.wait_closed()
 
-            # Parse certificate
             return self._parse_certificate(cert, errors)
 
         except asyncio.TimeoutError:
@@ -126,7 +133,6 @@ class CertificateValidator:
         except Exception as e:
             errors.append(f"Validation failed: {str(e)}")
 
-        # Return error result
         return CertificateInfo(
             valid=False,
             subject={},

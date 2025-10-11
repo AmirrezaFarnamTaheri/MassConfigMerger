@@ -11,11 +11,12 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from .config import Settings
@@ -33,7 +34,7 @@ class TestScheduler:
         self.settings = settings
         self.output_dir = output_dir
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.scheduler = AsyncIOScheduler()
+        self.scheduler = BackgroundScheduler(daemon=True)
         self.current_results_file = self.output_dir / "current_results.json"
         self.history_file = self.output_dir / "history.jsonl"
 
@@ -63,57 +64,36 @@ class TestScheduler:
         results: list[ConfigResult],
         top_n: int = 10
     ) -> list[ConfigResult]:
-        """Run bandwidth and quality tests on top N nodes.
-
-        Args:
-            results: All test results
-            top_n: Number of top nodes to test further
-
-        Returns:
-            Updated results with advanced metrics
-        """
+        """Run bandwidth and quality tests on top N nodes."""
         from .testing.bandwidth_tester import BandwidthTester
         from .testing.network_quality import NetworkQualityTester
 
-        # Get top N successful nodes by ping
         successful = [r for r in results if r.ping_time > 0]
         top_nodes = sorted(successful, key=lambda x: x.ping_time)[:top_n]
-
         logger.info(f"Running advanced tests on top {len(top_nodes)} nodes")
 
         for i, node in enumerate(top_nodes, 1):
             logger.info(f"[{i}/{len(top_nodes)}] Testing {node.host}:{node.port}")
-
-            # Network quality test
             try:
                 quality_tester = NetworkQualityTester(test_count=10)
-                quality_result = await quality_tester.test_quality(
-                    node.host,
-                    node.port
-                )
-
+                quality_result = await quality_tester.test_quality(node.host, node.port)
                 node.packet_loss_percent = quality_result.packet_loss_percent
                 node.jitter_ms = quality_result.jitter_ms
                 node.quality_score = quality_result.quality_score
                 node.network_stable = quality_result.is_stable
-
             except Exception as e:
                 logger.error(f"Quality test failed for {node.host}: {e}")
 
-            # Bandwidth test (optional, can be slow)
             if self.settings.testing.test_bandwidth:
                 try:
-                    bandwidth_tester = BandwidthTester()
+                    proxy_url = "http://127.0.0.1:1080"
+                    bandwidth_tester = BandwidthTester(proxy=proxy_url)
                     bandwidth_result = await bandwidth_tester.test_full()
-
                     node.download_mbps = bandwidth_result.download_mbps
                     node.upload_mbps = bandwidth_result.upload_mbps
                 except Exception as e:
                     logger.error(f"Bandwidth test failed for {node.host}: {e}")
-
-            # Small delay between nodes
             await asyncio.sleep(0.5)
-
         return results
 
     async def run_test_cycle(self):
@@ -124,39 +104,23 @@ class TestScheduler:
         start_time = datetime.now()
 
         try:
-            # Run the merger pipeline
             results = await run_merger(self.settings, Path(self.settings.sources.sources_file))
-
-            # NEW: Run advanced tests on top nodes
             if self.settings.testing.enable_advanced_tests:
                 results = await self.run_advanced_tests_on_top_nodes(results, self.settings.testing.advanced_test_top_n)
 
-            # Process results
             timestamp = start_time.isoformat()
-
-            # Count successful and failed tests
             successful = [r for r in results if r.ping_time > 0]
             failed = [r for r in results if r.ping_time < 0]
 
-            # Prepare data for storage
             test_data = {
                 "timestamp": timestamp,
                 "total_tested": len(results),
                 "successful": len(successful),
                 "failed": len(failed),
-                "nodes": [
-                    self._serialize_result(r, timestamp)
-                    for r in results
-                ]
+                "nodes": [self._serialize_result(r, timestamp) for r in results]
             }
 
-            # Save current results (overwrite)
-            self.current_results_file.write_text(
-                json.dumps(test_data, indent=2),
-                encoding="utf-8"
-            )
-
-            # Append to history (for historical tracking)
+            self.current_results_file.write_text(json.dumps(test_data, indent=2), encoding="utf-8")
             with open(self.history_file, "a", encoding="utf-8") as f:
                 f.write(json.dumps(test_data) + "\n")
 
@@ -177,27 +141,38 @@ class TestScheduler:
             logger.error(f"Error during test cycle: {e}", exc_info=True)
             logger.error("=" * 60)
 
+    def _run_test_cycle_sync(self):
+        """Synchronous wrapper to run the async test cycle."""
+        logger.info("Scheduler triggered. Running async test cycle in a new event loop.")
+        try:
+            asyncio.run(self.run_test_cycle())
+        except Exception as e:
+            logger.error(f"Exception in scheduled task: {e}", exc_info=True)
+
     def start(self, interval_hours: int = 2):
         """Start the scheduler with specified interval."""
+        logger.info(f"Scheduling test cycle to run every {interval_hours} hours.")
         self.scheduler.add_job(
-            self.run_test_cycle,
+            self._run_test_cycle_sync,
             trigger=IntervalTrigger(hours=interval_hours),
             id="test_cycle",
+            name="Periodic VPN Test Cycle",
             replace_existing=True
         )
 
-        # Run immediately on start
-        self.scheduler.add_job(
-            self.run_test_cycle,
-            id="initial_test",
-            replace_existing=True
-        )
+        # Run immediately on start in a separate thread to not block
+        logger.info("Scheduling immediate initial test run.")
+        initial_run_thread = threading.Thread(target=self._run_test_cycle_sync)
+        initial_run_thread.start()
 
         self.scheduler.start()
-        logger.info(f"Scheduler started with {interval_hours}h interval")
+        logger.info("Scheduler started.")
 
     def stop(self):
         """Stop the scheduler."""
         if self.scheduler.running:
+            logger.info("Shutting down scheduler.")
             self.scheduler.shutdown()
-            logger.info("Scheduler stopped")
+            logger.info("Scheduler stopped.")
+        else:
+            logger.info("Scheduler was not running.")

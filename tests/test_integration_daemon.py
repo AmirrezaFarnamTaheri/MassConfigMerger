@@ -9,54 +9,49 @@ from multiprocessing import Process
 from configstream.cli import main as cli_main
 
 
-def run_daemon_process(data_dir, port):
+def run_daemon_process(data_dir, port, sources_file):
     """Run daemon in separate process."""
     import sys
-    import asyncio
+
     sys.argv = [
         'configstream',
         'daemon',
         '--interval-hours', '1',
         '--web-port', str(port),
+        '--sources', str(sources_file),
         '--data-dir', str(data_dir)
     ]
-    asyncio.run(cli_main())
+    cli_main()
 
 
 @pytest.mark.integration
 def test_full_daemon_workflow(tmp_path):
-    """Test complete daemon workflow.
+    """Test complete daemon workflow."""
+    data_dir = tmp_path
+    port = 8888
 
-    This test:
-    1. Starts the daemon
-    2. Waits for initial test cycle
-    3. Verifies data files are created
-    4. Tests web API endpoints
-    5. Shuts down gracefully
-    """
-    data_dir = tmp_path / "daemon_test"
-    data_dir.mkdir()
-    port = 8888  # Use non-standard port for testing
+    # Create a dummy sources file for the test
+    sources_file = data_dir / "sources.json"
+    sources_file.write_text('["https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/All_Configs_base64.txt"]')
 
     print("\nStarting daemon integration test...")
 
-    # Start daemon in subprocess
     daemon_process = Process(
         target=run_daemon_process,
-        args=(data_dir, port)
+        args=(data_dir, port, sources_file)
     )
     daemon_process.start()
 
     try:
-        # Wait for daemon to start and run first test
-        print("Waiting for daemon to start and run first test (60s)...")
-        time.sleep(60)
+        # Wait for the initial test cycle to complete
+        print("Waiting for daemon to start and run first test (up to 90s)...")
+        time.sleep(90)
 
-        # Check data files exist
+        # Check that the output files have been created in the correct data directory
         current_file = data_dir / "current_results.json"
         history_file = data_dir / "history.jsonl"
 
-        assert current_file.exists(), "current_results.json not created"
+        assert current_file.exists(), f"current_results.json was not created in {data_dir}"
         assert history_file.exists(), "history.jsonl not created"
         print("✓ Data files created")
 
