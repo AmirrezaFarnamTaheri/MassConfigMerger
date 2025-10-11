@@ -236,6 +236,10 @@ class OutputSettings(BaseModel):
 class SecuritySettings(BaseModel):
     """Settings for security-related features like blocklist checking."""
 
+    api_keys: Dict[str, str] = Field(
+        default_factory=dict,
+        description="API keys for various IP reputation services.",
+    )
     apivoid_api_key: Optional[str] = Field(
         None, description="API key for APIVoid IP Reputation API."
     )

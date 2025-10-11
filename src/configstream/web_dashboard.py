@@ -6,7 +6,7 @@ import csv
 from io import StringIO, BytesIO
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 import logging
 import os
 import psutil
@@ -63,7 +63,7 @@ class DashboardData:
             logger.error(f"Error loading current results: {e}")
             return {"timestamp": None, "nodes": []}
 
-    def get_history(self, hours: int = 24) -> list[dict]:
+    def get_history(self, hours: int = 24) -> List[Dict]:
         """Load historical results for specified time period.
 
         Args:
@@ -94,7 +94,7 @@ class DashboardData:
 
         return history
 
-    def filter_nodes(self, nodes: list[dict], filters: dict) -> list[dict]:
+    def filter_nodes(self, nodes: List[Dict], filters: dict) -> List[Dict]:
         """Apply filters to node list.
 
         Args:
@@ -146,7 +146,7 @@ class DashboardData:
 
         return filtered
 
-    def export_csv(self, nodes: list[dict]) -> str:
+    def export_csv(self, nodes: List[Dict]) -> str:
         """Export nodes to CSV format."""
         output = StringIO()
         if not nodes:
@@ -166,7 +166,7 @@ class DashboardData:
             writer.writerow(row)
         return output.getvalue()
 
-    def export_json(self, nodes: list[dict]) -> str:
+    def export_json(self, nodes: List[Dict]) -> str:
         """Export nodes to JSON format.
 
         Args:
@@ -299,6 +299,8 @@ def create_app(settings=None) -> Flask:
     @app.route("/api/logs")
     def api_logs():
         """API endpoint for application logs."""
+        if settings.security.api_key and request.headers.get("X-API-Key") != settings.security.api_key:
+            return jsonify({"error": "Unauthorized"}), 401
         log_file = settings.output.log_file or data_dir / "configstream.log"
         if not log_file.exists():
             return jsonify({"logs": []})
@@ -309,19 +311,27 @@ def create_app(settings=None) -> Flask:
     @app.route("/api/scheduler/jobs")
     def api_scheduler_jobs():
         """API endpoint for scheduler jobs."""
+        if settings.security.api_key and request.headers.get("X-API-Key") != settings.security.api_key:
+            return jsonify({"error": "Unauthorized"}), 401
         jobs = []
+        running_job_ids = {j.id for j in scheduler.scheduler.get_jobs() if j.next_run_time is not None}
         for job in scheduler.scheduler.get_jobs():
             jobs.append({
                 "id": job.id,
                 "name": job.name,
                 "next_run_time": job.next_run_time.isoformat() if job.next_run_time else None,
                 "trigger": str(job.trigger),
-                "is_running": job.id in [j.id for j in scheduler.scheduler.get_jobs() if j.next_run_time is not None]
+                "is_running": job.id in running_job_ids
             })
         return jsonify({"jobs": jobs})
 
     @app.route("/<page_name>")
     def render_page(page_name):
+        # Prevent directory traversal attacks by validating the page name
+        safe_pages = {"dashboard", "history", "analytics", "settings", "backup", "api-docs", "sources", "testing", "logs", "report", "scheduler", "sitemap", "status"}
+        if page_name not in safe_pages:
+            from flask import abort
+            abort(404)
         return render_template(f"{page_name}.html")
 
     return app
