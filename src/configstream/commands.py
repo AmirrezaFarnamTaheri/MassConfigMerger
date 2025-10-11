@@ -124,3 +124,16 @@ def handle_history(args: argparse.Namespace, cfg: Settings):
             )
 
     asyncio.run(query_history())
+
+
+def handle_prometheus(args: argparse.Namespace, cfg: Settings):
+    """Handle the 'prometheus' command."""
+    from .metrics.prometheus_exporter import start_exporter
+
+    data_dir = Path(cfg.output.output_dir)
+
+    print(f"Starting Prometheus exporter on port {args.port}")
+    print(f"Metrics endpoint: http://localhost:{args.port}/metrics")
+    print("Press Ctrl+C to stop")
+
+    start_exporter(data_dir, args.port)

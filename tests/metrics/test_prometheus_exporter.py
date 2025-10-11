@@ -3,26 +3,28 @@ from unittest.mock import patch, MagicMock
 
 from configstream.metrics.prometheus_exporter import (
     start_exporter,
-    nodes_total,
-    nodes_successful,
-    avg_ping,
+    vpn_nodes_total,
+    vpn_nodes_successful,
+    vpn_avg_ping_ms,
 )
 
 
-@patch("configstream.metrics.prometheus_exporter.start_http_server")
-def test_start_exporter(mock_start_http_server: MagicMock):
+from pathlib import Path
+
+@patch("configstream.metrics.prometheus_exporter.PrometheusExporter.start")
+def test_start_exporter(mock_start: MagicMock, tmp_path: Path):
     """Test that the exporter starts the http server on the correct port."""
-    start_exporter(port=9999)
-    mock_start_http_server.assert_called_once_with(9999)
+    start_exporter(data_dir=tmp_path, port=9999)
+    mock_start.assert_called_once_with(port=9999, update_interval=30)
 
 
 def test_metrics_definition():
     """Test that the Prometheus metrics are defined correctly."""
-    assert nodes_total._name == "vpn_nodes_total"
-    assert nodes_total._documentation == "Total VPN nodes"
+    assert vpn_nodes_total._name == "configstream_vpn_nodes_total"
+    assert vpn_nodes_total._documentation == "Total number of VPN nodes tested"
 
-    assert nodes_successful._name == "vpn_nodes_successful"
-    assert nodes_successful._documentation == "Successful nodes"
+    assert vpn_nodes_successful._name == "configstream_vpn_nodes_successful"
+    assert vpn_nodes_successful._documentation == "Number of successful VPN nodes"
 
-    assert avg_ping._name == "vpn_avg_ping_ms"
-    assert avg_ping._documentation == "Average ping"
+    assert vpn_avg_ping_ms._name == "configstream_avg_ping_milliseconds"
+    assert vpn_avg_ping_ms._documentation == "Average ping time in milliseconds"

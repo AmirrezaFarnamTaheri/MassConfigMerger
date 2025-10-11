@@ -74,6 +74,25 @@ def build_parser() -> argparse.ArgumentParser:
     # History command
     cli_args.add_history_arguments(subparsers)
 
+    # Prometheus command
+    prom_parser = subparsers.add_parser(
+        "prometheus",
+        help="Start Prometheus metrics exporter"
+    )
+    prom_parser.add_argument(
+        "--port",
+        type=int,
+        default=9090,
+        help="Port for Prometheus exporter"
+    )
+    prom_parser.add_argument(
+        "--data-dir",
+        type=str,
+        default="./data",
+        help="Directory containing test results"
+    )
+    prom_parser.set_defaults(func=commands.handle_prometheus)
+
     return parser
 
 
