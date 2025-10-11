@@ -21,15 +21,11 @@ RUN mkdir -p /app/data
 EXPOSE 8080 9090
 
 # Health check
+# Install curl for lightweight healthchecks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python - <<'PY' || exit 1
-import sys, urllib.request
-try:
-    with urllib.request.urlopen('http://localhost:8080/api/statistics', timeout=5) as r:
-        sys.exit(0 if r.status == 200 else 1)
-except Exception:
-    sys.exit(1)
-PY
+  CMD curl -fsS http://localhost:8080/api/statistics >/dev/null || exit 1
 
 # Run daemon
 CMD ["configstream", "daemon", "--interval", "2", "--port", "8080", "--data-dir", "/app/data"]
