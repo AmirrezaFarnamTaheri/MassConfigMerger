@@ -15,9 +15,15 @@ if ! command -v pip >/dev/null 2>&1; then
   exit 1
 fi
 
-# Check Python version
+# Check Python version (require >= 3.8)
 python_version=$(python --version 2>&1 | awk '{print $2}')
 echo "✓ Python version: $python_version"
+py_major=$(echo "$python_version" | cut -d. -f1)
+py_minor=$(echo "$python_version" | cut -d. -f2)
+if [ "$py_major" -lt 3 ] || { [ "$py_major" -eq 3 ] && [ "$py_minor" -lt 8 ]; }; then
+  echo "❌ Python >= 3.8 is required (found $python_version)"
+  exit 1
+fi
 
 # Install dependencies
 echo ""

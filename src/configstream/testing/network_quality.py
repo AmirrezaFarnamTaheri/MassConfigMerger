@@ -100,23 +100,3 @@ async def quick_quality_test(
     """
     tester = NetworkQualityTester(test_count=samples)
     return await tester.test_quality(host, port)
-
-
-# Convenience function
-async def quick_quality_test(
-    host: str,
-    port: int,
-    samples: int = 10
-) -> NetworkQualityResult:
-    """Quick network quality test with fewer samples.
-
-    Args:
-        host: Target hostname or IP
-        port: Target port
-        samples: Number of samples (default: 10)
-
-    Returns:
-        NetworkQualityResult with metrics
-    """
-    tester = NetworkQualityTester(test_count=samples)
-    return await tester.test_quality(host, port)

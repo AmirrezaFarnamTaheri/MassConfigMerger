@@ -10,6 +10,7 @@ import logging
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, Optional, Any
+from ipaddress import ip_address
 
 import aiohttp
 
@@ -285,7 +286,22 @@ class IPReputationChecker:
             details=details
         )
 
-        masked_ip = ip if logger.isEnabledFor(logging.DEBUG) else ip[: ip.rfind('.')] + '.x'
+        # Robust IP masking for logs
+        try:
+            ipa = ip_address(ip)
+            if ipa.version == 4:
+                parts = ip.split(".")
+                masked_ip = ".".join(parts[:3] + ["x"])
+            else:
+                # IPv6: mask the last hextet
+                parts = ip.split(":")
+                if len(parts) > 1:
+                    parts[-1] = "xxxx"
+                masked_ip = ":".join(parts)
+        except Exception:
+            # Fallback if parsing fails
+            masked_ip = "x.x.x.x"
+
         logger.info(
             f"Reputation check complete for {masked_ip}: {score.value} "
             f"(confidence: {abuse_confidence})"

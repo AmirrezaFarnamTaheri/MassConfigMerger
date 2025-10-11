@@ -45,7 +45,7 @@ def test_coerce_float(value, expected):
         (datetime(2023, 1, 1).timestamp(), r"2023-01-01 00:00:00"),
         ("not-a-timestamp", "N/A"),
         (None, "N/A"),
-        (9999999999999999999999, "N/A"),  #  Test overflow
+        (9999999999999999999999, "N/A"),  # Test overflow
     ],
 )
 def test_format_timestamp(value, expected_pattern):

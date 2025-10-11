@@ -66,6 +66,8 @@ class BandwidthTester:
             test_url: Base URL for speed test server
             proxy: Optional proxy URL (e.g., "http://127.0.0.1:1080")
         """
+        if not test_url.startswith("https://"):
+            raise ValueError("test_url must use HTTPS")
         self.test_url = test_url
         self.proxy = proxy
 

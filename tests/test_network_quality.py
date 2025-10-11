@@ -101,7 +101,6 @@ if __name__ == "__main__":
     print("Note: These tests require internet connection\n")
 
     test_quality_result_dataclass()
-    test_quality_score_calculation()
     asyncio.run(test_ping_once())
     asyncio.run(test_ping_once_invalid_host())
     asyncio.run(test_quality_test())

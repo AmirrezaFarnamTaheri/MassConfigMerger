@@ -16,25 +16,25 @@ CREATE TABLE IF NOT EXISTS node_test_history (
 
     -- Basic performance
     ping_ms INTEGER,
-    test_success BOOLEAN,
+    test_success INTEGER DEFAULT 0 CHECK (test_success IN (0,1)),
 
     -- Advanced network quality
     packet_loss_percent REAL DEFAULT 0.0,
     jitter_ms REAL DEFAULT 0.0,
     quality_score REAL DEFAULT 0.0,
-    network_stable BOOLEAN DEFAULT 0,
+    network_stable INTEGER DEFAULT 0 CHECK (network_stable IN (0,1)),
 
     -- Bandwidth (optional)
     download_mbps REAL DEFAULT 0.0,
     upload_mbps REAL DEFAULT 0.0,
 
     -- Security
-    is_blocked BOOLEAN DEFAULT 0,
+    is_blocked INTEGER DEFAULT 0 CHECK (is_blocked IN (0,1)),
     reputation_score TEXT,
-    cert_valid BOOLEAN DEFAULT 1,
+    cert_valid INTEGER DEFAULT 1 CHECK (cert_valid IN (0,1)),
     cert_days_until_expiry INTEGER DEFAULT 0,
-    is_tor BOOLEAN DEFAULT 0,
-    is_proxy BOOLEAN DEFAULT 0,
+    is_tor INTEGER DEFAULT 0 CHECK (is_tor IN (0,1)),
+    is_proxy INTEGER DEFAULT 0 CHECK (is_proxy IN (0,1)),
 
     -- Error tracking
     error_message TEXT
