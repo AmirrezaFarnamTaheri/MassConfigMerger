@@ -102,8 +102,13 @@ class IPReputationChecker:
             return {"error": "No API key configured"}
         return await self._check_service(
             "IPQualityScore",
-            f"https://ipqualityscore.com/api/json/ip/{api_key}/{ip}",
-            params={"strictness": 0, "allow_public_access_points": "true"},
+            "https://ipqualityscore.com/api/json/ip",
+            params={
+                "key": api_key,
+                "ip": ip,
+                "strictness": 0,
+                "allow_public_access_points": "true",
+            },
         )
 
     def _process_abuseipdb(self, data: dict, result: ReputationResult):
