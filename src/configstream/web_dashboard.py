@@ -11,10 +11,11 @@ import logging
 import os
 import psutil
 
-from flask import Flask, jsonify, render_template, request, send_file
+from flask import Flask, jsonify, render_template, request, send_file, abort
 
 from .config import load_config
 from .scheduler import TestScheduler
+from .api import api
 
 logger = logging.getLogger(__name__)
 
@@ -189,9 +190,11 @@ def create_app(settings=None) -> Flask:
     if not settings:
         settings = load_config()
 
-    data_dir = settings.output.current_results_file.parent
-    dashboard_data = DashboardData(data_dir)
-    scheduler = TestScheduler(settings, data_dir)
+    app.config["settings"] = settings
+    app.config["dashboard_data"] = DashboardData(DATA_DIR)
+    app.config["scheduler"] = TestScheduler(settings, DATA_DIR)
+
+    app.register_blueprint(api, url_prefix='/api')
 
     @app.route("/")
     def index():
@@ -203,136 +206,53 @@ def create_app(settings=None) -> Flask:
         """Serve the main dashboard page."""
         return render_template("dashboard.html")
 
-    @app.route("/api/current")
-    def api_current():
-        """API endpoint for current test results."""
-        try:
-            data = dashboard_data.get_current_results()
-            filters = request.args.to_dict()
-            if filters:
-                data["nodes"] = dashboard_data.filter_nodes(data["nodes"], filters)
-                data["total_tested"] = len(data["nodes"])
-                data["successful"] = len([n for n in data["nodes"] if n["ping_ms"] > 0])
-                data["failed"] = len([n for n in data["nodes"] if n["ping_ms"] < 0])
-            return jsonify(data)
-        except Exception as e:
-            logger.error(f"Error in api_current: {e}", exc_info=True)
-            return jsonify({"error": str(e)}), 500
+    @app.route("/analytics")
+    def analytics():
+        return render_template("analytics.html")
 
-    @app.route("/api/history")
-    def api_history():
-        """API endpoint for historical data."""
-        try:
-            hours = int(request.args.get("hours", 24))
-            history = dashboard_data.get_history(hours)
-            return jsonify(history)
-        except Exception as e:
-            logger.error(f"Error in api_history: {e}", exc_info=True)
-            return jsonify({"error": str(e)}), 500
+    @app.route("/backup")
+    def backup():
+        return render_template("backup.html")
 
-    @app.route("/api/statistics")
-    def api_statistics():
-        """API endpoint for aggregated statistics."""
-        try:
-            data = dashboard_data.get_current_results()
-            nodes = data.get("nodes", [])
-            protocols = {}
-            countries = {}
-            avg_ping_by_country = {}
-            for node in nodes:
-                if node.get("ping_ms", -1) > 0:
-                    proto = node["protocol"]
-                    protocols[proto] = protocols.get(proto, 0) + 1
-                    country = node.get("country_code", "Unknown")
-                    countries[country] = countries.get(country, 0) + 1
-                    if country not in avg_ping_by_country:
-                        avg_ping_by_country[country] = []
-                    avg_ping_by_country[country].append(node["ping_ms"])
-            for country, pings in avg_ping_by_country.items():
-                avg_ping_by_country[country] = round(sum(pings) / len(pings), 2)
-            return jsonify({
-                "total_nodes": len(nodes),
-                "successful_nodes": len([n for n in nodes if n.get("ping_ms", -1) > 0]),
-                "protocols": protocols,
-                "countries": countries,
-                "avg_ping_by_country": avg_ping_by_country,
-                "last_update": data.get("timestamp")
-            })
-        except Exception as e:
-            logger.error(f"Error in api_statistics: {e}", exc_info=True)
-            return jsonify({"error": str(e)}), 500
+    @app.route("/help")
+    def help():
+        return render_template("help.html")
 
-    @app.route("/api/export/<format>")
-    def api_export(format: str):
-        """Export data in various formats."""
-        try:
-            data = dashboard_data.get_current_results()
-            filters = request.args.to_dict()
-            nodes = dashboard_data.filter_nodes(data["nodes"], filters)
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            if format == "csv":
-                csv_data = dashboard_data.export_csv(nodes)
-                return send_file(
-                    BytesIO(csv_data.encode('utf-8')),
-                    mimetype="text/csv",
-                    as_attachment=True,
-                    download_name=f"vpn_nodes_{timestamp}.csv"
-                )
-            elif format == "json":
-                payload_obj = {
-                    "exported_at": timestamp,
-                    "count": len(nodes),
-                    "nodes": nodes,
-                }
-                payload = json.dumps(payload_obj, indent=2)
-                return send_file(
-                    BytesIO(payload.encode('utf-8')),
-                    mimetype="application/json",
-                    as_attachment=True,
-                    download_name=f"vpn_nodes_{timestamp}.json"
-                )
-            return jsonify({"error": f"Unsupported format: {format}"}), 400
-        except Exception as e:
-            logger.error(f"Error in api_export: {e}", exc_info=True)
-            return jsonify({"error": str(e)}), 500
+    @app.route("/history")
+    def history():
+        return render_template("history.html")
 
-    @app.route("/api/logs")
-    def api_logs():
-        """API endpoint for application logs."""
-        if settings.security.api_key and request.headers.get("X-API-Key") != settings.security.api_key:
-            return jsonify({"error": "Unauthorized"}), 401
-        log_file = settings.output.log_file or data_dir / "configstream.log"
-        if not log_file.exists():
-            return jsonify({"logs": []})
-        with open(log_file, "r", encoding="utf-8") as f:
-            logs = f.readlines()
-        return jsonify({"logs": logs[-100:]})
+    @app.route("/logs")
+    def logs():
+        return render_template("logs.html")
 
-    @app.route("/api/scheduler/jobs")
-    def api_scheduler_jobs():
-        """API endpoint for scheduler jobs."""
-        if settings.security.api_key and request.headers.get("X-API-Key") != settings.security.api_key:
-            return jsonify({"error": "Unauthorized"}), 401
-        jobs = []
-        running_job_ids = {j.id for j in scheduler.scheduler.get_jobs() if j.next_run_time is not None}
-        for job in scheduler.scheduler.get_jobs():
-            jobs.append({
-                "id": job.id,
-                "name": job.name,
-                "next_run_time": job.next_run_time.isoformat() if job.next_run_time else None,
-                "trigger": str(job.trigger),
-                "is_running": job.id in running_job_ids
-            })
-        return jsonify({"jobs": jobs})
+    @app.route("/report")
+    def report():
+        return render_template("report.html")
 
-    @app.route("/<page_name>")
-    def render_page(page_name):
-        # Prevent directory traversal attacks by validating the page name
-        safe_pages = {"dashboard", "history", "analytics", "settings", "backup", "api-docs", "sources", "testing", "logs", "report", "scheduler", "sitemap", "status"}
-        if page_name not in safe_pages:
-            from flask import abort
-            abort(404)
-        return render_template(f"{page_name}.html")
+    @app.route("/scheduler")
+    def scheduler_page():
+        return render_template("scheduler.html")
+
+    @app.route("/settings")
+    def settings_page():
+        return render_template("settings.html")
+
+    @app.route("/sitemap")
+    def sitemap():
+        return render_template("sitemap.html")
+
+    @app.route("/sources")
+    def sources():
+        return render_template("sources.html")
+
+    @app.route("/status")
+    def status():
+        return render_template("status.html")
+
+    @app.route("/testing")
+    def testing():
+        return render_template("testing.html")
 
     return app
 

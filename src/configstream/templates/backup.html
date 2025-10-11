@@ -42,7 +42,7 @@
             <div class="bg-card-bg p-6 rounded-lg shadow-md">
                 <h2 class="text-2xl font-bold mb-4">Create Backup</h2>
                 <p class="text-text-secondary mb-4">Create a new backup of your settings and data.</p>
-                <button class="bg-accent-color hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md flex items-center">
+                <button id="create-backup-btn" class="bg-accent-color hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md flex items-center">
                     <i class="fas fa-plus-circle mr-2"></i>
                     Create New Backup
                 </button>
@@ -52,11 +52,11 @@
                 <h2 class="text-2xl font-bold mb-4">Restore from Backup</h2>
                 <p class="text-text-secondary mb-4">Restore your settings and data from a previous backup.</p>
                 <div class="flex items-center space-x-4">
-                    <select class="bg-header-bg border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-accent-color">
+                    <select id="backup-select" class="bg-header-bg border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-accent-color">
                         <option>backup-2025-10-11.zip</option>
                         <option>backup-2025-10-10.zip</option>
                     </select>
-                    <button class="bg-success-color hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md flex items-center">
+                    <button id="restore-backup-btn" class="bg-success-color hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md flex items-center">
                         <i class="fas fa-undo mr-2"></i>
                         Restore Selected
                     </button>
@@ -66,7 +66,7 @@
             <div class="bg-card-bg p-6 rounded-lg shadow-md">
                 <h2 class="text-2xl font-bold mb-4">Manage Backups</h2>
                 <p class="text-text-secondary mb-4">Download or delete existing backups.</p>
-                <ul class="space-y-2">
+                <ul id="backup-list" class="space-y-2">
                     <li class="flex items-center justify-between bg-header-bg p-3 rounded-md">
                         <span>backup-2025-10-11.zip</span>
                         <div class="space-x-2">
@@ -85,5 +85,28 @@
             </div>
         </main>
     </div>
+    <script>
+        document.getElementById('create-backup-btn').addEventListener('click', function() {
+            fetch('/api/backup/create', {
+                method: 'POST',
+            }).then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                // a full implementation would refresh the backup list here
+            });
+        });
+
+        document.getElementById('restore-backup-btn').addEventListener('click', function() {
+            const selectedBackup = document.getElementById('backup-select').value;
+            fetch('/api/backup/restore', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename: selectedBackup })
+            }).then(response => response.json())
+            .then(data => {
+                alert(data.message);
+            });
+        });
+    </script>
 </body>
 </html>
