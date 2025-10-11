@@ -2,14 +2,8 @@ import pytest
 from configstream.plugins.base import ParserPlugin, OutputPlugin
 
 
-from configstream.plugins.base import PluginMetadata
-
 # Concrete implementation for ParserPlugin for testing purposes
 class MyTestParser(ParserPlugin):
-    @property
-    def metadata(self):
-        return PluginMetadata("test-parser", "1.0", "tester", "a test parser")
-
     def can_parse(self, config: str) -> bool:
         return config.startswith("myprotocol://")
 
@@ -21,14 +15,6 @@ class MyTestParser(ParserPlugin):
 
 # Concrete implementation for OutputPlugin for testing purposes
 class MyTestOutput(OutputPlugin):
-    @property
-    def metadata(self):
-        return PluginMetadata("test-output", "1.0", "tester", "a test output")
-
-    @property
-    def file_extension(self):
-        return ".test"
-
     def format(self, nodes: list) -> str:
         return "\n".join([node.get("data", "") for node in nodes])
 
@@ -73,27 +59,18 @@ def test_abstract_methods_not_implemented():
 
 
 class CoveringParser(ParserPlugin):
-    @property
-    def metadata(self):
-        return PluginMetadata("covering-parser", "1.0", "tester", "a covering parser")
-
     def can_parse(self, config: str) -> bool:
+        super().can_parse(config)
         return False
 
     def parse(self, config: str) -> dict:
+        super().parse(config)
         return {}
 
 
 class CoveringOutput(OutputPlugin):
-    @property
-    def metadata(self):
-        return PluginMetadata("covering-output", "1.0", "tester", "a covering output")
-
-    @property
-    def file_extension(self):
-        return ".cov"
-
     def format(self, nodes: list) -> str:
+        super().format(nodes)
         return ""
 
 

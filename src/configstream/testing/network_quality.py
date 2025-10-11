@@ -54,8 +54,8 @@ class NetworkQualityTester:
             await asyncio.sleep(0.1)  # Small delay between pings
 
         # Calculate metrics
-        successful = [lat for lat in latencies if lat > 0]
-        failed = len([lat for lat in latencies if lat < 0])
+        successful = [l for l in latencies if l > 0]
+        failed = len([l for l in latencies if l < 0])
 
         if not successful:
             return NetworkQualityResult(
@@ -80,23 +80,3 @@ class NetworkQualityTester:
             avg_latency_ms=round(avg_latency, 2),
             samples=self.test_count
         )
-
-
-# Convenience function
-async def quick_quality_test(
-    host: str,
-    port: int,
-    samples: int = 10
-) -> NetworkQualityResult:
-    """Quick network quality test with fewer samples.
-
-    Args:
-        host: Target hostname or IP
-        port: Target port
-        samples: Number of samples (default: 10)
-
-    Returns:
-        NetworkQualityResult with metrics
-    """
-    tester = NetworkQualityTester(test_count=samples)
-    return await tester.test_quality(host, port)

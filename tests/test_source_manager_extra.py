@@ -53,7 +53,7 @@ async def test_circuit_breaker_opens_and_recovers():
     """Test the full circuit breaker logic: OPEN -> HALF_OPEN -> CLOSED."""
     settings = Settings()
     manager = SourceManager(settings)
-    manager.RETRY_TIMEOUT = 0.1  # Shorten for test
+    manager.RETRY_TIMEOUT = 0.1 # Shorten for test
     source_url = "http://fails.com"
 
     with patch("configstream.core.utils.fetch_text", new_callable=AsyncMock) as mock_fetch, \
