@@ -43,12 +43,24 @@ def parse_tuic(config: str) -> Dict[str, Any]:
         host_port = host_part
         params = {}
 
-    if ":" in host_port:
-        host, port = host_port.rsplit(":", 1)
-        port = int(port)
-    else:
-        host = host_port
-        port = 443
+    # Use urlparse to robustly handle IPv6 and percent-encoding
+    original = config
+    parsed = urlparse("tuic://" + original if not original.startswith("tuic://") else original)
+    if parsed.scheme != "tuic":
+        raise ValueError("Not a TUIC configuration")
+
+    # Extract userinfo safely
+    uuid = parsed.username or ""
+    password = parsed.password or ""
+
+    host = parsed.hostname or ""
+    try:
+        port = int(parsed.port) if parsed.port is not None else 443
+    except Exception:
+        raise ValueError(f"Invalid port in TUIC configuration: {parsed.netloc}")
+
+    # Parse query params
+    params = parse_qs(parsed.query or "")
 
     return {
         "protocol": "tuic",
