@@ -301,9 +301,9 @@ class IPReputationChecker:
         except Exception:
             # Fallback if parsing fails
             masked_ip = "x.x.x.x"
+
         logger.info(
             f"Reputation check complete for {masked_ip}: {score.value} "
-            f"(confidence: {abuse_confidence})"
-        )
+            f"(confidence: {abuse_confidence})")
 
         return result

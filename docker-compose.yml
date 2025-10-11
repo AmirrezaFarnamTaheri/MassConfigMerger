@@ -8,18 +8,22 @@ services:
       - "8080:8080"
       - "9090:9090"
     volumes:
-      - ./data:/app/data
-      - ./config:/app/config
+      - configstream_data:/app/data
+      - configstream_config:/app/config
     environment:
       - CONFIGSTREAM_INTERVAL=2
       - CONFIGSTREAM_PORT=8080
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/statistics"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/api/statistics"]  # fails if non-2xx
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+
+volumes:
+  configstream_data:
+  configstream_config:
 
   prometheus:
     image: prom/prometheus:latest

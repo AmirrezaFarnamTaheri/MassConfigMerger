@@ -23,7 +23,7 @@ EXPOSE 8080 9090
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8080/api/statistics')"
+    CMD curl -fsS http://localhost:8080/api/statistics || exit 1
 
 # Run daemon
 CMD ["configstream", "daemon", "--interval", "2", "--port", "8080", "--data-dir", "/app/data"]

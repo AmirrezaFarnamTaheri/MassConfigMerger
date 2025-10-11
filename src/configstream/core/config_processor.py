@@ -17,7 +17,6 @@ from tqdm.asyncio import tqdm_asyncio
 
 from .. import metrics
 from ..config import Settings
-from ..db import Database
 from ..tester import BlocklistChecker, NodeTester
 from . import config_normalizer
 
@@ -80,6 +79,8 @@ class ConfigProcessor:
         self.blocklist_checker = BlocklistChecker(settings)
         self.settings = settings
         self.history_batch: list[tuple[str, bool]] = []
+        self._ip_reputation_checker: IPReputationChecker | None = None
+        self._certificate_validator: CertificateValidator | None = None
 
     def filter_configs(
         self, configs: Set[str], *, use_fetch_rules: bool = False
@@ -205,8 +206,14 @@ class ConfigProcessor:
         from ..security.ip_reputation import IPReputationChecker, ReputationScore
         from ..security.cert_validator import CertificateValidator
 
-        ip_checker = IPReputationChecker(api_keys=self.settings.security.api_keys)
-        cert_validator = CertificateValidator()
+        # Lazily initialize and cache security helpers
+        if not hasattr(self, "_ip_reputation_checker") or self._ip_reputation_checker is None:
+            self._ip_reputation_checker = IPReputationChecker(api_keys=self.settings.security.api_keys)
+        if not hasattr(self, "_certificate_validator") or self._certificate_validator is None:
+            self._certificate_validator = CertificateValidator()
+
+        ip_checker = self._ip_reputation_checker
+        cert_validator = self._certificate_validator
 
         async def _check(result: ConfigResult) -> Optional[ConfigResult]:
             """Check a single result for security issues."""

@@ -110,5 +110,5 @@ async def test_get_reliable_nodes(db_manager: HistoricalManager):
         await db.commit()
 
     nodes = await db_manager.get_reliable_nodes(days_active=7, min_score=10)
-    assert len(nodes) == 1 # Only the unreliable one is recent enough
+    assert len(nodes) == 1  # Only the unreliable one is recent enough
     assert nodes[0].config_hash == unreliable_hash

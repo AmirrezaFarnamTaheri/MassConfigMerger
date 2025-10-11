@@ -12,25 +12,32 @@ def parse_hysteria(config: str) -> Dict[str, Any]:
     """Parse Hysteria configuration.
 
     Format: hysteria://host:port?...params
-
-    Args:
-        config: Hysteria configuration string
-
-    Returns:
-        Dictionary with parsed configuration
     """
     if not config.startswith("hysteria://"):
         raise ValueError("Not a Hysteria configuration")
 
-    # Parse URL
     parsed = urlparse(config)
 
-    # Extract host and port
-    host = parsed.hostname
-    port = parsed.port or 443
+    host = parsed.hostname or ""
+    if not host:
+        raise ValueError("Hysteria configuration missing host")
 
-    # Parse query parameters
-    params = parse_qs(parsed.query)
+    # Validate/normalize port
+    if parsed.port is None:
+        port = 443
+    else:
+        try:
+            port = int(parsed.port)
+        except Exception:
+            raise ValueError(f"Invalid port in Hysteria configuration: {parsed.netloc}")
+        if port <= 0 or port > 65535:
+            raise ValueError(f"Port out of range in Hysteria configuration: {port}")
+
+    params = parse_qs(parsed.query or "")
+
+    # Normalize boolean parameters that may be "1"/"true"/"yes"
+    def _as_bool(val: str) -> bool:
+        return str(val).lower() in {"1", "true", "yes", "on"}
 
     return {
         "protocol": "hysteria",
@@ -38,10 +45,10 @@ def parse_hysteria(config: str) -> Dict[str, Any]:
         "port": port,
         "auth": params.get("auth", [""])[0],
         "peer": params.get("peer", [""])[0],
-        "insecure": params.get("insecure", ["0"])[0] == "1",
+        "insecure": _as_bool(params.get("insecure", ["0"])[0]),
         "alpn": params.get("alpn", [""])[0],
         "obfs": params.get("obfs", [""])[0],
-        "protocol_version": params.get("protocol", [""])[0]
+        "protocol_version": params.get("protocol", [""])[0],
     }
 
 

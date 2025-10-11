@@ -1,5 +1,5 @@
 """Example plugin: WireGuard configuration parser."""
-from configstream.plugins.base import ParserPlugin, PluginMetadata
+from configstream.plugins.base import ParserPlugin, PluginMetadata, OutputPlugin
 
 
 class WireGuardParser(ParserPlugin):

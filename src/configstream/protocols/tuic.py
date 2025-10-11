@@ -13,7 +13,6 @@ def parse_tuic(config: str) -> Dict[str, Any]:
     if not config.startswith("tuic://"):
         raise ValueError("Not a TUIC configuration")
 
-    # Parse once to robustly handle IPv6 and percent-encoding
     parsed = urlparse(config)
     if parsed.scheme != "tuic":
         raise ValueError("Not a TUIC configuration")
@@ -22,13 +21,21 @@ def parse_tuic(config: str) -> Dict[str, Any]:
     password = parsed.password or ""
 
     host = parsed.hostname or ""
+    if not host:
+        raise ValueError("TUIC configuration missing host")
+
     try:
         port = int(parsed.port) if parsed.port is not None else 443
     except Exception:
         raise ValueError(f"Invalid port in TUIC configuration: {parsed.netloc}")
+    if port <= 0 or port > 65535:
+        raise ValueError(f"Port out of range in TUIC configuration: {port}")
 
-    # Parse query params
     params = parse_qs(parsed.query or "")
+
+    # Normalize ALPN (comma-separated allowed)
+    raw_alpn = params.get("alpn", ["h3"])[0]
+    alpn = ",".join([p.strip() for p in raw_alpn.split(",") if p.strip()]) if raw_alpn else "h3"
 
     return {
         "protocol": "tuic",
@@ -37,6 +44,6 @@ def parse_tuic(config: str) -> Dict[str, Any]:
         "uuid": uuid,
         "password": password,
         "congestion_control": params.get("congestion_control", ["bbr"])[0],
-        "alpn": params.get("alpn", ["h3"])[0],
-        "sni": params.get("sni", [""])[0]
+        "alpn": alpn,
+        "sni": params.get("sni", [""])[0],
     }

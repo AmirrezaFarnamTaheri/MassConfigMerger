@@ -185,4 +185,4 @@ def start_exporter(data_dir: Path, port: int = 9090):
         port: Port to listen on
     """
     exporter = PrometheusExporter(data_dir)
-    exporter.start(port=port, update_interval=30)
+    exporter.start(port=port)
