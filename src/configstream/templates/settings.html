@@ -1,33 +1,61 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - ConfigStream</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --header-bg: #1a202c;
+            --body-bg: #2d3748;
+            --card-bg: #4a5568;
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0aec0;
+            --accent-color: #4299e1;
+        }
+    </style>
+</head>
+<body class="bg-body-bg text-text-primary">
+    <div class="container mx-auto p-4">
+        <header class="bg-header-bg shadow-lg rounded-lg p-6 mb-8 flex items-center justify-between">
+            <div class="flex items-center">
+                <a href="/" class="flex items-center">
+                    <img src="{{ url_for('static', filename='logo.svg') }}" alt="ConfigStream Logo" class="h-12 w-12 mr-4">
+                    <div>
+                        <h1 class="text-3xl font-bold text-white">ConfigStream</h1>
+                        <p class="text-text-secondary">Application Settings</p>
+                    </div>
+                </a>
+            </div>
+            <nav class="flex items-center space-x-4">
+                <a href="/" class="text-text-secondary hover:text-white">Dashboard</a>
+                <a href="/history" class="text-text-secondary hover:text-white">History</a>
+                <a href="/settings" class="text-text-secondary hover:text-white">Settings</a>
+            </nav>
+        </header>
 
-{% block title %}Settings - ConfigStream{% endblock %}
-
-{% block content %}
-<div class="card">
-    <h2>
-        <div class="card-icon">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
-            </svg>
-        </div>
-        Application Settings
-    </h2>
-    <p style="color: #64748b; margin-bottom: 2rem;">
-        A read-only view of the current application configuration loaded from <code>{{ config_path }}</code>.
-    </p>
-
-    <div class="settings-container">
-        <pre><code>{{ config_content }}</code></pre>
+        <main>
+            <div class="bg-card-bg p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold mb-4">Configuration</h2>
+                <form>
+                    <div class="mb-4">
+                        <label for="concurrent-limit" class="block text-sm font-medium text-text-secondary">Concurrent Limit</label>
+                        <input type="number" id="concurrent-limit" value="20" class="mt-1 block w-full bg-header-bg border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-accent-color focus:border-accent-color sm:text-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label for="request-timeout" class="block text-sm font-medium text-text-secondary">Request Timeout</label>
+                        <input type="number" id="request-timeout" value="10" class="mt-1 block w-full bg-header-bg border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-accent-color focus:border-accent-color sm:text-sm">
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" class="bg-accent-color hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">
+                            Save Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
     </div>
-</div>
-<style>
-    .settings-container pre {
-        background-color: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        padding: 1.5rem;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-    }
-</style>
-{% endblock %}
+</body>
+</html>

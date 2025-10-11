@@ -1,229 +1,48 @@
-{% extends "base.html" %}
-
-{% block title %}Dashboard - ConfigStream{% endblock %}
-
-{% block content %}
-<div class="grid">
-    <div class="card">
-        <h2>
-            <div class="card-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to ConfigStream</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --header-bg: #1a202c;
+            --body-bg: #2d3748;
+            --card-bg: #4a5568;
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0aec0;
+            --accent-color: #4299e1;
+        }
+    </style>
+</head>
+<body class="bg-body-bg text-text-primary">
+    <div class="container mx-auto p-4">
+        <header class="bg-header-bg shadow-lg rounded-lg p-6 mb-8 flex items-center justify-between">
+            <div class="flex items-center">
+                <a href="/" class="flex items-center">
+                    <img src="{{ url_for('static', filename='logo.svg') }}" alt="ConfigStream Logo" class="h-12 w-12 mr-4">
+                    <div>
+                        <h1 class="text-3xl font-bold text-white">ConfigStream</h1>
+                        <p class="text-text-secondary">VPN Configuration Management</p>
+                    </div>
+                </a>
             </div>
-            Pipeline Actions
-        </h2>
-        <p style="color: var(--subtle-text-color); margin-bottom: 1.5rem;">
-            Execute aggregation and merge operations. Provide an API token if enforcement is enabled.
-        </p>
-        <div class="action-form">
-            <label for="apiToken">API Token (optional)</label>
-            <input id="apiToken" type="password" placeholder="Enter token if configured" autocomplete="off" />
-            <div class="button-row">
-                <button class="action-btn" id="aggregateBtn">Run Aggregation</button>
-                <button class="action-btn" id="mergeBtn">Run Merge</button>
-            </div>
-        </div>
-        <pre id="actionOutput" aria-live="polite">Awaiting action…</pre>
+            <nav class="flex items-center space-x-4">
+                <a href="/dashboard" class="text-text-secondary hover:text-white">Dashboard</a>
+                <a href="/history" class="text-text-secondary hover:text-white">History</a>
+                <a href="/settings" class="text-text-secondary hover:text-white">Settings</a>
+            </nav>
+        </header>
+
+        <main class="text-center">
+            <h2 class="text-4xl font-bold mb-4">Welcome to ConfigStream</h2>
+            <p class="text-lg text-text-secondary mb-8">Your central hub for managing and testing VPN configurations.</p>
+            <a href="/dashboard" class="bg-accent-color hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-lg">
+                Go to Dashboard
+            </a>
+        </main>
     </div>
-
-    <div class="card">
-        <h2>
-            <div class="card-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
-            </div>
-            Quick Links
-        </h2>
-        <p style="color: var(--subtle-text-color); margin-bottom: 1.5rem;">
-            Access reports, metrics, and operational endpoints.
-        </p>
-        <ul class="links">
-            <li><a href="/report">Latest Report<span>→</span></a></li>
-            <li><a href="/metrics">Prometheus Metrics<span>→</span></a></li>
-            <li><a href="/health">Health Check<span>→</span></a></li>
-        </ul>
-    </div>
-</div>
-
-<div class="card">
-    <h2>
-        <div class="card-icon">
-             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-        </div>
-        Top Performing Proxies
-    </h2>
-    <p style="color: var(--subtle-text-color); margin-bottom: 1.5rem;">
-        Recent proxy test results ranked by reliability. <a href="/history" style="color: var(--primary-color); font-weight: 500;">View all →</a>
-    </p>
-    <table class="history-table" aria-label="Top proxies preview">
-        <thead>
-            <tr>
-                <th>Proxy</th>
-                <th>Success Rate</th>
-                <th>Tests</th>
-                <th>Status</th>
-                <th>Last Tested</th>
-            </tr>
-        </thead>
-        <tbody id="historyTableBody">
-            {% if history_preview %}
-                {% for entry in history_preview %}
-                <tr>
-                    <td>
-                        <strong>{{ entry.key }}</strong>
-                        <div class="geo-info">
-                            {% if entry.country %}{{ entry.country }}{% endif %}{% if entry.isp %} · {{ entry.isp }}{% endif %}
-                        </div>
-                    </td>
-                    <td>{{ '%.2f'|format(entry.reliability_percent) }}%</td>
-                    <td>{{ entry.tests }}</td>
-                    <td><span class="status-badge {{ entry.status_class }}">{{ entry.status }}</span></td>
-                    <td>{{ entry.last_tested }}</td>
-                </tr>
-                {% endfor %}
-            {% else %}
-                <tr><td colspan="5" class="empty-cell">No proxy history recorded yet.</td></tr>
-            {% endif %}
-        </tbody>
-    </table>
-</div>
-
-<style>
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-        gap: 2rem;
-        margin-bottom: 2rem;
-    }
-    .action-form { display: flex; flex-direction: column; gap: 1rem; }
-    .action-form label { font-weight: 500; color: var(--heading-color); }
-    .action-form input {
-        width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--border-color);
-        border-radius: 8px; font-size: 1rem; transition: all 0.2s ease;
-    }
-    .action-form input:focus {
-        outline: none; border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-    }
-    .button-row { display: flex; gap: 1rem; }
-    .action-btn {
-        flex: 1; padding: 0.75rem 1.5rem;
-        background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-        color: white; border: none; border-radius: 8px; font-weight: 600;
-        cursor: pointer; transition: all 0.2s ease;
-    }
-    .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .action-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-    #actionOutput {
-        margin-top: 1.5rem; padding: 1rem; background-color: #f8fafc;
-        color: var(--subtle-text-color); border: 1px solid var(--border-color);
-        border-radius: 8px; font-family: 'SF Mono', 'Courier New', monospace;
-        font-size: 0.875rem; white-space: pre-wrap; word-wrap: break-word; min-height: 60px;
-    }
-    .links { list-style: none; display: grid; gap: 0.75rem; }
-    .links a {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 1rem; background-color: #f8fafc; border-radius: 8px;
-        color: var(--text-color); text-decoration: none; font-weight: 500;
-        transition: all 0.2s ease;
-    }
-    .links a:hover {
-        background-color: var(--primary-color); color: white;
-        transform: translateX(4px);
-    }
-    .links a span { font-weight: 700; }
-    .history-table { width: 100%; border-collapse: collapse; }
-    .history-table th, .history-table td {
-        padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color);
-    }
-    .history-table th { font-weight: 600; color: var(--subtle-text-color); font-size: 0.875rem; }
-    .history-table tbody tr:hover { background-color: #f8fafc; }
-    .geo-info { font-size: 0.8rem; color: var(--subtle-text-color); }
-    .status-badge {
-        padding: 0.25rem 0.75rem; border-radius: 9999px;
-        font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
-    }
-    .status-healthy { background-color: #dcfce7; color: #166534; }
-    .status-warning { background-color: #fef3c7; color: #92400e; }
-    .status-critical { background-color: #fee2e2; color: #991b1b; }
-    .status-untested { background-color: #f1f5f9; color: #475569; }
-    .empty-cell { text-align: center; padding: 2rem; color: var(--subtle-text-color); }
-</style>
-<script>
-    const previewLimit = {{ preview_limit | tojson }};
-    const historyTableBody = document.getElementById('historyTableBody');
-    const output = document.getElementById('actionOutput');
-    const tokenField = document.getElementById('apiToken');
-
-    function setOutput(message, isError = false) {
-        output.textContent = message;
-        output.style.borderColor = isError ? '#fca5a5' : '#10b981';
-        output.style.backgroundColor = isError ? '#fff1f2' : '#f0fdf4';
-        output.style.color = isError ? '#991b1b' : '#14532d';
-    }
-
-    async function callAction(endpoint, buttonId) {
-        const btn = document.getElementById(buttonId);
-        btn.disabled = true;
-        btn.textContent = 'Running…';
-
-        const token = tokenField.value.trim();
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) {
-            headers['X-API-Key'] = token;
-        }
-
-        setOutput('Executing ' + endpoint.split('/').pop() + ' pipeline…');
-
-        try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify(token ? { token } : {})
-            });
-            const payload = await response.json().catch(() => ({ error: 'Invalid JSON response from server.' }));
-            if (!response.ok) {
-                throw new Error(payload.error || `Request failed with status ${response.status}`);
-            }
-            setOutput(JSON.stringify(payload, null, 2));
-        } catch (err) {
-            console.error(err);
-            setOutput('Error: ' + err.message, true);
-        } finally {
-            btn.disabled = false;
-            btn.textContent = buttonId === 'aggregateBtn' ? 'Run Aggregation' : 'Run Merge';
-        }
-    }
-
-    document.getElementById('aggregateBtn').addEventListener('click', () => callAction('/api/aggregate', 'aggregateBtn'));
-    document.getElementById('mergeBtn').addEventListener('click', () => callAction('/api/merge', 'mergeBtn'));
-
-    async function refreshHistoryPreview() {
-        try {
-            const response = await fetch(`/api/history?limit=${previewLimit}`);
-            if (!response.ok) return;
-            const data = await response.json();
-            const items = data.items || [];
-            if (!items.length) {
-                historyTableBody.innerHTML = '<tr><td colspan="5" class="empty-cell">No proxy history recorded yet.</td></tr>';
-                return;
-            }
-            historyTableBody.innerHTML = items.map(entry => `
-                <tr>
-                    <td>
-                        <strong>${entry.key}</strong>
-                        <div class="geo-info">${entry.country || ''}${entry.isp ? ' · ' + entry.isp : ''}</div>
-                    </td>
-                    <td>${entry.reliability_percent.toFixed(2)}%</td>
-                    <td>${entry.tests}</td>
-                    <td><span class="status-badge ${entry.status_class}">${entry.status}</span></td>
-                    <td>${entry.last_tested}</td>
-                </tr>
-            `).join('');
-        } catch (err) {
-            console.error('Failed to refresh history preview', err);
-            historyTableBody.innerHTML = '<tr><td colspan="5" class="empty-cell">Could not load proxy history.</td></tr>';
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', refreshHistoryPreview);
-</script>
-{% endblock %}
+</body>
+</html>

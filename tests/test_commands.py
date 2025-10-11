@@ -10,6 +10,8 @@ from configstream.commands import (
     handle_full,
     handle_daemon,
     handle_tui,
+    handle_history,
+    handle_prometheus,
 )
 from configstream.config import Settings
 
@@ -133,3 +135,52 @@ def test_handle_tui(mock_display_results, mock_args, mock_settings, fs):
     handle_tui(mock_args, mock_settings)
 
     mock_display_results.assert_called_once_with(expected_path)
+
+
+@patch("configstream.commands.HistoricalManager", autospec=True)
+def test_handle_history_db_exists(mock_manager, mock_args, mock_settings, fs, capsys):
+    """Test history command when database exists and nodes are found."""
+    db_path = Path(mock_settings.output.output_dir) / "history.db"
+    fs.create_file(db_path)
+    mock_args.min_score = 80
+    mock_args.limit = 5
+    mock_args.days_active = 7
+
+    mock_instance = mock_manager.return_value
+    mock_node = MagicMock(
+        protocol="test", ip="1.1.1.1", port=1234, reliability_score=95.5, uptime_percent=99.1
+    )
+    mock_instance.get_reliable_nodes.return_value = [mock_node]
+
+    handle_history(mock_args, mock_settings)
+
+    mock_instance.initialize.assert_called_once()
+    mock_instance.get_reliable_nodes.assert_called_once_with(
+        min_score=mock_args.min_score,
+        limit=mock_args.limit,
+        days_active=mock_args.days_active,
+    )
+    mock_instance.close.assert_called_once()
+
+    captured = capsys.readouterr()
+    assert "Top 1 reliable nodes" in captured.out
+    assert "test://1.1.1.1:1234" in captured.out
+
+
+@patch("configstream.commands.HistoricalManager", autospec=True)
+def test_handle_history_no_db(mock_manager, mock_args, mock_settings, fs, capsys):
+    """Test history command when database does not exist."""
+    handle_history(mock_args, mock_settings)
+    captured = capsys.readouterr()
+    assert "History database not found" in captured.out
+    mock_manager.assert_not_called()
+
+
+@patch("configstream.metrics.prometheus_exporter.start_exporter")
+def test_handle_prometheus(mock_start_exporter, mock_args, mock_settings):
+    """Test the prometheus command handler."""
+    mock_args.port = 9090
+    handle_prometheus(mock_args, mock_settings)
+    mock_start_exporter.assert_called_once_with(
+        Path(mock_settings.output.output_dir), mock_args.port
+    )

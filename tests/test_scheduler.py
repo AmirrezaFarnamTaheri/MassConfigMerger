@@ -5,6 +5,7 @@ import json
 from datetime import datetime
 
 from configstream.scheduler import TestScheduler
+TestScheduler.__test__ = False
 from configstream.config import Settings
 from configstream.core.config_processor import ConfigResult
 

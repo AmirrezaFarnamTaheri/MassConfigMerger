@@ -8,8 +8,13 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict
 import logging
+import os
+import psutil
 
 from flask import Flask, jsonify, render_template, request, send_file
+
+from .config import load_config
+from .scheduler import TestScheduler
 
 logger = logging.getLogger(__name__)
 
@@ -179,17 +184,22 @@ DATA_DIR.mkdir(exist_ok=True)
 
 def create_app(settings=None) -> Flask:
     """Create and configure the Flask application."""
-    app = Flask(__name__, template_folder="templates")
+    app = Flask(__name__, template_folder="templates", static_folder="static")
 
-    if settings:
-        data_dir = settings.output.current_results_file.parent
-    else:
-        data_dir = DATA_DIR
+    if not settings:
+        settings = load_config()
 
+    data_dir = settings.output.current_results_file.parent
     dashboard_data = DashboardData(data_dir)
+    scheduler = TestScheduler(settings, data_dir)
 
     @app.route("/")
     def index():
+        """Serve the main dashboard page."""
+        return render_template("index.html")
+
+    @app.route("/dashboard")
+    def dashboard():
         """Serve the main dashboard page."""
         return render_template("dashboard.html")
 
@@ -230,10 +240,10 @@ def create_app(settings=None) -> Flask:
             countries = {}
             avg_ping_by_country = {}
             for node in nodes:
-                if node["ping_ms"] > 0:
+                if node.get("ping_ms", -1) > 0:
                     proto = node["protocol"]
                     protocols[proto] = protocols.get(proto, 0) + 1
-                    country = node["country"]
+                    country = node.get("country_code", "Unknown")
                     countries[country] = countries.get(country, 0) + 1
                     if country not in avg_ping_by_country:
                         avg_ping_by_country[country] = []
@@ -242,7 +252,7 @@ def create_app(settings=None) -> Flask:
                 avg_ping_by_country[country] = round(sum(pings) / len(pings), 2)
             return jsonify({
                 "total_nodes": len(nodes),
-                "successful_nodes": len([n for n in nodes if n["ping_ms"] > 0]),
+                "successful_nodes": len([n for n in nodes if n.get("ping_ms", -1) > 0]),
                 "protocols": protocols,
                 "countries": countries,
                 "avg_ping_by_country": avg_ping_by_country,
@@ -285,6 +295,34 @@ def create_app(settings=None) -> Flask:
         except Exception as e:
             logger.error(f"Error in api_export: {e}", exc_info=True)
             return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/logs")
+    def api_logs():
+        """API endpoint for application logs."""
+        log_file = settings.output.log_file or data_dir / "configstream.log"
+        if not log_file.exists():
+            return jsonify({"logs": []})
+        with open(log_file, "r", encoding="utf-8") as f:
+            logs = f.readlines()
+        return jsonify({"logs": logs[-100:]})
+
+    @app.route("/api/scheduler/jobs")
+    def api_scheduler_jobs():
+        """API endpoint for scheduler jobs."""
+        jobs = []
+        for job in scheduler.scheduler.get_jobs():
+            jobs.append({
+                "id": job.id,
+                "name": job.name,
+                "next_run_time": job.next_run_time.isoformat() if job.next_run_time else None,
+                "trigger": str(job.trigger),
+                "is_running": job.id in [j.id for j in scheduler.scheduler.get_jobs() if j.next_run_time is not None]
+            })
+        return jsonify({"jobs": jobs})
+
+    @app.route("/<page_name>")
+    def render_page(page_name):
+        return render_template(f"{page_name}.html")
 
     return app
 

@@ -49,7 +49,7 @@ class TestScheduler:
             await self.db_manager.initialize()
 
             # Run the merger pipeline
-            results = await run_merger(self.settings)
+            results = await run_merger(self.settings, Path(self.settings.sources.sources_file))
 
             # Prepare data for storage
             test_data = {

@@ -1,201 +1,65 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ConfigStream{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         :root {
-            --primary-color: #4f46e5;
-            --secondary-color: #7c3aed;
-            --background-color: #f8fafc;
-            --card-background: #ffffff;
-            --text-color: #374151;
-            --heading-color: #111827;
-            --subtle-text-color: #6b7280;
-            --border-color: #e5e7eb;
-            --shadow-color: rgba(0, 0, 0, 0.05);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 2.5rem;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .logo-icon {
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .logo-icon svg {
-            width: 32px;
-            height: 32px;
-            fill: white;
-        }
-
-        .logo h1 {
-            font-size: 2.25rem;
-            font-weight: 700;
-            color: var(--heading-color);
-        }
-
-        .tagline {
-            color: var(--subtle-text-color);
-            font-size: 1.1rem;
-        }
-
-        .nav-bar {
-            background: var(--card-background);
-            padding: 0.75rem;
-            border-radius: 9999px;
-            box-shadow: 0 4px 12px var(--shadow-color);
-            margin-bottom: 2.5rem;
-            display: flex;
-            justify-content: center;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 0.5rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.625rem 1.25rem;
-            color: var(--subtle-text-color);
-            text-decoration: none;
-            border-radius: 9999px;
-            font-weight: 500;
-            transition: all 0.2s ease-in-out;
-        }
-
-        .nav-link:hover {
-            background-color: #eef2ff;
-            color: var(--primary-color);
-        }
-
-        .nav-link.active {
-            background: var(--primary-color);
-            color: white;
-            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
-        }
-
-        .nav-link svg {
-            width: 16px;
-            height: 16px;
-            opacity: 0.8;
-        }
-
-        .card {
-            background: var(--card-background);
-            padding: 2.5rem;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px var(--shadow-color);
-            margin-bottom: 2rem;
-        }
-
-        .card h2 {
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            color: var(--heading-color);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .card-icon {
-            width: 36px;
-            height: 36px;
-            padding: 8px;
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .card-icon svg {
-            width: 20px;
-            height: 20px;
-            fill: white;
-        }
-
-        footer {
-            text-align: center;
-            padding-top: 2rem;
-            color: var(--subtle-text-color);
-            font-size: 0.9rem;
+            --header-bg: #1a202c;
+            --body-bg: #2d3748;
+            --card-bg: #4a5568;
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0aec0;
+            --accent-color: #4299e1;
         }
     </style>
+    {% block head_extra %}{% endblock %}
 </head>
-<body>
-    <div class="container">
-        <header class="header">
-            <div class="logo">
-                <div class="logo-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v-2h-2z"/></svg>
-                </div>
-                <h1>ConfigStream</h1>
+<body class="bg-body-bg text-text-primary">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-header-bg text-white flex-shrink-0">
+            <div class="p-4 flex items-center">
+                <img src="{{ url_for('static', filename='logo.svg') }}" alt="ConfigStream Logo" class="h-10 w-10 mr-3">
+                <span class="text-2xl font-bold">ConfigStream</span>
             </div>
-            <p class="tagline">Modern VPN Configuration Management</p>
-        </header>
+            <nav class="mt-8">
+                <a href="/" class="flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
+                    <i class="fas fa-tachometer-alt w-6 text-center"></i>
+                    <span class="ml-3">Dashboard</span>
+                </a>
+                <a href="/history" class="flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
+                    <i class="fas fa-history w-6 text-center"></i>
+                    <span class="ml-3">History</span>
+                </a>
+                <a href="/analytics" class="flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
+                    <i class="fas fa-chart-line w-6 text-center"></i>
+                    <span class="ml-3">Analytics</span>
+                </a>
+                <a href="/settings" class="flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
+                    <i class="fas fa-cog w-6 text-center"></i>
+                    <span class="ml-3">Settings</span>
+                </a>
+                <a href="/backup" class="flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
+                    <i class="fas fa-save w-6 text-center"></i>
+                    <span class="ml-3">Backup</span>
+                </a>
+                 <a href="/api-docs" class="flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
+                    <i class="fas fa-book w-6 text-center"></i>
+                    <span class="ml-3">API Docs</span>
+                </a>
+            </nav>
+        </aside>
 
-        <nav class="nav-bar">
-            <div class="nav-links">
-                <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Dashboard</a>
-                <a href="/sources" class="nav-link {% if request.path == '/sources' %}active{% endif %}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.18 17.82C7.96 16.04 10.32 15 13 15s5.04 1.04 6.82 2.82l1.41-1.41C19.14 14.32 16.27 13 13 13s-6.14 1.32-8.23 3.41l1.41 1.41zM13 3C8.59 3 4.67 4.49 2 7l1.41 1.41C5.59 6.82 9.04 6 13 6s7.41.82 9.59 2.41L24 7c-2.67-2.51-6.59-4-11-4zm0 6c-2.73 0-5.12 1.04-6.9 2.6L7.5 13.01C9.07 11.83 10.95 11 13 11s3.93.83 5.5 2.01L19.9 11.6C18.12 9.96 15.73 9 13 9z"/></svg>Sources</a>
-                <a href="/analytics" class="nav-link {% if request.path == '/analytics' %}active{% endif %}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/></svg>Analytics</a>
-                <a href="/history" class="nav-link {% if request.path == '/history' %}active{% endif %}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>History</a>
-                <a href="/settings" class="nav-link {% if request.path == '/settings' %}active{% endif %}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>Settings</a>
-                <a href="/backup" class="nav-link {% if request.path == '/backup' %}active{% endif %}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>Backup</a>
-                <a href="/logs" class="nav-link {% if request.path == '/logs' %}active{% endif %}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>Logs</a>
-            </div>
-        </nav>
-
-        <main>
-            {% block content %}{% endblock %}
-        </main>
-
-        <footer>
-            <p>ConfigStream v1.0 · Modern VPN Configuration Management</p>
-        </footer>
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-body-bg p-6">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
     </div>
 </body>
 </html>
