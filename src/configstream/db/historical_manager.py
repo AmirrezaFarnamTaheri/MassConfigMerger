@@ -189,7 +189,7 @@ class HistoricalManager:
                  first, last, last_success) = row
 
                 # Calculate uptime percentage
-                uptime = (successful / total) * 100 if total and successful else 0
+                uptime = (successful / total * 100) if total > 0 else 0
 
                 # Calculate reliability score (0-100)
                 # Factors:
@@ -213,17 +213,15 @@ class HistoricalManager:
 
                 # Get latest node info
                 cursor = await db.execute("""
-                    SELECT protocol, ip, port, country_code, city, MAX(test_timestamp)
+                    SELECT protocol, ip, port, country_code, city
                     FROM node_test_history
                     WHERE config_hash = ?
+                    ORDER BY test_timestamp DESC
+                    LIMIT 1
                 """, (config_hash,))
 
                 node_info = await cursor.fetchone()
-                protocol, ip, port, country, city, last_seen_val = node_info if node_info else (None,) * 6
-                if last_seen_val:
-                    last = last_seen_val
-                else:
-                    last = datetime.now().isoformat()
+                protocol, ip, port, country, city = node_info if node_info else (None,) * 5
 
                 # Update or insert reliability record
                 await db.execute("""
@@ -276,6 +274,7 @@ class HistoricalManager:
                 FROM node_reliability
                 WHERE reliability_score >= ?
                 AND last_seen > ?
+                AND total_tests >= 3
                 ORDER BY reliability_score DESC, uptime_percent DESC
                 LIMIT ?
             """, (min_score, cutoff_date.isoformat(), limit))

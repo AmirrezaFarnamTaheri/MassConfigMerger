@@ -7,8 +7,11 @@ from io import StringIO, BytesIO
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
+import logging
 
 from flask import Flask, jsonify, render_template, request, send_file
+
+logger = logging.getLogger(__name__)
 
 # ... your existing Flask app initialization ...
 # app = Flask(__name__)  # This probably already exists
@@ -172,203 +175,118 @@ class DashboardData:
         return json.dumps(nodes, indent=2)
 
 
-# Initialize dashboard data manager
-# Adjust the path to match your project structure
+# Initialize dashboard data manager path only
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
-dashboard_data = DashboardData(DATA_DIR)
 
-app = Flask(__name__)
+def create_app(settings=None) -> Flask:
+    """Create and configure the Flask application."""
+    app = Flask(__name__, template_folder="templates")
 
-# ============================================================================
-# DASHBOARD ROUTES
-# ============================================================================
+    if settings:
+        data_dir = settings.output.current_results_file.parent
+    else:
+        data_dir = DATA_DIR
 
-@app.route("/")
-def index():
-    """Serve the main dashboard page."""
-    return render_template("dashboard.html")
+    dashboard_data = DashboardData(data_dir)
 
+    @app.route("/")
+    def index():
+        """Serve the main dashboard page."""
+        return render_template("dashboard.html")
 
-@app.route("/api/current")
-def api_current():
-    """API endpoint for current test results.
+    @app.route("/api/current")
+    def api_current():
+        """API endpoint for current test results."""
+        try:
+            data = dashboard_data.get_current_results()
+            filters = request.args.to_dict()
+            if filters:
+                data["nodes"] = dashboard_data.filter_nodes(data["nodes"], filters)
+                data["total_tested"] = len(data["nodes"])
+                data["successful"] = len([n for n in data["nodes"] if n["ping_ms"] > 0])
+                data["failed"] = len([n for n in data["nodes"] if n["ping_ms"] < 0])
+            return jsonify(data)
+        except Exception as e:
+            logger.error(f"Error in api_current: {e}", exc_info=True)
+            return jsonify({"error": str(e)}), 500
 
-    Query parameters:
-        protocol: Filter by protocol (e.g., vmess, shadowsocks)
-        country: Filter by country code
-        min_ping: Minimum ping in ms
-        max_ping: Maximum ping in ms
-        exclude_blocked: If set, exclude blocked nodes
-        search: Search term for city/org/IP
+    @app.route("/api/history")
+    def api_history():
+        """API endpoint for historical data."""
+        try:
+            hours = int(request.args.get("hours", 24))
+            history = dashboard_data.get_history(hours)
+            return jsonify(history)
+        except Exception as e:
+            logger.error(f"Error in api_history: {e}", exc_info=True)
+            return jsonify({"error": str(e)}), 500
 
-    Returns:
-        JSON with current test results
-    """
-    try:
-        # Load current data
-        data = dashboard_data.get_current_results()
+    @app.route("/api/statistics")
+    def api_statistics():
+        """API endpoint for aggregated statistics."""
+        try:
+            data = dashboard_data.get_current_results()
+            nodes = data.get("nodes", [])
+            protocols = {}
+            countries = {}
+            avg_ping_by_country = {}
+            for node in nodes:
+                if node["ping_ms"] > 0:
+                    proto = node["protocol"]
+                    protocols[proto] = protocols.get(proto, 0) + 1
+                    country = node["country"]
+                    countries[country] = countries.get(country, 0) + 1
+                    if country not in avg_ping_by_country:
+                        avg_ping_by_country[country] = []
+                    avg_ping_by_country[country].append(node["ping_ms"])
+            for country, pings in avg_ping_by_country.items():
+                avg_ping_by_country[country] = round(sum(pings) / len(pings), 2)
+            return jsonify({
+                "total_nodes": len(nodes),
+                "successful_nodes": len([n for n in nodes if n["ping_ms"] > 0]),
+                "protocols": protocols,
+                "countries": countries,
+                "avg_ping_by_country": avg_ping_by_country,
+                "last_update": data.get("timestamp")
+            })
+        except Exception as e:
+            logger.error(f"Error in api_statistics: {e}", exc_info=True)
+            return jsonify({"error": str(e)}), 500
 
-        # Apply filters if provided
-        filters = request.args.to_dict()
-        if filters:
-            data["nodes"] = dashboard_data.filter_nodes(data["nodes"], filters)
-            # Update counts after filtering
-            data["total_tested"] = len(data["nodes"])
-            data["successful"] = len([n for n in data["nodes"] if n["ping_ms"] > 0])
-            data["failed"] = len([n for n in data["nodes"] if n["ping_ms"] < 0])
-
-        return jsonify(data)
-    except Exception as e:
-        logger.error(f"Error in api_current: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/history")
-def api_history():
-    """API endpoint for historical data.
-
-    Query parameters:
-        hours: Number of hours of history (default: 24)
-
-    Returns:
-        JSON array of historical test results
-    """
-    try:
-        hours = int(request.args.get("hours", 24))
-        history = dashboard_data.get_history(hours)
-        return jsonify(history)
-    except Exception as e:
-        logger.error(f"Error in api_history: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/statistics")
-def api_statistics():
-    """API endpoint for aggregated statistics.
-
-    Returns:
-        JSON with various statistics about the VPN nodes
-    """
-    try:
-        data = dashboard_data.get_current_results()
-        nodes = data.get("nodes", [])
-
-        # Initialize statistics
-        protocols = {}
-        countries = {}
-        avg_ping_by_country = {}
-
-        # Calculate statistics from successful nodes
-        for node in nodes:
-            if node["ping_ms"] > 0:
-                # Protocol counts
-                proto = node["protocol"]
-                protocols[proto] = protocols.get(proto, 0) + 1
-
-                # Country counts
-                country = node["country"]
-                countries[country] = countries.get(country, 0) + 1
-
-                # Collect pings by country for averaging
-                if country not in avg_ping_by_country:
-                    avg_ping_by_country[country] = []
-                avg_ping_by_country[country].append(node["ping_ms"])
-
-        # Calculate average ping per country
-        for country, pings in avg_ping_by_country.items():
-            avg_ping_by_country[country] = round(sum(pings) / len(pings), 2)
-
-        return jsonify({
-            "total_nodes": len(nodes),
-            "successful_nodes": len([n for n in nodes if n["ping_ms"] > 0]),
-            "protocols": protocols,
-            "countries": countries,
-            "avg_ping_by_country": avg_ping_by_country,
-            "last_update": data.get("timestamp")
-        })
-    except Exception as e:
-        logger.error(f"Error in api_statistics: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/export/<format>")
-def api_export(format: str):
-    """Export data in various formats.
-
-    Args:
-        format: Export format ('csv' or 'json')
-
-    Query parameters: Same as /api/current (for filtering)
-
-    Returns:
-        File download with filtered data
-    """
-    try:
-        # Load and filter data
-        data = dashboard_data.get_current_results()
-        filters = request.args.to_dict()
-        nodes = dashboard_data.filter_nodes(data["nodes"], filters)
-
-        # Generate filename with timestamp
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-
-        if format == "csv":
-            csv_data = dashboard_data.export_csv(nodes)
-            return send_file(
-                BytesIO(csv_data.encode('utf-8')),
-                mimetype="text/csv",
-                as_attachment=True,
-                download_name=f"vpn_nodes_{timestamp}.csv"
-            )
-
-        elif format == "json":
-            json_data = dashboard_data.export_json(nodes)
-            payload = f'{{"exported_at":"{timestamp}","count":{len(nodes)},"nodes":{json_data}}}'
-            return send_file(
-                BytesIO(payload.encode('utf-8')),
-                mimetype="application/json",
-                as_attachment=True,
-                download_name=f"vpn_nodes_{timestamp}.json"
-            )
-
-        else:
+    @app.route("/api/export/<format>")
+    def api_export(format: str):
+        """Export data in various formats."""
+        try:
+            data = dashboard_data.get_current_results()
+            filters = request.args.to_dict()
+            nodes = dashboard_data.filter_nodes(data["nodes"], filters)
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            if format == "csv":
+                csv_data = dashboard_data.export_csv(nodes)
+                return send_file(
+                    BytesIO(csv_data.encode('utf-8')),
+                    mimetype="text/csv",
+                    as_attachment=True,
+                    download_name=f"vpn_nodes_{timestamp}.csv"
+                )
+            elif format == "json":
+                payload_obj = {
+                    "exported_at": timestamp,
+                    "count": len(nodes),
+                    "nodes": nodes,
+                }
+                payload = json.dumps(payload_obj, indent=2)
+                return send_file(
+                    BytesIO(payload.encode('utf-8')),
+                    mimetype="application/json",
+                    as_attachment=True,
+                    download_name=f"vpn_nodes_{timestamp}.json"
+                )
             return jsonify({"error": f"Unsupported format: {format}"}), 400
-
-    except Exception as e:
-        logger.error(f"Error in api_export: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
-
-
-def create_app(settings=None) -> Flask:
-    """Create and configure the Flask application."""
-    app = Flask(__name__, template_folder="templates")
-
-    if settings:
-        data_dir = settings.output.current_results_file.parent
-    else:
-        data_dir = Path("./data")
-
-    dashboard_data = DashboardData(data_dir)
-
-    return app
-
-def run_dashboard(host: str = "0.0.0.0", port: int = 8080):
-    """Run the dashboard server."""
-    app = create_app()
-    app.run(host=host, port=port, debug=False)
-
-
-def create_app(settings=None) -> Flask:
-    """Create and configure the Flask application."""
-    app = Flask(__name__, template_folder="templates")
-
-    if settings:
-        data_dir = settings.output.current_results_file.parent
-    else:
-        data_dir = Path("./data")
-
-    dashboard_data = DashboardData(data_dir)
+        except Exception as e:
+            logger.error(f"Error in api_export: {e}", exc_info=True)
+            return jsonify({"error": str(e)}), 500
 
     return app
 

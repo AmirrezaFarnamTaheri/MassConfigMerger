@@ -215,8 +215,20 @@ class ConfigProcessor:
                 result.is_blocked = False
                 return result
             try:
-                # IP Reputation Check
-                ip_rep = await ip_checker.check_all(result.host)
+                # Resolve host to IP before reputation checks
+                try:
+                    ip_addr = await self.tester.resolve_host(result.host)
+                except Exception as exc:
+                    logging.debug("Failed to resolve host %s: %s", result.host, exc)
+                    result.is_blocked = False
+                    return result
+
+                if not ip_addr:
+                    result.is_blocked = False
+                    return result
+
+                # IP Reputation Check with resolved IP
+                ip_rep = await ip_checker.check_all(ip_addr)
                 if ip_rep.score == ReputationScore.MALICIOUS:
                     result.is_blocked = True
                     return None
@@ -282,7 +294,7 @@ class ConfigProcessor:
             )
             results = [res for res in results if res is not None]
             results = self._filter_by_isp(results)
-            return await self._filter_malicious(results)
+            return await self._run_security_checks(results)
         except Exception as exc:
             logging.debug("An error occurred during config testing: %s", exc)
             return []

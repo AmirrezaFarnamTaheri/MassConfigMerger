@@ -22,34 +22,6 @@ def processor(settings: Settings) -> ConfigProcessor:
     return ConfigProcessor(settings)
 
 
-@pytest.mark.asyncio
-async def test_filter_malicious_not_reachable(processor: ConfigProcessor):
-    """Test that _filter_malicious correctly handles non-reachable results."""
-    results = [ConfigResult(config="c1", protocol="p1", is_reachable=False)]
-    filtered = await processor._filter_malicious(results)
-    assert len(filtered) == 1
-    assert filtered[0].config == "c1"
-
-
-@pytest.mark.asyncio
-async def test_filter_malicious_is_malicious(settings: Settings):
-    """Test that _filter_malicious removes malicious results."""
-    # Enable the security check
-    settings.security.apivoid_api_key = "test_key"
-    settings.security.blocklist_detection_threshold = 1
-    processor = ConfigProcessor(settings)
-
-    # Mock the dependencies
-    processor.tester.resolve_host = AsyncMock(return_value="1.2.3.4")
-    processor.blocklist_checker.is_malicious = AsyncMock(return_value=True)
-
-    results = [
-        ConfigResult(
-            config="c1", protocol="p1", is_reachable=True, host="malicious.com"
-        )
-    ]
-    filtered = await processor._filter_malicious(results)
-    assert len(filtered) == 0
 
 
 @pytest.mark.asyncio

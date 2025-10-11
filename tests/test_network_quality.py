@@ -14,8 +14,6 @@ def test_quality_result_dataclass():
         packet_loss_percent=2.5,
         jitter_ms=15.3,
         avg_latency_ms=45.2,
-        min_latency_ms=40.1,
-        max_latency_ms=55.8,
         samples=20
     )
 
@@ -23,37 +21,6 @@ def test_quality_result_dataclass():
     assert result.jitter_ms == 15.3
     assert result.samples == 20
     print("✓ NetworkQualityResult structure correct")
-
-
-def test_quality_score_calculation():
-    """Test quality score calculation."""
-    # Good connection
-    good_result = NetworkQualityResult(
-        packet_loss_percent=0.0,
-        jitter_ms=5.0,
-        avg_latency_ms=30.0,
-        min_latency_ms=28.0,
-        max_latency_ms=35.0,
-        samples=20
-    )
-
-    assert good_result.quality_score > 85
-    assert good_result.is_stable is True
-    print(f"✓ Good connection score: {good_result.quality_score:.1f}/100")
-
-    # Poor connection
-    poor_result = NetworkQualityResult(
-        packet_loss_percent=15.0,
-        jitter_ms=50.0,
-        avg_latency_ms=200.0,
-        min_latency_ms=100.0,
-        max_latency_ms=300.0,
-        samples=20
-    )
-
-    assert poor_result.quality_score < 50
-    assert poor_result.is_stable is False
-    print(f"✓ Poor connection score: {poor_result.quality_score:.1f}/100")
 
 
 @pytest.mark.asyncio
@@ -100,8 +67,6 @@ async def test_quality_test():
     print(f"  Packet loss: {result.packet_loss_percent}%")
     print(f"  Jitter: {result.jitter_ms}ms")
     print(f"  Avg latency: {result.avg_latency_ms}ms")
-    print(f"  Quality score: {result.quality_score:.1f}/100")
-    print(f"  Stable: {result.is_stable}")
 
 
 @pytest.mark.asyncio

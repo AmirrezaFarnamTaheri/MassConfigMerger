@@ -49,26 +49,20 @@ async def test_update_reliability(db_manager: HistoricalManager):
     config = "test_config_2"
     config_hash = db_manager.hash_config(config)
 
-    # Record a successful test
+    # Record two successful tests
     await db_manager.record_test({
-        "config_hash": config_hash,
-        "protocol": "test",
-        "ip": "2.2.2.2",
-        "port": 5678,
-        "ping_ms": 50,
-        "test_success": True,
-        "quality_score": 90
+        "config_hash": config_hash, "protocol": "test", "ip": "2.2.2.2", "port": 5678,
+        "ping_ms": 50, "test_success": True, "quality_score": 90
+    })
+    await db_manager.record_test({
+        "config_hash": config_hash, "protocol": "test", "ip": "2.2.2.2", "port": 5678,
+        "ping_ms": 150, "test_success": True, "quality_score": 70
     })
 
     # Record a failed test
     await db_manager.record_test({
-        "config_hash": config_hash,
-        "protocol": "test",
-        "ip": "2.2.2.2",
-        "port": 5678,
-        "ping_ms": -1,
-        "test_success": False,
-        "quality_score": 0
+        "config_hash": config_hash, "protocol": "test", "ip": "2.2.2.2", "port": 5678,
+        "ping_ms": -1, "test_success": False, "quality_score": 0
     })
 
     await db_manager.update_reliability(config_hash)
@@ -77,11 +71,11 @@ async def test_update_reliability(db_manager: HistoricalManager):
     assert len(reliable_nodes) == 1
     node = reliable_nodes[0]
 
-    assert node.total_tests == 2
-    assert node.successful_tests == 1
+    assert node.total_tests == 3
+    assert node.successful_tests == 2
     assert node.failed_tests == 1
-    assert node.avg_ping_ms == 50
-    assert node.uptime_percent == 50.0
+    assert node.avg_ping_ms == 100  # (50 + 150) / 2
+    assert node.uptime_percent == pytest.approx((2/3) * 100)
     assert node.reliability_score > 0
 
 @pytest.mark.asyncio
