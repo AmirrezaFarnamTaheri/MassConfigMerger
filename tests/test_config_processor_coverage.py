@@ -193,49 +193,48 @@ def test_create_semantic_hash():
 
 
 @pytest.mark.asyncio
-async def test_run_security_checks_disabled(config_processor: ConfigProcessor):
-    """Test that _run_security_checks returns all results if the check is disabled."""
-    config_processor.settings.security.api_keys = {}
+async def test_filter_malicious_disabled(config_processor: ConfigProcessor):
+    """Test that _filter_malicious returns all results if the check is disabled."""
+    config_processor.settings.security.apivoid_api_key = None
     results = [ConfigResult(config="c1", protocol="p1",
                             is_reachable=True, host="h1")]
 
-    filtered = await config_processor._run_security_checks(results)
+    filtered = await config_processor._filter_malicious(results)
 
     assert filtered == results
 
 
 @pytest.mark.asyncio
-async def test_run_security_checks_dns_failure(config_processor: ConfigProcessor, caplog):
-    """Test that _run_security_checks keeps a config if DNS resolution fails."""
-    config_processor.settings.security.api_keys = {"abuseipdb": "test-key"}
+async def test_filter_malicious_dns_failure(config_processor: ConfigProcessor, caplog):
+    """Test that _filter_malicious keeps a config if DNS resolution fails."""
+    config_processor.settings.security.apivoid_api_key = "test-key"
     config_processor.tester.resolve_host = AsyncMock(
         side_effect=Exception("DNS Error"))
     results = [ConfigResult(config="c1", protocol="p1",
                             is_reachable=True, host="h1")]
 
     with caplog.at_level(logging.DEBUG):
-        filtered = await config_processor._run_security_checks(results)
+        filtered = await config_processor._filter_malicious(results)
 
     assert filtered == results
+    assert "Failed to resolve host h1: DNS Error" in caplog.text
 
 
 @pytest.mark.asyncio
-async def test_run_security_checks_check_failure(config_processor: ConfigProcessor, caplog):
-    """Test that _run_security_checks keeps a config if the blocklist check fails."""
-    config_processor.settings.security.api_keys = {"abuseipdb": "test-key"}
+async def test_filter_malicious_check_failure(config_processor: ConfigProcessor, caplog):
+    """Test that _filter_malicious keeps a config if the blocklist check fails."""
+    config_processor.settings.security.apivoid_api_key = "test-key"
     config_processor.tester.resolve_host = AsyncMock(return_value="1.2.3.4")
-    with patch("configstream.security.ip_reputation.IPReputationChecker.check_all", new_callable=AsyncMock) as mock_check:
-        mock_check.side_effect = Exception("API Error")
-        results = [ConfigResult(config="c1", protocol="p1",
-                                is_reachable=True, host="h1")]
+    config_processor.blocklist_checker.is_malicious = AsyncMock(
+        side_effect=Exception("API Error"))
+    results = [ConfigResult(config="c1", protocol="p1",
+                            is_reachable=True, host="h1")]
 
-        with caplog.at_level(logging.DEBUG):
-            try:
-                filtered = await config_processor._run_security_checks(results)
-            except Exception:
-                filtered = results
+    with caplog.at_level(logging.DEBUG):
+        filtered = await config_processor._filter_malicious(results)
 
-        assert filtered == results
+    assert filtered == results
+    assert "Blocklist check failed for 1.2.3.4: API Error" in caplog.text
 
 
 @pytest.mark.asyncio

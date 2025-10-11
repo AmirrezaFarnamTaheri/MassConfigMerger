@@ -27,8 +27,6 @@ def mock_args():
     args.input = "input.txt"
     args.interval_hours = 2
     args.web_port = 8080
-    args.web_host = "0.0.0.0"
-    args.data_dir = "/fake/data"
     return args
 
 
@@ -38,9 +36,6 @@ def mock_settings():
     settings = MagicMock(spec=Settings)
     settings.output = MagicMock()
     settings.output.output_dir = "/fake/output"
-    # Add the 'sources' attribute to the mock
-    settings.sources = MagicMock()
-    settings.sources.sources_file = "default_sources.json"
     return settings
 
 
@@ -96,29 +91,25 @@ def test_handle_full(mock_services, mock_args, mock_settings):
     )
 
 
-@patch("configstream.commands.Path")
 @patch("configstream.commands.ConfigStreamDaemon")
 @patch("configstream.commands.asyncio")
-def test_handle_daemon_no_running_loop(mock_asyncio, mock_daemon_cls, mock_path, mock_args, mock_settings):
+def test_handle_daemon_no_running_loop(mock_asyncio, mock_daemon_cls, mock_args, mock_settings):
     """Test the daemon command handler when no event loop is running."""
     mock_asyncio.get_running_loop.side_effect = RuntimeError
     mock_daemon_instance = mock_daemon_cls.return_value
 
     handle_daemon(mock_args, mock_settings)
 
-    mock_path.assert_called_once_with(mock_args.data_dir)
-    mock_path.return_value.mkdir.assert_called_once_with(parents=True, exist_ok=True)
-    mock_daemon_cls.assert_called_once_with(settings=mock_settings, data_dir=mock_path.return_value)
+    mock_daemon_cls.assert_called_once()
     mock_daemon_instance.start.assert_called_once_with(
         interval_hours=mock_args.interval_hours, web_port=mock_args.web_port
     )
     mock_asyncio.run.assert_called_once_with(mock_daemon_instance.start.return_value)
 
 
-@patch("configstream.commands.Path")
 @patch("configstream.commands.ConfigStreamDaemon")
 @patch("configstream.commands.asyncio")
-def test_handle_daemon_with_running_loop(mock_asyncio, mock_daemon_cls, mock_path, mock_args, mock_settings):
+def test_handle_daemon_with_running_loop(mock_asyncio, mock_daemon_cls, mock_args, mock_settings):
     """Test the daemon command handler when an event loop is already running."""
     mock_loop = MagicMock()
     mock_asyncio.get_running_loop.return_value = mock_loop
@@ -126,9 +117,7 @@ def test_handle_daemon_with_running_loop(mock_asyncio, mock_daemon_cls, mock_pat
 
     handle_daemon(mock_args, mock_settings)
 
-    mock_path.assert_called_once_with(mock_args.data_dir)
-    mock_path.return_value.mkdir.assert_called_once_with(parents=True, exist_ok=True)
-    mock_daemon_cls.assert_called_once_with(settings=mock_settings, data_dir=mock_path.return_value)
+    mock_daemon_cls.assert_called_once()
     mock_daemon_instance.start.assert_called_once_with(
         interval_hours=mock_args.interval_hours, web_port=mock_args.web_port
     )

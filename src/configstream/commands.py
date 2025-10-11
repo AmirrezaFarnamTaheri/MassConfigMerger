@@ -68,11 +68,8 @@ def handle_full(args: argparse.Namespace, cfg: Settings) -> None:
 
 def handle_daemon(args: argparse.Namespace, cfg: Settings):
     """Handle the 'daemon' command."""
-    if args.sources:
-        cfg.sources.sources_file = args.sources
-
-    data_dir = Path(args.data_dir)
-    data_dir.mkdir(parents=True, exist_ok=True)
+    data_dir = Path("./data")
+    data_dir.mkdir(exist_ok=True)
 
     daemon = ConfigStreamDaemon(settings=cfg, data_dir=data_dir)
     try:
@@ -91,8 +88,39 @@ def handle_daemon(args: argparse.Namespace, cfg: Settings):
         ))
 
 
+from .db.historical_manager import HistoricalManager
+
 def handle_tui(args: argparse.Namespace, cfg: Settings):
     """Handle the 'tui' command."""
     # This assumes the daemon has been run at least once to generate the results file.
     results_file = Path(cfg.output.output_dir) / "current_results.json"
     display_results(results_file)
+
+
+def handle_history(args: argparse.Namespace, cfg: Settings):
+    """Handle the 'history' command."""
+    db_path = Path(cfg.output.output_dir) / "history.db"
+    if not db_path.exists():
+        print("History database not found. Run the daemon to generate it.")
+        return
+
+    manager = HistoricalManager(db_path)
+
+    async def query_history():
+        nodes = await manager.get_reliable_nodes(
+            min_score=args.min_score,
+            limit=args.limit,
+            days_active=args.days_active,
+        )
+        if not nodes:
+            print("No reliable nodes found matching the criteria.")
+            return
+
+        print(f"Top {len(nodes)} reliable nodes:")
+        for node in nodes:
+            print(
+                f"  - {node.protocol}://{node.ip}:{node.port} "
+                f"(Score: {node.reliability_score:.1f}, Uptime: {node.uptime_percent:.1f}%)"
+            )
+
+    asyncio.run(query_history())

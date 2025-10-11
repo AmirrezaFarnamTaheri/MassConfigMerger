@@ -98,13 +98,8 @@ async def test_config_processor_test_configs(settings):
     """Test that the ConfigProcessor can test configs."""
     config_processor = ConfigProcessor(settings)
     configs = {VALID_VMESS}
-    with patch.object(config_processor.tester, "test_connection", new_callable=AsyncMock) as mock_test, \
-         patch.object(config_processor, "_run_security_checks", new_callable=AsyncMock) as mock_security_check:
+    with patch.object(config_processor.tester, "test_connection", new_callable=AsyncMock) as mock_test:
         mock_test.return_value = 0.1  # 100ms ping
-        async def security_check_side_effect(x):
-            await asyncio.sleep(0)
-            return x
-        mock_security_check.side_effect = security_check_side_effect
         results = await config_processor.test_configs(configs)
         assert len(results) == 1
         assert results[0].config == VALID_VMESS

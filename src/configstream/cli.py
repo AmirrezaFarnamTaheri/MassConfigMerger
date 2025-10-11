@@ -71,6 +71,9 @@ def build_parser() -> argparse.ArgumentParser:
     # TUI command
     cli_args.add_tui_arguments(subparsers)
 
+    # History command
+    cli_args.add_history_arguments(subparsers)
+
     return parser
 
 
@@ -133,6 +136,7 @@ HANDLERS: Dict[str, Callable[..., None]] = {
     "full": commands.handle_full,
     "daemon": commands.handle_daemon,
     "tui": commands.handle_tui,
+    "history": commands.handle_history,
 }
 
 

@@ -199,50 +199,57 @@ class ConfigProcessor:
             reliability=reliability,
         )
 
-    async def _run_security_checks(
+    async def _filter_malicious(
         self, results: List[ConfigResult]
     ) -> List[ConfigResult]:
-        """Run security checks on the results."""
-        from ..security.ip_reputation import IPReputationChecker, ReputationScore
-        from ..security.cert_validator import CertificateValidator
+        """Filter out results with malicious IPs concurrently."""
+        if (
+            not self.settings.security.apivoid_api_key
+            or self.settings.security.blocklist_detection_threshold <= 0
+        ):
+            return results
 
-        ip_checker = IPReputationChecker(api_keys=self.settings.security.api_keys)
-        cert_validator = CertificateValidator()
+        host_to_ip_cache: dict[str, Optional[str]] = {}
+        ip_to_blocked_status: dict[str, bool] = {}
 
         async def _check(result: ConfigResult) -> Optional[ConfigResult]:
-            """Check a single result for security issues."""
+            """Check a single result for malicious IP. Returns None only if confirmed malicious."""
             if not result.is_reachable or not result.host:
-                return result
-            try:
-                # IP Reputation Check
-                ip_rep = await ip_checker.check_all(result.host)
-                if ip_rep.score == ReputationScore.MALICIOUS:
-                    result.is_blocked = True
-                    return None
-
-                # Certificate Validation
-                if result.port == 443:
-                    cert_info = await cert_validator.validate(result.host, result.port)
-                    if not cert_info.valid:
-                        result.is_blocked = True
-                        return None
-                return result
-            except Exception as exc:
-                logging.debug("Security check failed for %s:%s: %s", result.host, result.port, exc)
-                # On error, do not drop the node; treat as not blocked
                 result.is_blocked = False
                 return result
 
+            # Resolve host to IP (cache results)
+            if result.host not in host_to_ip_cache:
+                try:
+                    host_to_ip_cache[result.host] = await self.tester.resolve_host(result.host)
+                except Exception as exc:
+                    logging.debug("Failed to resolve host %s: %s", result.host, exc)
+                    host_to_ip_cache[result.host] = None
+
+            ip = host_to_ip_cache[result.host]
+            if not ip:
+                result.is_blocked = False
+                return result
+
+            # Check blocklist (cache results)
+            if ip not in ip_to_blocked_status:
+                try:
+                    ip_to_blocked_status[ip] = await self.blocklist_checker.is_malicious(ip)
+                except Exception as exc:
+                    logging.debug("Blocklist check failed for %s: %s", ip, exc)
+                    # On error, do not drop the node; treat as not blocked
+                    ip_to_blocked_status[ip] = False
+
+            is_blocked = ip_to_blocked_status.get(ip, False)
+            result.is_blocked = is_blocked
+            if is_blocked:
+                return None  # remove confirmed malicious
+
+            return result
+
         tasks = [_check(r) for r in results]
-        checked_results = await asyncio.gather(*tasks, return_exceptions=True)
-        safe_results: List[ConfigResult] = []
-        for res in checked_results:
-            if isinstance(res, Exception):
-                logging.debug("Security task failed: %s", res)
-                continue
-            if res is not None:
-                safe_results.append(res)
-        return safe_results
+        checked_results = await asyncio.gather(*tasks)
+        return [res for res in checked_results if res is not None]
 
     async def test_configs(
         self, configs: Set[str], history: dict | None = None
@@ -280,7 +287,7 @@ class ConfigProcessor:
             )
             results = [res for res in results if res is not None]
             results = self._filter_by_isp(results)
-            return await self._run_security_checks(results)
+            return await self._filter_malicious(results)
         except Exception as exc:
             logging.debug("An error occurred during config testing: %s", exc)
             return []

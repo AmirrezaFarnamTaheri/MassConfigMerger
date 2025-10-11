@@ -271,31 +271,6 @@ def add_sources_parser(subparsers: argparse._SubParsersAction):
     remove_p.add_argument("url", help="The URL of the source to remove")
 
 
-def add_testing_arguments(parser: argparse.ArgumentParser):
-    """Add arguments for testing."""
-    group = parser.add_argument_group("testing arguments")
-    group.add_argument(
-        "--enable-advanced-tests",
-        action="store_true",
-        help="Enable advanced testing (bandwidth, jitter, etc.).",
-    )
-    group.add_argument(
-        "--advanced-test-top-n",
-        type=int,
-        help="Number of top nodes to run advanced tests on.",
-    )
-    group.add_argument(
-        "--test-bandwidth",
-        action="store_true",
-        help="Enable bandwidth testing.",
-    )
-    group.add_argument(
-        "--test-network-quality",
-        action="store_true",
-        help="Enable network quality testing (packet loss, jitter).",
-    )
-
-
 def add_daemon_arguments(parser: argparse.ArgumentParser):
     """Add arguments for the 'daemon' command."""
     parser.add_argument(
@@ -316,20 +291,33 @@ def add_daemon_arguments(parser: argparse.ArgumentParser):
         default="0.0.0.0",
         help="The host to run the web dashboard on.",
     )
-    parser.add_argument(
-        "--sources",
-        type=str,
-        help="Path to the sources JSON file (overrides settings).",
-    )
-    parser.add_argument(
-        "--data-dir",
-        type=str,
-        default="./data",
-        help="Directory to store data and results.",
-    )
-    add_testing_arguments(parser)
 
 
 def add_tui_arguments(subparsers: argparse._SubParsersAction):
     """Add arguments for the 'tui' command."""
     subparsers.add_parser("tui", help="Display a terminal user interface")
+
+
+def add_history_arguments(subparsers: argparse._SubParsersAction):
+    """Add arguments for the 'history' command."""
+    history_p = subparsers.add_parser(
+        "history", help="Query historical performance data"
+    )
+    history_p.add_argument(
+        "--min-score",
+        type=float,
+        default=70.0,
+        help="Minimum reliability score to include (0-100).",
+    )
+    history_p.add_argument(
+        "--limit",
+        type=int,
+        default=100,
+        help="Maximum number of nodes to return.",
+    )
+    history_p.add_argument(
+        "--days-active",
+        type=int,
+        default=7,
+        help="Only include nodes seen in the last N days.",
+    )
