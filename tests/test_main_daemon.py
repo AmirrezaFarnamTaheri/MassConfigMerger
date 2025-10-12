@@ -18,8 +18,7 @@ async def test_daemon_start(mock_settings, tmp_path):
     """Test the start method of the daemon."""
     daemon = ConfigStreamDaemon(settings=mock_settings, data_dir=tmp_path)
 
-    with patch("configstream.main_daemon.ConfigStreamDaemon.__init__", return_value=None) as mock_init, \
-         patch("configstream.main_daemon.TestScheduler") as MockScheduler, \
+    with patch("configstream.main_daemon.TestScheduler") as MockScheduler, \
          patch("configstream.main_daemon.run_dashboard") as mock_run_dashboard, \
          patch("signal.signal") as mock_signal:
 
@@ -53,5 +52,3 @@ def test_daemon_signal_handler(mock_settings, tmp_path):
         mock_stop.assert_called_once()
         assert daemon.running is False
         mock_exit.assert_called_once_with(0)
-
-

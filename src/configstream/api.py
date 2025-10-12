@@ -104,10 +104,20 @@ def api_logs():
     settings = current_app.config["settings"]
     if settings.security.api_key and request.headers.get("X-API-Key") != settings.security.api_key:
         return jsonify({"error": "Unauthorized"}), 401
-    log_file = settings.output.log_file or current_app.config["dashboard_data"].data_dir / "configstream.log"
-    if not log_file.exists():
+
+    base_dir = current_app.config["dashboard_data"].data_dir
+    candidate = settings.output.log_file or (base_dir / "configstream.log")
+    try:
+        candidate_path = (base_dir / candidate).resolve() if not candidate.is_absolute() else candidate.resolve()
+        base_path = base_dir.resolve()
+        if base_path not in candidate_path.parents and candidate_path != base_path:
+            return jsonify({"error": "Invalid log file path"}), 400
+    except Exception:
+        return jsonify({"error": "Invalid log file path"}), 400
+
+    if not candidate_path.exists():
         return jsonify({"logs": []})
-    with open(log_file, "r", encoding="utf-8") as f:
+    with open(candidate_path, "r", encoding="utf-8") as f:
         logs = f.readlines()
     return jsonify({"logs": logs[-100:]})
 

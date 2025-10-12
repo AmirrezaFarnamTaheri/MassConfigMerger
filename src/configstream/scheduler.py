@@ -82,8 +82,7 @@ class TestScheduler:
 
             # Save current results (overwrite)
             self.current_results_file.write_text(
-                json.dumps(test_data, indent=2),
-                encoding="utf-8"
+                json.dumps(test_data, indent=2), encoding="utf-8"
             )
 
             # Append to history (for historical tracking)

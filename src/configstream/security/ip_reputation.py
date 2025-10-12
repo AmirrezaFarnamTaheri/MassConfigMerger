@@ -100,12 +100,11 @@ class IPReputationChecker:
         api_key = self.api_keys.get("ipqualityscore")
         if not api_key:
             return {"error": "No API key configured"}
+        url = f"https://ipqualityscore.com/api/json/ip/{api_key}/{ip}"
         return await self._check_service(
             "IPQualityScore",
-            "https://ipqualityscore.com/api/json/ip",
+            url,
             params={
-                "key": api_key,
-                "ip": ip,
                 "strictness": 0,
                 "allow_public_access_points": "true",
             },
