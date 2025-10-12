@@ -1,8 +1,10 @@
 from flask import Blueprint, jsonify, request, send_file, current_app
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 from pathlib import Path
+import psutil
+import time
 
 api = Blueprint('api', __name__)
 
@@ -99,6 +101,55 @@ def api_export(format: str):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+start_time = time.time()
+
+@api.route("/status")
+def api_status():
+    """API endpoint for system status."""
+    uptime_seconds = time.time() - start_time
+    uptime_str = str(timedelta(seconds=int(uptime_seconds)))
+
+    try:
+        psutil.cpu_percent(interval=None)
+        cpu_pct_raw = psutil.cpu_percent(interval=0.1)
+    except Exception:
+        cpu_pct_raw = 0.0
+    cpu_pct = float(cpu_pct_raw)
+    if not (cpu_pct == cpu_pct) or cpu_pct in (float("inf"), float("-inf")):
+        cpu_pct = 0.0
+    cpu_pct = max(0.0, min(100.0, cpu_pct))
+
+    try:
+        mem = psutil.virtual_memory()
+        total = float(getattr(mem, "total", 0.0) or 0.0)
+        used = float(getattr(mem, "used", 0.0) or 0.0)
+        percent = float(getattr(mem, "percent", 0.0) or 0.0)
+    except Exception:
+        total = used = percent = 0.0
+
+    if not (total == total) or total in (float("inf"), float("-inf")) or total < 0:
+        total = 0.0
+    if not (used == used) or used in (float("inf"), float("-inf")) or used < 0:
+        used = 0.0
+    if not (percent == percent) or percent in (float("inf"), float("-inf")) or percent < 0:
+        percent = 0.0
+
+    percent = max(0.0, min(100.0, percent))
+    mem_total_mb = round(total / (1024 * 1024), 2) if total > 0 else 0.0
+    mem_used_mb = round(min(used, total) / (1024 * 1024), 2) if total > 0 else 0.0
+
+    return jsonify({
+        "uptime": uptime_str,
+        "cpu": {
+            "percent": cpu_pct,
+        },
+        "memory": {
+            "total_mb": mem_total_mb,
+            "used_mb": mem_used_mb,
+            "percent": percent,
+        }
+    })
+
 @api.route("/logs")
 def api_logs():
     """API endpoint for application logs."""
@@ -106,28 +157,29 @@ def api_logs():
     if settings.security.api_key and request.headers.get("X-API-Key") != settings.security.api_key:
         return jsonify({"error": "Unauthorized"}), 401
 
-    base_dir = current_app.config["dashboard_data"].data_dir
-    candidate_raw = settings.output.log_file or "configstream.log"
-    try:
-        candidate_path = Path(candidate_raw)
-        if not candidate_path.is_absolute():
-            candidate_path = (base_dir / candidate_path).resolve()
-        else:
-            candidate_path = candidate_path.resolve()
-        base_path = base_dir.resolve()
-        try:
-            # Python 3.9+ compatibility: robust directory containment check
-            candidate_path.relative_to(base_path)
-        except Exception:
-            return jsonify({"error": "Invalid log file path"}), 400
-    except Exception:
-        return jsonify({"error": "Invalid log file path"}), 400
+    log_file = settings.output.log_file or "configstream.log"
+    log_path = Path(log_file)
 
-    if not candidate_path.exists() or not candidate_path.is_file():
-        return jsonify({"logs": []})
-    with open(candidate_path, "r", encoding="utf-8") as f:
-        logs = f.readlines()
-    return jsonify({"logs": logs[-100:]})
+    if not log_path.is_absolute():
+        root_path = Path(current_app.root_path).parent
+        log_path = root_path / log_path
+
+    try:
+        resolved_log_path = log_path.resolve(strict=True)
+        resolved_root_path = Path(current_app.root_path).parent.resolve(strict=True)
+        resolved_log_path.relative_to(resolved_root_path)
+    except FileNotFoundError:
+        return jsonify({"logs": ["Log file not found."]}), 200
+    except (ValueError, Exception):
+        return jsonify({"error": "Log file path is outside the allowed directory"}), 400
+
+    try:
+        with open(resolved_log_path, "r", encoding="utf-8") as f:
+            logs = f.readlines()
+        return jsonify({"logs": [line.strip() for line in logs[-100:]]}), 200
+    except Exception as e:
+        current_app.logger.exception("Error reading log file: %s", resolved_log_path)
+        return jsonify({"logs": [f"Error reading log file: {e}"]}), 500
 
 @api.route("/scheduler/jobs")
 def api_scheduler_jobs():
@@ -156,20 +208,50 @@ def api_settings():
         if not data:
             return jsonify({"error": "Invalid JSON"}), 400
 
-        # Here you would typically update the settings file
+        # This is a placeholder. In a real application, you would update the settings file.
         # For now, we'll just return a success message
         return jsonify({"message": "Settings updated successfully"})
     except Exception:
         return jsonify({"error": "Invalid JSON"}), 400
 
-@api.route("/backup/create", methods=["POST"])
-def api_backup_create():
-    """API endpoint for creating a backup."""
-    # This is a placeholder. In a real application, you would zip the data and settings.
-    return jsonify({"message": "Backup created successfully", "filename": f"backup-{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"})
+@api.route("/sources", methods=["POST"])
+def api_add_source():
+    """API endpoint for adding a new source."""
+    try:
+        data = request.get_json(silent=True) or {}
+        url = (data.get("url") or "").strip()
+        if not url:
+            return jsonify({"error": "URL is required"}), 400
+        if not (url.startswith("http://") or url.startswith("https://")):
+            return jsonify({"error": "URL must start with http:// or https://"}), 400
 
-@api.route("/backup/restore", methods=["POST"])
-def api_backup_restore():
-    """API endpoint for restoring from a backup."""
-    # This is a placeholder. In a real application, you would unzip the backup and restore the data.
-    return jsonify({"message": "Restore completed successfully"})
+        settings = current_app.config["settings"]
+        sources_file = Path(settings.sources.sources_file)
+        if not sources_file.is_absolute():
+            sources_file = Path(current_app.root_path).parent / sources_file
+
+        try:
+            resolved_sources = sources_file.resolve()
+            allowed_root = (Path(current_app.root_path).parent).resolve()
+            resolved_sources.relative_to(allowed_root)
+        except Exception:
+            return jsonify({"error": "Invalid sources file path"}), 400
+
+        sources_file.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            append_newline = True
+            if sources_file.exists() and sources_file.stat().st_size > 0:
+                with open(sources_file, "rb") as f:
+                    f.seek(-1, 2)
+                    append_newline = f.read(1) != b"\n"
+            with open(sources_file, "a", encoding="utf-8") as f:
+                if append_newline:
+                    f.write("\n")
+                f.write(url)
+        except IOError as e:
+            return jsonify({"error": f"Failed to write to sources file: {e}"}), 500
+
+        return jsonify({"message": "Source added successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": f"An unexpected error occurred: {e}"}), 500

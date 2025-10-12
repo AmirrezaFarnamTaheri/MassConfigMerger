@@ -66,7 +66,7 @@ def settings(fs) -> Settings:
 
     settings_obj = Settings(
         output={"output_dir": output_dir_name},
-        security={"web_api_token": "test-token"},
+        security={"web_api_token": "test-token", "secret_key": "test-secret-key"},
         config_file=Path("config.yaml"),
     )
 

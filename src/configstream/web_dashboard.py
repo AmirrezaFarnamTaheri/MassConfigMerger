@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 import logging
 
-from flask import Flask, render_template
+from flask import Flask, render_template, current_app
 from flask_wtf.csrf import CSRFProtect
 import base64
 import hashlib
@@ -193,29 +193,43 @@ def create_app(settings=None) -> Flask:
     if not settings:
         settings = load_config()
 
-    app.config["SECRET_KEY"] = settings.security.secret_key or "a-very-secret-key"
+    if not settings.security.secret_key:
+        if app.testing:
+            import secrets
+            generated = secrets.token_urlsafe(32)
+            app.logger.warning("SECRET_KEY missing; generating ephemeral key for testing.")
+            app.config["SECRET_KEY"] = generated
+        else:
+            raise RuntimeError("SECRET_KEY is not configured. Set `security.secret_key` in your config.")
+    else:
+        app.config["SECRET_KEY"] = settings.security.secret_key
     csrf.init_app(app)
 
     app.config["settings"] = settings
     app.config["dashboard_data"] = DashboardData(DATA_DIR)
     app.config["scheduler"] = TestScheduler(settings, DATA_DIR)
 
-    def get_sri(path):
-        static_file_path = Path(app.static_folder) / path
-        if not static_file_path.exists():
-            return ""
-        with open(static_file_path, "rb") as f:
-            file_bytes = f.read()
-            hashed = hashlib.sha384(file_bytes).digest()
-            return "sha384-" + base64.b64encode(hashed).decode()
+    def get_sri_map(paths):
+        sri = {}
+        for key, rel_path in paths.items():
+            static_file_path = Path(app.static_folder) / rel_path
+            if not static_file_path.exists():
+                logger.error("Static asset missing for SRI: %s", static_file_path)
+                continue
+            with open(static_file_path, "rb") as f:
+                file_bytes = f.read()
+                digest = hashlib.sha384(file_bytes).digest()
+                sri[key] = "sha384-" + base64.b64encode(digest).decode()
+        return sri
 
     @app.context_processor
     def inject_sri():
-        return {
-            "tailwind_sri": get_sri("css/tailwind-3.4.3.min.css"),
-            "fontawesome_sri": get_sri("css/all.min.css"),
-            "styles_sri": get_sri("css/styles.css"),
-        }
+        sri = get_sri_map({
+            "tailwind_sri": "css/tailwind-3.4.3.min.css",
+            "fontawesome_sri": "css/all.min.css",
+            "styles_sri": "css/styles.css",
+        })
+        return sri
 
     app.register_blueprint(api, url_prefix='/api')
 
@@ -241,53 +255,37 @@ def create_app(settings=None) -> Flask:
     def roadmap():
         return render_template("roadmap.html")
 
-    @app.route("/analytics")
-    def analytics():
-        return render_template("analytics.html")
-
-    @app.route("/backup")
-    def backup():
-        return render_template("backup.html")
-
-    @app.route("/help")
-    def help():
-        return render_template("help.html")
-
     @app.route("/history")
     def history():
         return render_template("history.html")
 
-    @app.route("/logs")
-    def logs():
-        return render_template("logs.html")
 
-    @app.route("/report")
-    def report():
-        return render_template("report.html")
 
-    @app.route("/scheduler")
-    def scheduler():
-        return render_template("scheduler.html")
 
     @app.route("/settings")
     def settings_page():
-        return render_template("settings.html")
-
-    @app.route("/sitemap")
-    def sitemap():
-        return render_template("sitemap.html")
+        settings = current_app.config["settings"]
+        return render_template("settings.html", settings=settings.model_dump())
 
     @app.route("/sources")
     def sources():
-        return render_template("sources.html")
+        settings = current_app.config["settings"]
+        sources_file = Path(settings.sources.sources_file)
+        if not sources_file.is_absolute():
+            sources_file = Path(current_app.root_path).parent / sources_file
 
-    @app.route("/status")
-    def status():
-        return render_template("status.html")
+        sources = []
+        if sources_file.exists():
+            with open(sources_file, "r", encoding="utf-8") as f:
+                sources = [line.strip() for line in f if line.strip()]
 
-    @app.route("/testing")
-    def testing():
-        return render_template("testing.html")
+        return render_template("sources.html", sources=sources)
+
+    @app.route("/system")
+    def system():
+        scheduler = app.config["scheduler"]
+        jobs = scheduler.get_jobs()
+        return render_template("system.html", jobs=jobs)
 
     @app.route("/api-docs")
     def api_docs():

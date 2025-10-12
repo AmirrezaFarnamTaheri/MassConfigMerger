@@ -29,7 +29,8 @@ dependencies = [
     "prometheus_client",
     "psutil",
     "apscheduler",
-    "rich"
+    "rich",
+    "flask-wtf"
 ]
 
 [project.urls]
