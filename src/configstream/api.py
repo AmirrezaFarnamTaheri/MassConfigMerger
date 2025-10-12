@@ -101,12 +101,13 @@ def api_export(format: str):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-start_time = time.time()
+process = psutil.Process()
+process.cpu_percent()  # Initialize for non-blocking calls later
 
 @api.route("/status")
 def api_status():
     """API endpoint for system status."""
-    uptime_seconds = time.time() - start_time
+    uptime_seconds = time.time() - process.create_time()
     uptime_str = str(timedelta(seconds=int(uptime_seconds)))
 
     mem = psutil.virtual_memory()
@@ -114,7 +115,7 @@ def api_status():
     return jsonify({
         "uptime": uptime_str,
         "cpu": {
-            "percent": psutil.cpu_percent(),
+            "percent": process.cpu_percent(),
         },
         "memory": {
             "total_mb": mem.total / (1024 * 1024),
