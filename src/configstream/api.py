@@ -108,25 +108,34 @@ def api_status():
         uptime_seconds = max(0, time.time() - psutil.boot_time())
         uptime_str = str(timedelta(seconds=int(uptime_seconds)))
 
-        cpu_pct_raw = psutil.cpu_percent(interval=None)
+        # Prime CPU measurement to avoid initial 0.0 result
+        try:
+            psutil.cpu_percent(interval=0.1)
+            cpu_pct_raw = psutil.cpu_percent(interval=0.1)
+        except Exception:
+            cpu_pct_raw = 0.0
         cpu_pct = float(cpu_pct_raw)
-        if not (cpu_pct == cpu_pct) or cpu_pct in (float("inf"), float("-inf")):  # NaN/inf check
+        if not (cpu_pct == cpu_pct) or cpu_pct in (float("inf"), float("-inf")):
             cpu_pct = 0.0
         cpu_pct = max(0.0, min(100.0, cpu_pct))
 
-        mem = psutil.virtual_memory()
-        mem_total_mb = round(float(mem.total) / (1024 * 1024), 2)
-        mem_used_mb = round(float(mem.used) / (1024 * 1024), 2)
-        mem_percent = float(mem.percent)
+        try:
+            mem = psutil.virtual_memory()
+            mem_total_mb = round(float(getattr(mem, "total", 0)) / (1024 * 1024), 2)
+            mem_used_mb = round(float(getattr(mem, "used", 0)) / (1024 * 1024), 2)
+            mem_percent = float(getattr(mem, "percent", 0.0))
+        except Exception:
+            mem_total_mb = 0.0
+            mem_used_mb = 0.0
+            mem_percent = 0.0
+
         if not (mem_percent == mem_percent) or mem_percent in (float("inf"), float("-inf")):
             mem_percent = 0.0
         mem_percent = max(0.0, min(100.0, mem_percent))
 
         return jsonify({
             "uptime": uptime_str,
-            "cpu": {
-                "percent": cpu_pct,
-            },
+            "cpu": {"percent": cpu_pct},
             "memory": {
                 "total_mb": mem_total_mb,
                 "used_mb": mem_used_mb,
