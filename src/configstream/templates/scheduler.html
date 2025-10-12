@@ -31,43 +31,55 @@
             </div>
             <nav class="flex items-center space-x-4">
                 <a href="/" class="text-text-secondary hover:text-white">Dashboard</a>
-                <a href="/history" class="text-text-secondary hover:text-white">History</a>
-                <a href="/settings" class="text-text-secondary hover:text-white">Settings</a>
-            </nav>
-        </header>
-
-        <main>
-            <div class="bg-card-bg p-6 rounded-lg shadow-md">
-                <h2 class="text-2xl font-bold mb-4">Job Status</h2>
-                <div id="job-status-container">
-                    <!-- Job status will be loaded here -->
-                </div>
-            </div>
-        </main>
-    </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
             fetch('/api/scheduler/jobs')
-                .then(response => response.json())
-                .then(data => {
+                .then(async (response) => {
+                    if (!response.ok) {
+                        const msg = await response.text().catch(() => '');
+                        throw new Error(msg || `Failed to load jobs (${response.status})`);
+                    }
+                    return response.json().catch(() => { throw new Error('Invalid JSON from /api/scheduler/jobs'); });
+                })
+                .then((data) => {
                     const container = document.getElementById('job-status-container');
                     container.innerHTML = '';
-                    if (data.jobs && data.jobs.length > 0) {
-                        data.jobs.forEach(job => {
+                    const jobs = Array.isArray(data) ? data : (Array.isArray(data && data.jobs) ? data.jobs : []);
+                    if (jobs.length > 0) {
+                        jobs.forEach(job => {
                             const jobElement = document.createElement('div');
                             jobElement.className = 'bg-header-bg p-4 rounded-md mb-4';
 
                             const title = document.createElement('h3');
                             title.className = 'text-lg font-semibold';
-                            title.textContent = job.id;
+                            title.textContent = job && (job.name || job.id) ? (job.name || job.id) : 'Unnamed job';
 
                             const details = document.createElement('p');
                             details.className = 'text-text-secondary';
-                            details.textContent = `Next Run: ${new Date(job.next_run_time).toLocaleString()}`;
+                            let nextRunText = 'N/A';
+                            if (job && job.next_run_time) {
+                                const d = new Date(job.next_run_time);
+                                if (!isNaN(d)) nextRunText = d.toLocaleString();
+                            }
+                            details.textContent = `Next Run: ${nextRunText}`;
 
                             const button = document.createElement('button');
                             button.className = 'mt-2 bg-accent-color hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md';
                             button.textContent = 'Run Now';
+                            button.addEventListener('click', async () => {
+                                try {
+                                    const resp = await fetch('/api/scheduler/run', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ id: job.id })
+                                    });
+                                    if (!resp.ok) {
+                                        const t = await resp.text().catch(() => '');
+                                        throw new Error(t || 'Failed to trigger job.');
+                                    }
+                                    alert('Job triggered.');
+                                } catch (e) {
+                                    alert(e.message || 'Failed to trigger job.');
+                                }
+                            });
 
                             jobElement.appendChild(title);
                             jobElement.appendChild(details);
@@ -78,6 +90,10 @@
                     } else {
                         container.innerHTML = '<p class="text-text-secondary">No scheduled jobs found.</p>';
                     }
+                })
+                .catch((err) => {
+                    const container = document.getElementById('job-status-container');
+                    container.innerHTML = `<p class="text-text-secondary">Error loading jobs: ${err.message}</p>`;
                 });
         });
     </script>
