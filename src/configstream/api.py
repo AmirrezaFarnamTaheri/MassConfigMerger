@@ -165,8 +165,9 @@ def api_logs():
     except (ValueError, FileNotFoundError):
         return jsonify({"error": "Invalid log file path"}), 400
 
-    if not resolved_log_path.is_file():
-        return jsonify({"logs": ["Log file not found."]})
+            except Exception as e:
+                current_app.logger.exception("Error reading log file: %s", resolved_log_path)
+                return jsonify({"logs": ["Error reading log file."]}), 500
 
     try:
         with open(resolved_log_path, "r", encoding="utf-8") as f:
