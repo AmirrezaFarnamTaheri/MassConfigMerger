@@ -37,6 +37,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--config", default=CONFIG_FILE_NAME, help=f"Path to {CONFIG_FILE_NAME}"
     )
+    parser.add_argument(
+        "--version", action="version", version="%(prog)s 0.4.0"
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # Fetch command
@@ -67,9 +70,6 @@ def build_parser() -> argparse.ArgumentParser:
         "daemon", help="Run the scheduler and web dashboard"
     )
     cli_args.add_daemon_arguments(daemon_p)
-
-    # TUI command
-    cli_args.add_tui_arguments(subparsers)
 
     # History command
     cli_args.add_history_arguments(subparsers)
@@ -154,7 +154,6 @@ HANDLERS: Dict[str, Callable[..., None]] = {
     "retest": commands.handle_retest,
     "full": commands.handle_full,
     "daemon": commands.handle_daemon,
-    "tui": commands.handle_tui,
     "history": commands.handle_history,
 }
 

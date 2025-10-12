@@ -9,7 +9,6 @@ from configstream.commands import (
     handle_retest,
     handle_full,
     handle_daemon,
-    handle_tui,
     handle_history,
     handle_prometheus,
 )
@@ -126,15 +125,6 @@ def test_handle_daemon_with_running_loop(mock_asyncio, mock_daemon_cls, mock_arg
     mock_loop.create_task.assert_called_once_with(mock_daemon_instance.start.return_value)
 
 
-@patch("configstream.commands.display_results")
-def test_handle_tui(mock_display_results, mock_args, mock_settings, fs):
-    """Test the tui command handler."""
-    expected_path = Path(mock_settings.output.output_dir) / "current_results.json"
-    fs.create_file(expected_path)
-
-    handle_tui(mock_args, mock_settings)
-
-    mock_display_results.assert_called_once_with(expected_path)
 
 
 @patch("configstream.commands.HistoricalManager", autospec=True)

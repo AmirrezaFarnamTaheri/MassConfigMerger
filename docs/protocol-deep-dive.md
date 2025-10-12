@@ -1,11 +1,10 @@
-### 🔑 Protocol Types and Defaults
+# Protocol Deep Dive
 
-Each server link is classified into a protocol type. The application uses two sets of rules for filtering:
+ConfigStream supports a wide variety of VPN protocols, each with its own strengths and weaknesses. This document provides a detailed overview of the supported protocols and how to configure them.
 
-1.  **Fetch Filtering**: When using the `fetch` or `full` command, the `--fetch-protocols` argument (or `fetch_protocols` in `config.yaml`) determines which protocols are collected from sources.
-2.  **Merge/Retest Filtering**: When using the `merge`, `full`, or `retest` command, the `--include-protocols` and `--exclude-protocols` arguments (or their `config.yaml` equivalents) filter the final list of configs before writing the output files.
+## Supported Protocols
 
-The following protocol names are recognized and can be used in these settings:
+The following protocols are supported by ConfigStream:
 
 - **VMess**
 - **VLESS**
@@ -26,9 +25,7 @@ Any unrecognized scheme is categorized as **Other**. By default, `Other` and `Sh
 
 Protocol matching is **case-insensitive**, so links such as `VMESS://example` are treated the same as `vmess://example`.
 
------
-
-### Protocol Comparison
+## Protocol Comparison
 
 | Protocol | Main Benefit | Downside | Typical Use Case |
 | -------- | ------------ | -------- | ---------------- |
@@ -57,9 +54,7 @@ Protocol matching is **case-insensitive**, so links such as `VMESS://example` ar
 | **QUIC** | Fast handshake & multiplexing | UDP may be blocked | Modern UDP tunnels |
 | **H2** | Multiplexed HTTP/2 layer | Limited support | Firewall evasion via 443 |
 
-## 📡 Protocol Deep Dive
-
-Below is a high-level overview of how the most common protocols work along with their strengths and weaknesses.
+## Protocol Details
 
 ### Proxy (HTTP/SOCKS)
 * **Mechanism**: Simple data forwarding through an intermediary server. Mostly unencrypted.
@@ -109,5 +104,12 @@ Below is a high-level overview of how the most common protocols work along with 
 * **Cons**: Configuration can be complex and requires a working web server.
 * **Use Case**: Avoiding censorship in networks that block by SNI or TLS fingerprint.
 
-These summaries should help you pick the right protocol for your situation. Remember that not all clients support every protocol.
+## Protocol Filtering
 
+ConfigStream provides two levels of protocol filtering:
+
+### Fetch Filtering
+When using the `fetch` or `full` command, the `--fetch-protocols` argument (or `fetch_protocols` in `config.yaml`) determines which protocols are collected from sources.
+
+### Merge/Retest Filtering
+When using the `merge`, `full`, or `retest` command, the `--include-protocols` and `--exclude-protocols` arguments (or their `config.yaml` equivalents) filter the final list of configs before writing the output files.

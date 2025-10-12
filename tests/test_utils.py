@@ -1,19 +1,41 @@
 from __future__ import annotations
-
-import pytest
+import base64
+from unittest.mock import patch, MagicMock, AsyncMock
 import asyncio
 import socket
-from unittest.mock import AsyncMock, patch, MagicMock
 
+import pytest
 import aiohttp
-from configstream.exceptions import NetworkError
-from configstream.config import Settings
-from configstream.core.config_processor import ConfigResult
+
 from configstream.core.utils import (
+    parse_configs_from_text,
     get_sort_key,
     choose_proxy,
     fetch_text,
+    is_safe_url,
 )
+from configstream.config import Settings
+from configstream.core.config_processor import ConfigResult
+from configstream.exceptions import ConfigError, NetworkError
+
+
+def test_parse_configs_from_text_oversized_b64():
+    """Test that oversized base64 lines are skipped."""
+    # Create a base64 string that is longer than the max size
+    long_string = "a" * 5000
+    b64_string = base64.urlsafe_b64encode(long_string.encode()).decode()
+    text = f"some text\n{b64_string}\nmore text"
+
+    with patch("configstream.core.utils.MAX_DECODE_SIZE", 4000):
+        configs = parse_configs_from_text(text)
+        assert len(configs) == 0
+
+
+def test_parse_configs_from_text_invalid_b64():
+    """Test that invalid base64 lines are skipped."""
+    text = "some text\ninvalid-base64-string\nmore text"
+    configs = parse_configs_from_text(text)
+    assert len(configs) == 0
 
 
 def test_get_sort_key_reliability_none():
@@ -166,3 +188,37 @@ async def test_fetch_text_invalid_url_scheme(mock_session):
     url = "ftp://example.com/resource"
     with pytest.raises(NetworkError, match="Invalid URL scheme"):
         await fetch_text(mock_session, url)
+
+
+def test_parse_configs_from_text_oversized_base64_final():
+    """Test that oversized base64 lines are skipped."""
+    # This line is valid base64 but exceeds the default MAX_DECODE_SIZE
+    long_line = "a" * 8192
+    # The function should not raise an error and simply return an empty set
+    configs = parse_configs_from_text(long_line)
+    assert configs == set()
+
+
+def test_choose_proxy_with_both_set():
+    """Test that choose_proxy raises ConfigError if both proxies are set."""
+    settings = Settings()
+    settings.network.http_proxy = "http://proxy.com"
+    settings.network.socks_proxy = "socks5://proxy.com"
+    with pytest.raises(ConfigError):
+        choose_proxy(settings)
+
+
+@pytest.mark.asyncio
+async def test_fetch_text_invalid_scheme():
+    """Test fetch_text with an invalid URL scheme."""
+    mock_session = MagicMock()
+    with pytest.raises(NetworkError, match="Invalid URL scheme"):
+        await fetch_text(mock_session, "ftp://example.com")
+
+
+def test_is_safe_url_invalid_url_type():
+    """Test is_safe_url with a type that causes a ValueError on urlparse."""
+    # urlparse can raise ValueError for certain malformed bytes-like objects
+    # or other non-string inputs.
+    assert not is_safe_url(12345)
+    assert not is_safe_url(None)

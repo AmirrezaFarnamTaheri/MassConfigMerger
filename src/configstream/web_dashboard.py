@@ -291,6 +291,11 @@ def create_app(settings=None) -> Flask:
     def api_docs():
         return render_template("api-docs.html")
 
+    @app.route("/export")
+    def export():
+        """Render the export page."""
+        return render_template("export.html")
+
     return app
 
 def run_dashboard(host: str = "0.0.0.0", port: int = 8080):

@@ -29,6 +29,7 @@ _history_lock = threading.Lock()
 
 class TestScheduler:
     """Manages periodic testing of VPN configurations."""
+    __test__ = False
 
     def __init__(self, settings: Settings, output_dir: Path):
         self.settings = settings
