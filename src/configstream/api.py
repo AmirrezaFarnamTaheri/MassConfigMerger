@@ -101,28 +101,34 @@ def api_export(format: str):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-process = psutil.Process()
-process.cpu_percent()  # Initialize for non-blocking calls later
-
 @api.route("/status")
 def api_status():
     """API endpoint for system status."""
-    uptime_seconds = time.time() - process.create_time()
-    uptime_str = str(timedelta(seconds=int(uptime_seconds)))
+    try:
+        # System uptime rather than current process uptime
+        uptime_seconds = time.time() - psutil.boot_time()
+        uptime_str = str(timedelta(seconds=int(uptime_seconds)))
 
-    mem = psutil.virtual_memory()
+        # Use system-wide CPU percent; interval=None uses last computed or returns instantly
+        cpu_pct = psutil.cpu_percent(interval=None)
 
-    return jsonify({
-        "uptime": uptime_str,
-        "cpu": {
-            "percent": process.cpu_percent(),
-        },
-        "memory": {
-            "total_mb": mem.total / (1024 * 1024),
-            "used_mb": mem.used / (1024 * 1024),
-            "percent": mem.percent,
-        }
-    })
+        mem = psutil.virtual_memory()
+        mem_total_mb = round(mem.total / (1024 * 1024), 2)
+        mem_used_mb = round(mem.used / (1024 * 1024), 2)
+
+        return jsonify({
+            "uptime": uptime_str,
+            "cpu": {
+                "percent": cpu_pct,
+            },
+            "memory": {
+                "total_mb": mem_total_mb,
+                "used_mb": mem_used_mb,
+                "percent": mem.percent,
+            }
+        })
+    except Exception as e:
+        return jsonify({"error": f"Failed to retrieve system status: {e}"}), 500
 
 @api.route("/logs")
 def api_logs():
