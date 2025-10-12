@@ -96,26 +96,24 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _parse_protocol_list(value: str | list[str] | None) -> list[str]:
-    """Parse a comma-separated string of protocols into a list of uppercase strings."""
-    if not value:
-        return []
-    if isinstance(value, str):
-        return [v.strip().upper() for v in value.split(",") if v.strip()]
-    return [v.strip().upper() for v in value]
-
-
-def _parse_protocol_set(value: str | list[str] | None) -> set[str]:
-    """Parse a comma-separated string of protocols into a set of uppercase strings."""
-    if not value:
-        return set()
-    if isinstance(value, str):
-        return {v.strip().upper() for v in value.split(",") if v.strip()}
-    return {v.strip().upper() for v in value}
-
-
 def _update_settings_from_args(cfg: Settings, args: argparse.Namespace):
     """Update the `Settings` object with values from parsed CLI arguments."""
+    def _parse_protocol_list(value: str | list[str] | None) -> list[str]:
+        """Parse a comma-separated string of protocols into a list of uppercase strings."""
+        if not value:
+            return []
+        if isinstance(value, str):
+            return [v.strip().upper() for v in value.split(",") if v.strip()]
+        return [v.strip().upper() for v in value]
+
+    def _parse_protocol_set(value: str | list[str] | None) -> set[str]:
+        """Parse a comma-separated string of protocols into a set of uppercase strings."""
+        if not value:
+            return set()
+        if isinstance(value, str):
+            return {v.strip().upper() for v in value.split(",") if v.strip()}
+        return {v.strip().upper() for v in value}
+
     arg_dict = {k: v for k, v in vars(args).items() if v is not None}
 
     # Arguments that are lists and need to be extended
@@ -153,6 +151,7 @@ HANDLERS: Dict[str, Callable[..., None]] = {
     "merge": commands.handle_merge,
     "retest": commands.handle_retest,
     "full": commands.handle_full,
+    "sources": commands.handle_sources,
     "daemon": commands.handle_daemon,
     "history": commands.handle_history,
 }
@@ -163,16 +162,6 @@ def main(argv: list[str] | None = None) -> None:
     print_public_source_warning()
     parser = build_parser()
     args = parser.parse_args(argv or sys.argv[1:])
-
-    if args.command == "sources":
-        sources_file = Path(args.sources_file)
-        if args.sources_command == "list":
-            services.list_sources(sources_file)
-        elif args.sources_command == "add":
-            services.add_new_source(sources_file, args.url)
-        elif args.sources_command == "remove":
-            services.remove_existing_source(sources_file, args.url)
-        return
 
     try:
         cfg = load_config(Path(args.config))

@@ -1,30 +1,46 @@
 # 🌐 Web Interface
 
-The package ships with a small Flask application that exposes a few helper routes for running the aggregator and merger from a browser or other HTTP client.
+The package ships with a Flask application that provides a user-friendly interface for monitoring and managing your proxy configurations.
 
 ## Launching the server
 
-First install the optional dependencies:
+First, install the optional dependencies:
 
-This extra installs only Flask and avoids FastAPI entirely, so it works with the default Pydantic 2 dependencies.
 ```bash
 pip install configstream[web]
 ```
 
-Then start the development server with:
+Then, start the web server with the `daemon` command:
 
 ```bash
-python -m configstream.web
+configstream daemon
 ```
 
-By default it listens on `http://127.0.0.1:8080`. Use Flask's `--host` and `--port` options if you need to bind to a different address.
+By default, it listens on `http://127.0.0.1:8080`.
 
-## Available endpoints
+## Pages
 
-- `POST /api/aggregate` – run the aggregation pipeline. Returns JSON describing the output directory, generated files, and runtime duration.
-- `POST /api/merge` – merge the most recent results from the aggregation step. Responds with `{"status": "merge complete"}` along with timing metadata.
-- `GET /api/history` – return proxy reliability statistics as JSON for dashboards or automations.
-- `GET /report` – download `vpn_report.html` if present, otherwise render the JSON report inline.
-- `GET /history` – render the proxy history table with reliability badges and geo-IP metadata.
+The web interface includes the following pages:
 
-The root route (`/`) now serves a lightweight control panel. It exposes quick links to generated reports and metrics and provides buttons that drive the `POST` endpoints via the Fetch API. If you set `security.web_api_token` in `config.yaml`, the dashboard prompts for the token before dispatching the actions. The same token must be supplied with an `X-API-Key` header (or `Authorization: Bearer ...`) when invoking the endpoints programmatically.
+-   **Dashboard:** Displays a summary of your proxy configurations, including the total number of nodes, the number of successful connections, the average ping, and the number of countries. You can also filter and sort the nodes by various criteria.
+-   **Export:** Allows you to export your proxy configurations in various formats, including CSV, JSON, raw text, and base64.
+-   **System:** Shows the status of the application, including the scheduler jobs, system uptime, and logs.
+-   **Settings:** Displays the current application settings.
+-   **Documentation:** Provides detailed documentation on how to use ConfigStream.
+-   **Quick Start:** A guide to getting started with ConfigStream.
+-   **API Docs:** Documentation for the ConfigStream API.
+-   **Roadmap:** The project roadmap.
+
+## API Endpoints
+
+The web interface is powered by a RESTful API. Here are the main endpoints:
+
+-   `GET /api/current`: Returns the current test results.
+-   `GET /api/history`: Returns historical test results.
+-   `GET /api/statistics`: Returns aggregated statistics about the proxy configurations.
+-   `GET /api/export/<format>`: Exports the proxy configurations in the specified format.
+-   `GET /api/status`: Returns the system status.
+-   `GET /api/logs`: Returns the application logs.
+-   `GET /api/scheduler/jobs`: Returns the scheduler jobs.
+-   `POST /api/settings`: Updates the application settings.
+-   `POST /api/sources`: Adds a new source to the sources file.

@@ -6,6 +6,7 @@
 
 {% block content %}
 <div class="container mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Dashboard</h1>
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="card">
@@ -50,7 +51,10 @@
 
     <!-- Node Table -->
     <div class="card overflow-hidden">
-        <div id="lastUpdate" class="text-sm text-gray-400 mb-4">Loading...</div>
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Nodes</h2>
+            <div id="lastUpdate" class="text-sm text-gray-400">Loading...</div>
+        </div>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-700">
                 <thead class="bg-gray-800">

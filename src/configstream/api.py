@@ -8,15 +8,17 @@ import time
 
 api = Blueprint('api', __name__)
 
+from . import web_dashboard
+
 @api.route("/current")
 def api_current():
     """API endpoint for current test results."""
     try:
-        dashboard_data = current_app.config["dashboard_data"]
-        data = dashboard_data.get_current_results()
+        data_dir = current_app.config["data_dir"]
+        data = web_dashboard.get_current_results(current_app, data_dir)
         filters = request.args.to_dict()
         if filters:
-            data["nodes"] = dashboard_data.filter_nodes(data["nodes"], filters)
+            data["nodes"] = web_dashboard.filter_nodes(data["nodes"], filters)
             data["total_tested"] = len(data["nodes"])
             data["successful"] = len([n for n in data["nodes"] if n["ping_ms"] > 0])
             data["failed"] = len([n for n in data["nodes"] if n["ping_ms"] < 0])
@@ -28,9 +30,9 @@ def api_current():
 def api_history():
     """API endpoint for historical data."""
     try:
-        dashboard_data = current_app.config["dashboard_data"]
+        data_dir = current_app.config["data_dir"]
         hours = int(request.args.get("hours", 24))
-        history = dashboard_data.get_history(hours)
+        history = web_dashboard.get_history(current_app, data_dir, hours)
         return jsonify(history)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -39,8 +41,8 @@ def api_history():
 def api_statistics():
     """API endpoint for aggregated statistics."""
     try:
-        dashboard_data = current_app.config["dashboard_data"]
-        data = dashboard_data.get_current_results()
+        data_dir = current_app.config["data_dir"]
+        data = web_dashboard.get_current_results(current_app, data_dir)
         nodes = data.get("nodes", [])
         protocols = {}
         countries = {}
@@ -71,13 +73,13 @@ def api_statistics():
 def api_export(format: str):
     """Export data in various formats."""
     try:
-        dashboard_data = current_app.config["dashboard_data"]
-        data = dashboard_data.get_current_results()
+        data_dir = current_app.config["data_dir"]
+        data = web_dashboard.get_current_results(current_app, data_dir)
         filters = request.args.to_dict()
-        nodes = dashboard_data.filter_nodes(data["nodes"], filters)
+        nodes = web_dashboard.filter_nodes(data["nodes"], filters)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         if format == "csv":
-            csv_data = dashboard_data.export_csv(nodes)
+            csv_data = web_dashboard.export_csv(nodes)
             return send_file(
                 BytesIO(csv_data.encode('utf-8')),
                 mimetype="text/csv",
@@ -85,12 +87,13 @@ def api_export(format: str):
                 download_name=f"vpn_nodes_{timestamp}.csv"
             )
         elif format == "json":
-            payload_obj = {
-                "exported_at": timestamp,
-                "count": len(nodes),
-                "nodes": nodes,
-            }
-            payload = json.dumps(payload_obj, indent=2)
+            payload = web_dashboard.export_json(
+                {
+                    "exported_at": timestamp,
+                    "count": len(nodes),
+                    "nodes": nodes,
+                }
+            )
             return send_file(
                 BytesIO(payload.encode('utf-8')),
                 mimetype="application/json",
