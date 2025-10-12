@@ -20,10 +20,19 @@
 output_dir = "data"
 
 [sources]
+# A list of URLs to fetch VPN configurations from.
 urls = [
-    "https://raw.githubusercontent.com/example/vpn-configs/main/sub1.txt",
-    "https://raw.githubusercontent.com/example/vpn-configs/main/sub2.txt"
-]</code></pre>
+    "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/All_Configs_Sub.txt",
+    "https://raw.githubusercontent.com/yebekhe/V2Hub/main/merged"
+]
+
+[telegram]
+# Enable fetching from Telegram channels.
+enabled = true
+channels = [
+    "https://t.me/s/v2ray_outline"
+]
+</code></pre>
 
         <h2 class="text-2xl font-bold mb-4">3. Running the Daemon</h2>
         <p class="mb-4">The easiest way to get started is by running the daemon, which includes the web dashboard and a scheduler for automatic testing:</p>

@@ -24,12 +24,15 @@
 
         <h2 class="text-2xl font-bold mb-4">Command-Line Interface (CLI)</h2>
         <p class="mb-4">The CLI is the primary way to interact with ConfigStream. Here are the main commands:</p>
-        <ul class="list-disc list-inside mb-4">
-            <li><code>configstream fetch</code>: Fetches configurations from all enabled sources.</li>
-            <li><code>configstream merge</code>: Merges the fetched configurations into a single subscription.</li>
-            <li><code>configstream retest</code>: Retests an existing subscription file.</li>
-            <li><code>configstream full</code>: Runs the full fetch, merge, and test pipeline.</li>
-            <li><code>configstream daemon</code>: Starts the web dashboard and scheduler.</li>
+        <ul class="list-disc list-inside mb-4 space-y-2">
+            <li><code>configstream fetch</code>: Fetches configurations from all enabled sources. This command will download the configurations and save them locally for further processing.</li>
+            <li><code>configstream merge</code>: Merges the fetched configurations into a single subscription. This command will test the configurations and create a new subscription file with the best-performing nodes.</li>
+            <li><code>configstream retest</code>: Retests an existing subscription file. This is useful for checking the status of your current configurations.</li>
+            <li><code>configstream full</code>: Runs the full fetch, merge, and test pipeline. This is a convenient way to perform all the necessary steps to get an updated subscription.</li>
+            <li><code>configstream daemon</code>: Starts the web dashboard and scheduler. The daemon will automatically fetch and test configurations at a configurable interval.</li>
+            <li><code>configstream history</code>: Query historical performance data.</li>
+            <li><code>configstream sources</code>: Manage the list of subscription sources.</li>
+            <li><code>configstream tui</code>: Display a terminal user interface.</li>
         </ul>
     </div>
 </div>
