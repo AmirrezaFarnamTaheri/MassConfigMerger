@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}System - ConfigStream{% endblock %}
+
+{% block header_title %}System Monitoring{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <h1 class="text-3xl font-bold mb-6">System Monitoring</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Scheduler Status -->
+        <div class="card">
+            <h2 class="text-xl font-semibold mb-4">Scheduler Jobs</h2>
+            <div id="scheduler-status">
+                {% if jobs %}
+                    <ul>
+                        {% for job in jobs %}
+                            <li class="mb-2">
+                                <span class="font-semibold">{{ job.name }}</span> - Next run: {{ job.next_run_time.strftime('%Y-%m-%d %H:%M:%S') if job.next_run_time else 'N/A' }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No scheduled jobs found.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="card">
+            <h2 class="text-xl font-semibold mb-4">System Status</h2>
+            <div id="system-status">
+                <p><strong>Uptime:</strong> <span id="uptime">Loading...</span></p>
+                <p><strong>Memory Usage:</strong> <span id="memory">Loading...</span></p>
+                <p><strong>CPU Usage:</strong> <span id="cpu">Loading...</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs -->
+    <div class="card mt-6">
+        <h2 class="text-xl font-semibold mb-4">Logs</h2>
+        <div id="logs-container" class="bg-gray-900 rounded-md p-4 h-96 overflow-y-auto">
+            <pre id="logs-content" class="text-sm"></pre>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    async function fetchSystemStatus() {
+        try {
+            const response = await fetch('/api/status');
+            if (!response.ok) throw new Error('Failed to fetch status');
+            const data = await response.json();
+            document.getElementById('uptime').textContent = data.uptime;
+            document.getElementById('memory').textContent = `${data.memory.used_mb.toFixed(2)} MB / ${data.memory.total_mb.toFixed(2)} MB (${data.memory.percent}%)`;
+            document.getElementById('cpu').textContent = `${data.cpu.percent}%`;
+        } catch (error) {
+            console.error('Error fetching system status:', error);
+            document.getElementById('uptime').textContent = 'Error';
+            document.getElementById('memory').textContent = 'Error';
+            document.getElementById('cpu').textContent = 'Error';
+        }
+    }
+
+    async function fetchLogs() {
+        try {
+            const response = await fetch('/api/logs');
+            if (!response.ok) throw new Error('Failed to fetch logs');
+            const data = await response.json();
+            document.getElementById('logs-content').textContent = data.logs.join('\\n');
+        } catch (error) {
+            console.error('Error fetching logs:', error);
+            document.getElementById('logs-content').textContent = 'Error loading logs.';
+        }
+    }
+
+    fetchSystemStatus();
+    fetchLogs();
+    setInterval(fetchSystemStatus, 5000); // Refresh every 5 seconds
+});
+</script>
+{% endblock %}

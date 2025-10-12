@@ -2,38 +2,77 @@
 
 {% block title %}Documentation - ConfigStream{% endblock %}
 
+{% block header_title %}Documentation{% endblock %}
+
 {% block content %}
 <div class="container mx-auto p-4">
-    <header class="bg-header-bg shadow-lg rounded-lg p-6 mb-8">
-        <h1 class="text-3xl font-bold text-white">Documentation</h1>
-        <p class="text-text-secondary">Comprehensive guide to ConfigStream.</p>
-    </header>
+    <div class="card">
+        <h1 class="text-3xl font-bold mb-6">ConfigStream Documentation</h1>
 
-    <div class="bg-card-bg shadow-lg rounded-lg p-6">
-        <h2 class="text-2xl font-bold mb-4">Introduction</h2>
-        <p class="mb-4">ConfigStream is a powerful tool for aggregating, testing, and managing VPN configurations from various sources. This documentation provides a detailed overview of its features and how to use them.</p>
+        <div class="prose prose-invert max-w-none">
+            <h2 id="introduction">Introduction</h2>
+            <p>ConfigStream is a powerful, open-source tool designed to streamline the process of aggregating, testing, and managing proxy configurations from various sources. Whether you're a developer, a network administrator, or just someone who needs reliable access to a variety of proxy servers, ConfigStream provides the tools you need to build and maintain a high-quality, up-to-date subscription list.</p>
 
-        <h2 class="text-2xl font-bold mb-4">Core Features</h2>
-        <ul class="list-disc list-inside mb-4">
-            <li><span class="font-semibold">Aggregation:</span> Automatically fetches VPN configurations from multiple sources, including URLs and Telegram channels.</li>
-            <li><span class="font-semibold">Testing:</span> Tests the connectivity and performance of each configuration, providing metrics like latency and success rate.</li>
-            <li><span class="font-semibold">Merging:</span> Merges the best-performing configurations into a single, optimized subscription link.</li>
-            <li><span class="font-semibold">Web Dashboard:</span> A user-friendly interface for monitoring the status of your configurations, viewing test results, and managing settings.</li>
-            <li><span class="font-semibold">API:</span> A RESTful API for programmatic access to your configuration data.</li>
-        </ul>
+            <h2 id="core-features">Core Features</h2>
+            <ul>
+                <li><strong>Aggregation:</strong> Automatically fetches proxy configurations from multiple sources, including URLs and Telegram channels.</li>
+                <li><strong>Testing:</strong> Rigorously tests each configuration for latency, reliability, and geographic location to ensure you always have the best connection.</li>
+                <li><strong>Merging:</strong> Merges the best-performing configurations into a single, optimized subscription file compatible with Clash, Quantumult X, and more.</li>
+                <li><strong>Web Dashboard:</strong> A user-friendly interface for monitoring the status of your configurations, viewing test results, and managing settings.</li>
+                <li><strong>API:</strong> A RESTful API for programmatic access to your configuration data.</li>
+            </ul>
 
-        <h2 class="text-2xl font-bold mb-4">Command-Line Interface (CLI)</h2>
-        <p class="mb-4">The CLI is the primary way to interact with ConfigStream. Here are the main commands:</p>
-        <ul class="list-disc list-inside mb-4 space-y-2">
-            <li><code>configstream fetch</code>: Fetches configurations from all enabled sources. This command will download the configurations and save them locally for further processing.</li>
-            <li><code>configstream merge</code>: Merges the fetched configurations into a single subscription. This command will test the configurations and create a new subscription file with the best-performing nodes.</li>
-            <li><code>configstream retest</code>: Retests an existing subscription file. This is useful for checking the status of your current configurations.</li>
-            <li><code>configstream full</code>: Runs the full fetch, merge, and test pipeline. This is a convenient way to perform all the necessary steps to get an updated subscription.</li>
-            <li><code>configstream daemon</code>: Starts the web dashboard and scheduler. The daemon will automatically fetch and test configurations at a configurable interval.</li>
-            <li><code>configstream history</code>: Query historical performance data.</li>
-            <li><code>configstream sources</code>: Manage the list of subscription sources.</li>
-            <li><code>configstream tui</code>: Display a terminal user interface.</li>
-        </ul>
+            <h2 id="cli">Command-Line Interface (CLI)</h2>
+            <p>The CLI is the primary way to interact with ConfigStream. Here are the main commands:</p>
+            <ul>
+                <li><code>configstream fetch</code>: Fetches configurations from all enabled sources.</li>
+                <li><code>configstream merge</code>: Merges the fetched configurations into a single subscription.</li>
+                <li><code>configstream retest</code>: Retests an existing subscription file.</li>
+                <li><code>configstream full</code>: Runs the full fetch, merge, and test pipeline.</li>
+                <li><code>configstream daemon</code>: Starts the web dashboard and scheduler.</li>
+                <li><code>configstream history</code>: Query historical performance data.</li>
+                <li><code>configstream sources</code>: Manage the list of subscription sources.</li>
+                <li><code>configstream tui</code>: Display a terminal user interface.</li>
+            </ul>
+
+            <h2 id="configuration">Configuration</h2>
+            <p>ConfigStream is configured using a <code>config.yaml</code> file. This file allows you to customize various aspects of the application, including:</p>
+            <ul>
+                <li>Network settings (timeouts, proxies, etc.)</li>
+                <li>Filtering rules for including and excluding configurations</li>
+                <li>Output formats and file locations</li>
+                <li>Security settings (API keys, etc.)</li>
+            </ul>
+            <p>For a detailed overview of all the available configuration options, please refer to the <code>config.yaml.example</code> file in the project repository.</p>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+    .prose {
+        color: var(--text-light-200);
+    }
+    .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+        color: var(--text-light-100);
+    }
+    .prose a {
+        color: var(--accent-blue-500);
+    }
+    .prose a:hover {
+        color: var(--accent-blue-600);
+    }
+    .prose strong {
+        color: var(--text-light-100);
+    }
+    .prose code {
+        color: var(--text-light-100);
+        background-color: var(--bg-dark-700);
+        padding: 0.2em 0.4em;
+        margin: 0;
+        font-size: 85%;
+        border-radius: 3px;
+    }
+</style>
 {% endblock %}

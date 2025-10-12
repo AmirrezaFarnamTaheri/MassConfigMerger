@@ -126,6 +126,10 @@ class TestScheduler:
         self.scheduler.start()
         logger.info("Scheduler started.")
 
+    def get_jobs(self):
+        """Get a list of all scheduled jobs."""
+        return self.scheduler.get_jobs()
+
     def stop(self):
         """Stop the scheduler."""
         if self.scheduler.running:

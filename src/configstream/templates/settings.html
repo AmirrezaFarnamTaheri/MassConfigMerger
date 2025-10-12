@@ -1,100 +1,37 @@
-<!DOCTYPE html>
-<html lang="en" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - ConfigStream</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        :root {
-            --header-bg: #1a202c;
-            --body-bg: #2d3748;
-            --card-bg: #4a5568;
-            --text-primary: #e2e8f0;
-            --text-secondary: #a0aec0;
-            --accent-color: #4299e1;
-        }
-    </style>
-</head>
-<body class="bg-body-bg text-text-primary">
-    <div class="container mx-auto p-4">
-        <header class="bg-header-bg shadow-lg rounded-lg p-6 mb-8 flex items-center justify-between">
-            <div class="flex items-center">
-                <a href="/" class="flex items-center">
-                    <img src="{{ url_for('static', filename='logo.svg') }}" alt="ConfigStream Logo" class="h-12 w-12 mr-4">
-                    <div>
-                        <h1 class="text-3xl font-bold text-white">ConfigStream</h1>
-                        <p class="text-text-secondary">Application Settings</p>
-                    </div>
-                </a>
-            </div>
-            <nav class="flex items-center space-x-4">
-                <a href="/" class="text-text-secondary hover:text-white">Dashboard</a>
-                <a href="/history" class="text-text-secondary hover:text-white">History</a>
-                <a href="/settings" class="text-text-secondary hover:text-white">Settings</a>
-            </nav>
-        </header>
+{% extends "base.html" %}
 
-        <main>
-            <div class="bg-card-bg p-6 rounded-lg shadow-md">
-                <h2 class="text-2xl font-bold mb-4">Configuration</h2>
-                <form id="settings-form">
-                    <div class="mb-4">
-                        <label for="concurrent-limit" class="block text-sm font-medium text-text-secondary">Concurrent Limit</label>
-                        <input type="number" id="concurrent-limit" name="concurrent_limit" value="20" class="mt-1 block w-full bg-header-bg border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-accent-color focus:border-accent-color sm:text-sm">
+{% block title %}Settings - ConfigStream{% endblock %}
+
+{% block header_title %}Application Settings{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <div class="card">
+        <h1 class="text-2xl font-bold mb-6">Application Settings</h1>
+
+        <div class="space-y-6">
+            {% for section, values in settings.items() %}
+                <div class="card bg-gray-700 p-4">
+                    <h2 class="text-xl font-semibold capitalize mb-4">{{ section.replace('_', ' ') }}</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for key, value in values.items() %}
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400">{{ key.replace('_', ' ') | title }}</label>
+                                <div class="mt-1 p-2 bg-gray-800 rounded-md text-gray-200">
+                                    {% if value is mapping %}
+                                        <pre class="text-sm">{{ value | tojson(indent=2) }}</pre>
+                                    {% elif value is iterable and value is not string %}
+                                        {{ value | join(', ') }}
+                                    {% else %}
+                                        {{ value }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
                     </div>
-                    <div class="mb-4">
-                        <label for="request-timeout" class="block text-sm font-medium text-text-secondary">Request Timeout</label>
-                        <input type="number" id="request-timeout" name="request_timeout" value="10" class="mt-1 block w-full bg-header-bg border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-accent-color focus:border-accent-color sm:text-sm">
-                    </div>
-                    <div class="flex justify-end">
-                        <button type="submit" class="bg-accent-color hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">
-                            Save Settings
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </main>
+                </div>
+            {% endfor %}
+        </div>
     </div>
-    <script>
-        document.getElementById('settings-form').addEventListener('submit', function(event) {
-          event.preventDefault();
-          const formData = new FormData(event.target);
-          const raw = Object.fromEntries(formData.entries());
-
-          // Basic client-side validation and coercion
-          const concurrentLimit = Number(raw.concurrent_limit);
-          const requestTimeout = Number(raw.request_timeout);
-          if (!Number.isFinite(concurrentLimit) || concurrentLimit <= 0) {
-            alert('Concurrent Limit must be a positive number.');
-            return;
-          }
-          if (!Number.isFinite(requestTimeout) || requestTimeout <= 0) {
-            alert('Request Timeout must be a positive number.');
-            return;
-          }
-
-          const payload = {
-            concurrent_limit: concurrentLimit,
-            request_timeout: requestTimeout
-          };
-
-          fetch('/api/settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          }).then(async (response) => {
-            if (response.ok) {
-              alert('Settings saved successfully!');
-              return;
-            }
-            const msg = await response.text().catch(() => '');
-            alert(msg || 'Failed to save settings.');
-          }).catch((err) => {
-            alert('Network error: ' + (err && err.message ? err.message : 'Unknown error'));
-          });
-        });
-    </script>
-</body>
-</html>
+</div>
+{% endblock %}

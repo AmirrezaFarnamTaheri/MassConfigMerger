@@ -264,21 +264,16 @@ def create_app(settings=None) -> Flask:
     def history():
         return render_template("history.html")
 
-    @app.route("/logs")
-    def logs():
-        return render_template("logs.html")
 
     @app.route("/report")
     def report():
         return render_template("report.html")
 
-    @app.route("/scheduler")
-    def scheduler():
-        return render_template("scheduler.html")
 
     @app.route("/settings")
     def settings_page():
-        return render_template("settings.html")
+        settings = current_app.config["settings"]
+        return render_template("settings.html", settings=settings.model_dump())
 
     @app.route("/sitemap")
     def sitemap():
@@ -286,15 +281,24 @@ def create_app(settings=None) -> Flask:
 
     @app.route("/sources")
     def sources():
-        return render_template("sources.html")
+        from flask import current_app
+        settings = current_app.config["settings"]
+        sources_file = Path(settings.sources.sources_file)
+        if not sources_file.is_absolute():
+            sources_file = Path(current_app.root_path).parent / sources_file
 
-    @app.route("/status")
-    def status():
-        return render_template("status.html")
+        sources = []
+        if sources_file.exists():
+            with open(sources_file, "r", encoding="utf-8") as f:
+                sources = [line.strip() for line in f if line.strip()]
 
-    @app.route("/testing")
-    def testing():
-        return render_template("testing.html")
+        return render_template("sources.html", sources=sources)
+
+    @app.route("/system")
+    def system():
+        scheduler = app.config["scheduler"]
+        jobs = scheduler.get_jobs()
+        return render_template("system.html", jobs=jobs)
 
     @app.route("/api-docs")
     def api_docs():

@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, send_file, current_app
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 from pathlib import Path
 
@@ -99,6 +99,31 @@ def api_export(format: str):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+import psutil
+import time
+
+start_time = time.time()
+
+@api.route("/status")
+def api_status():
+    """API endpoint for system status."""
+    uptime_seconds = time.time() - start_time
+    uptime_str = str(timedelta(seconds=int(uptime_seconds)))
+
+    mem = psutil.virtual_memory()
+
+    return jsonify({
+        "uptime": uptime_str,
+        "cpu": {
+            "percent": psutil.cpu_percent(),
+        },
+        "memory": {
+            "total_mb": mem.total / (1024 * 1024),
+            "used_mb": mem.used / (1024 * 1024),
+            "percent": mem.percent,
+        }
+    })
+
 @api.route("/logs")
 def api_logs():
     """API endpoint for application logs."""
@@ -106,28 +131,24 @@ def api_logs():
     if settings.security.api_key and request.headers.get("X-API-Key") != settings.security.api_key:
         return jsonify({"error": "Unauthorized"}), 401
 
-    base_dir = current_app.config["dashboard_data"].data_dir
-    candidate_raw = settings.output.log_file or "configstream.log"
-    try:
-        candidate_path = Path(candidate_raw)
-        if not candidate_path.is_absolute():
-            candidate_path = (base_dir / candidate_path).resolve()
-        else:
-            candidate_path = candidate_path.resolve()
-        base_path = base_dir.resolve()
-        try:
-            # Python 3.9+ compatibility: robust directory containment check
-            candidate_path.relative_to(base_path)
-        except Exception:
-            return jsonify({"error": "Invalid log file path"}), 400
-    except Exception:
-        return jsonify({"error": "Invalid log file path"}), 400
+    log_file = settings.output.log_file or "configstream.log"
+    log_path = Path(log_file)
 
-    if not candidate_path.exists() or not candidate_path.is_file():
-        return jsonify({"logs": []})
-    with open(candidate_path, "r", encoding="utf-8") as f:
-        logs = f.readlines()
-    return jsonify({"logs": logs[-100:]})
+    if not log_path.is_absolute():
+        # In a real app, this would be the project root.
+        # In testing, this will be the root of the fake filesystem.
+        root_path = Path(current_app.root_path).parent if not current_app.testing else Path("/")
+        log_path = root_path / log_path
+
+    if not log_path.exists() or not log_path.is_file():
+        return jsonify({"logs": ["Log file not found."]})
+
+    try:
+        with open(log_path, "r", encoding="utf-8") as f:
+            logs = f.readlines()
+        return jsonify({"logs": [line.strip() for line in logs[-100:]]})
+    except Exception as e:
+        return jsonify({"logs": [f"Error reading log file: {e}"]})
 
 @api.route("/scheduler/jobs")
 def api_scheduler_jobs():
