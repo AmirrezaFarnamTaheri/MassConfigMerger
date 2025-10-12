@@ -140,12 +140,16 @@
             if (!response.ok) {
                 throw new Error(`Request failed: ${response.status}`);
             }
-            const data = await response.json();
-            if (data.jobs && data.jobs.length > 0) {
-                const job = data.jobs[0];
-                document.getElementById('schedulerStatus').textContent = job.is_running ? 'Running' : 'Idle';
-                document.getElementById('lastFetch').textContent = job.last_run_time ? new Date(job.last_run_time).toLocaleString() : 'N/A';
-                document.getElementById('nextFetch').textContent = job.next_run_time ? new Date(job.next_run_time).toLocaleString() : 'N/A';
+            const payload = await response.json();
+            const jobs = Array.isArray(payload) ? payload : (Array.isArray(payload && payload.jobs) ? payload.jobs : []);
+            if (jobs.length > 0) {
+                const job = jobs[0] || {};
+                const isRunning = !!job.is_running;
+                const lastRun = job.last_run_time ? new Date(job.last_run_time) : null;
+                const nextRun = job.next_run_time ? new Date(job.next_run_time) : null;
+                document.getElementById('schedulerStatus').textContent = isRunning ? 'Running' : 'Idle';
+                document.getElementById('lastFetch').textContent = lastRun && !isNaN(lastRun) ? lastRun.toLocaleString() : 'N/A';
+                document.getElementById('nextFetch').textContent = nextRun && !isNaN(nextRun) ? nextRun.toLocaleString() : 'N/A';
             }
         } catch (err) {
             console.error("Error loading scheduler data:", err);

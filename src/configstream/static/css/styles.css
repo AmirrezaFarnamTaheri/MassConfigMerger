@@ -1,4 +1,5 @@
 :root {
+    color-scheme: dark;
     --header-bg: #1f2937; /* Darker gray */
     --body-bg: #374151;   /* Dark gray */
     --card-bg: #4b5563;   /* Lighter gray */
@@ -8,6 +9,13 @@
     --accent-color-hover: #2563eb; /* Darker blue */
     --success-bg: #10b981; /* Green */
     --error-bg: #ef4444;   /* Red */
+    --focus-ring: #93c5fd; /* Light blue for focus */
+}
+
+a:focus-visible, button:focus-visible, aside nav a:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: 0.5rem;
 }
 
 body {
@@ -26,7 +34,9 @@ body {
 
 /* Add some transitions for a smoother experience */
 a, button {
-    transition: all 0.2s ease-in-out;
+    transition-property: color, background-color, border-color, transform;
+    transition-duration: 0.2s;
+    transition-timing-function: ease-in-out;
 }
 
 /* Add a subtle box shadow to cards */
@@ -39,12 +49,15 @@ aside nav a {
     border-radius: 0.5rem;
 }
 
-aside nav a:hover {
+aside nav a:hover,
+aside nav a:focus,
+aside nav a:focus-visible {
     background-color: var(--card-bg);
     color: var(--text-primary);
 }
 
 aside nav a i {
+    display: inline-block;
     width: 1.5rem;
     text-align: center;
 }

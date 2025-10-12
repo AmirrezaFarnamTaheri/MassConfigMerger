@@ -193,29 +193,36 @@ def create_app(settings=None) -> Flask:
     if not settings:
         settings = load_config()
 
-    app.config["SECRET_KEY"] = settings.security.secret_key or "a-very-secret-key"
+    if not settings.security.secret_key:
+        raise RuntimeError("SECRET_KEY is not configured. Set `security.secret_key` in your config.")
+    app.config["SECRET_KEY"] = settings.security.secret_key
     csrf.init_app(app)
 
     app.config["settings"] = settings
     app.config["dashboard_data"] = DashboardData(DATA_DIR)
     app.config["scheduler"] = TestScheduler(settings, DATA_DIR)
 
-    def get_sri(path):
-        static_file_path = Path(app.static_folder) / path
-        if not static_file_path.exists():
-            return ""
-        with open(static_file_path, "rb") as f:
-            file_bytes = f.read()
-            hashed = hashlib.sha384(file_bytes).digest()
-            return "sha384-" + base64.b64encode(hashed).decode()
+    def get_sri_map(paths):
+        sri = {}
+        for key, rel_path in paths.items():
+            static_file_path = Path(app.static_folder) / rel_path
+            if not static_file_path.exists():
+                logger.error("Static asset missing for SRI: %s", static_file_path)
+                continue
+            with open(static_file_path, "rb") as f:
+                file_bytes = f.read()
+                digest = hashlib.sha384(file_bytes).digest()
+                sri[key] = "sha384-" + base64.b64encode(digest).decode()
+        return sri
 
     @app.context_processor
     def inject_sri():
-        return {
-            "tailwind_sri": get_sri("css/tailwind-3.4.3.min.css"),
-            "fontawesome_sri": get_sri("css/all.min.css"),
-            "styles_sri": get_sri("css/styles.css"),
-        }
+        sri = get_sri_map({
+            "tailwind_sri": "css/tailwind-3.4.3.min.css",
+            "fontawesome_sri": "css/all.min.css",
+            "styles_sri": "css/styles.css",
+        })
+        return sri
 
     app.register_blueprint(api, url_prefix='/api')
 

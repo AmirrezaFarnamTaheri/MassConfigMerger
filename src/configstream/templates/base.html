@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ConfigStream{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind-3.4.3.min.css') }}" integrity="{{ tailwind_sri }}" crossorigin="anonymous">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}" integrity="{{ fontawesome_sri }}" crossorigin="anonymous">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" integrity="{{ styles_sri }}" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind-3.4.3.min.css') }}"{% if tailwind_sri %} integrity="{{ tailwind_sri }}" crossorigin="anonymous"{% endif %}>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}"{% if fontawesome_sri %} integrity="{{ fontawesome_sri }}" crossorigin="anonymous"{% endif %}>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}"{% if styles_sri %} integrity="{{ styles_sri }}" crossorigin="anonymous"{% endif %}>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     {% block head_extra %}{% endblock %}
 </head>
