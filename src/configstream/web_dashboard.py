@@ -194,8 +194,15 @@ def create_app(settings=None) -> Flask:
         settings = load_config()
 
     if not settings.security.secret_key:
-        raise RuntimeError("SECRET_KEY is not configured. Set `security.secret_key` in your config.")
-    app.config["SECRET_KEY"] = settings.security.secret_key
+        if app.testing:
+            import secrets
+            generated = secrets.token_urlsafe(32)
+            app.logger.warning("SECRET_KEY missing; generating ephemeral key for testing.")
+            app.config["SECRET_KEY"] = generated
+        else:
+            raise RuntimeError("SECRET_KEY is not configured. Set `security.secret_key` in your config.")
+    else:
+        app.config["SECRET_KEY"] = settings.security.secret_key
     csrf.init_app(app)
 
     app.config["settings"] = settings

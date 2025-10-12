@@ -9,29 +9,81 @@
     <div class="card">
         <h1 class="text-2xl font-bold mb-6">Application Settings</h1>
 
-        <div class="space-y-6">
+        <form id="settings-form" class="space-y-6">
             {% for section, values in settings.items() %}
                 <div class="card bg-gray-700 p-4">
                     <h2 class="text-xl font-semibold capitalize mb-4">{{ section.replace('_', ' ') }}</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {% for key, value in values.items() %}
                             <div>
-                                <label class="block text-sm font-medium text-gray-400">{{ key.replace('_', ' ') | title }}</label>
-                                <div class="mt-1 p-2 bg-gray-800 rounded-md text-gray-200">
-                                    {% if value is mapping %}
-                                        <pre class="text-sm">{{ value | tojson(indent=2) }}</pre>
-                                    {% elif value is iterable and value is not string %}
-                                        {{ value | join(', ') }}
-                                    {% else %}
-                                        {{ value }}
-                                    {% endif %}
-                                </div>
+                                <label for="{{ section }}-{{ key }}" class="block text-sm font-medium text-gray-400">{{ key.replace('_', ' ') | title }}</label>
+                                <input type="text" id="{{ section }}-{{ key }}" name="{{ section }}.{{ key }}" value="{{ value }}" class="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-accent-blue-500 focus:border-accent-blue-500 sm:text-sm">
                             </div>
                         {% endfor %}
                     </div>
                 </div>
             {% endfor %}
-        </div>
+            <div class="flex justify-end">
+                <button type="submit" class="btn btn-primary">
+                    <i id="save-settings-icon" class="fas fa-save mr-2"></i>
+                    <span id="save-settings-text">Save Settings</span>
+                </button>
+            </div>
+            <div id="save-settings-feedback" class="mt-2 text-sm"></div>
+        </form>
     </div>
 </div>
+{% endblock %}
+
+{% block head_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('settings-form');
+    const feedbackDiv = document.getElementById('save-settings-feedback');
+    const saveButtonIcon = document.getElementById('save-settings-icon');
+    const saveButtonText = document.getElementById('save-settings-text');
+
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const formData = new FormData(form);
+        const settings = {};
+        for (const [key, value] of formData.entries()) {
+            const [section, ...field] = key.split('.');
+            if (!settings[section]) {
+                settings[section] = {};
+            }
+            settings[section][field.join('.')] = value;
+        }
+
+        saveButtonIcon.className = 'fas fa-spinner fa-spin mr-2';
+        saveButtonText.textContent = 'Saving...';
+        feedbackDiv.textContent = '';
+        feedbackDiv.className = 'mt-2 text-sm';
+
+        try {
+            const response = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                feedbackDiv.textContent = 'Settings saved successfully!';
+                feedbackDiv.classList.add('text-green-400');
+            } else {
+                feedbackDiv.textContent = data.error || 'Failed to save settings.';
+                feedbackDiv.classList.add('text-red-400');
+            }
+        } catch (error) {
+            feedbackDiv.textContent = 'An unexpected error occurred.';
+            feedbackDiv.classList.add('text-red-400');
+        } finally {
+            saveButtonIcon.className = 'fas fa-save mr-2';
+            saveButtonText.textContent = 'Save Settings';
+        }
+    });
+});
+</script>
 {% endblock %}
