@@ -106,12 +106,18 @@ def api_logs():
         return jsonify({"error": "Unauthorized"}), 401
 
     base_dir = current_app.config["dashboard_data"].data_dir
-    candidate = settings.output.log_file or (base_dir / "configstream.log")
+    candidate_raw = settings.output.log_file or "configstream.log"
     try:
-        candidate_path = (base_dir / candidate).resolve() if not candidate.is_absolute() else candidate.resolve()
+        candidate_path = Path(candidate_raw)
+        if not candidate_path.is_absolute():
+            candidate_path = (base_dir / candidate_path).resolve()
+        else:
+            candidate_path = candidate_path.resolve()
         base_path = base_dir.resolve()
-        # Ensure the resolved candidate is strictly within base_dir
-        if base_path not in candidate_path.parents:
+        try:
+            # Python 3.9+ compatibility: robust directory containment check
+            candidate_path.relative_to(base_path)
+        except Exception:
             return jsonify({"error": "Invalid log file path"}), 400
     except Exception:
         return jsonify({"error": "Invalid log file path"}), 400
