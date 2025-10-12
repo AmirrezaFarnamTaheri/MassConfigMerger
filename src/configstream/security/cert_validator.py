@@ -29,35 +29,10 @@ class CertificateValidator:
     def _parse_cert_datetime(self, value: str) -> datetime:
         """Parse OpenSSL date strings robustly."""
         fmts = [
-        """Helper to parse and validate certificate details."""
-        # Work on a copy to avoid mutating external lists across retries
-        errs = list(errors) if errors else []
-        if not cert:
-            errs.append("No certificate received")
-            return CertificateInfo(valid=False, errors=errs)
-        try:
-            not_before = datetime.strptime(cert["notBefore"], "%b %d %H:%M:%S %Y %Z")
-            not_after = datetime.strptime(cert["notAfter"], "%b %d %H:%M:%S %Y %Z")
-        except (KeyError, ValueError) as e:
-            errs.append(f"Could not parse certificate dates: {e}")
-            return CertificateInfo(valid=False, errors=errs)
-        days_left = (not_after - datetime.now()).days
-        now = datetime.now()
-        if now < not_before:
-            errs.append("Certificate not yet valid")
-        if now > not_after:
-            errs.append("Certificate expired")
-        if days_left < 30:
-            errs.append(f"Certificate expires soon ({days_left} days)")
-        return CertificateInfo(
-            valid=len(errs) == 0,
-            subject=dict(x[0] for x in cert.get("subject", [])),
-            issuer=dict(x[0] for x in cert.get("issuer", [])),
-            not_before=not_before,
-            not_after=not_after,
-            days_until_expiry=days_left,
-            errors=errs,
-        )
+            "%b %d %H:%M:%S %Y %Z",   # e.g., 'Jun 12 12:34:56 2025 GMT'
+            "%b %d %H:%M:%S %Y",      # without timezone
+        ]
+        for fmt in fmts:
             try:
                 return datetime.strptime(value, fmt)
             except ValueError:
