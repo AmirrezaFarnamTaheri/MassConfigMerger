@@ -151,7 +151,9 @@ def api_logs():
     try:
         resolved_log_path = log_path.resolve(strict=True)
         resolved_root_path = root_path.resolve(strict=True)
-        if not resolved_log_path.is_relative_to(resolved_root_path):
+        try:
+            resolved_log_path.relative_to(resolved_root_path)
+        except Exception:
             return jsonify({"error": "Log file path is outside the allowed directory"}), 400
     except (ValueError, FileNotFoundError):
         return jsonify({"error": "Invalid log file path"}), 400
