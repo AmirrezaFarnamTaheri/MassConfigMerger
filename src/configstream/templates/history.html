@@ -26,53 +26,34 @@
                     <div>
                         <h1 class="text-3xl font-bold text-white">ConfigStream</h1>
                         <p class="text-text-secondary">Connection History</p>
-                    </div>
-                </a>
-            </div>
-            <nav class="flex items-center space-x-4">
-                <a href="/" class="text-text-secondary hover:text-white">Dashboard</a>
-                <a href="/history" class="text-text-secondary hover:text-white">History</a>
-                <a href="/settings" class="text-text-secondary hover:text-white">Settings</a>
-            </nav>
-        </header>
-
-        <main>
-            <div class="bg-card-bg p-6 rounded-lg shadow-md">
-                <h2 class="text-2xl font-bold mb-4">Node History</h2>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-600">
-                        <thead class="bg-header-bg">
-                            <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Timestamp</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">IP Address</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Protocol</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Latency (ms)</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-table-body" class="bg-card-bg divide-y divide-gray-700">
-                            <!-- Data will be populated by JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
-    </div>
-    <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const tableBody = document.getElementById('history-table-body');
+
+            function renderMessageRow(msg) {
+              const tr = document.createElement('tr');
+              const td = document.createElement('td');
+              td.className = 'px-6 py-4';
+              td.colSpan = 5;
+              td.textContent = msg;
+              tr.appendChild(td);
+              tableBody.innerHTML = '';
+              tableBody.appendChild(tr);
+            }
+
             fetch('/api/history')
               .then(async (response) => {
                 if (!response.ok) {
                   const text = await response.text().catch(() => '');
-                  throw new Error(text || `Failed to load history (${response.status})`);
+                  // Do not inject server-provided text into HTML
+                  const safeMsg = text && text.length <= 200 ? text : '';
+                  throw new Error(safeMsg || `Failed to load history (${response.status})`);
                 }
                 return response.json().catch(() => { throw new Error('Invalid JSON from /api/history'); });
               })
               .then((data) => {
-                const tableBody = document.getElementById('history-table-body');
                 tableBody.innerHTML = '';
                 if (!Array.isArray(data)) {
-                  tableBody.innerHTML = '<tr><td class="px-6 py-4" colspan="5">Unexpected response format.</td></tr>';
+                  renderMessageRow('Unexpected response format.');
                   return;
                 }
                 const frag = document.createDocumentFragment();
@@ -81,8 +62,9 @@
 
                   const tdTime = document.createElement('td');
                   tdTime.className = 'px-6 py-4 whitespace-nowrap';
-                  const ts = item && item.timestamp ? new Date(item.timestamp) : null;
-                  tdTime.textContent = ts && !isNaN(ts) ? ts.toLocaleString() : 'N/A';
+                  const tsVal = item && item.timestamp;
+                  const ts = tsVal ? new Date(tsVal) : null;
+                  tdTime.textContent = ts && !isNaN(ts.valueOf()) ? ts.toLocaleString() : 'N/A';
                   tr.appendChild(tdTime);
 
                   const tdIp = document.createElement('td');
@@ -97,8 +79,8 @@
 
                   const tdPing = document.createElement('td');
                   tdPing.className = 'px-6 py-4 whitespace-nowrap';
-                  const ping = item && typeof item.ping_ms === 'number' && item.ping_ms > 0 ? item.ping_ms : 'N/A';
-                  tdPing.textContent = ping;
+                  const ping = item && typeof item.ping_ms === 'number' && isFinite(item.ping_ms) && item.ping_ms > 0 ? item.ping_ms : 'N/A';
+                  tdPing.textContent = String(ping);
                   tr.appendChild(tdPing);
 
                   const tdStatus = document.createElement('td');
@@ -115,8 +97,7 @@
                 tableBody.appendChild(frag);
               })
               .catch((err) => {
-                const tableBody = document.getElementById('history-table-body');
-                tableBody.innerHTML = `<tr><td class="px-6 py-4" colspan="5">Error loading history: ${err.message}</td></tr>`;
+                renderMessageRow(`Error loading history: ${err.message || 'Unknown error'}`);
               });
         });
     </script>
