@@ -1,86 +1,50 @@
 :root {
-    --bg-dark-900: #111827; /* Very dark gray, almost black */
-    --bg-dark-800: #1f2937; /* Dark gray */
-    --bg-dark-700: #374151; /* Medium-dark gray */
-    --text-light-100: #f9fafb; /* Off-white */
-    --text-light-200: #e5e7eb; /* Light gray */
-    --text-light-300: #d1d5db; /* Lighter gray */
-    --accent-blue-500: #3b82f6; /* Bright blue */
-    --accent-blue-600: #2563eb; /* Darker blue */
-    --focus-ring: #93c5fd; /* Light blue for focus ring */
+    --bg-dark-900: #111827;
+    --bg-dark-800: #1f2937;
+    --bg-dark-700: #374151;
+    --text-light-100: #f3f4f6;
+    --text-light-200: #d1d5db;
+    --accent-blue-500: #3b82f6;
+    --accent-blue-600: #2563eb;
 }
 
-html {
-    font-family: 'Inter', sans-serif;
-}
-
-body {
-    background-color: var(--bg-dark-900);
-    color: var(--text-light-100);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-/* --- Navigation --- */
 .nav-link {
     display: flex;
     align-items: center;
-    padding: 0.75rem 1rem;
-    margin: 0.25rem 0.5rem;
-    border-radius: 0.375rem;
+    padding: 0.75rem 1.5rem;
     color: var(--text-light-200);
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    transition: background-color 0.2s, color 0.2s;
 }
 
-.nav-link:hover,
-.nav-link:focus,
-.nav-link.active {
-    background-color: var(--accent-blue-600);
-    color: white;
-}
-
-.nav-link i {
-    text-align: center;
-    margin-right: 0.75rem;
-    width: 1.5rem;
+.nav-link:hover {
+    background-color: var(--bg-dark-700);
+    color: var(--text-light-100);
 }
 
 .nav-link-sub {
     display: block;
-    padding: 0.5rem 1rem 0.5rem 2rem; /* Indented */
-    color: var(--text-light-300);
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    padding: 0.5rem 1.5rem;
+    color: var(--text-light-200);
+    transition: background-color 0.2s, color 0.2s;
 }
 
-.nav-link-sub:hover,
-.nav-link-sub:focus {
-    background-color: var(--bg-dark-900);
-    color: white;
+.nav-link-sub:hover {
+    background-color: var(--bg-dark-800);
+    color: var(--text-light-100);
 }
 
-/* --- Focus Styles --- */
-a:focus-visible, button:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-    border-radius: 0.375rem;
-}
-
-/* --- Cards and Containers --- */
 .card {
     background-color: var(--bg-dark-800);
     border-radius: 0.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
-/* --- Buttons --- */
 .btn {
-    display: inline-block;
-    padding: 0.625rem 1.25rem;
+    padding: 0.75rem 1.5rem;
     border-radius: 0.375rem;
     font-weight: 600;
-    text-align: center;
-    transition: background-color 0.2s ease-in-out;
+    transition: background-color 0.2s;
 }
 
 .btn-primary {
@@ -90,4 +54,14 @@ a:focus-visible, button:focus-visible {
 
 .btn-primary:hover {
     background-color: var(--accent-blue-600);
+}
+
+.table-header {
+    padding: 0.75rem 1.5rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-light-200);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }

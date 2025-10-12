@@ -153,3 +153,6 @@ build/
 data/
 daemon.log
 jules-scratch/
+
+# Node
+node_modules/

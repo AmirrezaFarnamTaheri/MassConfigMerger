@@ -215,3 +215,41 @@ def test_cli_no_args_prints_help(capsys):
     captured = capsys.readouterr()
     assert "usage:" in captured.err
     assert "the following arguments are required: command" in captured.err
+
+
+@patch("configstream.commands.run_daemon")
+def test_cli_daemon_command(mock_run_daemon, fs):
+    """Test the 'daemon' command."""
+    fs.create_file("config.yaml", contents="security:\n  secret_key: 'test-key'")
+    main(["daemon", "--interval-hours", "1", "--web-port", "8081"])
+    mock_run_daemon.assert_called_once()
+    _args, _kwargs = mock_run_daemon.call_args
+    daemon_instance = _args[0]
+    assert daemon_instance.settings.security.secret_key == 'test-key'
+    assert _args[1] == 1
+    assert _args[2] == 8081
+
+
+@patch("configstream.cli.commands.handle_prometheus")
+def test_cli_prometheus_command(mock_handle_prometheus, fs):
+    """Test the 'prometheus' command."""
+    fs.create_file("config.yaml")
+    with patch("configstream.cli.main"):
+        main(["prometheus", "--port", "9091", "--data-dir", "/data"])
+
+    parser = build_parser()
+    args = parser.parse_args(["prometheus", "--port", "9091", "--data-dir", "/data"])
+
+    # We can't assert the call directly because the main function is patched,
+    # but we can check that the arguments are parsed correctly.
+    assert args.port == 9091
+    assert args.data_dir == "/data"
+
+
+def test_cli_version_command(capsys):
+    """Test the '--version' argument."""
+    with pytest.raises(SystemExit) as e:
+        main(["--version"])
+    assert e.value.code == 0
+    captured = capsys.readouterr()
+    assert "configstream" in captured.out

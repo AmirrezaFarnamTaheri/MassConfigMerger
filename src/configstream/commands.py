@@ -19,7 +19,6 @@ from pathlib import Path
 from . import services
 from .config import Settings
 from .main_daemon import ConfigStreamDaemon
-from .tui import display_results
 from .db.historical_manager import HistoricalManager
 
 
@@ -73,27 +72,24 @@ def handle_daemon(args: argparse.Namespace, cfg: Settings):
     data_dir.mkdir(exist_ok=True)
 
     daemon = ConfigStreamDaemon(settings=cfg, data_dir=data_dir)
+    run_daemon(daemon, args.interval_hours, args.web_port)
+
+def run_daemon(daemon: ConfigStreamDaemon, interval_hours: int, web_port: int):
+    """Run the daemon."""
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
         # No running loop; safe to use asyncio.run
         asyncio.run(daemon.start(
-            interval_hours=args.interval_hours,
-            web_port=args.web_port,
+            interval_hours=interval_hours,
+            web_port=web_port,
         ))
     else:
         # A loop is already running; schedule the task
         loop.create_task(daemon.start(
-            interval_hours=args.interval_hours,
-            web_port=args.web_port,
+            interval_hours=interval_hours,
+            web_port=web_port,
         ))
-
-
-def handle_tui(args: argparse.Namespace, cfg: Settings):
-    """Handle the 'tui' command."""
-    # This assumes the daemon has been run at least once to generate the results file.
-    results_file = Path(cfg.output.output_dir) / "current_results.json"
-    display_results(results_file)
 
 
 def handle_history(args: argparse.Namespace, cfg: Settings):

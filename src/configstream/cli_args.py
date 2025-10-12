@@ -293,11 +293,6 @@ def add_daemon_arguments(parser: argparse.ArgumentParser):
     )
 
 
-def add_tui_arguments(subparsers: argparse._SubParsersAction):
-    """Add arguments for the 'tui' command."""
-    subparsers.add_parser("tui", help="Display a terminal user interface")
-
-
 def add_history_arguments(subparsers: argparse._SubParsersAction):
     """Add arguments for the 'history' command."""
     history_p = subparsers.add_parser(
