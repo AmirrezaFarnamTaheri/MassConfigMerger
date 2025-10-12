@@ -3,6 +3,8 @@ from io import BytesIO
 from datetime import datetime, timedelta
 import json
 from pathlib import Path
+import psutil
+import time
 
 api = Blueprint('api', __name__)
 
@@ -99,9 +101,6 @@ def api_export(format: str):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-import psutil
-import time
-
 start_time = time.time()
 
 @api.route("/status")
@@ -169,26 +168,6 @@ def api_scheduler_jobs():
         })
     return jsonify({"jobs": jobs})
 
-@api.route("/settings", methods=["POST"])
-def api_settings():
-    """API endpoint for updating settings."""
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "Invalid JSON"}), 400
-
-        # Here you would typically update the settings file
-        # For now, we'll just return a success message
-        return jsonify({"message": "Settings updated successfully"})
-    except Exception:
-        return jsonify({"error": "Invalid JSON"}), 400
-
-@api.route("/backup/create", methods=["POST"])
-def api_backup_create():
-    """API endpoint for creating a backup."""
-    # This is a placeholder. In a real application, you would zip the data and settings.
-    return jsonify({"message": "Backup created successfully", "filename": f"backup-{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"})
-
 @api.route("/sources", methods=["POST"])
 def api_add_source():
     """API endpoint for adding a new source."""
@@ -212,9 +191,3 @@ def api_add_source():
         return jsonify({"message": "Source added successfully"})
     except Exception as e:
         return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
-
-@api.route("/backup/restore", methods=["POST"])
-def api_backup_restore():
-    """API endpoint for restoring from a backup."""
-    # This is a placeholder. In a real application, you would unzip the backup and restore the data.
-    return jsonify({"message": "Restore completed successfully"})

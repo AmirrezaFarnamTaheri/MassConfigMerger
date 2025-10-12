@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 import logging
 
-from flask import Flask, render_template
+from flask import Flask, render_template, current_app
 from flask_wtf.csrf import CSRFProtect
 import base64
 import hashlib
@@ -248,15 +248,6 @@ def create_app(settings=None) -> Flask:
     def roadmap():
         return render_template("roadmap.html")
 
-    @app.route("/analytics")
-    def analytics():
-        return render_template("analytics.html")
-
-    @app.route("/backup")
-    def backup():
-        return render_template("backup.html")
-
-
     @app.route("/history")
     def history():
         return render_template("history.html")
@@ -269,10 +260,8 @@ def create_app(settings=None) -> Flask:
         settings = current_app.config["settings"]
         return render_template("settings.html", settings=settings.model_dump())
 
-
     @app.route("/sources")
     def sources():
-        from flask import current_app
         settings = current_app.config["settings"]
         sources_file = Path(settings.sources.sources_file)
         if not sources_file.is_absolute():

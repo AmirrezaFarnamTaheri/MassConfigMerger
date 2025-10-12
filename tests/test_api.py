@@ -58,9 +58,3 @@ def test_api_scheduler_jobs_no_key(client):
     response = client.get("/api/scheduler/jobs")
     assert response.status_code == 401
     assert response.get_json() == {"error": "Unauthorized"}
-
-def test_api_settings_invalid_json(client):
-    """Test the /api/settings endpoint with invalid JSON."""
-    response = client.post("/api/settings", data="not json")
-    assert response.status_code == 400
-    assert response.get_json() == {"error": "Invalid JSON"}
