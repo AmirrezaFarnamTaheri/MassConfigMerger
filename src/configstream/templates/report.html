@@ -48,10 +48,28 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             fetch('/api/report')
-                .then(response => response.json())
-                .then(data => {
+                .then(async (response) => {
+                    if (!response.ok) {
+                        const text = await response.text().catch(() => '');
+                        throw new Error(text || `Failed to load report (${response.status})`);
+                    }
+                    // Try JSON first; fall back to text
+                    try {
+                        return await response.json();
+                    } catch {
+                        const t = await response.text().catch(() => '');
+                        return t ? { raw: t } : { message: 'No content' };
+                    }
+                })
+                .then((data) => {
                     const reportContent = document.getElementById('report-content');
-                    reportContent.textContent = JSON.stringify(data, null, 2);
+                    reportContent.textContent = typeof data === 'string'
+                      ? data
+                      : JSON.stringify(data, null, 2);
+                })
+                .catch((err) => {
+                    const reportContent = document.getElementById('report-content');
+                    reportContent.textContent = `Error loading report: ${err.message}`;
                 });
         });
     </script>
