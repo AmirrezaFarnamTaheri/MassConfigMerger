@@ -55,24 +55,12 @@ def test_roadmap_route(client):
     assert b"Roadmap" in response.data
 
 
-def test_help_route(client):
-    response = client.get("/help")
-    assert response.status_code == 200
-    assert b"Help" in response.data
 
 
 
 
-def test_report_route(client):
-    response = client.get("/report")
-    assert response.status_code == 200
-    assert b"Report" in response.data
 
 
-def test_sitemap_route(client):
-    response = client.get("/sitemap")
-    assert response.status_code == 200
-    assert b"Sitemap" in response.data
 
 
 def test_sources_route(client):

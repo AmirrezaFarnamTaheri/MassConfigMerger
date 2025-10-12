@@ -189,6 +189,30 @@ def api_backup_create():
     # This is a placeholder. In a real application, you would zip the data and settings.
     return jsonify({"message": "Backup created successfully", "filename": f"backup-{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"})
 
+@api.route("/sources", methods=["POST"])
+def api_add_source():
+    """API endpoint for adding a new source."""
+    try:
+        data = request.get_json()
+        url = data.get("url")
+        if not url:
+            return jsonify({"error": "URL is required"}), 400
+
+        settings = current_app.config["settings"]
+        sources_file = Path(settings.sources.sources_file)
+        if not sources_file.is_absolute():
+            sources_file = Path(current_app.root_path).parent / sources_file
+
+        try:
+            with open(sources_file, "a", encoding="utf-8") as f:
+                f.write(f"\n{url}")
+        except IOError as e:
+            return jsonify({"error": f"Failed to write to sources file: {e}"}), 500
+
+        return jsonify({"message": "Source added successfully"})
+    except Exception as e:
+        return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
+
 @api.route("/backup/restore", methods=["POST"])
 def api_backup_restore():
     """API endpoint for restoring from a backup."""

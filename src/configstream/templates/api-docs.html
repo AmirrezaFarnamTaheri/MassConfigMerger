@@ -47,6 +47,13 @@
 
                 <h2 id="api-scheduler-jobs">GET /api/scheduler/jobs</h2>
                 <p>Get the status of all scheduled jobs. Requires an API key if one is configured.</p>
+
+                <h2 id="api-add-source">POST /api/sources</h2>
+                <p>Add a new subscription source. The URL should be provided in the JSON body of the request.</p>
+                <h3>Request Body:</h3>
+                <pre><code>{
+    "url": "https://example.com/subscription"
+}</code></pre>
             </div>
         </div>
     </div>

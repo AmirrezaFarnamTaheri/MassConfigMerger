@@ -13,17 +13,23 @@
         <div class="card">
             <h2 class="text-xl font-semibold mb-4">Scheduler Jobs</h2>
             <div id="scheduler-status">
-                {% if jobs %}
-                    <ul>
-                        {% for job in jobs %}
-                            <li class="mb-2">
-                                <span class="font-semibold">{{ job.name }}</span> - Next run: {{ job.next_run_time.strftime('%Y-%m-%d %H:%M:%S') if job.next_run_time else 'N/A' }}
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p>No scheduled jobs found.</p>
-                {% endif %}
+                <div id="scheduler-loading" class="flex items-center">
+                    <i class="fas fa-spinner fa-spin mr-2"></i>
+                    <span>Loading...</span>
+                </div>
+                <div id="scheduler-content" class="hidden">
+                    {% if jobs %}
+                        <ul>
+                            {% for job in jobs %}
+                                <li class="mb-2">
+                                    <span class="font-semibold">{{ job.name }}</span> - Next run: {{ job.next_run_time.strftime('%Y-%m-%d %H:%M:%S') if job.next_run_time else 'N/A' }}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>No scheduled jobs found.</p>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
@@ -51,6 +57,9 @@
 {% block head_extra %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const schedulerLoading = document.getElementById('scheduler-loading');
+    const schedulerContent = document.getElementById('scheduler-content');
+
     async function fetchSystemStatus() {
         try {
             const response = await fetch('/api/status');
@@ -72,12 +81,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch('/api/logs');
             if (!response.ok) throw new Error('Failed to fetch logs');
             const data = await response.json();
-            document.getElementById('logs-content').textContent = data.logs.join('\\n');
+            document.getElementById('logs-content').textContent = data.logs.join('\n');
         } catch (error) {
             console.error('Error fetching logs:', error);
             document.getElementById('logs-content').textContent = 'Error loading logs.';
         }
     }
+
+    schedulerLoading.classList.add('hidden');
+    schedulerContent.classList.remove('hidden');
 
     fetchSystemStatus();
     fetchLogs();

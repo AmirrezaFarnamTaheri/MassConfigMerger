@@ -256,18 +256,12 @@ def create_app(settings=None) -> Flask:
     def backup():
         return render_template("backup.html")
 
-    @app.route("/help")
-    def help():
-        return render_template("help.html")
 
     @app.route("/history")
     def history():
         return render_template("history.html")
 
 
-    @app.route("/report")
-    def report():
-        return render_template("report.html")
 
 
     @app.route("/settings")
@@ -275,9 +269,6 @@ def create_app(settings=None) -> Flask:
         settings = current_app.config["settings"]
         return render_template("settings.html", settings=settings.model_dump())
 
-    @app.route("/sitemap")
-    def sitemap():
-        return render_template("sitemap.html")
 
     @app.route("/sources")
     def sources():
