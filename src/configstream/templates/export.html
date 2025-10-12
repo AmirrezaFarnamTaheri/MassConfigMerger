@@ -31,12 +31,32 @@
 
         <!-- Export Buttons -->
         <div class="card mb-8">
-            <div class="flex flex-wrap items-center justify-between gap-4">
-                <div class="flex items-center gap-4">
-                    <button onclick="exportConfigs('csv')" class="btn btn-secondary">Export as CSV</button>
-                    <button onclick="exportConfigs('json')" class="btn btn-secondary">Export as JSON</button>
-                    <button onclick="exportConfigs('raw')" class="btn btn-secondary">Export as Raw Text</button>
-                    <button onclick="exportConfigs('base64')" class="btn btn-secondary">Export as Base64</button>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <button onclick="exportConfigs('csv')" class="btn btn-secondary w-full">
+                    <i class="fas fa-file-csv mr-2"></i>
+                    <span>Export as CSV</span>
+                </button>
+                <button onclick="exportConfigs('json')" class="btn btn-secondary w-full">
+                    <i class="fas fa-file-code mr-2"></i>
+                    <span>Export as JSON</span>
+                </button>
+                <div class="relative">
+                    <button onclick="exportConfigs('raw')" class="btn btn-secondary w-full">
+                        <i class="fas fa-file-alt mr-2"></i>
+                        <span>Export as Raw Text</span>
+                    </button>
+                    <button onclick="copyToClipboard('raw')" class="absolute top-0 right-0 mt-2 mr-2 btn btn-sm btn-secondary">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+                <div class="relative">
+                    <button onclick="exportConfigs('base64')" class="btn btn-secondary w-full">
+                        <i class="fas fa-file-code mr-2"></i>
+                        <span>Export as Base64</span>
+                    </button>
+                    <button onclick="copyToClipboard('base64')" class="absolute top-0 right-0 mt-2 mr-2 btn btn-sm btn-secondary">
+                        <i class="fas fa-copy"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -150,8 +170,35 @@
     }
 
     function exportConfigs(format) {
-        const params = new URLSearchParams(currentFilters);
+        const filters = {
+            search: document.getElementById('searchFilter').value,
+            protocol: document.getElementById('protocolFilter').value,
+            country: document.getElementById('countryFilter').value,
+            max_ping: document.getElementById('maxPingFilter').value,
+        };
+        const params = new URLSearchParams(filters);
         window.location.href = `/api/export/${format}?${params.toString()}`;
+    }
+
+    async function copyToClipboard(format) {
+        const filters = {
+            search: document.getElementById('searchFilter').value,
+            protocol: document.getElementById('protocolFilter').value,
+            country: document.getElementById('countryFilter').value,
+            max_ping: document.getElementById('maxPingFilter').value,
+        };
+        const params = new URLSearchParams(filters);
+        const response = await fetch(`/api/export/${format}?${params.toString()}`);
+        const text = await response.text();
+        navigator.clipboard.writeText(text);
+
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-5 right-5 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg';
+        notification.textContent = 'Copied to clipboard!';
+        document.body.appendChild(notification);
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 3000);
     }
 </script>
 {% endblock %}
