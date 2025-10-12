@@ -1,0 +1,50 @@
+:root {
+    --header-bg: #1f2937; /* Darker gray */
+    --body-bg: #374151;   /* Dark gray */
+    --card-bg: #4b5563;   /* Lighter gray */
+    --text-primary: #f9fafb; /* Off-white */
+    --text-secondary: #d1d5db; /* Light gray */
+    --accent-color: #3b82f6; /* Blue */
+    --accent-color-hover: #2563eb; /* Darker blue */
+    --success-bg: #10b981; /* Green */
+    --error-bg: #ef4444;   /* Red */
+}
+
+body {
+    background-color: var(--body-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+}
+
+.bg-header-bg { background-color: var(--header-bg); }
+.bg-body-bg { background-color: var(--body-bg); }
+.bg-card-bg { background-color: var(--card-bg); }
+.text-text-primary { color: var(--text-primary); }
+.text-text-secondary { color: var(--text-secondary); }
+.bg-accent-color { background-color: var(--accent-color); }
+.hover\:bg-accent-color-hover:hover { background-color: var(--accent-color-hover); }
+
+/* Add some transitions for a smoother experience */
+a, button {
+    transition: all 0.2s ease-in-out;
+}
+
+/* Add a subtle box shadow to cards */
+.shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Style the navigation links */
+aside nav a {
+    border-radius: 0.5rem;
+}
+
+aside nav a:hover {
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+}
+
+aside nav a i {
+    width: 1.5rem;
+    text-align: center;
+}

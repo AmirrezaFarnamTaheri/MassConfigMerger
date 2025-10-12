@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Documentation - ConfigStream{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <header class="bg-header-bg shadow-lg rounded-lg p-6 mb-8">
+        <h1 class="text-3xl font-bold text-white">Documentation</h1>
+        <p class="text-text-secondary">Comprehensive guide to ConfigStream.</p>
+    </header>
+
+    <div class="bg-card-bg shadow-lg rounded-lg p-6">
+        <h2 class="text-2xl font-bold mb-4">Introduction</h2>
+        <p class="mb-4">ConfigStream is a powerful tool for aggregating, testing, and managing VPN configurations from various sources. This documentation provides a detailed overview of its features and how to use them.</p>
+
+        <h2 class="text-2xl font-bold mb-4">Core Features</h2>
+        <ul class="list-disc list-inside mb-4">
+            <li><span class="font-semibold">Aggregation:</span> Automatically fetches VPN configurations from multiple sources, including URLs and Telegram channels.</li>
+            <li><span class="font-semibold">Testing:</span> Tests the connectivity and performance of each configuration, providing metrics like latency and success rate.</li>
+            <li><span class="font-semibold">Merging:</span> Merges the best-performing configurations into a single, optimized subscription link.</li>
+            <li><span class="font-semibold">Web Dashboard:</span> A user-friendly interface for monitoring the status of your configurations, viewing test results, and managing settings.</li>
+            <li><span class="font-semibold">API:</span> A RESTful API for programmatic access to your configuration data.</li>
+        </ul>
+
+        <h2 class="text-2xl font-bold mb-4">Command-Line Interface (CLI)</h2>
+        <p class="mb-4">The CLI is the primary way to interact with ConfigStream. Here are the main commands:</p>
+        <ul class="list-disc list-inside mb-4 space-y-2">
+            <li><code>configstream fetch</code>: Fetches configurations from all enabled sources. This command will download the configurations and save them locally for further processing.</li>
+            <li><code>configstream merge</code>: Merges the fetched configurations into a single subscription. This command will test the configurations and create a new subscription file with the best-performing nodes.</li>
+            <li><code>configstream retest</code>: Retests an existing subscription file. This is useful for checking the status of your current configurations.</li>
+            <li><code>configstream full</code>: Runs the full fetch, merge, and test pipeline. This is a convenient way to perform all the necessary steps to get an updated subscription.</li>
+            <li><code>configstream daemon</code>: Starts the web dashboard and scheduler. The daemon will automatically fetch and test configurations at a configurable interval.</li>
+            <li><code>configstream history</code>: Query historical performance data.</li>
+            <li><code>configstream sources</code>: Manage the list of subscription sources.</li>
+            <li><code>configstream tui</code>: Display a terminal user interface.</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

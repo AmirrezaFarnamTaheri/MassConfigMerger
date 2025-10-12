@@ -251,6 +251,10 @@ class SecuritySettings(BaseModel):
         None,
         description="Optional API key to protect API endpoints. If set, it must be provided in the 'X-API-Key' header.",
     )
+    secret_key: Optional[str] = Field(
+        None,
+        description="A secret key for signing session data, used for CSRF protection.",
+    )
 
 
 class ProcessingSettings(BaseModel):

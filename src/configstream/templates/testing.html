@@ -1,60 +1,32 @@
-<!DOCTYPE html>
-<html lang="en" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manual Testing - ConfigStream</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        :root {
-            --header-bg: #1a202c;
-            --body-bg: #2d3748;
-            --card-bg: #4a5568;
-            --text-primary: #e2e8f0;
-            --text-secondary: #a0aec0;
-            --accent-color: #4299e1;
-        }
-    </style>
-</head>
-<body class="bg-body-bg text-text-primary">
-    <div class="container mx-auto p-4">
-        <header class="bg-header-bg shadow-lg rounded-lg p-6 mb-8 flex items-center justify-between">
-            <div class="flex items-center">
-                <a href="/" class="flex items-center">
-                    <img src="{{ url_for('static', filename='logo.svg') }}" alt="ConfigStream Logo" class="h-12 w-12 mr-4">
-                    <div>
-                        <h1 class="text-3xl font-bold text-white">ConfigStream</h1>
-                        <p class="text-text-secondary">Manual Node Testing</p>
-                    </div>
-                </a>
-            </div>
-            <nav class="flex items-center space-x-4">
-                <a href="/" class="text-text-secondary hover:text-white">Dashboard</a>
-                <a href="/history" class="text-text-secondary hover:text-white">History</a>
-                <a href="/settings" class="text-text-secondary hover:text-white">Settings</a>
-            </nav>
-        </header>
+{% extends "base.html" %}
 
-        <main>
-            <div class="bg-card-bg p-6 rounded-lg shadow-md">
-                <h2 class="text-2xl font-bold mb-4">Test a Node</h2>
-                <form class="space-y-4">
-                    <div>
-                        <label for="node-config" class="block text-sm font-medium text-text-secondary">Node Configuration</label>
-                        <textarea id="node-config" rows="4" class="mt-1 block w-full bg-header-bg border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-accent-color focus:border-accent-color sm:text-sm" placeholder="vmess://..."></textarea>
-                    </div>
-                    <div class="flex justify-end">
-                        <button type="submit" class="bg-accent-color hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">
-                            Test Node
-                        </button>
-                    </div>
-                </form>
-                <div id="test-result" class="mt-6">
-                    <!-- Test result will be displayed here -->
+{% block title %}Manual Testing - ConfigStream{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <header class="bg-header-bg shadow-lg rounded-lg p-6 mb-8">
+        <h1 class="text-3xl font-bold text-white">Manual Node Testing</h1>
+        <p class="text-text-secondary">Test a single VPN node configuration.</p>
+    </header>
+
+    <main>
+        <div class="bg-card-bg p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-bold mb-4">Test a Node</h2>
+            <form class="space-y-4">
+                <div>
+                    <label for="node-config" class="block text-sm font-medium text-text-secondary">Node Configuration</label>
+                    <textarea id="node-config" rows="4" class="mt-1 block w-full bg-header-bg border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-accent-color focus:border-accent-color sm:text-sm" placeholder="vmess://..."></textarea>
                 </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="bg-accent-color hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">
+                        Test Node
+                    </button>
+                </div>
+            </form>
+            <div id="test-result" class="mt-6">
+                <!-- Test result will be displayed here -->
             </div>
-        </main>
-    </div>
-</body>
-</html>
+        </div>
+    </main>
+</div>
+{% endblock %}
