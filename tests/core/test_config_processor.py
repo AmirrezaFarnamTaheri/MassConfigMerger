@@ -83,7 +83,7 @@ async def test_run_security_checks(mock_settings):
 
     # Mock the host resolver
     with patch.object(processor.tester, "resolve_host", new_callable=AsyncMock) as mock_resolve:
-        mock_resolve.side_effect = ["1.1.1.1", "2.2.2.2"] # IPs for good.com and bad.com
+        mock_resolve.side_effect = ["1.1.1.1", "2.2.2.2"]  # IPs for good.com and bad.com
 
         safe_results = await processor._run_security_checks(results)
 

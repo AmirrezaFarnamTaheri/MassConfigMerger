@@ -19,6 +19,10 @@ from .. import metrics
 from ..config import Settings
 from ..tester import BlocklistChecker, NodeTester
 from . import config_normalizer
+from .types import ConfigResult
+from ..security.ip_reputation import IPReputationChecker
+from ..security.cert_validator import CertificateValidator
+from ..db import Database
 
 
 @lru_cache(maxsize=None)
@@ -54,9 +58,6 @@ def categorize_protocol(config: str) -> str:
         if config_lower.startswith(prefix):
             return protocol
     return "Other"
-
-
-from .types import ConfigResult
 
 
 class ConfigProcessor:

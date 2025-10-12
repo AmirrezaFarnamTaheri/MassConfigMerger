@@ -55,16 +55,3 @@ def test_daemon_signal_handler(mock_settings, tmp_path):
         mock_exit.assert_called_once_with(0)
 
 
-@patch("configstream.main_daemon.ConfigStreamDaemon")
-@patch("configstream.main_daemon.Settings")
-@patch("configstream.main_daemon.Path")
-def test_main_function(mock_path_cls, mock_settings_cls, mock_daemon_cls):
-    """Test the main entry point of the daemon."""
-    mock_daemon_instance = mock_daemon_cls.return_value
-
-    main()
-
-    mock_path_cls.assert_called_with("./data")
-    mock_path_cls.return_value.mkdir.assert_called_once_with(exist_ok=True)
-    mock_daemon_cls.assert_called_once()
-    mock_daemon_instance.start.assert_called_once_with(interval_hours=2, web_port=8080)

@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, send_file, current_app
-from io import StringIO, BytesIO
+from io import BytesIO
 from datetime import datetime
 import json
 

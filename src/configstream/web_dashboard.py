@@ -3,15 +3,13 @@
 
 import json
 import csv
-from io import StringIO, BytesIO
+from io import StringIO
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List
 import logging
-import os
-import psutil
 
-from flask import Flask, jsonify, render_template, request, send_file, abort
+from flask import Flask, render_template
 
 from .config import load_config
 from .scheduler import TestScheduler
