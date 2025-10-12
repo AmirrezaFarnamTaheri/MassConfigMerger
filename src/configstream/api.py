@@ -133,13 +133,23 @@ def api_logs():
     log_file = settings.output.log_file or "configstream.log"
     log_path = Path(log_file)
 
+    # In a real app, this would be the project root.
+    # In testing, this will be the root of the fake filesystem.
+    root_path = Path(current_app.root_path).parent if not current_app.testing else Path("/")
+
     if not log_path.is_absolute():
-        # In a real app, this would be the project root.
-        # In testing, this will be the root of the fake filesystem.
-        root_path = Path(current_app.root_path).parent if not current_app.testing else Path("/")
         log_path = root_path / log_path
 
-    if not log_path.exists() or not log_path.is_file():
+    # Security: Prevent path traversal attacks
+    try:
+        resolved_log_path = log_path.resolve(strict=True)
+        resolved_root_path = root_path.resolve(strict=True)
+        if not resolved_log_path.is_relative_to(resolved_root_path):
+            return jsonify({"error": "Log file path is outside the allowed directory"}), 400
+    except (ValueError, FileNotFoundError):
+        return jsonify({"error": "Invalid log file path"}), 400
+
+    if not resolved_log_path.is_file():
         return jsonify({"logs": ["Log file not found."]})
 
     try:
