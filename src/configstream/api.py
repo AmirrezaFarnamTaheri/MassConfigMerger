@@ -160,7 +160,7 @@ def api_logs():
         return jsonify({"logs": ["Log file not found."]})
 
     try:
-        with open(log_path, "r", encoding="utf-8") as f:
+        with open(resolved_log_path, "r", encoding="utf-8") as f:
             logs = f.readlines()
         return jsonify({"logs": [line.strip() for line in logs[-100:]]})
     except Exception as e:
