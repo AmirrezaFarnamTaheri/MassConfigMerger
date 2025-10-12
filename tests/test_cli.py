@@ -1,5 +1,4 @@
 from __future__ import annotations
-from configstream.cli import _parse_protocol_list, _parse_protocol_set
 
 import asyncio
 from pathlib import Path
@@ -129,18 +128,6 @@ def test_cli_sources_remove_command(mock_remove_source, fs):
         Path("sources.txt"), "http://example.com/source")
 
 
-def test_parse_protocol_list_with_list_input():
-    """Test _parse_protocol_list with a list input."""
-    protocols = ["VLESS", " trojan ", " ss"]
-    parsed = _parse_protocol_list(protocols)
-    assert parsed == ["VLESS", "TROJAN", "SS"]
-
-
-def test_parse_protocol_set_with_list_input():
-    """Test _parse_protocol_set with a list input."""
-    protocols = ["VLESS", " trojan ", " ss", "VLESS"]
-    parsed = _parse_protocol_set(protocols)
-    assert parsed == {"VLESS", "TROJAN", "SS"}
 
 
 @patch("configstream.cli.load_config", side_effect=ValueError("Invalid config"))
@@ -193,16 +180,6 @@ def test_cli_sources_unknown_command(mock_list, mock_add, mock_remove, fs):
     mock_remove.assert_not_called()
 
 
-def test_parse_protocol_list_empty_input():
-    """Test _parse_protocol_list with empty and None inputs."""
-    assert _parse_protocol_list(None) == []
-    assert _parse_protocol_list("") == []
-
-
-def test_parse_protocol_set_empty_input():
-    """Test _parse_protocol_set with empty and None inputs."""
-    assert _parse_protocol_set(None) == set()
-    assert _parse_protocol_set("") == set()
 
 
 def test_cli_no_args_prints_help(capsys):

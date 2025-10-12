@@ -8,6 +8,10 @@
 <div class="container mx-auto p-4">
     <div class="card">
         <h1 class="text-2xl font-bold mb-6">Application Settings</h1>
+        <p class="text-gray-400 mb-6">
+            This page allows you to view and edit the application settings. The settings are loaded from your <code>config.yaml</code> file.
+            Changes made here will be saved to the server.
+        </p>
 
         <form id="settings-form" class="space-y-6">
             {% for section, values in settings.items() %}

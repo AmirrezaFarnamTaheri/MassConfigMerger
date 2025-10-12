@@ -26,167 +26,108 @@ logger = logging.getLogger(__name__)
 # app = Flask(__name__)  # This probably already exists
 
 
-class DashboardData:
-    """Manages dashboard data and filtering.
-
-    This class provides methods to:
-    - Load current test results
-    - Load historical data
-    - Filter nodes based on various criteria
-    - Export data in different formats
-    """
-
-    def __init__(self, data_dir: Path):
-        """Initialize dashboard data manager.
-
-        Args:
-            data_dir: Directory containing test result files
-        """
-        self.data_dir = data_dir
-        self.current_file = data_dir / "current_results.json"
-        self.history_file = data_dir / "history.jsonl"
-
-    def get_current_results(self) -> Dict[str, Any]:
-        """Load current test results.
-
-        Returns:
-            Dictionary with test results and metadata
-        """
-        if not self.current_file.exists():
-            return {
-                "timestamp": None,
-                "total_tested": 0,
-                "successful": 0,
-                "failed": 0,
-                "nodes": []
-            }
-
-        try:
-            return json.loads(self.current_file.read_text(encoding="utf-8"))
-        except Exception as e:
-            logger.error(f"Error loading current results: {e}")
-            return {"timestamp": None, "nodes": []}
-
-    def get_history(self, hours: int = 24) -> List[Dict]:
-        """Load historical results for specified time period.
-
-        Args:
-            hours: Number of hours of history to retrieve
-
-        Returns:
-            List of historical test result dictionaries
-        """
-        if not self.history_file.exists():
-            return []
-
-        cutoff_time = datetime.now() - timedelta(hours=hours)
-        history = []
-
-        try:
-            with open(self.history_file, "r", encoding="utf-8") as f:
-                for line in f:
-                    if not line.strip():
-                        continue
-
-                    data = json.loads(line)
-                    timestamp = datetime.fromisoformat(data["timestamp"])
-
-                    if timestamp >= cutoff_time:
-                        history.append(data)
-        except Exception as e:
-            logger.error(f"Error loading history: {e}")
-
-        return history
-
-    def filter_nodes(self, nodes: List[Dict], filters: dict) -> List[Dict]:
-        """Apply filters to node list.
-
-        Args:
-            nodes: List of node dictionaries
-            filters: Dictionary of filter criteria
-
-        Returns:
-            Filtered list of nodes
-        """
-        filtered = nodes
-
-        # Protocol filter
-        if protocol := filters.get("protocol"):
-            filtered = [n for n in filtered if n["protocol"].lower() == protocol.lower()]
-
-        # Country filter
-        if country := filters.get("country"):
-            filtered = [n for n in filtered if n["country"].lower() == country.lower()]
-
-        # Min ping filter
-        if min_ping := filters.get("min_ping"):
-            try:
-                min_val = int(min_ping)
-                filtered = [n for n in filtered if n["ping_ms"] >= min_val]
-            except ValueError:
-                pass
-
-        # Max ping filter
-        if max_ping := filters.get("max_ping"):
-            try:
-                max_val = int(max_ping)
-                filtered = [n for n in filtered if 0 < n["ping_ms"] <= max_val]
-            except ValueError:
-                pass
-
-        # Exclude blocked filter
-        if filters.get("exclude_blocked"):
-            filtered = [n for n in filtered if not n["is_blocked"]]
-
-        # Search term (searches in city, organization, or IP)
-        if search := filters.get("search"):
-            search_lower = search.lower()
-            filtered = [
-                n for n in filtered
-                if search_lower in n.get("city", "").lower()
-                or search_lower in n.get("organization", "").lower()
-                or search_lower in n.get("ip", "")
-            ]
-
-        return filtered
-
-    def export_csv(self, nodes: List[Dict]) -> str:
-        """Export nodes to CSV format."""
-        output = StringIO()
-        if not nodes:
-            return ""
-
-        # Aggregate all keys across nodes to avoid missing columns
-        all_keys = set()
-        for n in nodes:
-            all_keys.update(n.keys())
-        fieldnames = sorted(all_keys)
-
-        writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore")
-        writer.writeheader()
-        for n in nodes:
-            # Ensure all keys exist to avoid KeyError and keep columns aligned
-            row = {k: n.get(k, "") for k in fieldnames}
-            writer.writerow(row)
-        return output.getvalue()
-
-    def export_json(self, nodes: List[Dict]) -> str:
-        """Export nodes to JSON format.
-
-        Args:
-            nodes: List of node dictionaries
-
-        Returns:
-            JSON formatted string
-        """
-        return json.dumps(nodes, indent=2)
-
+# ... (imports remain the same)
 
 # Initialize dashboard data manager path only
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
 
-def create_app(settings=None) -> Flask:
+def get_current_results(app, data_dir: Path) -> Dict[str, Any]:
+    """Load current test results."""
+    current_file = data_dir / "current_results.json"
+    if not current_file.exists():
+        return {"timestamp": None, "total_tested": 0, "successful": 0, "failed": 0, "nodes": []}
+    try:
+        return json.loads(current_file.read_text(encoding="utf-8"))
+    except Exception as e:
+        app.logger.error(f"Error loading current results: {e}")
+        return {"timestamp": None, "nodes": []}
+
+def get_history(app, data_dir: Path, hours: int = 24) -> List[Dict]:
+    """Load historical results."""
+    history_file = data_dir / "history.jsonl"
+    if not history_file.exists():
+        return []
+    cutoff_time = datetime.now() - timedelta(hours=hours)
+    history = []
+    try:
+        with open(history_file, "r", encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                data = json.loads(line)
+                timestamp = datetime.fromisoformat(data["timestamp"])
+                if timestamp >= cutoff_time:
+                    history.append(data)
+    except Exception as e:
+        app.logger.error(f"Error loading history: {e}")
+    return history
+
+def filter_nodes(nodes: List[Dict], filters: dict) -> List[Dict]:
+    """Apply filters to node list."""
+    filtered = nodes
+
+    # Protocol filter
+    if protocol := filters.get("protocol"):
+        filtered = [n for n in filtered if n["protocol"].lower() == protocol.lower()]
+
+    # Country filter
+    if country := filters.get("country"):
+        filtered = [n for n in filtered if n["country"].lower() == country.lower()]
+
+    # Min ping filter
+    if min_ping := filters.get("min_ping"):
+        try:
+            min_val = int(min_ping)
+            filtered = [n for n in filtered if n["ping_ms"] >= min_val]
+        except ValueError:
+            pass
+
+    # Max ping filter
+    if max_ping := filters.get("max_ping"):
+        try:
+            max_val = int(max_ping)
+            filtered = [n for n in filtered if 0 < n["ping_ms"] <= max_val]
+        except ValueError:
+            pass
+
+    # Exclude blocked filter
+    if filters.get("exclude_blocked"):
+        filtered = [n for n in filtered if not n["is_blocked"]]
+
+    # Search term (searches in city, organization, or IP)
+    if search := filters.get("search"):
+        search_lower = search.lower()
+        filtered = [
+            n for n in filtered
+            if search_lower in n.get("city", "").lower()
+            or search_lower in n.get("organization", "").lower()
+            or search_lower in n.get("ip", "")
+        ]
+
+    return filtered
+
+def export_csv(nodes: List[Dict]) -> str:
+    """Export nodes to CSV format."""
+    output = StringIO()
+    if not nodes:
+        return ""
+    all_keys = set()
+    for n in nodes:
+        all_keys.update(n.keys())
+    fieldnames = sorted(all_keys)
+    writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore")
+    writer.writeheader()
+    for n in nodes:
+        row = {k: n.get(k, "") for k in fieldnames}
+        writer.writerow(row)
+    return output.getvalue()
+
+def export_json(nodes: List[Dict]) -> str:
+    """Export nodes to JSON format."""
+    return json.dumps(nodes, indent=2)
+
+def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
     """Create and configure the Flask application."""
     app = Flask(__name__, template_folder="templates", static_folder="static")
 
@@ -206,8 +147,8 @@ def create_app(settings=None) -> Flask:
     csrf.init_app(app)
 
     app.config["settings"] = settings
-    app.config["dashboard_data"] = DashboardData(DATA_DIR)
-    app.config["scheduler"] = TestScheduler(settings, DATA_DIR)
+    app.config["scheduler"] = TestScheduler(settings, data_dir)
+    app.config["data_dir"] = data_dir
 
     def get_sri_map(paths):
         sri = {}

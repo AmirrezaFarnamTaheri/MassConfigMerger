@@ -92,6 +92,17 @@ def run_daemon(daemon: ConfigStreamDaemon, interval_hours: int, web_port: int):
         ))
 
 
+def handle_sources(args: argparse.Namespace, cfg: Settings) -> None:
+    """Handler for the 'sources' command."""
+    sources_file = Path(args.sources_file)
+    if args.sources_command == "list":
+        services.list_sources(sources_file)
+    elif args.sources_command == "add":
+        services.add_new_source(sources_file, args.url)
+    elif args.sources_command == "remove":
+        services.remove_existing_source(sources_file, args.url)
+
+
 def handle_history(args: argparse.Namespace, cfg: Settings):
     """Handle the 'history' command."""
     db_path = Path(cfg.output.output_dir) / "history.db"

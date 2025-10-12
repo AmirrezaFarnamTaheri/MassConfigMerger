@@ -1,98 +1,101 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from flask import Flask
 from configstream.api import api
-from configstream.web_dashboard import DashboardData, TestScheduler
+from configstream.scheduler import TestScheduler
 from configstream.config import Settings
 
 from pathlib import Path
 
 @pytest.fixture
 def client():
-    app = Flask(__name__)
-    app.config["dashboard_data"] = DashboardData(Path("/tmp"))
-    app.config["scheduler"] = TestScheduler(Settings(), Path("/tmp"))
-    app.config["settings"] = Settings()
-    app.register_blueprint(api, url_prefix='/api')
-    with app.test_client() as client:
-        yield client
+    with patch("configstream.api.web_dashboard") as mock_web_dashboard:
+        app = Flask(__name__)
+        app.config["data_dir"] = Path("/tmp")
+        app.config["scheduler"] = TestScheduler(Settings(), Path("/tmp"))
+        app.config["settings"] = Settings()
+        app.register_blueprint(api, url_prefix='/api')
+        with app.test_client() as client:
+            client.application.config["web_dashboard"] = mock_web_dashboard
+            yield client
 
 def test_api_current_success(client):
     """Test the /api/current endpoint with a successful request."""
     mock_data = {"timestamp": "2023-10-27T10:00:00", "nodes": [{"id": 1, "ping_ms": 100}]}
-    with patch.object(client.application.config["dashboard_data"], "get_current_results", return_value=mock_data):
-        response = client.get("/api/current")
-        assert response.status_code == 200
-        assert response.get_json() == mock_data
+    client.application.config["web_dashboard"].get_current_results.return_value = mock_data
+    response = client.get("/api/current")
+    assert response.status_code == 200
+    assert response.get_json() == mock_data
 
 def test_api_current_error(client):
     """Test the /api/current endpoint with an error."""
-    with patch.object(client.application.config["dashboard_data"], "get_current_results", side_effect=Exception("Test error")):
-        response = client.get("/api/current")
-        assert response.status_code == 500
-        assert response.get_json() == {"error": "Test error"}
+    client.application.config["web_dashboard"].get_current_results.side_effect = Exception("Test error")
+    response = client.get("/api/current")
+    assert response.status_code == 500
+    assert response.get_json() == {"error": "Test error"}
 
 def test_api_history_success(client):
     """Test the /api/history endpoint with a successful request."""
     mock_data = [{"id": 1, "ping_ms": 100}]
-    with patch.object(client.application.config["dashboard_data"], "get_history", return_value=mock_data):
-        response = client.get("/api/history")
-        assert response.status_code == 200
-        assert response.get_json() == mock_data
+    client.application.config["web_dashboard"].get_history.return_value = mock_data
+    response = client.get("/api/history")
+    assert response.status_code == 200
+    assert response.get_json() == mock_data
 
 def test_api_history_error(client):
     """Test the /api/history endpoint with an error."""
-    with patch.object(client.application.config["dashboard_data"], "get_history", side_effect=Exception("Test error")):
-        response = client.get("/api/history")
-        assert response.status_code == 500
-        assert response.get_json() == {"error": "Test error"}
+    client.application.config["web_dashboard"].get_history.side_effect = Exception("Test error")
+    response = client.get("/api/history")
+    assert response.status_code == 500
+    assert response.get_json() == {"error": "Test error"}
 
 def test_api_statistics_success(client):
     """Test the /api/statistics endpoint with a successful request."""
     mock_data = {"nodes": [{"id": 1, "ping_ms": 100, "protocol": "VLESS", "country_code": "US"}]}
-    with patch.object(client.application.config["dashboard_data"], "get_current_results", return_value=mock_data):
-        response = client.get("/api/statistics")
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data["total_nodes"] == 1
-        assert data["successful_nodes"] == 1
-        assert data["protocols"]["VLESS"] == 1
-        assert data["countries"]["US"] == 1
+    client.application.config["web_dashboard"].get_current_results.return_value = mock_data
+    response = client.get("/api/statistics")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["total_nodes"] == 1
+    assert data["successful_nodes"] == 1
+    assert data["protocols"]["VLESS"] == 1
+    assert data["countries"]["US"] == 1
 
 def test_api_statistics_error(client):
     """Test the /api/statistics endpoint with an error."""
-    with patch.object(client.application.config["dashboard_data"], "get_current_results", side_effect=Exception("Test error")):
-        response = client.get("/api/statistics")
-        assert response.status_code == 500
-        assert response.get_json() == {"error": "Test error"}
+    client.application.config["web_dashboard"].get_current_results.side_effect = Exception("Test error")
+    response = client.get("/api/statistics")
+    assert response.status_code == 500
+    assert response.get_json() == {"error": "Test error"}
 
 def test_api_export_csv_success(client):
     """Test the /api/export/csv endpoint with a successful request."""
     mock_data = {"nodes": [{"id": 1, "ping_ms": 100, "protocol": "VLESS", "country_code": "US"}]}
-    with patch.object(client.application.config["dashboard_data"], "get_current_results", return_value=mock_data), \
-         patch.object(client.application.config["dashboard_data"], "export_csv", return_value="id,ping_ms\n1,100"):
-        response = client.get("/api/export/csv")
-        assert response.status_code == 200
-        assert response.mimetype == "text/csv"
-        assert response.data == b"id,ping_ms\n1,100"
+    client.application.config["web_dashboard"].get_current_results.return_value = mock_data
+    client.application.config["web_dashboard"].export_csv.return_value = "id,ping_ms\n1,100"
+    client.application.config["web_dashboard"].filter_nodes.return_value = mock_data["nodes"]
+    response = client.get("/api/export/csv")
+    assert response.status_code == 200
+    assert response.mimetype == "text/csv"
+    assert response.data == b"id,ping_ms\n1,100"
 
 def test_api_export_json_success(client):
     """Test the /api/export/json endpoint with a successful request."""
     mock_data = {"nodes": [{"id": 1, "ping_ms": 100, "protocol": "VLESS", "country_code": "US"}]}
-    with patch.object(client.application.config["dashboard_data"], "get_current_results", return_value=mock_data):
-        response = client.get("/api/export/json")
-        assert response.status_code == 200
-        assert response.mimetype == "application/json"
-        data = response.get_json()
-        assert data["count"] == 1
-        assert data["nodes"][0]["id"] == 1
+    client.application.config["web_dashboard"].get_current_results.return_value = mock_data
+    client.application.config["web_dashboard"].filter_nodes.return_value = mock_data["nodes"]
+    client.application.config["web_dashboard"].export_json.return_value = '{"count": 1, "nodes": [{"id": 1, "ping_ms": 100}]}'
+    response = client.get("/api/export/json")
+    assert response.status_code == 200
+    assert response.mimetype == "application/json"
+    assert response.data == b'{"count": 1, "nodes": [{"id": 1, "ping_ms": 100}]}'
 
 def test_api_export_error(client):
     """Test the /api/export endpoint with an error."""
-    with patch.object(client.application.config["dashboard_data"], "get_current_results", side_effect=Exception("Test error")):
-        response = client.get("/api/export/csv")
-        assert response.status_code == 500
-        assert response.get_json() == {"error": "Test error"}
+    client.application.config["web_dashboard"].get_current_results.side_effect = Exception("Test error")
+    response = client.get("/api/export/csv")
+    assert response.status_code == 500
+    assert response.get_json() == {"error": "Test error"}
 
 def test_api_logs_no_key(client):
     """Test the /api/logs endpoint without an API key."""
