@@ -1,105 +1,114 @@
-<!DOCTYPE html>
-<html lang="en" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>History - ConfigStream</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        :root {
-            --header-bg: #1a202c;
-            --body-bg: #2d3748;
-            --card-bg: #4a5568;
-            --text-primary: #e2e8f0;
-            --text-secondary: #a0aec0;
-            --accent-color: #4299e1;
+{% extends "base.html" %}
+
+{% block title %}History - ConfigStream{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <header class="bg-header-bg shadow-lg rounded-lg p-6 mb-8 flex items-center justify-between">
+        <div class="flex items-center">
+            <a href="/" class="flex items-center">
+                <img src="{{ url_for('static', filename='logo.svg') }}" alt="ConfigStream Logo" class="h-12 w-12 mr-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-white">ConfigStream</h1>
+                    <p class="text-text-secondary">Connection History</p>
+                </div>
+            </a>
+        </div>
+    </header>
+    <div class="bg-card-bg shadow-lg rounded-lg p-6">
+        <table class="min-w-full divide-y divide-gray-700">
+            <thead class="bg-header-bg">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Timestamp</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">IP Address</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Protocol</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Ping (ms)</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Status</th>
+                </tr>
+            </thead>
+            <tbody id="history-table-body" class="bg-body-bg divide-y divide-gray-700">
+                <!-- Data will be loaded here by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block head_extra %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tableBody = document.getElementById('history-table-body');
+
+        function renderMessageRow(msg) {
+          const tr = document.createElement('tr');
+          const td = document.createElement('td');
+          td.className = 'px-6 py-4';
+          td.colSpan = 5;
+          td.textContent = msg;
+          tr.appendChild(td);
+          tableBody.innerHTML = '';
+          tableBody.appendChild(tr);
         }
-    </style>
-</head>
-<body class="bg-body-bg text-text-primary">
-    <div class="container mx-auto p-4">
-        <header class="bg-header-bg shadow-lg rounded-lg p-6 mb-8 flex items-center justify-between">
-            <div class="flex items-center">
-                <a href="/" class="flex items-center">
-                    <img src="{{ url_for('static', filename='logo.svg') }}" alt="ConfigStream Logo" class="h-12 w-12 mr-4">
-                    <div>
-                        <h1 class="text-3xl font-bold text-white">ConfigStream</h1>
-                        <p class="text-text-secondary">Connection History</p>
-        document.addEventListener('DOMContentLoaded', function() {
-            const tableBody = document.getElementById('history-table-body');
 
-            function renderMessageRow(msg) {
-              const tr = document.createElement('tr');
-              const td = document.createElement('td');
-              td.className = 'px-6 py-4';
-              td.colSpan = 5;
-              td.textContent = msg;
-              tr.appendChild(td);
-              tableBody.innerHTML = '';
-              tableBody.appendChild(tr);
+        fetch('/api/history')
+          .then(async (response) => {
+            if (!response.ok) {
+              const text = await response.text().catch(() => '');
+              // Do not inject server-provided text into HTML
+              const safeMsg = text && text.length <= 200 ? text : '';
+              throw new Error(safeMsg || `Failed to load history (${response.status})`);
             }
+            return response.json().catch(() => { throw new Error('Invalid JSON from /api/history'); });
+          })
+          .then((data) => {
+            tableBody.innerHTML = '';
+            if (!Array.isArray(data)) {
+              renderMessageRow('Unexpected response format.');
+              return;
+            }
+            const frag = document.createDocumentFragment();
+            data.forEach((item) => {
+              const tr = document.createElement('tr');
 
-            fetch('/api/history')
-              .then(async (response) => {
-                if (!response.ok) {
-                  const text = await response.text().catch(() => '');
-                  // Do not inject server-provided text into HTML
-                  const safeMsg = text && text.length <= 200 ? text : '';
-                  throw new Error(safeMsg || `Failed to load history (${response.status})`);
-                }
-                return response.json().catch(() => { throw new Error('Invalid JSON from /api/history'); });
-              })
-              .then((data) => {
-                tableBody.innerHTML = '';
-                if (!Array.isArray(data)) {
-                  renderMessageRow('Unexpected response format.');
-                  return;
-                }
-                const frag = document.createDocumentFragment();
-                data.forEach((item) => {
-                  const tr = document.createElement('tr');
+              const tdTime = document.createElement('td');
+              tdTime.className = 'px-6 py-4 whitespace-nowrap';
+              const tsVal = item && item.timestamp;
+              const ts = tsVal ? new Date(tsVal) : null;
+              tdTime.textContent = ts && !isNaN(ts.valueOf()) ? ts.toLocaleString() : 'N/A';
+              tr.appendChild(tdTime);
 
-                  const tdTime = document.createElement('td');
-                  tdTime.className = 'px-6 py-4 whitespace-nowrap';
-                  const tsVal = item && item.timestamp;
-                  const ts = tsVal ? new Date(tsVal) : null;
-                  tdTime.textContent = ts && !isNaN(ts.valueOf()) ? ts.toLocaleString() : 'N/A';
-                  tr.appendChild(tdTime);
+              const tdIp = document.createElement('td');
+              tdIp.className = 'px-6 py-4 whitespace-nowrap';
+              tdIp.textContent = item && typeof item.ip === 'string' ? item.ip : 'N/A';
+              tr.appendChild(tdIp);
 
-                  const tdIp = document.createElement('td');
-                  tdIp.className = 'px-6 py-4 whitespace-nowrap';
-                  tdIp.textContent = item && typeof item.ip === 'string' ? item.ip : 'N/A';
-                  tr.appendChild(tdIp);
+              const tdProto = document.createElement('td');
+              tdProto.className = 'px-6 py-4 whitespace-nowrap';
+              tdProto.textContent = item && typeof item.protocol === 'string' ? item.protocol : 'N/A';
+              tr.appendChild(tdProto);
 
-                  const tdProto = document.createElement('td');
-                  tdProto.className = 'px-6 py-4 whitespace-nowrap';
-                  tdProto.textContent = item && typeof item.protocol === 'string' ? item.protocol : 'N/A';
-                  tr.appendChild(tdProto);
+              const tdPing = document.createElement('td');
+              tdPing.className = 'px-6 py-4 whitespace-nowrap';
+              const ping = item && typeof item.ping_ms === 'number' && isFinite(item.ping_ms) && item.ping_ms > 0 ? item.ping_ms : 'N/A';
+              tdPing.textContent = String(ping);
+              tr.appendChild(tdPing);
 
-                  const tdPing = document.createElement('td');
-                  tdPing.className = 'px-6 py-4 whitespace-nowrap';
-                  const ping = item && typeof item.ping_ms === 'number' && isFinite(item.ping_ms) && item.ping_ms > 0 ? item.ping_ms : 'N/A';
-                  tdPing.textContent = String(ping);
-                  tr.appendChild(tdPing);
+              const tdStatus = document.createElement('td');
+              tdStatus.className = 'px-6 py-4 whitespace-nowrap';
+              const badge = document.createElement('span');
+              const success = !!(item && item.test_success);
+              badge.className = `px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+              badge.textContent = success ? 'Success' : 'Failed';
+              tdStatus.appendChild(badge);
+              tr.appendChild(tdStatus);
 
-                  const tdStatus = document.createElement('td');
-                  tdStatus.className = 'px-6 py-4 whitespace-nowrap';
-                  const badge = document.createElement('span');
-                  const success = !!(item && item.test_success);
-                  badge.className = `px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
-                  badge.textContent = success ? 'Success' : 'Failed';
-                  tdStatus.appendChild(badge);
-                  tr.appendChild(tdStatus);
-
-                  frag.appendChild(tr);
-                });
-                tableBody.appendChild(frag);
-              })
-              .catch((err) => {
-                renderMessageRow(`Error loading history: ${err.message || 'Unknown error'}`);
-              });
-        });
-    </script>
-</body>
-</html>
+              frag.appendChild(tr);
+            });
+            tableBody.appendChild(frag);
+          })
+          .catch((err) => {
+            renderMessageRow(`Error loading history: ${err.message || 'Unknown error'}`);
+          });
+    });
+</script>
+{% endblock %}

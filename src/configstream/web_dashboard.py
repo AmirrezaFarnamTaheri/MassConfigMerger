@@ -204,6 +204,18 @@ def create_app(settings=None) -> Flask:
         """Serve the main dashboard page."""
         return render_template("dashboard.html")
 
+    @app.route("/documentation")
+    def documentation():
+        return render_template("documentation.html")
+
+    @app.route("/quick-start")
+    def quick_start():
+        return render_template("quick-start.html")
+
+    @app.route("/roadmap")
+    def roadmap():
+        return render_template("roadmap.html")
+
     @app.route("/analytics")
     def analytics():
         return render_template("analytics.html")

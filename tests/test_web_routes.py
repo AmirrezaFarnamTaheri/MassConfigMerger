@@ -37,6 +37,24 @@ def test_index_route(client):
     assert b"Welcome to ConfigStream" in response.data
 
 
+def test_documentation_route(client):
+    response = client.get("/documentation")
+    assert response.status_code == 200
+    assert b"Documentation" in response.data
+
+
+def test_quick_start_route(client):
+    response = client.get("/quick-start")
+    assert response.status_code == 200
+    assert b"Quick Start" in response.data
+
+
+def test_roadmap_route(client):
+    response = client.get("/roadmap")
+    assert response.status_code == 200
+    assert b"Roadmap" in response.data
+
+
 def test_api_current_with_filters(fs, settings):
     """Test the /api/current endpoint with filters."""
     with patch("configstream.web_dashboard.DashboardData.get_current_results") as mock_get_results, patch(
