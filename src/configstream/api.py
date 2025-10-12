@@ -141,8 +141,8 @@ def api_settings():
         # Here you would typically update the settings file
         # For now, we'll just return a success message
         return jsonify({"message": "Settings updated successfully"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return jsonify({"error": "Invalid JSON"}), 400
 
 @api.route("/backup/create", methods=["POST"])
 def api_backup_create():

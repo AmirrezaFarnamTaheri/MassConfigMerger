@@ -20,7 +20,7 @@ from ..config import Settings
 from ..tester import BlocklistChecker, NodeTester
 from . import config_normalizer
 from .types import ConfigResult
-from ..security.ip_reputation import IPReputationChecker
+from ..security.ip_reputation import IPReputationChecker, ReputationScore
 from ..security.cert_validator import CertificateValidator
 from ..db import Database
 
@@ -80,8 +80,8 @@ class ConfigProcessor:
         self.blocklist_checker = BlocklistChecker(settings)
         self.settings = settings
         self.history_batch: list[tuple[str, bool]] = []
-        self._ip_reputation_checker: IPReputationChecker | None = None
-        self._certificate_validator: CertificateValidator | None = None
+        self._ip_reputation_checker = IPReputationChecker(settings)
+        self._certificate_validator = CertificateValidator()
 
     def filter_configs(
         self, configs: Set[str], *, use_fetch_rules: bool = False
@@ -204,18 +204,6 @@ class ConfigProcessor:
         self, results: List[ConfigResult]
     ) -> List[ConfigResult]:
         """Run security checks on the results."""
-        from ..security.ip_reputation import IPReputationChecker, ReputationScore
-        from ..security.cert_validator import CertificateValidator
-
-        # Lazily initialize and cache security helpers
-        if not hasattr(self, "_ip_reputation_checker") or self._ip_reputation_checker is None:
-            self._ip_reputation_checker = IPReputationChecker(api_keys=self.settings.security.api_keys)
-        if not hasattr(self, "_certificate_validator") or self._certificate_validator is None:
-            self._certificate_validator = CertificateValidator()
-
-        ip_checker = self._ip_reputation_checker
-        cert_validator = self._certificate_validator
-
         async def _check(result: ConfigResult) -> Optional[ConfigResult]:
             """Check a single result for security issues."""
             if not result.is_reachable or not result.host:
@@ -223,26 +211,20 @@ class ConfigProcessor:
                 return result
             try:
                 # Resolve host to IP before reputation checks
-                try:
-                    ip_addr = await self.tester.resolve_host(result.host)
-                except Exception as exc:
-                    logging.debug("Failed to resolve host %s: %s", result.host, exc)
-                    result.is_blocked = False
-                    return result
-
+                ip_addr = await self.tester.resolve_host(result.host)
                 if not ip_addr:
                     result.is_blocked = False
                     return result
 
                 # IP Reputation Check with resolved IP
-                ip_rep = await ip_checker.check_all(ip_addr)
+                ip_rep = await self._ip_reputation_checker.check_all(ip_addr)
                 if ip_rep.score == ReputationScore.MALICIOUS:
                     result.is_blocked = True
                     return None
 
                 # Certificate Validation
                 if result.port == 443:
-                    cert_info = await cert_validator.validate(result.host, result.port)
+                    cert_info = await self._certificate_validator.validate(result.host, result.port)
                     if not cert_info.valid:
                         result.is_blocked = True
                         return None
