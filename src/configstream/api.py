@@ -105,16 +105,22 @@ def api_export(format: str):
 def api_status():
     """API endpoint for system status."""
     try:
-        # System uptime rather than current process uptime
-        uptime_seconds = time.time() - psutil.boot_time()
+        uptime_seconds = max(0, time.time() - psutil.boot_time())
         uptime_str = str(timedelta(seconds=int(uptime_seconds)))
 
-        # Use system-wide CPU percent; interval=None uses last computed or returns instantly
-        cpu_pct = psutil.cpu_percent(interval=None)
+        cpu_pct_raw = psutil.cpu_percent(interval=None)
+        cpu_pct = float(cpu_pct_raw)
+        if not (cpu_pct == cpu_pct) or cpu_pct in (float("inf"), float("-inf")):  # NaN/inf check
+            cpu_pct = 0.0
+        cpu_pct = max(0.0, min(100.0, cpu_pct))
 
         mem = psutil.virtual_memory()
-        mem_total_mb = round(mem.total / (1024 * 1024), 2)
-        mem_used_mb = round(mem.used / (1024 * 1024), 2)
+        mem_total_mb = round(float(mem.total) / (1024 * 1024), 2)
+        mem_used_mb = round(float(mem.used) / (1024 * 1024), 2)
+        mem_percent = float(mem.percent)
+        if not (mem_percent == mem_percent) or mem_percent in (float("inf"), float("-inf")):
+            mem_percent = 0.0
+        mem_percent = max(0.0, min(100.0, mem_percent))
 
         return jsonify({
             "uptime": uptime_str,
@@ -124,7 +130,7 @@ def api_status():
             "memory": {
                 "total_mb": mem_total_mb,
                 "used_mb": mem_used_mb,
-                "percent": mem.percent,
+                "percent": mem_percent,
             }
         })
     except Exception as e:
