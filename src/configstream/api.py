@@ -110,12 +110,13 @@ def api_logs():
     try:
         candidate_path = (base_dir / candidate).resolve() if not candidate.is_absolute() else candidate.resolve()
         base_path = base_dir.resolve()
-        if base_path not in candidate_path.parents and candidate_path != base_path:
+        # Ensure the resolved candidate is strictly within base_dir
+        if base_path not in candidate_path.parents:
             return jsonify({"error": "Invalid log file path"}), 400
     except Exception:
         return jsonify({"error": "Invalid log file path"}), 400
 
-    if not candidate_path.exists():
+    if not candidate_path.exists() or not candidate_path.is_file():
         return jsonify({"logs": []})
     with open(candidate_path, "r", encoding="utf-8") as f:
         logs = f.readlines()
