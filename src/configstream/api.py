@@ -149,11 +149,12 @@ def api_logs():
     # In a real app, this would be the project root.
     # In testing, this will be the root of the fake filesystem.
     root_path = Path(current_app.root_path).parent if not current_app.testing else Path("/")
-
-    if not log_path.is_absolute():
-        log_path = root_path / log_path
-
-    # Security: Prevent path traversal attacks
+        resolved_log_path = log_path.resolve(strict=True)
+        # Always anchor to application base directory
+        app_base = Path(current_app.root_path).parent.resolve(strict=True)
+        try:
+            resolved_log_path.relative_to(app_base)
+        except Exception:
     try:
         resolved_log_path = log_path.resolve(strict=True)
         resolved_root_path = root_path.resolve(strict=True)
