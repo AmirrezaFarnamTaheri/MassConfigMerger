@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ConfigStream{% endblock %}</title>
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}"{% if tailwind_sri %} integrity="{{ tailwind_sri }}" crossorigin="anonymous"{% endif %}>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}?v={{ now().timestamp() }}"{% if tailwind_sri %} integrity="{{ tailwind_sri }}" crossorigin="anonymous"{% endif %}>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}"{% if fontawesome_sri %} integrity="{{ fontawesome_sri }}" crossorigin="anonymous"{% endif %}>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}"{% if styles_sri %} integrity="{{ styles_sri }}" crossorigin="anonymous"{% endif %}>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -42,19 +42,22 @@
                     <i class="fas fa-cog w-6"></i>
                     <span>Settings</span>
                 </a>
-                <div x-data="{ open: false }" class="relative">
-                    <button @click="open = !open" class="nav-link w-full text-left">
-                        <i class="fas fa-book w-6"></i>
-                        <span>Resources</span>
-                        <i class="fas fa-chevron-down ml-auto transition-transform" :class="{ 'rotate-180': open }"></i>
-                    </button>
-                    <div x-show="open" x-transition class="pl-8 bg-gray-100 dark:bg-gray-700">
-                        <a href="/documentation" class="nav-link-sub">Documentation</a>
-                        <a href="/quick-start" class="nav-link-sub">Quick Start</a>
-                        <a href="/api-docs" class="nav-link-sub">API Docs</a>
-                        <a href="/roadmap" class="nav-link-sub">Roadmap</a>
-                    </div>
-                </div>
+                <a href="/documentation" class="nav-link">
+                    <i class="fas fa-book w-6"></i>
+                    <span>Documentation</span>
+                </a>
+                <a href="/quick-start" class="nav-link">
+                    <i class="fas fa-rocket w-6"></i>
+                    <span>Quick Start</span>
+                </a>
+                <a href="/api-docs" class="nav-link">
+                    <i class="fas fa-code w-6"></i>
+                    <span>API Docs</span>
+                </a>
+                <a href="/roadmap" class="nav-link">
+                    <i class="fas fa-map-signs w-6"></i>
+                    <span>Roadmap</span>
+                </a>
                 <a href="https://github.com/amirrezafarnamtaheri/configStream" target="_blank" class="nav-link mt-auto">
                     <i class="fab fa-github w-6"></i>
                     <span>GitHub</span>

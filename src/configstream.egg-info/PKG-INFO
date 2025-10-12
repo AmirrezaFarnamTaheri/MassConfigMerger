@@ -184,7 +184,7 @@ The `sources` command provides a simple way to manage the `sources.txt` file fro
 - Generates subscription files for various clients, including raw text, base64, Clash, and Sing-Box.
 - Creates CSV and JSON reports for analysis.
 - Provides a command-line interface for all fetching, merging, and testing operations.
-- Includes a secured Flask control panel with JSON APIs for history and automation.
+- Includes a modern, user-friendly web interface for monitoring and managing your proxy configurations.
 - Can be automated for periodic runs using the included Docker Compose setup.
 
 ## Table of Contents
@@ -290,24 +290,26 @@ The project defines a couple of [extras](https://packaging.python.org/en/latest/
 
 Install them with `pip install -e .[dev]` or `pip install -e .[web]` as needed.
 
-### Flask Web Interface
+### Web Interface
 
-Install the `web` extras from PyPI:
+The web interface provides a user-friendly way to monitor and manage your proxy configurations. To run the web interface, use the `daemon` command:
+
 ```bash
-pip install configstream[web]
+configstream daemon
 ```
 
-Run the server with:
-```bash
-python -m configstream.web
-```
+This will start the web server, and you can access the dashboard at `http://localhost:8080`.
 
-Navigate to `http://localhost:8080` to use the refreshed control panel. The dashboard exposes the
-latest proxy health metrics, provides quick links to reports and Prometheus metrics, and drives the
-`POST /api/aggregate` and `POST /api/merge` endpoints for background processing. If you set
-`security.web_api_token` in `config.yaml` the token must be supplied via the dashboard input field
-or an `X-API-Key` header when calling the endpoints directly. Historical proxy results are also
-available as JSON from `GET /api/history` for programmatic integrations.
+The web interface includes the following pages:
+
+- **Dashboard:** Displays a summary of your proxy configurations, including the total number of nodes, the number of successful connections, the average ping, and the number of countries. You can also filter and sort the nodes by various criteria.
+- **Export:** Allows you to export your proxy configurations in various formats, including CSV, JSON, raw text, and base64.
+- **System:** Shows the status of the application, including the scheduler jobs, system uptime, and logs.
+- **Settings:** Displays the current application settings.
+- **Documentation:** Provides detailed documentation on how to use ConfigStream.
+- **Quick Start:** A guide to getting started with ConfigStream.
+- **API Docs:** Documentation for the ConfigStream API.
+- **Roadmap:** The project roadmap.
 
 ### Proxy Configuration
 

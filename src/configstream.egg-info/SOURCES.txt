@@ -110,5 +110,6 @@ tests/test_vmess_parser.py
 tests/test_vpn_merger.py
 tests/test_vpn_retester.py
 tests/test_web_dashboard.py
+tests/test_web_data.py
 tests/test_web_routes.py
 tests/test_web_utils.py
