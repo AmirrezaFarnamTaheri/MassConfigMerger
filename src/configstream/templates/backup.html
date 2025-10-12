@@ -1,129 +1,112 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backup & Restore - ConfigStream</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --header-bg: #1a202c;
+            --body-bg: #2d3748;
+            --card-bg: #4a5568;
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0aec0;
+            --accent-color: #4299e1;
+            --success-color: #38a169;
+            --danger-color: #e53e3e;
+        }
+    </style>
+</head>
+<body class="bg-body-bg text-text-primary">
+    <div class="container mx-auto p-4">
+        <header class="bg-header-bg shadow-lg rounded-lg p-6 mb-8 flex items-center justify-between">
+            <div class="flex items-center">
+                <a href="/" class="flex items-center">
+                    <img src="{{ url_for('static', filename='logo.svg') }}" alt="ConfigStream Logo" class="h-12 w-12 mr-4">
+                    <div>
+                        <h1 class="text-3xl font-bold text-white">ConfigStream</h1>
+                        <p class="text-text-secondary">Backup & Restore</p>
+                    </div>
+                </a>
+            </div>
+            <nav class="flex items-center space-x-4">
+                <a href="/" class="text-text-secondary hover:text-white">Dashboard</a>
+                <a href="/history" class="text-text-secondary hover:text-white">History</a>
+                <a href="/settings" class="text-text-secondary hover:text-white">Settings</a>
+            </nav>
+        </header>
 
-{% block title %}Backup & Restore - ConfigStream{% endblock %}
+        <main class="space-y-8">
+            <div class="bg-card-bg p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold mb-4">Create Backup</h2>
+                <p class="text-text-secondary mb-4">Create a new backup of your settings and data.</p>
+                <button id="create-backup-btn" class="bg-accent-color hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md flex items-center">
+                    <i class="fas fa-plus-circle mr-2"></i>
+                    Create New Backup
+                </button>
+            </div>
 
-{% block content %}
-<div class="card">
-    <h2>
-        <div class="card-icon">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
-            </svg>
-        </div>
-        Backup & Restore
-    </h2>
-    <p style="color: #64748b; margin-bottom: 2rem;">
-        Export your application data (config, sources, history) to a zip file, or import it from a previous backup.
-    </p>
+            <div class="bg-card-bg p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold mb-4">Restore from Backup</h2>
+                <p class="text-text-secondary mb-4">Restore your settings and data from a previous backup.</p>
+                <div class="flex items-center space-x-4">
+                    <select id="backup-select" class="bg-header-bg border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-accent-color">
+                        <option>backup-2025-10-11.zip</option>
+                        <option>backup-2025-10-10.zip</option>
+                    </select>
+                    <button id="restore-backup-btn" class="bg-success-color hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md flex items-center">
+                        <i class="fas fa-undo mr-2"></i>
+                        Restore Selected
+                    </button>
+                </div>
+            </div>
 
-    <div class="backup-actions">
-        <div class="action-section">
-            <h3>Export Backup</h3>
-            <p>Download a zip archive of your current settings and data.</p>
-            <a href="/api/export-backup" class="action-btn">Export Data</a>
-        </div>
-        <div class="action-section">
-            <h3>Import Backup</h3>
-            <p>Upload a zip archive to restore your application data.</p>
-            <form id="import-form" enctype="multipart/form-data">
-                <input type="file" id="backup-file" name="backup_file" accept=".zip">
-                <button type="submit" class="action-btn">Import Data</button>
-            </form>
-        </div>
+            <div class="bg-card-bg p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold mb-4">Manage Backups</h2>
+                <p class="text-text-secondary mb-4">Download or delete existing backups.</p>
+                <ul id="backup-list" class="space-y-2">
+                    <li class="flex items-center justify-between bg-header-bg p-3 rounded-md">
+                        <span>backup-2025-10-11.zip</span>
+                        <div class="space-x-2">
+                            <button class="text-accent-color hover:text-white"><i class="fas fa-download"></i></button>
+                            <button class="text-danger-color hover:text-white"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </li>
+                    <li class="flex items-center justify-between bg-header-bg p-3 rounded-md">
+                        <span>backup-2025-10-10.zip</span>
+                        <div class="space-x-2">
+                            <button class="text-accent-color hover:text-white"><i class="fas fa-download"></i></button>
+                            <button class="text-danger-color hover:text-white"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </main>
     </div>
-</div>
-<script>
-    const importForm = document.getElementById('import-form');
-    importForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const fileInput = document.getElementById('backup-file');
-        const file = fileInput.files && fileInput.files[0];
-
-        if (!file) {
-            alert('Please select a file to upload.');
-            return;
-        }
-        const nameLower = (file.name || '').toLowerCase();
-        const hasZipExt = nameLower.endsWith('.zip');
-        const looksDoubleExt = /\.(zip)\.[^.\s]+$/.test(nameLower); // e.g., .zip.exe
-        const typeLower = (file.type || '').toLowerCase() || '';
-        const zipTypes = new Set(['application/zip', 'application/x-zip-compressed', 'application/x-zip', 'multipart/x-zip']);
-        const hasZipMime = zipTypes.has(typeLower);
-        const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50MB client hint
-        if (file.size > MAX_SIZE_BYTES) {
-          alert('Backup file is too large.');
-          return;
-        }
-        // Require .zip extension on client to reduce accidents; server must still validate type and content.
-        if (looksDoubleExt || !hasZipExt) {
-          alert('Please select a valid .zip backup file.');
-          return;
-        }
-        // Note: MIME types can be missing/spoofed; server-side validation is authoritative.
-
-        const formData = new FormData();
-        formData.append('backup_file', file);
-
-        try {
-            const response = await fetch('/api/import-backup', {
+    <script>
+        document.getElementById('create-backup-btn').addEventListener('click', function() {
+            fetch('/api/backup/create', {
                 method: 'POST',
-                body: formData
+            }).then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                // a full implementation would refresh the backup list here
             });
+        });
 
-            if (!response.ok) {
-                const errText = await response.text().catch(() => '');
-                throw new Error(errText || `Import failed with status ${response.status}`);
-            }
-
-            const result = await response.json().catch(() => {
-                throw new Error('Invalid JSON response from server.');
+        document.getElementById('restore-backup-btn').addEventListener('click', function() {
+            const selectedBackup = document.getElementById('backup-select').value;
+            fetch('/api/backup/restore', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename: selectedBackup })
+            }).then(response => response.json())
+            .then(data => {
+                alert(data.message);
             });
-
-            alert(result.message || 'Import completed.');
-            window.location.reload();
-        } catch (err) {
-            console.error('Failed to import backup:', err);
-            alert('Error: ' + (err && err.message ? err.message : 'Unknown error'));
-        }
-    });
-</script>
-<style>
-    .backup-actions {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 2rem;
-        margin-top: 2rem;
-    }
-    .action-section {
-        background: #f8fafc;
-        padding: 2rem;
-        border-radius: 12px;
-        border: 1px solid #e2e8f0;
-    }
-    .action-section h3 {
-        margin-bottom: 0.5rem;
-    }
-    .action-section p {
-        color: #64748b;
-        margin-bottom: 1.5rem;
-    }
-    .action-btn {
-        display: inline-block;
-        text-align: center;
-        padding: 0.875rem 1.5rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        text-decoration: none;
-        border: none;
-        border-radius: 10px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-    #import-form {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-</style>
-{% endblock %}
+        });
+    </script>
+</body>
+</html>

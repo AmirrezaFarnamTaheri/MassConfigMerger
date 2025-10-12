@@ -1,164 +1,105 @@
-{% extends "base.html" %}
-
-{% block title %}Proxy History - ConfigStream{% endblock %}
-
-{% block content %}
-<div class="card">
-    <h2>
-        <div class="card-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
-        </div>
-        Complete Proxy History
-    </h2>
-
-    <div class="summary-grid">
-        <div class="summary-pill"><span>Total Tracked</span><strong>{{ summary.total }}</strong></div>
-        <div class="summary-pill"><span>Healthy</span><strong>{{ summary.healthy }}</strong></div>
-        <div class="summary-pill"><span>Critical</span><strong>{{ summary.critical }}</strong></div>
-        <div class="summary-pill"><span>Untested</span><strong>{{ summary.untested }}</strong></div>
-    </div>
-
-    <div class="table-toolbar">
-        <input type="text" id="searchInput" placeholder="Filter by keyword, country, ISP...">
-    </div>
-
-    <div class="table-container">
-        <table aria-label="Complete proxy history" id="historyTable">
-            <thead>
-                <tr>
-                    <th scope="col">Proxy</th>
-                    <th scope="col">Successes</th>
-                    <th scope="col">Failures</th>
-                    <th scope="col">Success Rate</th>
-                    <th scope="col">Tests</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Last Tested (UTC)</th>
-                </tr>
-            </thead>
-            <tbody id="historyTableBody">
-                {% if entries %}
-                    {% for entry in entries %}
-                    <tr>
-                        <td>
-                            <strong>{{ entry.key | e }}</strong>
-                            <div class="geo-info">
-                                {% if entry.country %}{{ entry.country | e }}{% endif %}{% if entry.isp %} · {{ entry.isp | e }}{% endif %}
-                            </div>
-                        </td>
-                        <td>{{ entry.successes }}</td>
-                        <td>{{ entry.failures }}</td>
-                        <td>
-                          {% set rp = entry.reliability_percent %}
-                          {% set rp_float = (rp | float(default=None)) %}
-                          {% if rp_float is not none and rp_float == rp_float and rp_float != float('inf') and rp_float != -float('inf') %}
-                            {{ '%.2f'|format(rp_float) }}%
-                          {% else %}
-                            N/A
-                          {% endif %}
-                        </td>
-                        <td>{{ entry.tests }}</td>
-                        <td><span class="status-badge {{ entry.status_class }}">{{ entry.status | e }}</span></td>
-                        <td>{{ entry.last_tested | e }}</td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr><td colspan="7" class="empty-cell">No proxy history recorded yet.</td></tr>
-                {% endif %}
-            </tbody>
-        </table>
-    </div>
-</div>
-<script>
-    const searchInput = document.getElementById('searchInput');
-    const tableBody = document.getElementById('historyTableBody');
-    const rows = tableBody.getElementsByTagName('tr');
-
-    searchInput.addEventListener('keyup', function() {
-        const filter = searchInput.value.toLowerCase();
-        for (let i = 0; i < rows.length; i++) {
-            const rowText = rows[i].textContent.toLowerCase();
-            rows[i].style.display = rowText.includes(filter) ? '' : 'none';
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History - ConfigStream</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --header-bg: #1a202c;
+            --body-bg: #2d3748;
+            --card-bg: #4a5568;
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0aec0;
+            --accent-color: #4299e1;
         }
-    });
-</script>
-<style>
-    .summary-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-    .summary-pill {
-        background-color: #f8fafc;
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 1rem;
-        text-align: center;
-    }
-    .summary-pill span {
-        display: block;
-        font-size: 0.875rem;
-        color: var(--subtle-text-color);
-        margin-bottom: 0.25rem;
-    }
-    .summary-pill strong {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--heading-color);
-    }
-    .table-toolbar {
-        margin-bottom: 1.5rem;
-    }
-    #searchInput {
-        width: 100%;
-        padding: 0.75rem 1.25rem;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        font-size: 1rem;
-        transition: all 0.2s ease;
-    }
-    #searchInput:focus {
-        outline: none; border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-    }
-    .table-container {
-        width: 100%;
-        overflow-x: auto;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    th, td {
-        padding: 1rem 1.25rem;
-        text-align: left;
-        border-bottom: 1px solid var(--border-color);
-        white-space: nowrap;
-    }
-    th {
-        font-weight: 500;
-        font-size: 0.875rem;
-        color: var(--subtle-text-color);
-        text-transform: uppercase;
-    }
-    tbody tr:hover {
-        background-color: #f8fafc;
-    }
-    .geo-info {
-        font-size: 0.8rem;
-        color: var(--subtle-text-color);
-    }
-    .status-badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 9999px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-    .status-healthy { background-color: #dcfce7; color: #166534; }
-    .status-warning { background-color: #fef3c7; color: #92400e; }
-    .status-critical { background-color: #fee2e2; color: #991b1b; }
-    .status-untested { background-color: #f1f5f9; color: #475569; }
-    .empty-cell { text-align: center; padding: 3rem; color: var(--subtle-text-color); }
-</style>
-{% endblock %}
+    </style>
+</head>
+<body class="bg-body-bg text-text-primary">
+    <div class="container mx-auto p-4">
+        <header class="bg-header-bg shadow-lg rounded-lg p-6 mb-8 flex items-center justify-between">
+            <div class="flex items-center">
+                <a href="/" class="flex items-center">
+                    <img src="{{ url_for('static', filename='logo.svg') }}" alt="ConfigStream Logo" class="h-12 w-12 mr-4">
+                    <div>
+                        <h1 class="text-3xl font-bold text-white">ConfigStream</h1>
+                        <p class="text-text-secondary">Connection History</p>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tableBody = document.getElementById('history-table-body');
+
+            function renderMessageRow(msg) {
+              const tr = document.createElement('tr');
+              const td = document.createElement('td');
+              td.className = 'px-6 py-4';
+              td.colSpan = 5;
+              td.textContent = msg;
+              tr.appendChild(td);
+              tableBody.innerHTML = '';
+              tableBody.appendChild(tr);
+            }
+
+            fetch('/api/history')
+              .then(async (response) => {
+                if (!response.ok) {
+                  const text = await response.text().catch(() => '');
+                  // Do not inject server-provided text into HTML
+                  const safeMsg = text && text.length <= 200 ? text : '';
+                  throw new Error(safeMsg || `Failed to load history (${response.status})`);
+                }
+                return response.json().catch(() => { throw new Error('Invalid JSON from /api/history'); });
+              })
+              .then((data) => {
+                tableBody.innerHTML = '';
+                if (!Array.isArray(data)) {
+                  renderMessageRow('Unexpected response format.');
+                  return;
+                }
+                const frag = document.createDocumentFragment();
+                data.forEach((item) => {
+                  const tr = document.createElement('tr');
+
+                  const tdTime = document.createElement('td');
+                  tdTime.className = 'px-6 py-4 whitespace-nowrap';
+                  const tsVal = item && item.timestamp;
+                  const ts = tsVal ? new Date(tsVal) : null;
+                  tdTime.textContent = ts && !isNaN(ts.valueOf()) ? ts.toLocaleString() : 'N/A';
+                  tr.appendChild(tdTime);
+
+                  const tdIp = document.createElement('td');
+                  tdIp.className = 'px-6 py-4 whitespace-nowrap';
+                  tdIp.textContent = item && typeof item.ip === 'string' ? item.ip : 'N/A';
+                  tr.appendChild(tdIp);
+
+                  const tdProto = document.createElement('td');
+                  tdProto.className = 'px-6 py-4 whitespace-nowrap';
+                  tdProto.textContent = item && typeof item.protocol === 'string' ? item.protocol : 'N/A';
+                  tr.appendChild(tdProto);
+
+                  const tdPing = document.createElement('td');
+                  tdPing.className = 'px-6 py-4 whitespace-nowrap';
+                  const ping = item && typeof item.ping_ms === 'number' && isFinite(item.ping_ms) && item.ping_ms > 0 ? item.ping_ms : 'N/A';
+                  tdPing.textContent = String(ping);
+                  tr.appendChild(tdPing);
+
+                  const tdStatus = document.createElement('td');
+                  tdStatus.className = 'px-6 py-4 whitespace-nowrap';
+                  const badge = document.createElement('span');
+                  const success = !!(item && item.test_success);
+                  badge.className = `px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+                  badge.textContent = success ? 'Success' : 'Failed';
+                  tdStatus.appendChild(badge);
+                  tr.appendChild(tdStatus);
+
+                  frag.appendChild(tr);
+                });
+                tableBody.appendChild(frag);
+              })
+              .catch((err) => {
+                renderMessageRow(`Error loading history: ${err.message || 'Unknown error'}`);
+              });
+        });
+    </script>
+</body>
+</html>

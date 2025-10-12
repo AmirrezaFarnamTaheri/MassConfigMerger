@@ -1,11 +1,19 @@
 import pytest
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, AsyncMock, MagicMock
 from configstream.security.ip_reputation import IPReputationChecker, ReputationScore, ReputationResult
+from configstream.config import Settings, SecuritySettings
+
+@pytest.fixture
+def mock_settings():
+    """Fixture for a mock Settings object."""
+    settings = Settings()
+    settings.security = SecuritySettings(api_keys={"abuseipdb": "test", "ipqualityscore": "test"})
+    return settings
 
 @pytest.mark.asyncio
-async def test_check_all_services():
+async def test_check_all_services(mock_settings):
     """Test checking all IP reputation services."""
-    checker = IPReputationChecker(api_keys={"abuseipdb": "test", "ipqualityscore": "test"})
+    checker = IPReputationChecker(mock_settings)
     with patch.object(checker, "check_abuseipdb", new_callable=AsyncMock) as mock_abuseipdb, \
          patch.object(checker, "check_ipapi", new_callable=AsyncMock) as mock_ipapi, \
          patch.object(checker, "check_ipqualityscore", new_callable=AsyncMock) as mock_ipqualityscore:
@@ -23,9 +31,9 @@ async def test_check_all_services():
 
 
 @pytest.mark.asyncio
-async def test_check_all_services_clean():
+async def test_check_all_services_clean(mock_settings):
     """Test checking all IP reputation services with a clean IP."""
-    checker = IPReputationChecker(api_keys={"abuseipdb": "test", "ipqualityscore": "test"})
+    checker = IPReputationChecker(mock_settings)
     with patch.object(checker, "check_abuseipdb", new_callable=AsyncMock) as mock_abuseipdb, \
          patch.object(checker, "check_ipapi", new_callable=AsyncMock) as mock_ipapi, \
          patch.object(checker, "check_ipqualityscore", new_callable=AsyncMock) as mock_ipqualityscore:
@@ -40,9 +48,9 @@ async def test_check_all_services_clean():
 
 
 @pytest.mark.asyncio
-async def test_check_all_services_suspicious():
+async def test_check_all_services_suspicious(mock_settings):
     """Test checking all IP reputation services with a suspicious IP."""
-    checker = IPReputationChecker(api_keys={"abuseipdb": "test", "ipqualityscore": "test"})
+    checker = IPReputationChecker(mock_settings)
     with patch.object(checker, "check_abuseipdb", new_callable=AsyncMock) as mock_abuseipdb, \
          patch.object(checker, "check_ipapi", new_callable=AsyncMock) as mock_ipapi, \
          patch.object(checker, "check_ipqualityscore", new_callable=AsyncMock) as mock_ipqualityscore:
@@ -54,3 +62,50 @@ async def test_check_all_services_suspicious():
         result = await checker.check_all("1.2.3.4")
 
         assert result.score == ReputationScore.SUSPICIOUS
+
+
+@pytest.mark.asyncio
+@patch("aiohttp.ClientSession.get")
+async def test_check_abuseipdb_success(mock_get, mock_settings):
+    """Test AbuseIPDB check with a successful API call."""
+    mock_response = AsyncMock()
+    mock_response.status = 200
+    mock_response.json.return_value = {"data": {"abuseConfidenceScore": 50}}
+    mock_get.return_value.__aenter__.return_value = mock_response
+
+    checker = IPReputationChecker(mock_settings)
+    result = await checker.check_abuseipdb("1.1.1.1")
+
+    assert result["abuseConfidenceScore"] == 50
+
+
+@pytest.mark.asyncio
+async def test_check_ipqualityscore_no_key():
+    """Test IPQualityScore check when no API key is provided."""
+    settings = Settings()
+    settings.security = SecuritySettings(api_keys={})
+    checker = IPReputationChecker(settings)
+    result = await checker.check_ipqualityscore("1.1.1.1")
+    assert "No API key configured" in result["error"]
+
+
+@pytest.mark.asyncio
+@patch("aiohttp.ClientSession.get")
+async def test_check_ipapi_failure(mock_get, mock_settings):
+    """Test ip-api check with a failed API call."""
+    mock_response = AsyncMock()
+    mock_response.status = 500
+    mock_get.return_value.__aenter__.return_value = mock_response
+
+    checker = IPReputationChecker(mock_settings)
+    result = await checker.check_ipapi("1.1.1.1")
+
+    assert "HTTP 500" in result["error"]
+
+
+def test_ip_masking(mock_settings):
+    """Test the IP masking logic."""
+    checker = IPReputationChecker(mock_settings)
+    assert checker._mask_ip("192.168.1.100") == "192.168.1.x"
+    assert checker._mask_ip("2001:0db8:85a3:0000:0000:8a2e:0370:7334") == "2001:0db8:85a3:0000:0000:8a2e:0370:xxxx"
+    assert checker._mask_ip("invalid-ip") == "x.x.x.x"

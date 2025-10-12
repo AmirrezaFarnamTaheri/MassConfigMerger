@@ -49,7 +49,7 @@ class TestScheduler:
             await self.db_manager.initialize()
 
             # Run the merger pipeline
-            results = await run_merger(self.settings)
+            results = await run_merger(self.settings, Path(self.settings.sources.sources_file))
 
             # Prepare data for storage
             test_data = {
@@ -82,8 +82,8 @@ class TestScheduler:
 
             # Save current results (overwrite)
             self.current_results_file.write_text(
-                json.dumps(test_data, indent=2),
-                encoding="utf-8")
+                json.dumps(test_data, indent=2), encoding="utf-8"
+            )
 
             # Append to history (for historical tracking)
             with _history_lock:

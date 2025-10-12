@@ -34,7 +34,7 @@ def test_index_route(client):
     """Test the index route."""
     response = client.get("/")
     assert response.status_code == 200
-    assert b"ConfigStream Dashboard" in response.data
+    assert b"Welcome to ConfigStream" in response.data
 
 
 def test_api_current_with_filters(fs, settings):
@@ -64,10 +64,10 @@ def test_api_statistics(fs, settings):
     with patch("configstream.web_dashboard.DashboardData.get_current_results") as mock_get_results:
         mock_get_results.return_value = {
             "nodes": [
-                    {"protocol": "vless", "country": "US", "ping_ms": 100},
-                    {"protocol": "vless", "country": "DE", "ping_ms": 200},
-                    {"protocol": "ss", "country": "US", "ping_ms": 150},
-                    {"protocol": "vless", "country": "US", "ping_ms": -1},
+                    {"protocol": "vless", "country_code": "US", "ping_ms": 100},
+                    {"protocol": "vless", "country_code": "DE", "ping_ms": 200},
+                    {"protocol": "ss", "country_code": "US", "ping_ms": 150},
+                    {"protocol": "vless", "country_code": "US", "ping_ms": -1},
             ]
         }
 
