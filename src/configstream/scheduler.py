@@ -82,8 +82,7 @@ class TestScheduler:
 
             # Save current results (overwrite)
             self.current_results_file.write_text(
-                json.dumps(test_data, indent=2), encoding="utf-8"
-            )
+                json.dumps(test_data, indent=2), encoding="utf-8")
 
             # Append to history (for historical tracking)
             with _history_lock:
@@ -92,8 +91,10 @@ class TestScheduler:
                     f.flush()
                     os.fsync(f.fileno())
 
-            logger.info(f"Test cycle completed: {test_data['successful']} successful, "
-                       f"{test_data['failed']} failed")
+            logger.info(
+                f"Test cycle completed: {test_data['successful']} successful, "
+                f"{test_data['failed']} failed"
+            )
 
         except Exception as e:
             logger.error(f"Error during test cycle: {e}", exc_info=True)

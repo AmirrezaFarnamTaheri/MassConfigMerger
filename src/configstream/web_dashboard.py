@@ -10,10 +10,15 @@ from typing import Any, Dict, List
 import logging
 
 from flask import Flask, render_template
+from flask_wtf.csrf import CSRFProtect
+import base64
+import hashlib
 
 from .config import load_config
 from .scheduler import TestScheduler
 from .api import api
+
+csrf = CSRFProtect()
 
 logger = logging.getLogger(__name__)
 
@@ -188,9 +193,29 @@ def create_app(settings=None) -> Flask:
     if not settings:
         settings = load_config()
 
+    app.config["SECRET_KEY"] = settings.security.secret_key or "a-very-secret-key"
+    csrf.init_app(app)
+
     app.config["settings"] = settings
     app.config["dashboard_data"] = DashboardData(DATA_DIR)
     app.config["scheduler"] = TestScheduler(settings, DATA_DIR)
+
+    def get_sri(path):
+        static_file_path = Path(app.static_folder) / path
+        if not static_file_path.exists():
+            return ""
+        with open(static_file_path, "rb") as f:
+            file_bytes = f.read()
+            hashed = hashlib.sha384(file_bytes).digest()
+            return "sha384-" + base64.b64encode(hashed).decode()
+
+    @app.context_processor
+    def inject_sri():
+        return {
+            "tailwind_sri": get_sri("css/tailwind-3.4.3.min.css"),
+            "fontawesome_sri": get_sri("css/all.min.css"),
+            "styles_sri": get_sri("css/styles.css"),
+        }
 
     app.register_blueprint(api, url_prefix='/api')
 
@@ -241,7 +266,7 @@ def create_app(settings=None) -> Flask:
         return render_template("report.html")
 
     @app.route("/scheduler")
-    def scheduler_page():
+    def scheduler():
         return render_template("scheduler.html")
 
     @app.route("/settings")
@@ -263,6 +288,10 @@ def create_app(settings=None) -> Flask:
     @app.route("/testing")
     def testing():
         return render_template("testing.html")
+
+    @app.route("/api-docs")
+    def api_docs():
+        return render_template("api-docs.html")
 
     return app
 

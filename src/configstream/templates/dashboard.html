@@ -89,6 +89,16 @@
 {% endblock %}
 
 {% block head_extra %}
+<style>
+  .loader {
+    border-top-color: var(--accent-color);
+    animation: spinner 1.5s linear infinite;
+  }
+  @keyframes spinner {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+</style>
 <script>
     let currentData = null;
     let currentFilters = {};

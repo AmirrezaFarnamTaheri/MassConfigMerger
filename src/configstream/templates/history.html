@@ -89,8 +89,8 @@
 
               const tdPing = document.createElement('td');
               tdPing.className = 'px-6 py-4 whitespace-nowrap';
-              const ping = item && typeof item.ping_ms === 'number' && isFinite(item.ping_ms) && item.ping_ms > 0 ? item.ping_ms : 'N/A';
-              tdPing.textContent = String(ping);
+              const ping = item && typeof item.ping_ms === 'number' && isFinite(item.ping_ms) && item.ping_ms >= 0 ? item.ping_ms : 'N/A';
+              tdPing.textContent = ping === 'N/A' ? 'N/A' : `${ping} ms`;
               tr.appendChild(tdPing);
 
               const tdStatus = document.createElement('td');

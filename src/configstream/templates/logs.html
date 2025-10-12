@@ -27,8 +27,8 @@
             .then(response => response.json())
             .then(data => {
                 const logContent = document.getElementById('log-content');
-                if (data.logs) {
-                    logContent.textContent = data.logs.join('\\n');
+                if (Array.isArray(data.logs) && data.logs.length > 0) {
+                    logContent.textContent = data.logs.join('');
                 } else {
                     logContent.textContent = 'No logs available.';
                 }

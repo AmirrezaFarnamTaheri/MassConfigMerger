@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ConfigStream{% endblock %}</title>
-    <script src="https://cdn.tailwindcss.com/3.4.3"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind-3.4.3.min.css') }}" integrity="{{ tailwind_sri }}" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}" integrity="{{ fontawesome_sri }}" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" integrity="{{ styles_sri }}" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     {% block head_extra %}{% endblock %}
 </head>
 <body class="bg-body-bg text-text-primary">
@@ -38,26 +39,35 @@
                     <i class="fas fa-save w-6 text-center"></i>
                     <span class="ml-3">Backup</span>
                 </a>
-                 <a href="/api-docs" class="flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
-                    <i class="fas fa-book w-6 text-center"></i>
-                    <span class="ml-3">API Docs</span>
-                </a>
-                <a href="/documentation" class="flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
-                    <i class="fas fa-file-alt w-6 text-center"></i>
-                    <span class="ml-3">Documentation</span>
-                </a>
-                <a href="/quick-start" class="flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
-                    <i class="fas fa-rocket w-6 text-center"></i>
-                    <span class="ml-3">Quick Start</span>
-                </a>
-                <a href="/roadmap" class="flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
-                    <i class="fas fa-road w-6 text-center"></i>
-                    <span class="ml-3">Roadmap</span>
-                </a>
-                <a href="/help" class="flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
-                    <i class="fas fa-question-circle w-6 text-center"></i>
-                    <span class="ml-3">Help</span>
-                </a>
+                <div x-data="{ open: false }">
+                    <button @click="open = !open" class="w-full flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
+                        <i class="fas fa-info-circle w-6 text-center"></i>
+                        <span class="ml-3">Resources</span>
+                        <i class="fas fa-chevron-down ml-auto transition-transform" :class="{ 'rotate-180': open }"></i>
+                    </button>
+                    <div x-show="open" x-transition class="pl-8">
+                        <a href="/api-docs" class="flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
+                            <i class="fas fa-book w-6 text-center"></i>
+                            <span class="ml-3">API Docs</span>
+                        </a>
+                        <a href="/documentation" class="flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
+                            <i class="fas fa-file-alt w-6 text-center"></i>
+                            <span class="ml-3">Documentation</span>
+                        </a>
+                        <a href="/quick-start" class="flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
+                            <i class="fas fa-rocket w-6 text-center"></i>
+                            <span class="ml-3">Quick Start</span>
+                        </a>
+                        <a href="/roadmap" class="flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
+                            <i class="fas fa-road w-6 text-center"></i>
+                            <span class="ml-3">Roadmap</span>
+                        </a>
+                        <a href="/help" class="flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
+                            <i class="fas fa-question-circle w-6 text-center"></i>
+                            <span class="ml-3">Help</span>
+                        </a>
+                    </div>
+                </div>
                 <a href="/logs" class="flex items-center px-4 py-2 text-text-secondary hover:bg-card-bg hover:text-white rounded-md m-2">
                     <i class="fas fa-clipboard-list w-6 text-center"></i>
                     <span class="ml-3">Logs</span>
