@@ -59,21 +59,41 @@
     </div>
     <script>
         document.getElementById('settings-form').addEventListener('submit', function(event) {
-            event.preventDefault();
-            const formData = new FormData(event.target);
-            const data = Object.fromEntries(formData.entries());
+          event.preventDefault();
+          const formData = new FormData(event.target);
+          const raw = Object.fromEntries(formData.entries());
 
-            fetch('/api/settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            }).then(response => {
-                if (response.ok) {
-                    alert('Settings saved successfully!');
-                } else {
-                    alert('Failed to save settings.');
-                }
-            });
+          // Basic client-side validation and coercion
+          const concurrentLimit = Number(raw.concurrent_limit);
+          const requestTimeout = Number(raw.request_timeout);
+          if (!Number.isFinite(concurrentLimit) || concurrentLimit <= 0) {
+            alert('Concurrent Limit must be a positive number.');
+            return;
+          }
+          if (!Number.isFinite(requestTimeout) || requestTimeout <= 0) {
+            alert('Request Timeout must be a positive number.');
+            return;
+          }
+
+          const payload = {
+            concurrent_limit: concurrentLimit,
+            request_timeout: requestTimeout
+          };
+
+          fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          }).then(async (response) => {
+            if (response.ok) {
+              alert('Settings saved successfully!');
+              return;
+            }
+            const msg = await response.text().catch(() => '');
+            alert(msg || 'Failed to save settings.');
+          }).catch((err) => {
+            alert('Network error: ' + (err && err.message ? err.message : 'Unknown error'));
+          });
         });
     </script>
 </body>
