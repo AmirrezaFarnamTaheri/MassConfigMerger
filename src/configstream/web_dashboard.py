@@ -170,7 +170,7 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
             "fontawesome_sri": "css/all.min.css",
             "styles_sri": "css/styles.css",
         })
-        return sri
+        return {**sri, 'now': datetime.utcnow}
 
     app.register_blueprint(api, url_prefix='/api')
 
@@ -206,7 +206,8 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
     @app.route("/settings")
     def settings_page():
         settings = current_app.config["settings"]
-        return render_template("settings.html", settings=settings.model_dump())
+        settings_dict = json.loads(settings.model_dump_json())
+        return render_template("settings.html", settings=settings_dict)
 
     @app.route("/sources")
     def sources():

@@ -311,6 +311,9 @@ class Settings(BaseSettings):
     processing: ProcessingSettings = Field(default_factory=ProcessingSettings)
     security: SecuritySettings = Field(default_factory=SecuritySettings)
     sources: SourcesSettings = Field(default_factory=SourcesSettings)
+    data_dir: Path = Field(
+        Path("data"), description="Directory to store application data."
+    )
 
     config_file: Optional[Path] = Field(default=None, exclude=True)
 

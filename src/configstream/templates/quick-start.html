@@ -12,38 +12,37 @@
 
         <div class="prose prose-invert max-w-none">
             <h2 id="installation">1. Installation</h2>
-            <p>First, make sure you have Python 3.8 or higher installed. Then, you can install ConfigStream directly from the GitHub repository:</p>
-            <pre><code>pip install git+https://github.com/amirrezafarnamtaheri/configStream.git</code></pre>
+            <p>First, ensure you have Python 3.8+ installed. Then, install ConfigStream and its dependencies by cloning the repository and using pip:</p>
+            <pre><code>git clone https://github.com/amirrezafarnamtaheri/configStream.git
+cd configStream
+pip install .</code></pre>
+            <p>For development, which includes tools for testing and linting, install the <code>[dev]</code> extras:</p>
+            <pre><code>pip install -e .[dev]</code></pre>
 
             <h2 id="configuration">2. Configuration</h2>
-            <p>Create a <code>config.yaml</code> file in the root of the project to customize your settings. You'll also need a <code>sources.txt</code> file to specify your subscription URLs. Here's a basic example:</p>
-
-            <p><strong>config.yaml:</strong></p>
-            <pre><code>output:
-  output_dir: "output"
-  write_clash: true
-  write_base64: true
-
-processing:
-  enable_url_testing: true
-  max_ping_ms: 1000
-</code></pre>
-
-            <p><strong>sources.txt:</strong></p>
+            <p>Copy the example configuration file to create your own:</p>
+            <pre><code>cp config.yaml.example config.yaml</code></pre>
+            <p>Next, create a <code>sources.txt</code> file and add your subscription URLs, one per line. This file tells ConfigStream where to fetch proxy configurations from.</p>
             <pre><code>https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/All_Configs_Sub.txt
 https://raw.githubusercontent.com/yebekhe/V2Hub/main/merged
 </code></pre>
 
-            <h2 id="running">3. Running ConfigStream</h2>
-            <p>The easiest way to get started is by running the daemon, which includes the web dashboard and a scheduler for automatic testing:</p>
+            <h2 id="running">3. Running the Daemon</h2>
+            <p>The simplest way to start is by running the daemon, which launches the web dashboard and a background scheduler for automatic testing:</p>
             <pre><code>configstream daemon</code></pre>
-            <p>This will start the web server, and you can access the dashboard at <code>http://localhost:8080</code>.</p>
+            <p>You can then access the web interface at <a href="http://localhost:8080" target="_blank">http://localhost:8080</a>.</p>
 
-            <p>You can also run a full fetch, test, and merge cycle directly from the command line:</p>
-            <pre><code>configstream full</code></pre>
+            <h2 id="cli-usage">4. Command-Line Usage</h2>
+            <p>For more direct control, you can use the command-line interface to fetch, test, and merge configurations:</p>
+            <ul>
+                <li><strong>Fetch:</strong> <code>configstream fetch</code> - Gathers configurations from your sources.</li>
+                <li><strong>Test:</strong> <code>configstream retest</code> - Tests the fetched configurations for latency and reliability.</li>
+                <li><strong>Merge:</strong> <code>configstream merge</code> - Combines the tested configurations into a single subscription file.</li>
+                <li><strong>Full Cycle:</strong> <code>configstream full</code> - Runs the entire fetch, test, and merge process in one command.</li>
+            </ul>
 
-            <h2 id="dashboard">4. Using the Dashboard</h2>
-            <p>The dashboard provides a visual overview of your proxy configurations. You can see which ones are working, their latency, and other useful information. You can also monitor the system status, view logs, and manage your settings.</p>
+            <h2 id="dashboard-overview">5. Exploring the Dashboard</h2>
+            <p>The dashboard provides a comprehensive overview of your proxy configurations. You can monitor their status, view performance metrics, and export them in various formats. It's the best way to visualize and manage your proxy collection.</p>
         </div>
     </div>
 </div>

@@ -74,6 +74,22 @@ def settings(fs) -> Settings:
     if not fs.exists(sources_file_path):
         fs.create_file(sources_file_path, create_missing_dirs=True)
 
+    # Create a dummy current_results.json for API tests
+    data_dir = Path(settings_obj.data_dir)
+    fs.create_dir(data_dir)
+    current_results_file = data_dir / "current_results.json"
+    if not fs.exists(current_results_file):
+        import json
+        from datetime import datetime
+        sample_data = {
+            "timestamp": datetime.now().isoformat(),
+            "nodes": [
+                {"id": 1, "protocol": "vless", "ping_ms": 100, "country": "US"},
+                {"id": 2, "protocol": "ss", "ping_ms": 200, "country": "DE"},
+            ],
+        }
+        fs.create_file(current_results_file, contents=json.dumps(sample_data))
+
     return settings_obj
 
 
