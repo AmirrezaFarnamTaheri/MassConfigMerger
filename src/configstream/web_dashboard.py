@@ -419,10 +419,6 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
         jobs = scheduler.get_jobs()
         return render_template("system.html", jobs=jobs)
 
-    @app.route("/api-docs")
-    def api_docs():
-        return render_template("api-docs.html")
-
     @app.route("/export")
     def export():
         """Render the export page."""
@@ -432,6 +428,17 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
     def testing():
         """Serve the testing page."""
         return render_template("testing.html")
+
+    @app.route("/api-docs")
+    def api_docs():
+        """API documentation page."""
+        return render_template("api-docs.html")
+
+    @app.post("/api/test")
+    def test_proxies():
+        """Test custom proxy configurations."""
+        # Implementation here
+        pass
 
     return app
 
