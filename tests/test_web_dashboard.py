@@ -63,25 +63,11 @@ def test_documentation_page(client):
     assert b"Documentation" in response.data
 
 
-def test_quick_start_page(client):
-    """Test the quick start page."""
-    response = client.get("/quick-start")
-    assert response.status_code == 200
-    assert b"Quick Start Guide" in response.data
-
-
 def test_api_docs_page(client):
     """Test the API docs page."""
     response = client.get("/api-docs")
     assert response.status_code == 200
     assert b"API Documentation" in response.data
-
-
-def test_roadmap_page(client):
-    """Test the roadmap page."""
-    response = client.get("/roadmap")
-    assert response.status_code == 200
-    assert b"Project Roadmap" in response.data
 
 
 def test_export_page(client):

@@ -1,21 +1,21 @@
+import json
 from flask import Blueprint, jsonify, request, send_file, current_app
 from io import BytesIO
 from datetime import datetime, timedelta
-import json
 from pathlib import Path
 import psutil
 import time
 
-api = Blueprint('api', __name__)
-
 from . import web_dashboard
+
+api = Blueprint('api', __name__)
 
 @api.route("/current")
 def api_current():
     """API endpoint for current test results."""
     try:
         data_dir = current_app.config["data_dir"]
-        data = web_dashboard.get_current_results(current_app, data_dir)
+        data = web_dashboard.get_current_results(data_dir, current_app.logger)
         filters = request.args.to_dict()
         if filters:
             data["nodes"] = web_dashboard.filter_nodes(data["nodes"], filters)
@@ -32,7 +32,7 @@ def api_history():
     try:
         data_dir = current_app.config["data_dir"]
         hours = int(request.args.get("hours", 24))
-        history = web_dashboard.get_history(current_app, data_dir, hours)
+        history = web_dashboard.get_history(data_dir, hours, current_app.logger)
         return jsonify(history)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -42,7 +42,7 @@ def api_statistics():
     """API endpoint for aggregated statistics."""
     try:
         data_dir = current_app.config["data_dir"]
-        data = web_dashboard.get_current_results(current_app, data_dir)
+        data = web_dashboard.get_current_results(data_dir, current_app.logger)
         nodes = data.get("nodes", [])
         protocols = {}
         countries = {}
@@ -74,7 +74,7 @@ def api_export(format: str):
     """Export data in various formats."""
     try:
         data_dir = current_app.config["data_dir"]
-        data = web_dashboard.get_current_results(current_app, data_dir)
+        data = web_dashboard.get_current_results(data_dir, current_app.logger)
         filters = request.args.to_dict()
         nodes = web_dashboard.filter_nodes(data["nodes"], filters)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -87,19 +87,7 @@ def api_export(format: str):
                 download_name=f"vpn_nodes_{timestamp}.csv"
             )
         elif format == "json":
-            payload = web_dashboard.export_json(
-                {
-                    "exported_at": timestamp,
-                    "count": len(nodes),
-                    "nodes": nodes,
-                }
-            )
-            return send_file(
-                BytesIO(payload.encode('utf-8')),
-                mimetype="application/json",
-                as_attachment=True,
-                download_name=f"vpn_nodes_{timestamp}.json"
-            )
+            return jsonify(nodes)
         return jsonify({"error": f"Unsupported format: {format}"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500

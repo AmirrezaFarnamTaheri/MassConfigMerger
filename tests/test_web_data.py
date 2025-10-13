@@ -15,13 +15,13 @@ def app():
 
 def test_get_current_results_file_not_found(app, tmp_path):
     """Test get_current_results when the file doesn't exist."""
-    results = get_current_results(app, tmp_path)
+    results = get_current_results(tmp_path, app.logger)
     assert results["timestamp"] is None
     assert results["nodes"] == []
 
 def test_get_history_file_not_found(app, tmp_path):
     """Test get_history when the file doesn't exist."""
-    history = get_history(app, tmp_path)
+    history = get_history(tmp_path, 24, app.logger)
     assert history == []
 
 def test_filter_nodes_no_filters():
@@ -39,7 +39,7 @@ def test_get_current_results_invalid_json(app, tmp_path: Path):
     """Test get_current_results with invalid JSON."""
     results_file = tmp_path / "current_results.json"
     results_file.write_text("invalid json")
-    results = get_current_results(app, tmp_path)
+    results = get_current_results(tmp_path, app.logger)
     assert results["timestamp"] is None
     assert results["nodes"] == []
 
@@ -47,7 +47,7 @@ def test_get_history_invalid_json(app, tmp_path: Path):
     """Test get_history with invalid JSON."""
     history_file = tmp_path / "history.jsonl"
     history_file.write_text("invalid json\n")
-    history = get_history(app, tmp_path)
+    history = get_history(tmp_path, 24, app.logger)
     assert history == []
 
 def test_filter_nodes(tmp_path: Path):

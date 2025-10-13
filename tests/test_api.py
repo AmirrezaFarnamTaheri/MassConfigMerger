@@ -84,7 +84,6 @@ def test_api_export_json_success(client):
     mock_data = {"nodes": [{"id": 1, "ping_ms": 100, "protocol": "VLESS", "country_code": "US"}]}
     client.application.config["web_dashboard"].get_current_results.return_value = mock_data
     client.application.config["web_dashboard"].filter_nodes.return_value = mock_data["nodes"]
-    client.application.config["web_dashboard"].export_json.return_value = '{"count": 1, "nodes": [{"id": 1, "ping_ms": 100}]}'
     response = client.get("/api/export/json")
     assert response.status_code == 200
     assert response.mimetype == "application/json"

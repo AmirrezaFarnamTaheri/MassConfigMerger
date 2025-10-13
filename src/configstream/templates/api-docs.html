@@ -5,87 +5,121 @@
 {% block header_title %}API Documentation{% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-4">
-    <div class="card">
-        <h1 class="text-3xl font-bold mb-6">API Documentation</h1>
-        <p class="text-xl text-gray-300 mb-8">Programmatic access to your ConfigStream data.</p>
+<div class="space-y-8">
+    <!-- Header -->
+    <div>
+        <h1 class="text-4xl font-extrabold text-white">API Documentation</h1>
+        <p class="mt-2 text-lg text-gray-400">
+            Integrate with ConfigStream programmatically using our RESTful API.
+        </p>
+    </div>
 
-        <div class="space-y-8">
-            <div class="prose prose-invert max-w-none">
-                <h2 id="api-current">GET /api/current</h2>
-                <p>Fetch the current, most recently tested proxy nodes. This endpoint provides the same data that powers the main dashboard.</p>
-                <h3>Query Parameters:</h3>
-                <ul>
-                    <li><code>protocol</code> (string): Filter by protocol (e.g., "VMess", "VLESS", "Trojan").</li>
-                    <li><code>country</code> (string): Filter by country code (e.g., "US", "DE", "JP").</li>
-                    <li><code>max_ping</code> (integer): Filter by maximum latency in milliseconds.</li>
-                    <li><code>search</code> (string): Search for a term in the city, organization, or IP address fields.</li>
-                </ul>
-
-                <h2 id="api-history">GET /api/history</h2>
-                <p>Fetch historical test data. This can be useful for tracking the performance of your proxy nodes over time.</p>
-                <h3>Query Parameters:</h3>
-                <ul>
-                    <li><code>hours</code> (integer, default: 24): How many hours of history to retrieve.</li>
-                </ul>
-
-                <h2 id="api-statistics">GET /api/statistics</h2>
-                <p>Get aggregated statistics about the current nodes, including total nodes, successful nodes, protocol distribution, and country distribution.</p>
-
-                <h2 id="api-export">GET /api/export/&lt;format&gt;</h2>
-                <p>Export the current nodes in a specified format. This is useful for importing your configurations into other applications.</p>
-                <h3>URL Parameters:</h3>
-                <ul>
-                    <li><code>format</code> (string): "json" or "csv".</li>
-                </ul>
-
-                <h2 id="api-status">GET /api/status</h2>
-                <p>Get real-time system status information, including uptime, CPU usage, and memory usage.</p>
-
-                <h2 id="api-logs">GET /api/logs</h2>
-                <p>Fetch the latest application logs. Requires an API key if one is configured in your <code>config.yaml</code>.</p>
-
-                <h2 id="api-scheduler-jobs">GET /api/scheduler/jobs</h2>
-                <p>Get the status of all scheduled jobs. Requires an API key if one is configured.</p>
-
-                <h2 id="api-add-source">POST /api/sources</h2>
-                <p>Add a new subscription source. The URL should be provided in the JSON body of the request.</p>
-                <h3>Request Body:</h3>
-                <pre><code>{
-    "url": "https://example.com/subscription"
-}</code></pre>
+    <!-- API Docs Layout -->
+    <div class="lg:grid lg:grid-cols-12 lg:gap-8">
+        <!-- Sidebar Navigation -->
+        <aside class="lg:col-span-3 mb-8 lg:mb-0">
+            <div class="sticky top-6">
+                <div class="card p-0">
+                    <nav id="api-doc-nav" class="space-y-1 p-4">
+                        <h3 class="font-bold text-lg mb-2 text-white">Endpoints</h3>
+                        <a href="#api-status" class="doc-nav-link">System Status</a>
+                        <a href="#api-logs" class="doc-nav-link">Application Logs</a>
+                        <a href="#api-current" class="doc-nav-link">Current Nodes</a>
+                        <a href="#api-history" class="doc-nav-link">Historical Data</a>
+                        <a href="#api-export" class="doc-nav-link">Export Nodes</a>
+                        <a href="#api-sources" class="doc-nav-link">Manage Sources</a>
+                    </nav>
+                </div>
             </div>
-        </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="lg:col-span-9">
+            <div class="space-y-12">
+                <!-- System Status -->
+                <section id="api-status" class="doc-section">
+                    <h2 class="doc-heading">GET /api/status</h2>
+                    <p class="doc-text">Retrieve real-time system status, including uptime, CPU usage, and memory usage.</p>
+                    <p class="doc-text text-red-400 mt-2">Note: This endpoint may require an API key if one is configured.</p>
+                    <div class="doc-code-block">
+                        <h4 class="font-bold text-md mb-2 text-white">Example Response:</h4>
+                        <pre class="doc-code"><code>{
+  "uptime": "1h 30m",
+  "cpu": { "percent": 15.5 },
+  "memory": { "percent": 60.2, "used_mb": 1204, "total_mb": 2000 }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Application Logs -->
+                <section id="api-logs" class="doc-section">
+                    <h2 class="doc-heading">GET /api/logs</h2>
+                    <p class="doc-text">Fetch the most recent application log entries.</p>
+                    <p class="doc-text text-red-400 mt-2">Note: This endpoint may require an API key if one is configured.</p>
+                     <div class="doc-code-block">
+                        <h4 class="font-bold text-md mb-2 text-white">Example Response:</h4>
+                        <pre class="doc-code"><code>{
+  "logs": [
+    "2023-10-27 10:00:00 - INFO - Application started.",
+    "2023-10-27 10:00:05 - INFO - Fetching sources..."
+  ]
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Current Nodes -->
+                <section id="api-current" class="doc-section">
+                    <h2 class="doc-heading">GET /api/current</h2>
+                    <p class="doc-text">Get the current list of tested proxy nodes. Supports filtering via query parameters (`protocol`, `country`, `max_ping`, `search`).</p>
+                    <div class="doc-code-block">
+                        <h4 class="font-bold text-md mb-2 text-white">Example Request:</h4>
+                        <pre class="doc-code"><code>/api/current?protocol=VLESS&country=US</code></pre>
+                    </div>
+                </section>
+
+                 <!-- History -->
+                <section id="api-history" class="doc-section">
+                    <h2 class="doc-heading">GET /api/history</h2>
+                    <p class="doc-text">Retrieve historical test run data. Use the `hours` query parameter to specify the lookback period.</p>
+                     <div class="doc-code-block">
+                        <h4 class="font-bold text-md mb-2 text-white">Example Request:</h4>
+                        <pre class="doc-code"><code>/api/history?hours=48</code></pre>
+                    </div>
+                </section>
+
+                <!-- Export -->
+                <section id="api-export" class="doc-section">
+                    <h2 class="doc-heading">GET /api/export/:format</h2>
+                    <p class="doc-text">Export filtered nodes in a specific format. Available formats: `csv`, `json`, `raw`, `base64`. Accepts the same query parameters as `/api/current`.</p>
+                     <div class="doc-code-block">
+                        <h4 class="font-bold text-md mb-2 text-white">Example Request:</h4>
+                        <pre class="doc-code"><code>/api/export/json?max_ping=200</code></pre>
+                    </div>
+                </section>
+
+                 <!-- Manage Sources -->
+                <section id="api-sources" class="doc-section">
+                    <h2 class="doc-heading">POST /api/sources</h2>
+                    <p class="doc-text">Add a new subscription source.</p>
+                    <p class="doc-text text-red-400 mt-2">Note: Modifying sources may require an API key if one is configured.</p>
+                     <div class="doc-code-block">
+                        <h4 class="font-bold text-md mb-2 text-white">Example Body:</h4>
+                        <pre class="doc-code"><code>{ "url": "https://example.com/new_sub" }</code></pre>
+                    </div>
+                    <h2 class="doc-heading mt-6">DELETE /api/sources</h2>
+                    <p class="doc-text">Remove an existing subscription source.</p>
+                    <p class="doc-text text-red-400 mt-2">Note: Modifying sources may require an API key if one is configured.</p>
+                     <div class="doc-code-block">
+                        <h4 class="font-bold text-md mb-2 text-white">Example Body:</h4>
+                        <pre class="doc-code"><code>{ "url": "https://example.com/old_sub" }</code></pre>
+                    </div>
+                </section>
+            </div>
+        </main>
     </div>
 </div>
 {% endblock %}
 
 {% block head_extra %}
-<style>
-    .prose {
-        color: var(--text-light-200);
-    }
-    .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
-        color: var(--text-light-100);
-        border-bottom: 1px solid var(--bg-dark-700);
-        padding-bottom: 0.5rem;
-    }
-    .prose a {
-        color: var(--accent-blue-500);
-    }
-    .prose a:hover {
-        color: var(--accent-blue-600);
-    }
-    .prose strong {
-        color: var(--text-light-100);
-    }
-    .prose code {
-        color: var(--text-light-100);
-        background-color: var(--bg-dark-700);
-        padding: 0.2em 0.4em;
-        margin: 0;
-        font-size: 85%;
-        border-radius: 3px;
-    }
-</style>
+<script src="{{ url_for('static', filename='js/api-docs.js') }}" defer></script>
 {% endblock %}

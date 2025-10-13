@@ -97,31 +97,31 @@ def test_cli_config_not_found(mock_load_config, fs):
     assert cfg_instance.network.concurrent_limit == 20
 
 
-@patch("configstream.services.list_sources")
+@patch("configstream.commands.services.list_sources")
 def test_cli_sources_list_command(mock_list_sources, fs):
     """Test the 'sources list' command."""
     fs.create_file("sources.txt")
-    with patch("configstream.cli.services.list_sources", mock_list_sources):
+    with patch("configstream.commands.services.list_sources", mock_list_sources):
         main(["sources", "--sources-file", "sources.txt", "list"])
     mock_list_sources.assert_called_once_with(Path("sources.txt"))
 
 
-@patch("configstream.services.add_new_source")
+@patch("configstream.commands.services.add_new_source")
 def test_cli_sources_add_command(mock_add_source, fs):
     """Test the 'sources add' command."""
     fs.create_file("sources.txt")
-    with patch("configstream.cli.services.add_new_source", mock_add_source):
+    with patch("configstream.commands.services.add_new_source", mock_add_source):
         main(["sources", "--sources-file", "sources.txt",
              "add", "http://example.com/source"])
     mock_add_source.assert_called_once_with(
         Path("sources.txt"), "http://example.com/source")
 
 
-@patch("configstream.services.remove_existing_source")
+@patch("configstream.commands.services.remove_existing_source")
 def test_cli_sources_remove_command(mock_remove_source, fs):
     """Test the 'sources remove' command."""
     fs.create_file("sources.txt", contents="http://example.com/source\n")
-    with patch("configstream.cli.services.remove_existing_source", mock_remove_source):
+    with patch("configstream.commands.services.remove_existing_source", mock_remove_source):
         main(["sources", "--sources-file", "sources.txt",
              "remove", "http://example.com/source"])
     mock_remove_source.assert_called_once_with(
@@ -164,15 +164,15 @@ def test_main_entrypoint(mock_load_config, mock_handle_fetch, fs):
     assert isinstance(args[1], Settings)
 
 
-@patch("configstream.services.remove_existing_source")
-@patch("configstream.services.add_new_source")
-@patch("configstream.services.list_sources")
+@patch("configstream.commands.services.remove_existing_source")
+@patch("configstream.commands.services.add_new_source")
+@patch("configstream.commands.services.list_sources")
 def test_cli_sources_unknown_command(mock_list, mock_add, mock_remove, fs):
     """Test the 'sources' command with an unknown subcommand."""
     fs.create_file("sources.txt")
-    with patch("configstream.cli.services.list_sources", mock_list), \
-            patch("configstream.cli.services.add_new_source", mock_add), \
-            patch("configstream.cli.services.remove_existing_source", mock_remove):
+    with patch("configstream.commands.services.list_sources", mock_list), \
+            patch("configstream.commands.services.add_new_source", mock_add), \
+            patch("configstream.commands.services.remove_existing_source", mock_remove):
         with pytest.raises(SystemExit):
             main(["sources", "--sources-file", "sources.txt", "unknown"])
     mock_list.assert_not_called()

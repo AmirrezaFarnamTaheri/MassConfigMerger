@@ -18,12 +18,14 @@
                 <div class="card bg-gray-700 p-4">
                     <h2 class="text-xl font-semibold capitalize mb-4">{{ section.replace('_', ' ') }}</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {% for key, value in values.items() %}
-                            <div>
-                                <label for="{{ section }}-{{ key }}" class="block text-sm font-medium text-gray-400">{{ key.replace('_', ' ') | title }}</label>
-                                <input type="text" id="{{ section }}-{{ key }}" name="{{ section }}.{{ key }}" value="{{ value }}" class="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-accent-blue-500 focus:border-accent-blue-500 sm:text-sm">
-                            </div>
-                        {% endfor %}
+                        {% if values is mapping %}
+                            {% for key, value in values.items() %}
+                                <div>
+                                    <label for="{{ section }}-{{ key }}" class="block text-sm font-medium text-gray-400">{{ key.replace('_', ' ') | title }}</label>
+                                    <input type="text" id="{{ section }}-{{ key }}" name="{{ section }}.{{ key }}" value="{{ value }}" class="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-accent-blue-500 focus:border-accent-blue-500 sm:text-sm">
+                                </div>
+                            {% endfor %}
+                        {% endif %}
                     </div>
                 </div>
             {% endfor %}

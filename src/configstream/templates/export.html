@@ -1,138 +1,150 @@
 {% extends "base.html" %}
 
-{% block title %}Export - ConfigStream{% endblock %}
+{% block title %}Export Configurations - ConfigStream{% endblock %}
 
 {% block header_title %}Export Configurations{% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-4">
-    <div class="card">
-        <h1 class="text-3xl font-bold mb-6">Export Configurations</h1>
-        <p class="text-gray-400 mb-8">
-            This page allows you to filter your proxy configurations and export them in various formats. You can use the filters to narrow down the list of nodes, and then export the results as a CSV, JSON, raw text, or base64-encoded file.
+<div class="space-y-8">
+    <!-- Header -->
+    <div>
+        <h1 class="text-4xl font-extrabold text-white">Export Configurations</h1>
+        <p class="mt-2 text-lg text-gray-400">
+            Filter, view, and export your proxy configurations in various formats.
         </p>
+    </div>
 
-        <!-- Filters -->
-        <div class="card mb-8">
-            <div class="flex flex-wrap items-center justify-between gap-4">
-                <div class="flex flex-wrap items-center gap-4">
-                    <input id="searchFilter" type="text" placeholder="Search..." class="bg-gray-700 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-accent-blue-500">
-                    <select id="protocolFilter" class="bg-gray-700 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-accent-blue-500">
-                        <option value="">All Protocols</option>
-                    </select>
-                    <select id="countryFilter" class="bg-gray-700 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-accent-blue-500">
-                        <option value="">All Countries</option>
-                    </select>
-                    <input id="maxPingFilter" type="number" placeholder="Max Ping" class="bg-gray-700 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-accent-blue-500">
-                </div>
-                <div class="flex items-center gap-4">
-                    <button onclick="applyFilters()" class="btn btn-primary">Apply Filters</button>
-                </div>
+    <!-- Filtering and Export Controls -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Filtering Card -->
+        <div class="lg:col-span-2 card">
+            <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fas fa-filter mr-3 text-accent-blue-500"></i>
+                Filters
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input id="searchFilter" type="text" placeholder="Search IP, city, org..." class="form-input">
+                <input id="maxPingFilter" type="number" placeholder="Max Ping (ms)" class="form-input">
+                <select id="protocolFilter" class="form-select">
+                    <option value="">All Protocols</option>
+                </select>
+                <select id="countryFilter" class="form-select">
+                    <option value="">All Countries</option>
+                </select>
+            </div>
+             <div class="mt-4 text-right">
+                <button onclick="applyFilters()" class="btn btn-primary">
+                    <i class="fas fa-search mr-2"></i>Apply
+                </button>
             </div>
         </div>
 
-        <!-- Export Buttons -->
-        <div class="card mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Export Card -->
+        <div class="lg:col-span-1 card">
+            <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fas fa-file-export mr-3 text-accent-green-500"></i>
+                Export
+            </h2>
+            <div class="space-y-3">
                 <button onclick="exportConfigs('csv')" class="btn btn-secondary w-full">
-                    <i class="fas fa-file-csv mr-2"></i>
-                    <span>Export as CSV</span>
+                    <i class="fas fa-file-csv mr-2"></i>Export as CSV
                 </button>
                 <button onclick="exportConfigs('json')" class="btn btn-secondary w-full">
-                    <i class="fas fa-file-code mr-2"></i>
-                    <span>Export as JSON</span>
+                    <i class="fas fa-file-code mr-2"></i>Export as JSON
                 </button>
                 <div class="relative">
-                    <button onclick="exportConfigs('raw')" class="btn btn-secondary w-full">
-                        <i class="fas fa-file-alt mr-2"></i>
-                        <span>Export as Raw Text</span>
-                    </button>
-                    <button onclick="copyToClipboard('raw')" class="absolute top-0 right-0 mt-2 mr-2 btn btn-sm btn-secondary">
-                        <i class="fas fa-copy"></i>
+                    <button onclick="copyToClipboard('raw')" class="btn btn-secondary w-full">
+                        <i class="fas fa-copy mr-2"></i>Copy Raw Links
                     </button>
                 </div>
                 <div class="relative">
-                    <button onclick="exportConfigs('base64')" class="btn btn-secondary w-full">
-                        <i class="fas fa-file-code mr-2"></i>
-                        <span>Export as Base64</span>
-                    </button>
-                    <button onclick="copyToClipboard('base64')" class="absolute top-0 right-0 mt-2 mr-2 btn btn-sm btn-secondary">
-                        <i class="fas fa-copy"></i>
+                    <button onclick="copyToClipboard('base64')" class="btn btn-secondary w-full">
+                        <i class="fas fa-copy mr-2"></i>Copy Base64 Links
                     </button>
                 </div>
-            </div>
-        </div>
-
-        <!-- Node Table -->
-        <div class="card overflow-hidden">
-            <div id="lastUpdate" class="text-sm text-gray-400 mb-4">Loading...</div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-700">
-                    <thead class="bg-gray-800">
-                        <tr>
-                            <th class="table-header">Protocol</th>
-                            <th class="table-header">Country</th>
-                            <th class="table-header">Ping</th>
-                            <th class="table-header">IP Address</th>
-                            <th class="table-header">Organization</th>
-                        </tr>
-                    </thead>
-                    <tbody id="nodesTableBody" class="divide-y divide-gray-700">
-                        <!-- Rows will be injected by JavaScript -->
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
+
+    <!-- Node Table -->
+    <div class="card overflow-hidden">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold">Available Nodes</h2>
+            <div id="lastUpdate" class="text-sm text-gray-400">Loading...</div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-700">
+                <thead class="bg-gray-800">
+                    <tr>
+                        <th class="table-header">Protocol</th>
+                        <th class="table-header">Country</th>
+                        <th class="table-header">Ping</th>
+                        <th class="table-header">IP Address</th>
+                        <th class="table-header">Organization</th>
+                    </tr>
+                </thead>
+                <tbody id="nodesTableBody" class="divide-y divide-gray-700">
+                    <!-- Rows injected by JS -->
+                </tbody>
+            </table>
+        </div>
+        <div id="table-loading" class="text-center p-8 text-gray-400" style="display: none;">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="fixed bottom-5 right-5 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg" style="display: none;">
+    Copied to clipboard!
 </div>
 {% endblock %}
 
 {% block head_extra %}
 <script>
-    let currentData = null;
+    let currentData = { nodes: [], timestamp: null };
     let currentFilters = {};
 
-    document.addEventListener('DOMContentLoaded', function() {
-        loadData();
-    });
+    document.addEventListener('DOMContentLoaded', () => loadData());
+
+    function setLoading(isLoading) {
+        document.getElementById('table-loading').style.display = isLoading ? 'block' : 'none';
+        document.getElementById('nodesTableBody').style.display = isLoading ? 'none' : '';
+    }
 
     async function loadData() {
-        const lastUpdateDiv = document.getElementById('lastUpdate');
-        lastUpdateDiv.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Loading...`;
-
+        setLoading(true);
+        const params = new URLSearchParams(currentFilters);
         try {
-            const params = new URLSearchParams(currentFilters);
             const response = await fetch(`/api/current?${params.toString()}`, { cache: "no-store" });
             if (!response.ok) throw new Error(`Request failed: ${response.status}`);
-
-            const data = await response.json();
-            if (!data || !Array.isArray(data.nodes)) throw new Error("Invalid response format");
-
-            currentData = data;
+            currentData = await response.json();
+            if (!currentData || !Array.isArray(currentData.nodes)) throw new Error("Invalid response format");
             updateDashboard();
         } catch (err) {
             console.error("Error loading data:", err);
-            lastUpdateDiv.textContent = "Failed to load data.";
-            const tbody = document.getElementById('nodesTableBody');
-            if (tbody) tbody.innerHTML = `<tr><td class="px-6 py-4 text-red-400" colspan="5">Error loading data</td></tr>`;
+            document.getElementById('lastUpdate').textContent = "Failed to load data.";
+            document.getElementById('nodesTableBody').innerHTML = `<tr><td class="px-6 py-4 text-red-400 text-center" colspan="5">Error loading data</td></tr>`;
+        } finally {
+            setLoading(false);
         }
     }
 
     function updateDashboard() {
         const { nodes, timestamp } = currentData;
-        document.getElementById('lastUpdate').textContent = `Last Updated: ${new Date(timestamp).toLocaleString()}`;
+        document.getElementById('lastUpdate').textContent = timestamp ? `Last Updated: ${new Date(timestamp).toLocaleString()}` : 'No data yet.';
 
+        // Always populate filters to reflect the full dataset from the server
         populateFilters(nodes);
+
         updateTable(nodes);
     }
 
     function populateFilters(nodes) {
         const protocols = [...new Set(nodes.map(n => n.protocol))].sort();
         const countries = [...new Set(nodes.map(n => n.country))].sort();
-
         const protocolSelect = document.getElementById('protocolFilter');
         protocolSelect.innerHTML = '<option value="">All Protocols</option>' + protocols.map(p => `<option value="${p}">${p}</option>`).join('');
-
         const countrySelect = document.getElementById('countryFilter');
         countrySelect.innerHTML = '<option value="">All Countries</option>' + countries.map(c => `<option value="${c}">${c}</option>`).join('');
     }
@@ -140,24 +152,23 @@
     function updateTable(nodes) {
         const tableBody = document.getElementById('nodesTableBody');
         if (nodes.length === 0) {
-            tableBody.innerHTML = `<tr><td class="px-6 py-4 text-center text-gray-400" colspan="5">No nodes found.</td></tr>`;
+            tableBody.innerHTML = `<tr><td class="px-6 py-4 text-center text-gray-400" colspan="5">No nodes match the current filters.</td></tr>`;
             return;
         }
         tableBody.innerHTML = nodes.map(node => {
             const pingVal = Number(node.ping_ms);
             const pingClass = !isFinite(pingVal) || pingVal < 0 ? 'text-red-400' :
-                              pingVal < 100 ? 'text-green-400' :
-                              pingVal < 300 ? 'text-yellow-400' : 'text-red-400';
+                              pingVal < 250 ? 'text-green-400' :
+                              pingVal < 600 ? 'text-yellow-400' : 'text-red-400';
             const pingDisplay = isFinite(pingVal) && pingVal >= 0 ? `${pingVal} ms` : 'Failed';
             return `
-                <tr class="hover:bg-gray-800">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${node.protocol || 'N/A'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${node.country || 'N/A'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm ${pingClass}">${pingDisplay}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${node.ip || 'N/A'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${node.organization || 'N/A'}</td>
-                </tr>
-            `;
+                <tr class="hover:bg-gray-800 transition-colors duration-200">
+                    <td class="table-cell">${node.protocol || 'N/A'}</td>
+                    <td class="table-cell">${node.country || 'N/A'}</td>
+                    <td class="table-cell font-mono ${pingClass}">${pingDisplay}</td>
+                    <td class="table-cell font-mono">${node.ip || 'N/A'}</td>
+                    <td class="table-cell">${node.organization || 'N/A'}</td>
+                </tr>`;
         }).join('');
     }
 
@@ -172,34 +183,32 @@
     }
 
     function exportConfigs(format) {
-        const filters = {
-            search: document.getElementById('searchFilter').value,
-            protocol: document.getElementById('protocolFilter').value,
-            country: document.getElementById('countryFilter').value,
-            max_ping: document.getElementById('maxPingFilter').value,
-        };
-        const params = new URLSearchParams(filters);
+        const params = new URLSearchParams(currentFilters);
         window.location.href = `/api/export/${format}?${params.toString()}`;
     }
 
     async function copyToClipboard(format) {
-        const filters = {
-            search: document.getElementById('searchFilter').value,
-            protocol: document.getElementById('protocolFilter').value,
-            country: document.getElementById('countryFilter').value,
-            max_ping: document.getElementById('maxPingFilter').value,
-        };
-        const params = new URLSearchParams(filters);
-        const response = await fetch(`/api/export/${format}?${params.toString()}`);
-        const text = await response.text();
-        navigator.clipboard.writeText(text);
+        if (!confirm(`Are you sure you want to copy the filtered nodes as ${format} to your clipboard?`)) return;
+        const params = new URLSearchParams(currentFilters);
+        try {
+            const response = await fetch(`/api/export/${format}?${params.toString()}`);
+            if (!response.ok) throw new Error("Failed to fetch data for copying.");
+            const text = await response.text();
+            await navigator.clipboard.writeText(text);
+            showToast('Copied to clipboard!');
+        } catch (error) {
+            console.error('Copy failed:', error);
+            showToast('Failed to copy!', true);
+        }
+    }
 
-        const notification = document.createElement('div');
-        notification.className = 'fixed bottom-5 right-5 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg';
-        notification.textContent = 'Copied to clipboard!';
-        document.body.appendChild(notification);
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = `fixed bottom-5 right-5 text-white px-4 py-2 rounded-md shadow-lg ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+        toast.style.display = 'block';
         setTimeout(() => {
-            document.body.removeChild(notification);
+            toast.style.display = 'none';
         }, 3000);
     }
 </script>
