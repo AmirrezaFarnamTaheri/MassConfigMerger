@@ -45,8 +45,8 @@
 {% endblock %}
 
 {% block head_extra %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js" integrity="sha384-7NrRHqlWUj2hJl3a/dZj/a1GxuQc56mJ3aYsEnydBYrY1jR+RSt6SBvK3sHfj+mJ" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js" integrity="sha384-Crp3O/636k0LjUK6uxSF2i5herKUb8UIA16lRYz/PGAlkuavAVGFH5v2YlBayW8d" crossorigin="anonymous"></script>
+<script src="{{ url_for('static', filename='vendor/chart.js/chart.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='vendor/chart.js/chartjs-adapter-date-fns.bundle.min.js') }}" defer></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         loadHistory();
