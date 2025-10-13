@@ -33,14 +33,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         navLinks.forEach(link => {
             link.addEventListener('click', function(e) {
-                e.preventDefault();
                 const targetId = this.getAttribute('href');
+                if (!targetId || !targetId.startsWith('#')) return;
                 const targetElement = document.querySelector(targetId);
-                if (targetElement) {
-                    targetElement.scrollIntoView({ behavior: 'smooth' });
-                    const id = targetElement.getAttribute('id');
-                    if (id) activateLink(id);
-                }
+                if (!targetElement) return;
+                e.preventDefault();
+                targetElement.scrollIntoView({ behavior: 'smooth' });
+                const id = targetElement.getAttribute('id');
+                if (id) activateLink(id);
             }, { passive: false });
         });
     }
