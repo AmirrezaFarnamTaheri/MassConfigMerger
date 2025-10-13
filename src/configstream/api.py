@@ -1,10 +1,10 @@
-import json
-from flask import Blueprint, jsonify, request, send_file, current_app
-from io import BytesIO
-from datetime import datetime, timedelta
-from pathlib import Path
-import psutil
 import time
+from datetime import datetime, timedelta
+from io import BytesIO
+from pathlib import Path
+
+import psutil
+from flask import Blueprint, jsonify, request, send_file, current_app
 
 from . import web_dashboard
 
@@ -69,6 +69,8 @@ def api_statistics():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+import json
+
 @api.route("/export/<format>")
 def api_export(format: str):
     """Export data in various formats."""
@@ -87,7 +89,17 @@ def api_export(format: str):
                 download_name=f"vpn_nodes_{timestamp}.csv"
             )
         elif format == "json":
-            return jsonify(nodes)
+            payload = {
+                "exported_at": datetime.now().isoformat(timespec="seconds"),
+                "count": len(nodes),
+                "nodes": nodes,
+            }
+            return send_file(
+                BytesIO(json.dumps(payload, ensure_ascii=False).encode("utf-8")),
+                mimetype="application/json",
+                as_attachment=True,
+                download_name=f"vpn_nodes_{timestamp}.json",
+            )
         return jsonify({"error": f"Unsupported format: {format}"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
