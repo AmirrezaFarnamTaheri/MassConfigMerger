@@ -331,7 +331,7 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
         """Modern dashboard with enhanced UI."""
         cfg = load_config()
         project_root = _get_root()
-        db_path = project_root / cfg.output.history_db_file
+        db_path = project_root / cfg.output.output_dir / cfg.output.history_db_file
 
         # Get statistics
         stats = {
@@ -351,20 +351,16 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
 
             if db_path.exists():
                 history_data = _run_async_task(_read_history(db_path))
-                all_entries = web_utils._serialize_history(history_data)
+                all_entries = _serialize_history(history_data)
 
                 if all_entries:
                     stats['active_proxies'] = len(all_entries)
                     total_success = sum(e['reliability'] for e in all_entries)
-                    if len(all_entries) > 0:
-                        stats['success_rate'] = f"{total_success / len(all_entries):.1f}%"
+                    stats['success_rate'] = f"{total_success / len(all_entries):.1f}%"
 
                     history_preview = all_entries[:preview_limit]
         except Exception as e:
             app.logger.warning("Could not fetch stats for dashboard: %s", e)
-
-        app.logger.info(f"Stats: {stats}")
-        app.logger.info(f"History Preview: {history_preview}")
 
         return render_template(
             "index.html",
