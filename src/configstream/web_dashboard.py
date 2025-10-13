@@ -108,7 +108,6 @@ def get_history(data_dir: Path, hours: int, logger_instance) -> List[Dict]:
     history: List[Dict] = []
     now_utc = datetime.now(timezone.utc)
     cutoff_time = now_utc - timedelta(hours=hours)
-    local_tz = datetime.now().astimezone().tzinfo or timezone.utc
 
     try:
         with open(history_file, "r", encoding="utf-8") as f:
@@ -129,7 +128,7 @@ def get_history(data_dir: Path, hours: int, logger_instance) -> List[Dict]:
                         continue
 
                     if ts.tzinfo is None:
-                        ts = ts.replace(tzinfo=local_tz)
+                        ts = ts.replace(tzinfo=timezone.utc)
 
                     ts_utc = ts.astimezone(timezone.utc)
                     if ts_utc >= cutoff_time:

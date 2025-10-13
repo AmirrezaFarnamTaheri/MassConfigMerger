@@ -89,7 +89,7 @@ def test_get_history_invalid_json(app, tmp_path: Path):
 
 
 def test_get_history_naive_timestamps(app, tmp_path: Path):
-    """Handle naive timestamps by assuming the local timezone."""
+    """Handle naive timestamps by assuming UTC."""
     history_file = tmp_path / "history.jsonl"
     naive_timestamp = datetime.now().isoformat()
     history_file.write_text(json.dumps({"timestamp": naive_timestamp}) + "\n")

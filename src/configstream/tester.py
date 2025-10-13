@@ -67,6 +67,7 @@ class NodeTester:
     """A utility class for testing node latency and performing GeoIP lookups."""
 
     _resolver: Optional[AsyncResolver] = None
+    _resolver_init_failed: bool = False
     _geoip_reader: Optional[Reader] = None
 
     def __init__(self, config: Settings) -> None:
@@ -80,21 +81,32 @@ class NodeTester:
         if self._resolver is not None:
             return self._resolver
 
-        try:
-            resolver_module = importlib.import_module("aiohttp.resolver")
-            async_resolver_cls = getattr(resolver_module, "AsyncResolver", None)
-            if async_resolver_cls is None:
+        if self._resolver_init_failed:
+            return None
+
+        resolver_cls: Optional[type] = None
+
+        if AsyncResolver is not None:
+            resolver_cls = AsyncResolver
+        else:  # pragma: no cover - optional dependency
+            try:
+                resolver_module = importlib.import_module("aiohttp.resolver")
+                resolver_cls = getattr(resolver_module, "AsyncResolver", None)
+            except Exception as exc:
+                logging.debug("Async resolver dependencies unavailable: %s", exc)
+                self._resolver_init_failed = True
                 return None
-            importlib.import_module("aiodns")
-        except Exception as exc:  # pragma: no cover - optional dependency
-            logging.debug("Async resolver dependencies unavailable: %s", exc)
+
+        if resolver_cls is None:
+            self._resolver_init_failed = True
             return None
 
         try:
-            self._resolver = async_resolver_cls()
+            self._resolver = resolver_cls()
         except Exception as exc:  # pragma: no cover - optional dependency
             logging.debug("AsyncResolver init failed: %s", exc)
             self._resolver = None
+            self._resolver_init_failed = True
         return self._resolver
 
     def _get_geoip_reader(self) -> Optional[Reader]:
