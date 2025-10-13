@@ -137,18 +137,10 @@ def test_api_export_csv(fs, settings):
 def test_api_export_json(fs, settings):
     """Test exporting data as JSON."""
     with patch("configstream.web_dashboard.get_current_results") as mock_get_results, \
-         patch("configstream.web_dashboard.filter_nodes") as mock_filter_nodes, \
-         patch("configstream.web_dashboard.export_json") as mock_export_json:
+         patch("configstream.web_dashboard.filter_nodes") as mock_filter_nodes:
         nodes = [{"protocol": "vless", "ping_ms": 100}]
         mock_get_results.return_value = {"nodes": nodes}
         mock_filter_nodes.return_value = nodes
-        mock_export_json.return_value = json.dumps(
-            {
-                "exported_at": "2023-10-27T10:00:00",
-                "count": len(nodes),
-                "nodes": nodes,
-            }
-        )
 
         app, cleanup = _setup_app(fs, settings)
         client = app.test_client()
@@ -158,8 +150,7 @@ def test_api_export_json(fs, settings):
         assert response.mimetype == "application/json"
         assert "attachment" in response.headers["Content-Disposition"]
         response_data = response.get_json()
-        assert response_data["count"] == 1
-        assert response_data["nodes"] == nodes
+        assert response_data == nodes
         cleanup()
 
 

@@ -114,9 +114,11 @@ async function removeSource(button, sourceUrl) {
         const data = await response.json();
         if (response.ok) {
             showToast('Source removed successfully!');
-            button.closest('.source-item').remove();
-            const list = document.getElementById('sources-list');
-            if (!list.children.length) {
+            const sourceItem = button.closest('.source-item');
+            const list = sourceItem.parentElement;
+            sourceItem.remove();
+
+            if (list.querySelectorAll('.source-item').length === 0) {
                  const noSourcesMsg = document.getElementById('no-sources-msg');
                  if (noSourcesMsg) noSourcesMsg.style.display = 'block';
             }

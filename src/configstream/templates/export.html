@@ -133,9 +133,10 @@
     function updateDashboard() {
         const { nodes, timestamp } = currentData;
         document.getElementById('lastUpdate').textContent = timestamp ? `Last Updated: ${new Date(timestamp).toLocaleString()}` : 'No data yet.';
-        if (Object.keys(currentFilters).length === 0) {
-            populateFilters(nodes);
-        }
+
+        // Always populate filters to reflect the full dataset from the server
+        populateFilters(nodes);
+
         updateTable(nodes);
     }
 
@@ -187,6 +188,7 @@
     }
 
     async function copyToClipboard(format) {
+        if (!confirm(`Are you sure you want to copy the filtered nodes as ${format} to your clipboard?`)) return;
         const params = new URLSearchParams(currentFilters);
         try {
             const response = await fetch(`/api/export/${format}?${params.toString()}`);

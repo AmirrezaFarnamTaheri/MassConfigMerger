@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
 
             uptimeEl.textContent = data.uptime;
-            memoryEl.textContent = `${data.memory.percent}%`;
+            memoryEl.textContent = `${data.memory.percent}% (${data.memory.used_mb.toFixed(0)} MB / ${data.memory.total_mb.toFixed(0)} MB)`;
             cpuEl.textContent = `${data.cpu.percent}%`;
 
         } catch (error) {

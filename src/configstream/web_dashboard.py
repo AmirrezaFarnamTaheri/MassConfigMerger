@@ -16,7 +16,6 @@ import hashlib
 
 from .config import load_config
 from .scheduler import TestScheduler
-from .api import api
 
 csrf = CSRFProtect()
 
@@ -32,7 +31,7 @@ logger = logging.getLogger(__name__)
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
 
-def get_current_results(app, data_dir: Path) -> Dict[str, Any]:
+def get_current_results(data_dir: Path, logger_instance) -> Dict[str, Any]:
     """Load current test results."""
     current_file = data_dir / "current_results.json"
     if not current_file.exists():
@@ -40,10 +39,10 @@ def get_current_results(app, data_dir: Path) -> Dict[str, Any]:
     try:
         return json.loads(current_file.read_text(encoding="utf-8"))
     except Exception as e:
-        app.logger.error(f"Error loading current results: {e}")
+        logger_instance.error(f"Error loading current results: {e}")
         return {"timestamp": None, "nodes": []}
 
-def get_history(app, data_dir: Path, hours: int = 24) -> List[Dict]:
+def get_history(data_dir: Path, hours: int, logger_instance) -> List[Dict]:
     """Load historical results."""
     history_file = data_dir / "history.jsonl"
     if not history_file.exists():
@@ -60,7 +59,7 @@ def get_history(app, data_dir: Path, hours: int = 24) -> List[Dict]:
                 if timestamp >= cutoff_time:
                     history.append(data)
     except Exception as e:
-        app.logger.error(f"Error loading history: {e}")
+        logger_instance.error(f"Error loading history: {e}")
     return history
 
 def filter_nodes(nodes: List[Dict], filters: dict) -> List[Dict]:
@@ -172,6 +171,7 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
         })
         return {**sri, 'now': datetime.utcnow}
 
+    from .api import api
     app.register_blueprint(api, url_prefix='/api')
 
     @app.route("/")
@@ -188,6 +188,13 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
     def documentation():
         return render_template("documentation.html")
 
+    @app.route("/quick-start")
+    def quick_start():
+        return render_template("quick-start.html")
+
+    @app.route("/roadmap")
+    def roadmap():
+        return render_template("roadmap.html")
 
     @app.route("/history")
     def history():

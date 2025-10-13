@@ -23,7 +23,7 @@ from typing import Callable, Dict
 
 from pydantic import BaseModel
 
-from . import cli_args, commands, services
+from . import cli_args, commands
 from .config import Settings, load_config
 from .constants import CONFIG_FILE_NAME
 from .core.utils import print_public_source_warning

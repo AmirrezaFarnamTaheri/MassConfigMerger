@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Quick Start - ConfigStream{% endblock %}
+
+{% block header_title %}Quick Start Guide{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <div class="card">
+        <h1 class="text-3xl font-bold mb-6">Quick Start Guide</h1>
+        <div class="prose prose-invert max-w-none">
+            <p>This guide will walk you through the basic steps to get ConfigStream up and running.</p>
+
+            <h2 id="step-1">Step 1: Installation</h2>
+            <p>First, clone the repository and install the required dependencies:</p>
+            <pre class="doc-code"><code>git clone https://github.com/amirrezafarnamtaheri/configStream.git
+cd configStream
+pip install -e .[dev]</code></pre>
+
+            <h2 id="step-2">Step 2: Configuration</h2>
+            <p>Copy the example configuration file and edit it to your needs. At a minimum, you must set a `SECRET_KEY` in the `security` section.</p>
+            <pre class="doc-code"><code>cp config.yaml.example config.yaml
+# Open config.yaml and add your secret key
+</code></pre>
+
+            <h2 id="step-3">Step 3: Run the Daemon</h2>
+            <p>Start the web dashboard and the background scheduler by running the `daemon` command:</p>
+            <pre class="doc-code"><code>python -m src.configstream.main_daemon</code></pre>
+            <p>You can now access the web dashboard at <a href="http://127.0.0.1:8080" target="_blank" class="text-accent-blue-500 hover:underline">http://127.0.0.1:8080</a>.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

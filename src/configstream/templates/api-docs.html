@@ -40,6 +40,7 @@
                 <section id="api-status" class="doc-section">
                     <h2 class="doc-heading">GET /api/status</h2>
                     <p class="doc-text">Retrieve real-time system status, including uptime, CPU usage, and memory usage.</p>
+                    <p class="doc-text text-red-400 mt-2">Note: This endpoint may require an API key if one is configured.</p>
                     <div class="doc-code-block">
                         <h4 class="font-bold text-md mb-2 text-white">Example Response:</h4>
                         <pre class="doc-code"><code>{
@@ -54,6 +55,7 @@
                 <section id="api-logs" class="doc-section">
                     <h2 class="doc-heading">GET /api/logs</h2>
                     <p class="doc-text">Fetch the most recent application log entries.</p>
+                    <p class="doc-text text-red-400 mt-2">Note: This endpoint may require an API key if one is configured.</p>
                      <div class="doc-code-block">
                         <h4 class="font-bold text-md mb-2 text-white">Example Response:</h4>
                         <pre class="doc-code"><code>{
@@ -99,12 +101,14 @@
                 <section id="api-sources" class="doc-section">
                     <h2 class="doc-heading">POST /api/sources</h2>
                     <p class="doc-text">Add a new subscription source.</p>
+                    <p class="doc-text text-red-400 mt-2">Note: Modifying sources may require an API key if one is configured.</p>
                      <div class="doc-code-block">
                         <h4 class="font-bold text-md mb-2 text-white">Example Body:</h4>
                         <pre class="doc-code"><code>{ "url": "https://example.com/new_sub" }</code></pre>
                     </div>
                     <h2 class="doc-heading mt-6">DELETE /api/sources</h2>
                     <p class="doc-text">Remove an existing subscription source.</p>
+                    <p class="doc-text text-red-400 mt-2">Note: Modifying sources may require an API key if one is configured.</p>
                      <div class="doc-code-block">
                         <h4 class="font-bold text-md mb-2 text-white">Example Body:</h4>
                         <pre class="doc-code"><code>{ "url": "https://example.com/old_sub" }</code></pre>
@@ -117,30 +121,5 @@
 {% endblock %}
 
 {% block head_extra %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const sections = document.querySelectorAll('.doc-section');
-    const navLinks = document.querySelectorAll('.doc-nav-link');
-
-    const observer = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const id = entry.target.getAttribute('id');
-                navLinks.forEach(link => {
-                    link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
-                });
-            }
-        });
-    }, { rootMargin: "-50% 0px -50% 0px" });
-
-    sections.forEach(section => observer.observe(section));
-
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            document.querySelector(this.getAttribute('href')).scrollIntoView({ behavior: 'smooth' });
-        });
-    });
-});
-</script>
+<script src="{{ url_for('static', filename='js/api-docs.js') }}" defer></script>
 {% endblock %}
