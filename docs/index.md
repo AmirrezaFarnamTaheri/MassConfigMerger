@@ -121,7 +121,5 @@ When you update the Flask templates, reflect any user-facing changes here or add
 MIT License - see [LICENSE](https://github.com/AmirrezaFarnamTaheri/ConfigStream/blob/main/LICENSE)
 
 ## Support
-
-- [GitHub Issues](https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues)
 - [Discussions](https://github.com/AmirrezaFarnamTaheri/ConfigStream/discussions)
-- [Documentation](https://amirrezafarnamtaheri.github.io/configStream/)
+- [Documentation](https://amirrezafarnamtaheri.github.io/ConfigStream/)
