@@ -61,6 +61,7 @@ def settings(fs) -> Settings:
     """Create a Settings object with a relative output directory in the fake FS."""
     output_dir_name = "test_output"
     fs.create_dir(output_dir_name)
+    fs.create_file("pyproject.toml", contents="[tool.pytest.ini_options]")
     fs.create_file(
         "config.yaml", contents=f"output:\n  output_dir: {output_dir_name}")
 

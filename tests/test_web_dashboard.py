@@ -32,7 +32,7 @@ def test_home_page(client):
     """Test the home page."""
     response = client.get("/")
     assert response.status_code == 200
-    assert b"Welcome to ConfigStream" in response.data
+    assert b"Intelligent VPN Configuration Manager" in response.data
 
 
 def test_dashboard_page(client):

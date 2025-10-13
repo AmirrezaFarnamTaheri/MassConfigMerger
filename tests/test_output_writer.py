@@ -76,3 +76,15 @@ def test_write_csv_report_content(fs, sample_results: list[ConfigResult]):
     assert len(lines) == 2  # Header + 1 result
     assert lines[0] == 'config,protocol,host,port,ping_ms,reachable,country'
     assert 'vmess://config1,VMess,example.com,443,123.0,True,US' in lines[1]
+
+
+def test_write_csv_report_content(fs, sample_results: list[ConfigResult]):
+    """Test the content of the generated CSV report."""
+    fs.create_dir("/output")
+    path = write_csv_report(sample_results, Path("/output"))
+    assert path.exists()
+    content = path.read_text()
+    lines = content.strip().split('\n')
+    assert len(lines) == 2  # Header + 1 result
+    assert lines[0] == 'config,protocol,host,port,ping_ms,reachable,country'
+    assert 'vmess://config1,VMess,example.com,443,123.0,True,US' in lines[1]
