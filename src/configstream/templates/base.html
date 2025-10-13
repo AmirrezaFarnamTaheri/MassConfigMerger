@@ -65,8 +65,12 @@
         <div class="flex-1 flex flex-col overflow-hidden">
             <!-- Topbar -->
             <header class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 lg:hidden">
-                <button type="button" data-toggle-sidebar class="text-gray-800 dark:text-white focus:outline-none">
-                    <i class="fas fa-bars text-2xl"></i>
+                <button type="button"
+                        data-toggle-sidebar
+                        aria-label="Toggle navigation menu"
+                        aria-expanded="false"
+                        class="text-gray-800 dark:text-white focus:outline-none">
+                    <i class="fas fa-bars text-2xl" aria-hidden="true"></i>
                 </button>
                 <h1 class="text-xl font-bold text-gray-800 dark:text-white">{% block header_title %}ConfigStream{% endblock %}</h1>
             </header>
@@ -79,6 +83,9 @@
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            if (document.documentElement.dataset.sidebarInit) return;
+            document.documentElement.dataset.sidebarInit = 'true';
+
             const navLinks = document.querySelectorAll('#main-nav .nav-link');
             const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
 
@@ -90,11 +97,15 @@
             });
 
             const sidebar = document.getElementById('sidebar');
-            const toggleButtons = document.querySelectorAll('[data-toggle-sidebar]');
+            const toggleButtons = Array.from(document.querySelectorAll('[data-toggle-sidebar]'));
             const mainContent = document.querySelector('main');
 
+            function focusable(container) {
+                return container.querySelectorAll('a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            }
+
             function setAria(isOpen) {
-                sidebar && sidebar.setAttribute('aria-hidden', String(!isOpen));
+                if (sidebar) sidebar.setAttribute('aria-hidden', String(!isOpen));
                 toggleButtons.forEach(btn => btn.setAttribute('aria-expanded', String(isOpen)));
             }
 
@@ -107,16 +118,25 @@
                 }
             }
 
+            let lastFocusedToggle = null;
+
             function setSidebarState(isOpen) {
                 if (!sidebar) return;
                 if (isOpen) {
                     sidebar.classList.remove('-translate-x-full');
                     sidebar.classList.add('translate-x-0');
                     document.body.dataset.sidebarOpen = 'true';
+                    if (window.innerWidth < 1024) {
+                        const first = focusable(sidebar)[0];
+                        if (first) first.focus();
+                    }
                 } else {
                     sidebar.classList.add('-translate-x-full');
                     sidebar.classList.remove('translate-x-0');
                     delete document.body.dataset.sidebarOpen;
+                    if (lastFocusedToggle) {
+                        lastFocusedToggle.focus();
+                    }
                 }
                 setAria(isOpen);
                 setInert(isOpen);
@@ -127,10 +147,32 @@
             setSidebarState(wasLarge);
 
             toggleButtons.forEach((button) => {
-                button.addEventListener('click', (e) => {
+                button.addEventListener('click', () => {
+                    lastFocusedToggle = button;
                     const isOpen = !sidebar.classList.contains('-translate-x-full');
                     setSidebarState(!isOpen);
                 }, { passive: true });
+            });
+
+            document.addEventListener('keydown', (e) => {
+                const isLarge = window.innerWidth >= 1024;
+                const isOpen = sidebar && !sidebar.classList.contains('-translate-x-full');
+                if (!isOpen || isLarge) return;
+                if (e.key === 'Tab') {
+                    const items = Array.from(focusable(sidebar));
+                    if (!items.length) return;
+                    const first = items[0];
+                    const last = items[items.length - 1];
+                    if (e.shiftKey && document.activeElement === first) {
+                        e.preventDefault();
+                        last.focus();
+                    } else if (!e.shiftKey && document.activeElement === last) {
+                        e.preventDefault();
+                        first.focus();
+                    }
+                } else if (e.key === 'Escape') {
+                    setSidebarState(false);
+                }
             });
 
             // Close on outside click (mobile)
@@ -142,11 +184,6 @@
                 if (!sidebar.contains(e.target) && !e.target.closest('[data-toggle-sidebar]')) {
                     setSidebarState(false);
                 }
-            });
-
-            // Close on Escape
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') setSidebarState(false);
             });
 
             // Only adjust when crossing breakpoint to avoid flicker

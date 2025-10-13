@@ -21,7 +21,6 @@ import ipaddress
 import json
 import logging
 import socket
-import sys
 import time
 from typing import Optional
 

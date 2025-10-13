@@ -62,13 +62,16 @@ class TestScheduler:
             }
 
             for r in results:
-                country_value = (r.country or "Unknown").strip() or "Unknown"
+                country_name = (r.country or "").strip()
+                iso_code = (getattr(r, "country_code", "") or "").strip()
+                display_country = country_name or iso_code or "Unknown"
+                stored_country_code = iso_code or "Unknown"
                 node_data = {
                     "config": r.config,
                     "protocol": r.protocol,
                     "ping_ms": r.ping_time,
-                    "country": country_value,
-                    "country_code": country_value,
+                    "country": display_country,
+                    "country_code": stored_country_code,
                     "test_success": r.is_reachable,
                     "is_blocked": r.is_blocked,
                     "timestamp": start_time.isoformat(),
