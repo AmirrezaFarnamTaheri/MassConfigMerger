@@ -34,11 +34,24 @@ DATA_DIR.mkdir(exist_ok=True)
 def get_current_results(data_dir: Path, logger_instance) -> Dict[str, Any]:
     """Load current test results."""
     current_file = data_dir / "current_results.json"
-    default_payload = {"timestamp": None, "total_tested": 0, "successful": 0, "failed": 0, "nodes": []}
+    default_payload = {
+        "timestamp": None,
+        "total_tested": 0,
+        "successful": 0,
+        "failed": 0,
+        "nodes": [],
+    }
     if not current_file.exists():
         return default_payload
     try:
-        return json.loads(current_file.read_text(encoding="utf-8"))
+        data = json.loads(current_file.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            raise ValueError("current_results.json root is not an object")
+
+        merged = {**default_payload, **{k: v for k, v in data.items() if k in default_payload}}
+        if not isinstance(merged.get("nodes"), list):
+            merged["nodes"] = []
+        return merged
     except Exception as e:
         logger_instance.error(f"Error loading current results: {e}")
         return default_payload
@@ -48,10 +61,13 @@ def get_history(data_dir: Path, hours: int, logger_instance) -> List[Dict]:
     history_file = data_dir / "history.jsonl"
     if not history_file.exists():
         return []
-    history = []
-    # Use timezone-aware datetime for comparison
+    history: List[Dict] = []
     from datetime import timezone
-    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+
+    now_utc = datetime.now(timezone.utc)
+    cutoff_time = now_utc - timedelta(hours=hours)
+    local_tz = datetime.now().astimezone().tzinfo or timezone.utc
+
     try:
         with open(history_file, "r", encoding="utf-8") as f:
             for line in f:
@@ -62,15 +78,24 @@ def get_history(data_dir: Path, hours: int, logger_instance) -> List[Dict]:
                     ts_raw = data.get("timestamp", "")
                     if not ts_raw:
                         continue
-                    # Ensure timestamp is timezone-aware for comparison
-                    ts = datetime.fromisoformat(ts_raw.replace("Z", "+00:00"))
-                    if ts.tzinfo is None:
-                        ts = ts.replace(tzinfo=timezone.utc)
+                    try:
+                        ts = datetime.fromisoformat(ts_raw.replace("Z", "+00:00"))
+                    except ValueError:
+                        logger_instance.warning(
+                            "Skipping entry with invalid timestamp: %r", ts_raw
+                        )
+                        continue
 
-                    if ts >= cutoff_time:
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=local_tz)
+
+                    ts_utc = ts.astimezone(timezone.utc)
+                    if ts_utc >= cutoff_time:
                         history.append(data)
                 except json.JSONDecodeError:
-                    logger_instance.warning(f"Skipping malformed JSON line in history: {line.strip()}")
+                    logger_instance.warning(
+                        "Skipping malformed JSON line in history: %s", line.strip()
+                    )
                     continue
     except Exception as e:
         logger_instance.error(f"Error loading history: {e}")

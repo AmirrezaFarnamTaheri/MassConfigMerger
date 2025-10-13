@@ -16,6 +16,7 @@ of servers using a GeoIP database.
 from __future__ import annotations
 
 import asyncio
+import importlib
 import ipaddress
 import json
 import logging
@@ -76,11 +77,24 @@ class NodeTester:
 
     def _get_resolver(self) -> Optional[AsyncResolver]:
         """Lazily initialize and return the asynchronous DNS resolver."""
-        if self._resolver is None and "aiodns" in sys.modules and AsyncResolver:
-            try:
-                self._resolver = AsyncResolver()
-            except Exception as exc:
-                logging.debug("AsyncResolver init failed: %s", exc)
+        if self._resolver is not None:
+            return self._resolver
+
+        try:
+            resolver_module = importlib.import_module("aiohttp.resolver")
+            async_resolver_cls = getattr(resolver_module, "AsyncResolver", None)
+            if async_resolver_cls is None:
+                return None
+            importlib.import_module("aiodns")
+        except Exception as exc:  # pragma: no cover - optional dependency
+            logging.debug("Async resolver dependencies unavailable: %s", exc)
+            return None
+
+        try:
+            self._resolver = async_resolver_cls()
+        except Exception as exc:  # pragma: no cover - optional dependency
+            logging.debug("AsyncResolver init failed: %s", exc)
+            self._resolver = None
         return self._resolver
 
     def _get_geoip_reader(self) -> Optional[Reader]:

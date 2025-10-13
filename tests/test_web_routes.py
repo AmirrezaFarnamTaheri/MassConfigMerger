@@ -150,7 +150,9 @@ def test_api_export_json(fs, settings):
         assert response.mimetype == "application/json"
         assert "attachment" in response.headers["Content-Disposition"]
         response_data = response.get_json()
-        assert response_data == nodes
+        assert response_data["count"] == len(nodes)
+        assert response_data["nodes"] == nodes
+        assert "exported_at" in response_data
         cleanup()
 
 

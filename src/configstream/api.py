@@ -1,5 +1,5 @@
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from pathlib import Path
 
@@ -23,8 +23,9 @@ def api_current():
             data["successful"] = len([n for n in data["nodes"] if n["ping_ms"] > 0])
             data["failed"] = len([n for n in data["nodes"] if n["ping_ms"] < 0])
         return jsonify(data)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception as exc:
+        current_app.logger.exception("Error loading current results: %s", exc)
+        return jsonify({"error": "Internal server error"}), 500
 
 @api.route("/history")
 def api_history():
@@ -34,8 +35,9 @@ def api_history():
         hours = int(request.args.get("hours", 24))
         history = web_dashboard.get_history(data_dir, hours, current_app.logger)
         return jsonify(history)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception as exc:
+        current_app.logger.exception("Error loading history: %s", exc)
+        return jsonify({"error": "Internal server error"}), 500
 
 @api.route("/statistics")
 def api_statistics():
@@ -66,10 +68,9 @@ def api_statistics():
             "avg_ping_by_country": avg_ping_by_country,
             "last_update": data.get("timestamp")
         })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-import json
+    except Exception as exc:
+        current_app.logger.exception("Error calculating statistics: %s", exc)
+        return jsonify({"error": "Internal server error"}), 500
 
 @api.route("/export/<format>")
 def api_export(format: str):
@@ -79,7 +80,8 @@ def api_export(format: str):
         data = web_dashboard.get_current_results(data_dir, current_app.logger)
         filters = request.args.to_dict()
         nodes = web_dashboard.filter_nodes(data["nodes"], filters)
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        now_utc = datetime.now(timezone.utc)
+        timestamp = now_utc.strftime('%Y%m%d_%H%M%S')
         if format == "csv":
             csv_data = web_dashboard.export_csv(nodes)
             return send_file(
@@ -90,19 +92,20 @@ def api_export(format: str):
             )
         elif format == "json":
             payload = {
-                "exported_at": datetime.now().isoformat(timespec="seconds"),
+                "exported_at": now_utc.isoformat(timespec="seconds"),
                 "count": len(nodes),
                 "nodes": nodes,
             }
-            return send_file(
-                BytesIO(json.dumps(payload, ensure_ascii=False).encode("utf-8")),
-                mimetype="application/json",
-                as_attachment=True,
-                download_name=f"vpn_nodes_{timestamp}.json",
+            response = jsonify(payload)
+            response.headers["Content-Disposition"] = (
+                f'attachment; filename="vpn_nodes_{timestamp}.json"'
             )
+            response.headers["Content-Type"] = "application/json; charset=utf-8"
+            return response
         return jsonify({"error": f"Unsupported format: {format}"}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception as exc:
+        current_app.logger.exception("Error exporting data: %s", exc)
+        return jsonify({"error": "Internal server error"}), 500
 
 start_time = time.time()
 
@@ -214,7 +217,8 @@ def api_settings():
         # This is a placeholder. In a real application, you would update the settings file.
         # For now, we'll just return a success message
         return jsonify({"message": "Settings updated successfully"})
-    except Exception:
+    except Exception as exc:
+        current_app.logger.exception("Error updating settings: %s", exc)
         return jsonify({"error": "Invalid JSON"}), 400
 
 @api.route("/sources", methods=["POST"])
@@ -252,9 +256,10 @@ def api_add_source():
                 if append_newline:
                     f.write("\n")
                 f.write(url)
-        except IOError as e:
-            return jsonify({"error": f"Failed to write to sources file: {e}"}), 500
+        except IOError as exc:
+            return jsonify({"error": f"Failed to write to sources file: {exc}"}), 500
 
         return jsonify({"message": "Source added successfully"}), 200
-    except Exception as e:
-        return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
+    except Exception as exc:
+        current_app.logger.exception("Unexpected error adding source: %s", exc)
+        return jsonify({"error": "Internal server error"}), 500

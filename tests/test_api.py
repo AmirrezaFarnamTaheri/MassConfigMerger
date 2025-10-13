@@ -32,7 +32,7 @@ def test_api_current_error(client):
     client.application.config["web_dashboard"].get_current_results.side_effect = Exception("Test error")
     response = client.get("/api/current")
     assert response.status_code == 500
-    assert response.get_json() == {"error": "Test error"}
+    assert response.get_json() == {"error": "Internal server error"}
 
 def test_api_history_success(client):
     """Test the /api/history endpoint with a successful request."""
@@ -47,7 +47,7 @@ def test_api_history_error(client):
     client.application.config["web_dashboard"].get_history.side_effect = Exception("Test error")
     response = client.get("/api/history")
     assert response.status_code == 500
-    assert response.get_json() == {"error": "Test error"}
+    assert response.get_json() == {"error": "Internal server error"}
 
 def test_api_statistics_success(client):
     """Test the /api/statistics endpoint with a successful request."""
@@ -66,7 +66,7 @@ def test_api_statistics_error(client):
     client.application.config["web_dashboard"].get_current_results.side_effect = Exception("Test error")
     response = client.get("/api/statistics")
     assert response.status_code == 500
-    assert response.get_json() == {"error": "Test error"}
+    assert response.get_json() == {"error": "Internal server error"}
 
 def test_api_export_csv_success(client):
     """Test the /api/export/csv endpoint with a successful request."""
@@ -87,14 +87,17 @@ def test_api_export_json_success(client):
     response = client.get("/api/export/json")
     assert response.status_code == 200
     assert response.mimetype == "application/json"
-    assert response.data == b'{"count": 1, "nodes": [{"id": 1, "ping_ms": 100}]}'
+    payload = response.get_json()
+    assert payload["count"] == 1
+    assert payload["nodes"] == mock_data["nodes"]
+    assert "exported_at" in payload
 
 def test_api_export_error(client):
     """Test the /api/export endpoint with an error."""
     client.application.config["web_dashboard"].get_current_results.side_effect = Exception("Test error")
     response = client.get("/api/export/csv")
     assert response.status_code == 500
-    assert response.get_json() == {"error": "Test error"}
+    assert response.get_json() == {"error": "Internal server error"}
 
 def test_api_logs_no_key(client):
     """Test the /api/logs endpoint without an API key."""

@@ -1,47 +1,121 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Prevent double-initialization if both scripts are included
-    if (!window.__docsNavInitialized__) {
-        window.__docsNavInitialized__ = true;
+(function () {
+  'use strict';
 
-        const sections = document.querySelectorAll('.doc-section');
-        const navLinks = document.querySelectorAll('.doc-nav-link');
+  const FLAG = 'docsNavInitialized';
+  if (document.documentElement.dataset[FLAG]) {
+    return;
+  }
+  document.documentElement.dataset[FLAG] = 'true';
 
-        let observer = null;
-        const activateLink = (id) => {
-            navLinks.forEach(link => link.classList.remove('active'));
-            const navLink = document.querySelector(`.doc-nav-link[href="#${id}"]`);
-            if (navLink) navLink.classList.add('active');
-        };
-
-        if ('IntersectionObserver' in window) {
-            observer = new IntersectionObserver(entries => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const id = entry.target.getAttribute('id');
-                        if (id) activateLink(id);
-                    }
-                });
-            }, { rootMargin: "-20% 0px -80% 0px", threshold: 0 });
-
-            sections.forEach(section => observer.observe(section));
-            window.addEventListener('pagehide', () => observer && observer.disconnect(), { once: true });
-            window.addEventListener('beforeunload', () => observer && observer.disconnect(), { once: true });
-        } else {
-            const first = sections[0]?.getAttribute('id');
-            if (first) activateLink(first);
-        }
-
-        navLinks.forEach(link => {
-            link.addEventListener('click', function(e) {
-                const targetId = this.getAttribute('href');
-                if (!targetId || !targetId.startsWith('#')) return;
-                const targetElement = document.querySelector(targetId);
-                if (!targetElement) return;
-                e.preventDefault();
-                targetElement.scrollIntoView({ behavior: 'smooth' });
-                const id = targetElement.getAttribute('id');
-                if (id) activateLink(id);
-            }, { passive: false });
-        });
+  const ready = (fn) => {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', fn, { once: true });
+    } else {
+      fn();
     }
-});
+  };
+
+  ready(() => {
+    const sections = Array.from(document.querySelectorAll('.doc-section[id]'));
+    const navLinks = Array.from(document.querySelectorAll('.doc-nav-link[href^="#"]'));
+    if (!sections.length || !navLinks.length) {
+      return;
+    }
+
+    const cleanupTasks = [];
+    let activeId = null;
+
+    const setActiveLink = (id) => {
+      if (!id || id === activeId) {
+        return;
+      }
+      activeId = id;
+      navLinks.forEach((link) => {
+        const matches = link.hash.slice(1) === id;
+        link.classList.toggle('active', matches);
+        link.setAttribute('aria-current', matches ? 'true' : 'false');
+      });
+    };
+
+    const scrollToSection = (targetId) => {
+      const target = document.getElementById(targetId);
+      if (!target) {
+        return;
+      }
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      target.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'start' });
+      setActiveLink(targetId);
+    };
+
+    const handleClick = (event) => {
+      const href = event.currentTarget.getAttribute('href');
+      if (!href || !href.startsWith('#')) {
+        return;
+      }
+      event.preventDefault();
+      const targetId = href.slice(1);
+      if (targetId) {
+        scrollToSection(targetId);
+        history.replaceState(null, '', `#${targetId}`);
+      }
+    };
+
+    navLinks.forEach((link) => {
+      link.addEventListener('click', handleClick, { passive: false });
+    });
+    cleanupTasks.push(() => navLinks.forEach((link) => link.removeEventListener('click', handleClick)));
+
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) {
+            return;
+          }
+          const id = entry.target.getAttribute('id');
+          if (id) {
+            setActiveLink(id);
+          }
+        });
+      }, { rootMargin: '-40% 0px -55% 0px', threshold: [0, 0.25, 0.5, 0.75, 1] });
+      sections.forEach((section) => observer.observe(section));
+      cleanupTasks.push(() => observer.disconnect());
+    } else {
+      setActiveLink(sections[0].id);
+    }
+
+    const handleHashChange = () => {
+      const id = window.location.hash.slice(1);
+      if (id) {
+        setActiveLink(id);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    cleanupTasks.push(() => window.removeEventListener('hashchange', handleHashChange));
+
+    const cleanup = () => {
+      while (cleanupTasks.length) {
+        try {
+          const task = cleanupTasks.pop();
+          if (task) {
+            task();
+          }
+        } catch (err) {
+          console.error('docs cleanup failed', err);
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', cleanup, { once: true });
+    window.addEventListener('pagehide', cleanup, { once: true });
+
+    const initialId = window.location.hash.slice(1);
+    if (initialId) {
+      setActiveLink(initialId);
+    } else {
+      const first = sections[0];
+      if (first) {
+        setActiveLink(first.id);
+      }
+    }
+  });
+})();
