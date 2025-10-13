@@ -105,6 +105,10 @@
                 }
             }
 
+            // Initialize based on current breakpoint
+            let wasLarge = window.innerWidth >= 1024;
+            setSidebarState(wasLarge);
+
             toggleButtons.forEach((button) => {
                 button.addEventListener('click', () => {
                     const isOpen = !sidebar.classList.contains('-translate-x-full');
@@ -128,11 +132,12 @@
                 if (e.key === 'Escape') setSidebarState(false);
             });
 
+            // Only adjust when crossing breakpoint to avoid flicker
             window.addEventListener('resize', () => {
-                if (window.innerWidth >= 1024) {
-                    setSidebarState(true);
-                } else {
-                    setSidebarState(false);
+                const isLarge = window.innerWidth >= 1024;
+                if (isLarge !== wasLarge) {
+                    setSidebarState(isLarge);
+                    wasLarge = isLarge;
                 }
             });
         });
