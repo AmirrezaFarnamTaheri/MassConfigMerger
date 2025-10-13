@@ -62,7 +62,6 @@ def write_csv_report(results: List[ConfigResult], output_dir: Path, prefix: str 
                 "port",
                 "ping_ms",
                 "reachable",
-                "source_url",
                 "country",
             ]
         )
@@ -77,7 +76,6 @@ def write_csv_report(results: List[ConfigResult], output_dir: Path, prefix: str 
                     result.port,
                     ping_ms,
                     result.is_reachable,
-                    result.source_url,
                     result.country,
                 ]
             )

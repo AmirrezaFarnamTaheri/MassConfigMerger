@@ -27,7 +27,6 @@ def sample_results() -> list[ConfigResult]:
             port=443,
             ping_time=0.123,
             is_reachable=True,
-            source_url="http://source.com",
             country="US",
         )
     ]
@@ -75,5 +74,5 @@ def test_write_csv_report_content(fs, sample_results: list[ConfigResult]):
     content = path.read_text()
     lines = content.strip().split('\n')
     assert len(lines) == 2  # Header + 1 result
-    assert lines[0] == 'config,protocol,host,port,ping_ms,reachable,source_url,country'
-    assert 'vmess://config1,VMess,example.com,443,123.0,True,http://source.com,US' in lines[1]
+    assert lines[0] == 'config,protocol,host,port,ping_ms,reachable,country'
+    assert 'vmess://config1,VMess,example.com,443,123.0,True,US' in lines[1]

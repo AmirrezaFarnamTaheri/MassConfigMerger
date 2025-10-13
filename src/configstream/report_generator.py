@@ -51,7 +51,6 @@ def generate_json_report(
                 "ping_ms": round(r.ping_time * 1000, 2) if r.ping_time else None,
                 "country": r.country,
                 "is_reachable": r.is_reachable,
-                "source_url": r.source_url,
             }
             for r in results
         ],
