@@ -89,6 +89,13 @@ def api_export(format: str):
         data = web_dashboard.get_current_results(data_dir, current_app.logger)
         filters = request.args.to_dict()
         nodes = web_dashboard.filter_nodes(data["nodes"], filters)
+
+        max_export = int(current_app.config.get("MAX_EXPORT_NODES", 5000))
+        if len(nodes) > max_export:
+            current_app.logger.warning(
+                "Export truncated from %d to %d nodes", len(nodes), max_export
+            )
+            nodes = nodes[:max_export]
         now_utc = datetime.now(timezone.utc)
         timestamp = now_utc.strftime('%Y%m%d_%H%M%S')
         if format == "csv":

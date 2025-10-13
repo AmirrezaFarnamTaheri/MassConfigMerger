@@ -75,11 +75,16 @@
             </h2>
             <p class="text-gray-400 mb-4">
                 Secure endpoints such as logs and scheduler jobs require an <code>X-API-Key</code> header.
-                Store the key locally in your browser to avoid repeated prompts.
+                Keys are held only in this session to reduce exposure in case of cross-site scripting.
             </p>
             <div class="space-y-3">
                 <label for="api-key-input" class="block text-sm text-gray-400">API key</label>
-                <input id="api-key-input" type="password" class="form-input w-full" placeholder="••••••">
+                <input id="api-key-input"
+                       type="password"
+                       class="form-input w-full"
+                       placeholder="••••••"
+                       autocomplete="off"
+                       spellcheck="false">
                 <div class="flex items-center gap-3">
                     <button type="button" id="save-api-key" class="btn btn-primary flex-1">
                         <i class="fas fa-save mr-2"></i>
@@ -142,29 +147,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearApiKeyBtn = document.getElementById('clear-api-key');
     const apiKeyFeedback = document.getElementById('api-key-feedback');
 
-    const STORAGE_KEY = 'configstream_api_key';
+    let apiKeyCache = '';
 
     function getStoredApiKey() {
-        try {
-            return window.localStorage.getItem(STORAGE_KEY) || '';
-        } catch (error) {
-            console.warn('Unable to read localStorage for API key', error);
-            return '';
+        if (apiKeyCache) {
+            return apiKeyCache;
         }
+        if (apiKeyInput) {
+            return apiKeyInput.value.trim();
+        }
+        return '';
     }
 
     function persistApiKey(value) {
-        try {
-            if (value) {
-                window.localStorage.setItem(STORAGE_KEY, value);
-            } else {
-                window.localStorage.removeItem(STORAGE_KEY);
-            }
-            return true;
-        } catch (error) {
-            console.warn('Unable to persist API key', error);
-            return false;
+        apiKeyCache = value ? value.trim() : '';
+        if (apiKeyInput && apiKeyInput.value !== apiKeyCache) {
+            apiKeyInput.value = apiKeyCache;
         }
+        return true;
     }
 
     function buildAuthHeaders() {
@@ -183,36 +183,29 @@ document.addEventListener('DOMContentLoaded', function() {
         apiKeyFeedback.className = `text-sm ${isError ? 'text-red-400' : 'text-green-400'}`;
     }
 
-    if (apiKeyInput) {
-        apiKeyInput.value = getStoredApiKey();
-    }
-
     if (saveApiKeyBtn) {
         saveApiKeyBtn.addEventListener('click', () => {
             const newKey = apiKeyInput ? apiKeyInput.value.trim() : '';
             const success = persistApiKey(newKey);
             if (success) {
-                setApiKeyFeedback(newKey ? 'API key saved for this browser.' : 'Cleared stored API key.');
+                setApiKeyFeedback(newKey ? 'API key saved for this session.' : 'Cleared stored API key.');
                 fetchLogs();
                 fetchSchedulerJobs();
             } else {
-                setApiKeyFeedback('Could not store the key. Check browser privacy settings.', true);
+                setApiKeyFeedback('Could not store the key in memory.', true);
             }
         });
     }
 
     if (clearApiKeyBtn) {
         clearApiKeyBtn.addEventListener('click', () => {
-            if (persistApiKey('')) {
-                if (apiKeyInput) {
-                    apiKeyInput.value = '';
-                }
-                setApiKeyFeedback('Cleared stored API key.');
-                fetchLogs();
-                fetchSchedulerJobs();
-            } else {
-                setApiKeyFeedback('Browser blocked clearing stored key.', true);
+            persistApiKey('');
+            if (apiKeyInput) {
+                apiKeyInput.value = '';
             }
+            setApiKeyFeedback('Cleared stored API key.');
+            fetchLogs();
+            fetchSchedulerJobs();
         });
     }
 
