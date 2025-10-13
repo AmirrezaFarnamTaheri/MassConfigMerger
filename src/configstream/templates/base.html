@@ -91,6 +91,21 @@
 
             const sidebar = document.getElementById('sidebar');
             const toggleButtons = document.querySelectorAll('[data-toggle-sidebar]');
+            const mainContent = document.querySelector('main');
+
+            function setAria(isOpen) {
+                sidebar && sidebar.setAttribute('aria-hidden', String(!isOpen));
+                toggleButtons.forEach(btn => btn.setAttribute('aria-expanded', String(isOpen)));
+            }
+
+            function setInert(isOpen) {
+                if (!mainContent) return;
+                if (isOpen && window.innerWidth < 1024) {
+                    mainContent.setAttribute('inert', '');
+                } else {
+                    mainContent.removeAttribute('inert');
+                }
+            }
 
             function setSidebarState(isOpen) {
                 if (!sidebar) return;
@@ -103,6 +118,8 @@
                     sidebar.classList.remove('translate-x-0');
                     delete document.body.dataset.sidebarOpen;
                 }
+                setAria(isOpen);
+                setInert(isOpen);
             }
 
             // Initialize based on current breakpoint
@@ -110,10 +127,10 @@
             setSidebarState(wasLarge);
 
             toggleButtons.forEach((button) => {
-                button.addEventListener('click', () => {
+                button.addEventListener('click', (e) => {
                     const isOpen = !sidebar.classList.contains('-translate-x-full');
                     setSidebarState(!isOpen);
-                });
+                }, { passive: true });
             });
 
             // Close on outside click (mobile)
