@@ -33,12 +33,16 @@ collections:
 navigation:
   - title: Home
     url: /
+  - title: Web Interface
+    url: /web-interface/
   - title: Getting Started
     url: /getting-started/
+  - title: Configuration
+    url: /configuration/
+  - title: Advanced Troubleshooting
+    url: /advanced-troubleshooting/
   - title: API Reference
     url: /api/
-  - title: Examples
-    url: /examples/
   - title: GitHub
     url: https://github.com/AmirrezaFarnamTaheri/ConfigStream/
 

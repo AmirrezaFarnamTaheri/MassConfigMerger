@@ -32,7 +32,7 @@ def test_api_current_error(client):
     client.application.config["web_dashboard"].get_current_results.side_effect = Exception("Test error")
     response = client.get("/api/current")
     assert response.status_code == 500
-    assert response.get_json() == {"error": "Test error"}
+    assert response.get_json() == {"error": "Internal server error"}
 
 def test_api_history_success(client):
     """Test the /api/history endpoint with a successful request."""
@@ -47,7 +47,7 @@ def test_api_history_error(client):
     client.application.config["web_dashboard"].get_history.side_effect = Exception("Test error")
     response = client.get("/api/history")
     assert response.status_code == 500
-    assert response.get_json() == {"error": "Test error"}
+    assert response.get_json() == {"error": "Internal server error"}
 
 def test_api_statistics_success(client):
     """Test the /api/statistics endpoint with a successful request."""
@@ -66,7 +66,7 @@ def test_api_statistics_error(client):
     client.application.config["web_dashboard"].get_current_results.side_effect = Exception("Test error")
     response = client.get("/api/statistics")
     assert response.status_code == 500
-    assert response.get_json() == {"error": "Test error"}
+    assert response.get_json() == {"error": "Internal server error"}
 
 def test_api_export_csv_success(client):
     """Test the /api/export/csv endpoint with a successful request."""
@@ -87,14 +87,46 @@ def test_api_export_json_success(client):
     response = client.get("/api/export/json")
     assert response.status_code == 200
     assert response.mimetype == "application/json"
-    assert response.data == b'{"count": 1, "nodes": [{"id": 1, "ping_ms": 100}]}'
+    payload = response.get_json()
+    assert payload["count"] == 1
+    assert payload["nodes"] == mock_data["nodes"]
+    assert "exported_at" in payload
+
+
+def test_api_export_raw_success(client):
+    """Test the /api/export/raw endpoint with a successful request."""
+    mock_nodes = [{"config": "vless://example"}]
+    client.application.config["web_dashboard"].get_current_results.return_value = {"nodes": mock_nodes}
+    client.application.config["web_dashboard"].filter_nodes.return_value = mock_nodes
+    client.application.config["web_dashboard"].export_raw.return_value = "vless://example"
+
+    response = client.get("/api/export/raw")
+    assert response.status_code == 200
+    assert response.mimetype == "text/plain"
+    assert response.data.decode("utf-8") == "vless://example"
+    assert "attachment" in response.headers["Content-Disposition"]
+
+
+def test_api_export_base64_success(client):
+    """Test the /api/export/base64 endpoint with a successful request."""
+    mock_nodes = [{"config": "vless://example"}]
+    encoded_payload = "dmxlc3M6Ly9leGFtcGxl"
+    client.application.config["web_dashboard"].get_current_results.return_value = {"nodes": mock_nodes}
+    client.application.config["web_dashboard"].filter_nodes.return_value = mock_nodes
+    client.application.config["web_dashboard"].export_base64.return_value = encoded_payload
+
+    response = client.get("/api/export/base64")
+    assert response.status_code == 200
+    assert response.mimetype == "text/plain"
+    assert response.data.decode("utf-8") == encoded_payload
+    assert "attachment" in response.headers["Content-Disposition"]
 
 def test_api_export_error(client):
     """Test the /api/export endpoint with an error."""
     client.application.config["web_dashboard"].get_current_results.side_effect = Exception("Test error")
     response = client.get("/api/export/csv")
     assert response.status_code == 500
-    assert response.get_json() == {"error": "Test error"}
+    assert response.get_json() == {"error": "Internal server error"}
 
 def test_api_logs_no_key(client):
     """Test the /api/logs endpoint without an API key."""

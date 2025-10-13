@@ -141,8 +141,9 @@
     }
 
     function populateFilters(nodes) {
-        const protocols = [...new Set(nodes.map(n => n.protocol))].sort();
-        const countries = [...new Set(nodes.map(n => n.country))].sort();
+        const protocols = [...new Set(nodes.map(n => n.protocol).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+        const countries = [...new Set(nodes.map(n => n.country || n.country_code || "Unknown").filter(Boolean))]
+            .sort((a, b) => a.localeCompare(b));
         const protocolSelect = document.getElementById('protocolFilter');
         protocolSelect.innerHTML = '<option value="">All Protocols</option>' + protocols.map(p => `<option value="${p}">${p}</option>`).join('');
         const countrySelect = document.getElementById('countryFilter');
@@ -164,7 +165,7 @@
             return `
                 <tr class="hover:bg-gray-800 transition-colors duration-200">
                     <td class="table-cell">${node.protocol || 'N/A'}</td>
-                    <td class="table-cell">${node.country || 'N/A'}</td>
+                    <td class="table-cell">${node.country || node.country_code || 'Unknown'}</td>
                     <td class="table-cell font-mono ${pingClass}">${pingDisplay}</td>
                     <td class="table-cell font-mono">${node.ip || 'N/A'}</td>
                     <td class="table-cell">${node.organization || 'N/A'}</td>
@@ -174,10 +175,10 @@
 
     function applyFilters() {
         currentFilters = {
-            search: document.getElementById('searchFilter').value,
+            search: document.getElementById('searchFilter').value.trim(),
             protocol: document.getElementById('protocolFilter').value,
             country: document.getElementById('countryFilter').value,
-            max_ping: document.getElementById('maxPingFilter').value,
+            max_ping: document.getElementById('maxPingFilter').value.trim(),
         };
         loadData();
     }

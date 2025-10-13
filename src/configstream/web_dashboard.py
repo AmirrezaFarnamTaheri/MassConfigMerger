@@ -1,18 +1,19 @@
-"""Web dashboard for ConfigStream."""
-# ... your existing imports ...
+"""Utility helpers and Flask views for the ConfigStream dashboard."""
 
-import json
+from __future__ import annotations
+
+import base64
 import csv
+import hashlib
+import json
+import logging
+from datetime import datetime, timedelta, timezone
 from io import StringIO
-from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List
-import logging
 
-from flask import Flask, render_template, current_app
+from flask import Flask, current_app, render_template
 from flask_wtf.csrf import CSRFProtect
-import base64
-import hashlib
 
 from .config import load_config
 from .scheduler import TestScheduler
@@ -21,24 +22,80 @@ csrf = CSRFProtect()
 
 logger = logging.getLogger(__name__)
 
-# ... your existing Flask app initialization ...
-# app = Flask(__name__)  # This probably already exists
+DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
 
 
-# ... (imports remain the same)
+def _normalize_node(node: Dict[str, Any]) -> Dict[str, Any]:
+    """Ensure a node dictionary exposes consistent keys."""
 
-# Initialize dashboard data manager path only
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
-DATA_DIR.mkdir(exist_ok=True)
+    normalized: Dict[str, Any] = dict(node)
+    country_value = str(normalized.get("country") or "").strip()
+    country_code = str(normalized.get("country_code") or "").strip()
+    fallback_country = (
+        country_value
+        or country_code
+        or str(normalized.get("city") or "").strip()
+        or "Unknown"
+    )
+    normalized["country"] = country_value or fallback_country
+    normalized["country_code"] = country_code or fallback_country
+    return normalized
+
+
+def _coerce_ping(value: Any) -> float | None:
+    """Attempt to convert a ping value into a float."""
+
+    try:
+        ping = float(value)
+    except (TypeError, ValueError):
+        return None
+    if ping != ping or ping in (float("inf"), float("-inf")):
+        return None
+    return ping
 
 def get_current_results(data_dir: Path, logger_instance) -> Dict[str, Any]:
     """Load current test results."""
     current_file = data_dir / "current_results.json"
-    default_payload = {"timestamp": None, "total_tested": 0, "successful": 0, "failed": 0, "nodes": []}
+    default_payload = {
+        "timestamp": None,
+        "total_tested": 0,
+        "successful": 0,
+        "failed": 0,
+        "nodes": [],
+    }
     if not current_file.exists():
         return default_payload
     try:
-        return json.loads(current_file.read_text(encoding="utf-8"))
+        data = json.loads(current_file.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            raise ValueError("current_results.json root is not an object")
+
+        unexpected_keys = sorted(set(data.keys()) - set(default_payload.keys()))
+        if unexpected_keys:
+            logger_instance.warning(
+                "Ignoring unexpected keys in current results: %s",
+                ", ".join(unexpected_keys),
+            )
+
+        merged = {**default_payload, **{k: v for k, v in data.items() if k in default_payload}}
+        nodes_raw = merged.get("nodes", [])
+        if not isinstance(nodes_raw, list):
+            logger_instance.warning("'nodes' entry is not a list; resetting to empty list")
+            nodes_raw = []
+
+        normalized_nodes: List[Dict[str, Any]] = []
+        for index, raw_node in enumerate(nodes_raw):
+            if isinstance(raw_node, dict):
+                normalized_nodes.append(_normalize_node(raw_node))
+            else:
+                logger_instance.warning(
+                    "Skipping non-object node entry at index %s in current results", index
+                )
+
+        merged["nodes"] = normalized_nodes
+        if merged.get("total_tested", 0) == 0:
+            merged["total_tested"] = len(normalized_nodes)
+        return merged
     except Exception as e:
         logger_instance.error(f"Error loading current results: {e}")
         return default_payload
@@ -48,10 +105,11 @@ def get_history(data_dir: Path, hours: int, logger_instance) -> List[Dict]:
     history_file = data_dir / "history.jsonl"
     if not history_file.exists():
         return []
-    history = []
-    # Use timezone-aware datetime for comparison
-    from datetime import timezone
-    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+    history: List[Dict] = []
+    now_utc = datetime.now(timezone.utc)
+    cutoff_time = now_utc - timedelta(hours=hours)
+    local_tz = datetime.now().astimezone().tzinfo or timezone.utc
+
     try:
         with open(history_file, "r", encoding="utf-8") as f:
             for line in f:
@@ -62,60 +120,80 @@ def get_history(data_dir: Path, hours: int, logger_instance) -> List[Dict]:
                     ts_raw = data.get("timestamp", "")
                     if not ts_raw:
                         continue
-                    # Ensure timestamp is timezone-aware for comparison
-                    ts = datetime.fromisoformat(ts_raw.replace("Z", "+00:00"))
-                    if ts.tzinfo is None:
-                        ts = ts.replace(tzinfo=timezone.utc)
+                    try:
+                        ts = datetime.fromisoformat(ts_raw.replace("Z", "+00:00"))
+                    except ValueError:
+                        logger_instance.warning(
+                            "Skipping entry with invalid timestamp: %r", ts_raw
+                        )
+                        continue
 
-                    if ts >= cutoff_time:
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=local_tz)
+
+                    ts_utc = ts.astimezone(timezone.utc)
+                    if ts_utc >= cutoff_time:
                         history.append(data)
                 except json.JSONDecodeError:
-                    logger_instance.warning(f"Skipping malformed JSON line in history: {line.strip()}")
+                    logger_instance.warning(
+                        "Skipping malformed JSON line in history: %s", line.strip()
+                    )
                     continue
     except Exception as e:
         logger_instance.error(f"Error loading history: {e}")
     return history
 
 def filter_nodes(nodes: List[Dict], filters: dict) -> List[Dict]:
-    """Apply filters to node list."""
-    filtered = nodes
+    """Apply query filters to a sequence of nodes."""
 
-    # Protocol filter
-    if protocol := filters.get("protocol"):
-        filtered = [n for n in filtered if n["protocol"].lower() == protocol.lower()]
+    normalized_nodes = [_normalize_node(n) for n in nodes if isinstance(n, dict)]
+    filtered = normalized_nodes
 
-    # Country filter
-    if country := filters.get("country"):
-        filtered = [n for n in filtered if n["country"].lower() == country.lower()]
-
-    # Min ping filter
-    if min_ping := filters.get("min_ping"):
-        try:
-            min_val = int(min_ping)
-            filtered = [n for n in filtered if n["ping_ms"] >= min_val]
-        except ValueError:
-            pass
-
-    # Max ping filter
-    if max_ping := filters.get("max_ping"):
-        try:
-            max_val = int(max_ping)
-            filtered = [n for n in filtered if 0 < n["ping_ms"] <= max_val]
-        except ValueError:
-            pass
-
-    # Exclude blocked filter
-    if filters.get("exclude_blocked"):
-        filtered = [n for n in filtered if not n["is_blocked"]]
-
-    # Search term (searches in city, organization, or IP)
-    if search := filters.get("search"):
-        search_lower = search.lower()
+    protocol = (filters.get("protocol") or "").strip()
+    if protocol:
         filtered = [
             n for n in filtered
-            if search_lower in n.get("city", "").lower()
-            or search_lower in n.get("organization", "").lower()
-            or search_lower in n.get("ip", "")
+            if str(n.get("protocol", "")).lower() == protocol.lower()
+        ]
+
+    country = (filters.get("country") or "").strip()
+    if country:
+        filtered = [
+            n for n in filtered
+            if country.lower() in {
+                str(n.get("country", "")).lower(),
+                str(n.get("country_code", "")).lower(),
+            }
+        ]
+
+    min_ping = filters.get("min_ping")
+    min_ping_value = _coerce_ping(min_ping) if min_ping is not None else None
+    if min_ping_value is not None:
+        filtered = [
+            n for n in filtered
+            if (ping := _coerce_ping(n.get("ping_ms"))) is not None and ping >= min_ping_value
+        ]
+
+    max_ping = filters.get("max_ping")
+    max_ping_value = _coerce_ping(max_ping) if max_ping is not None else None
+    if max_ping_value is not None:
+        filtered = [
+            n for n in filtered
+            if (ping := _coerce_ping(n.get("ping_ms"))) is not None and 0 < ping <= max_ping_value
+        ]
+
+    if str(filters.get("exclude_blocked", "")).lower() in {"1", "true", "yes", "on"}:
+        filtered = [n for n in filtered if not bool(n.get("is_blocked"))]
+
+    search = (filters.get("search") or "").strip().lower()
+    if search:
+        filtered = [
+            n for n in filtered
+            if search in str(n.get("city", "")).lower()
+            or search in str(n.get("organization", "")).lower()
+            or search in str(n.get("ip", ""))
+            or search in str(n.get("country", "")).lower()
+            or search in str(n.get("country_code", "")).lower()
         ]
 
     return filtered
@@ -140,6 +218,28 @@ def export_json(nodes: List[Dict]) -> str:
     """Export nodes to JSON format."""
     return json.dumps(nodes, indent=2)
 
+
+def export_raw(nodes: List[Dict]) -> str:
+    """Export nodes to a newline-separated list of configurations."""
+
+    lines = []
+    for node in nodes:
+        if not isinstance(node, dict):
+            continue
+        config = node.get("config")
+        if isinstance(config, str) and config.strip():
+            lines.append(config.strip())
+    return "\n".join(lines)
+
+
+def export_base64(nodes: List[Dict]) -> str:
+    """Export configurations encoded as a single base64 payload."""
+
+    raw_data = export_raw(nodes)
+    if not raw_data:
+        return ""
+    return base64.b64encode(raw_data.encode("utf-8")).decode("utf-8")
+
 def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
     """Create and configure the Flask application."""
     app = Flask(__name__, template_folder="templates", static_folder="static")
@@ -158,6 +258,9 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
     else:
         app.config["SECRET_KEY"] = settings.security.secret_key
     csrf.init_app(app)
+
+    data_dir = Path(data_dir)
+    data_dir.mkdir(parents=True, exist_ok=True)
 
     app.config["settings"] = settings
     app.config["scheduler"] = TestScheduler(settings, data_dir)

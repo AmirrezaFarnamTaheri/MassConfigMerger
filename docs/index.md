@@ -22,6 +22,7 @@ ConfigStream is a comprehensive solution for aggregating, testing, and monitorin
 - Live statistics and charts
 - Advanced filtering capabilities
 - Export to CSV/JSON
+- Self-hosted assets for offline deployments
 
 ### 🔐 Security Checks
 - IP reputation verification
@@ -81,8 +82,8 @@ http://localhost:8080
 - [Getting Started Guide](getting-started)
 - [Configuration Reference](configuration)
 - [API Documentation](api)
-- [Examples & Tutorials](examples)
-- [Deployment Guide](deployment)
+- [Web Interface Overview](web-interface)
+- [Advanced Troubleshooting](advanced-troubleshooting)
 
 ## Architecture
 
@@ -107,6 +108,13 @@ graph TD
 ## Contributing
 
 We welcome contributions! See our [Contributing Guide](contributing) for details.
+
+## Keeping GitHub Pages in sync
+
+This documentation site is generated directly from the Markdown files in the `docs/` folder.
+The legacy static HTML bundle has been removed so GitHub Pages always renders the latest guides.
+When you update the Flask templates, reflect any user-facing changes here or add a short note in
+[`docs/web-interface.md`](web-interface) so the hosted documentation matches the in-app experience.
 
 ## License
 
