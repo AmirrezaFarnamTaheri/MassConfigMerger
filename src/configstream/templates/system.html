@@ -5,284 +5,225 @@
 {% block header_title %}System Monitoring{% endblock %}
 
 {% block content %}
-<div class="space-y-8">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header -->
-    <div>
-        <h1 class="text-4xl font-extrabold text-white">System Monitoring</h1>
-        <p class="mt-2 text-lg text-gray-400">
-            An overview of the application's status, resource usage, and recent activity.
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white">System Monitoring</h1>
+        <p class="mt-1 text-lg text-gray-400">
+            Overview of application status, resource usage, and recent activity.
         </p>
     </div>
 
-    <!-- System Status Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Uptime -->
-        <div class="card-glow">
-            <div class="flex items-center">
-                <div class="p-3 rounded-full bg-accent-blue-500/20 text-accent-blue-500">
-                    <i class="fas fa-clock fa-lg"></i>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-400">Uptime</p>
-                    <p id="uptime" class="text-2xl font-bold text-white">Loading...</p>
-                </div>
-            </div>
-        </div>
-        <!-- CPU Usage -->
-        <div class="card-glow">
-            <div class="flex items-center">
-                <div class="p-3 rounded-full bg-accent-purple-500/20 text-accent-purple-500">
-                    <i class="fas fa-microchip fa-lg"></i>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-400">CPU Usage</p>
-                    <p id="cpu" class="text-2xl font-bold text-white">Loading...</p>
-                </div>
-            </div>
-        </div>
-        <!-- Memory Usage -->
-        <div class="card-glow">
-            <div class="flex items-center">
-                <div class="p-3 rounded-full bg-accent-green-500/20 text-accent-green-500">
-                    <i class="fas fa-memory fa-lg"></i>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-400">Memory</p>
-                    <p id="memory" class="text-2xl font-bold text-white">Loading...</p>
-                </div>
-            </div>
-        </div>
-        <!-- Total Jobs -->
-        <div class="card-glow">
-            <div class="flex items-center">
-                <div class="p-3 rounded-full bg-accent-yellow-500/20 text-accent-yellow-500">
-                    <i class="fas fa-tasks fa-lg"></i>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-400">Active Jobs</p>
-                    <p id="total-jobs" class="text-2xl font-bold text-white">{{ jobs|length }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- API Key Manager -->
-        <div class="lg:col-span-1 card">
-            <h2 class="text-2xl font-bold mb-4 flex items-center">
-                <i class="fas fa-key mr-3 text-accent-yellow-500"></i>
-                API Access
-            </h2>
-            <p class="text-gray-400 mb-4">
-                Secure endpoints such as logs and scheduler jobs require an <code>X-API-Key</code> header.
-                Keys are held only in this session to reduce exposure in case of cross-site scripting.
-            </p>
-            <div class="space-y-3">
-                <label for="api-key-input" class="block text-sm text-gray-400">API key</label>
-                <input id="api-key-input"
-                       type="password"
-                       class="form-input w-full"
-                       placeholder="••••••"
-                       autocomplete="off"
-                       spellcheck="false">
-                <div class="flex items-center gap-3">
-                    <button type="button" id="save-api-key" class="btn btn-primary flex-1">
-                        <i class="fas fa-save mr-2"></i>
-                        Save key
-                    </button>
-                    <button type="button" id="clear-api-key" class="btn btn-secondary">
-                        <i class="fas fa-eraser mr-2"></i>
-                        Clear
-                    </button>
-                </div>
-                <p id="api-key-feedback" class="text-sm"></p>
-            </div>
-        </div>
-
-        <!-- Scheduler Jobs -->
-        <div class="lg:col-span-1 card">
-            <h2 class="text-2xl font-bold mb-4 flex items-center">
-                <i class="fas fa-calendar-alt mr-3 text-accent-blue-500"></i>
-                Scheduler Jobs
-            </h2>
-            <div id="scheduler-content" class="space-y-4">
-                {% if jobs %}
-                    {% for job in jobs %}
-                    <div class="p-4 bg-gray-800 rounded-lg">
-                        <p class="font-semibold text-white">{{ job.name }}</p>
-                        <p class="text-sm text-gray-400">
-                            Next run: <span class="font-mono">{{ job.next_run_time.strftime('%Y-%m-%d %H:%M:%S %Z') if job.next_run_time else 'N/A' }}</span>
-                        </p>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Column: Status and Jobs -->
+        <div class="lg:col-span-1 space-y-8">
+            <!-- System Status Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6">
+                <div class="card">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-500/20 text-blue-400"><i class="fas fa-clock fa-lg"></i></div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-400">Uptime</p>
+                            <p id="uptime" class="text-xl font-bold text-white">Loading...</p>
+                        </div>
                     </div>
-                    {% endfor %}
-                {% else %}
-                    <p class="text-gray-400">No scheduled jobs found.</p>
-                {% endif %}
+                </div>
+                <div class="card">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-purple-500/20 text-purple-400"><i class="fas fa-microchip fa-lg"></i></div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-400">CPU Usage</p>
+                            <p id="cpu" class="text-xl font-bold text-white">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-500/20 text-green-400"><i class="fas fa-memory fa-lg"></i></div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-400">Memory</p>
+                            <p id="memory" class="text-xl font-bold text-white">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-yellow-500/20 text-yellow-400"><i class="fas fa-tasks fa-lg"></i></div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-400">Active Jobs</p>
+                            <p id="total-jobs" class="text-xl font-bold text-white">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scheduler Jobs -->
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-4 text-white flex items-center">
+                    <i class="fas fa-calendar-alt mr-3 text-accent-blue-500"></i>
+                    Scheduler Jobs
+                </h2>
+                <div id="scheduler-content" class="space-y-3">
+                    <!-- Loading state -->
+                    <div id="scheduler-loading">
+                        <i class="fas fa-spinner fa-spin text-gray-500"></i>
+                        <span class="text-gray-400 ml-2">Loading jobs...</span>
+                    </div>
+                    <!-- Content injected by JS -->
+                </div>
             </div>
         </div>
 
-        <!-- Logs -->
+        <!-- Right Column: Logs -->
         <div class="lg:col-span-2 card">
-            <h2 class="text-2xl font-bold mb-4 flex items-center">
+            <h2 class="text-xl font-semibold mb-4 text-white flex items-center">
                 <i class="fas fa-file-alt mr-3 text-accent-green-500"></i>
                 Application Logs
             </h2>
-            <div id="logs-container" class="bg-gray-950 rounded-lg p-4 h-96 overflow-y-auto font-mono text-sm border border-gray-700">
+            <div class="mb-4">
+                <p class="text-sm text-gray-400">
+                    Enter your API key to view logs. The key is stored in your browser for this session only.
+                </p>
+                <div class="flex items-center gap-2 mt-2">
+                    <input id="api-key-input" type="password" class="form-input flex-grow" placeholder="API Key (if required)">
+                    <button type="button" id="save-api-key" class="btn btn-primary">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <p id="api-key-feedback" class="text-xs mt-1"></p>
+            </div>
+            <div id="logs-container" class="bg-gray-900/50 rounded-lg p-4 h-96 overflow-y-auto font-mono text-xs border border-gray-700">
                 <pre id="logs-content" class="whitespace-pre-wrap"></pre>
+                <div id="logs-loading" class="text-center py-16">
+                    <i class="fas fa-spinner fa-spin fa-2x text-gray-500"></i>
+                    <p class="mt-2 text-gray-400">Loading logs...</p>
+                </div>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
 
-{% block head_extra %}
+{% block scripts %}
+{{ super() }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const uptimeEl = document.getElementById('uptime');
     const memoryEl = document.getElementById('memory');
     const cpuEl = document.getElementById('cpu');
+    const totalJobsEl = document.getElementById('total-jobs');
     const logsContentEl = document.getElementById('logs-content');
+    const logsLoadingEl = document.getElementById('logs-loading');
+    const schedulerContentEl = document.getElementById('scheduler-content');
+    const schedulerLoadingEl = document.getElementById('scheduler-loading');
     const apiKeyInput = document.getElementById('api-key-input');
     const saveApiKeyBtn = document.getElementById('save-api-key');
-    const clearApiKeyBtn = document.getElementById('clear-api-key');
     const apiKeyFeedback = document.getElementById('api-key-feedback');
 
-    let apiKeyCache = '';
-
-    function getStoredApiKey() {
-        if (apiKeyCache) {
-            return apiKeyCache;
-        }
-        if (apiKeyInput) {
-            return apiKeyInput.value.trim();
-        }
-        return '';
-    }
-
-    function persistApiKey(value) {
-        apiKeyCache = value ? value.trim() : '';
-        if (apiKeyInput && apiKeyInput.value !== apiKeyCache) {
-            apiKeyInput.value = apiKeyCache;
-        }
-        return true;
+    let apiKey = sessionStorage.getItem('api-key') || '';
+    if(apiKey) {
+        apiKeyInput.value = apiKey;
     }
 
     function buildAuthHeaders() {
-        const key = getStoredApiKey();
-        if (!key) {
-            return {};
-        }
-        return { 'X-API-Key': key };
+        return apiKey ? { 'X-API-Key': apiKey } : {};
     }
 
-    function setApiKeyFeedback(message, isError = false) {
-        if (!apiKeyFeedback) {
-            return;
-        }
+    function setApiKeyFeedback(message, type = 'success') {
         apiKeyFeedback.textContent = message;
-        apiKeyFeedback.className = `text-sm ${isError ? 'text-red-400' : 'text-green-400'}`;
+        apiKeyFeedback.className = `text-xs mt-1 ${type === 'error' ? 'text-red-400' : 'text-green-400'}`;
+        setTimeout(() => { apiKeyFeedback.textContent = ''; }, 3000);
     }
 
-    if (saveApiKeyBtn) {
-        saveApiKeyBtn.addEventListener('click', () => {
-            const newKey = apiKeyInput ? apiKeyInput.value.trim() : '';
-            const success = persistApiKey(newKey);
-            if (success) {
-                setApiKeyFeedback(newKey ? 'API key saved for this session.' : 'Cleared stored API key.');
-                fetchLogs();
-                fetchSchedulerJobs();
-            } else {
-                setApiKeyFeedback('Could not store the key in memory.', true);
-            }
-        });
-    }
-
-    if (clearApiKeyBtn) {
-        clearApiKeyBtn.addEventListener('click', () => {
-            persistApiKey('');
-            if (apiKeyInput) {
-                apiKeyInput.value = '';
-            }
-            setApiKeyFeedback('Cleared stored API key.');
-            fetchLogs();
-            fetchSchedulerJobs();
-        });
-    }
+    saveApiKeyBtn.addEventListener('click', () => {
+        apiKey = apiKeyInput.value.trim();
+        sessionStorage.setItem('api-key', apiKey);
+        setApiKeyFeedback('API key updated for this session.');
+        fetchLogs();
+        fetchSchedulerJobs();
+    });
 
     async function fetchSystemStatus() {
         try {
             const response = await fetch('/api/status');
-            if (!response.ok) throw new Error(`Failed to fetch status: ${response.status}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
-
-            uptimeEl.textContent = data.uptime;
-            memoryEl.textContent = `${data.memory.percent}% (${data.memory.used_mb.toFixed(0)} MB / ${data.memory.total_mb.toFixed(0)} MB)`;
-            cpuEl.textContent = `${data.cpu.percent}%`;
-
+            uptimeEl.textContent = data.uptime || 'N/A';
+            memoryEl.textContent = `${data.memory.percent.toFixed(1)}% (${data.memory.used_mb.toFixed(0)}/${data.memory.total_mb.toFixed(0)} MB)`;
+            cpuEl.textContent = `${data.cpu.percent.toFixed(1)}%`;
         } catch (error) {
             console.error('Error fetching system status:', error);
-            uptimeEl.textContent = 'Error';
-            memoryEl.textContent = 'Error';
-            cpuEl.textContent = 'Error';
+            [uptimeEl, memoryEl, cpuEl].forEach(el => el.textContent = 'Error');
         }
     }
 
     async function fetchLogs() {
+        logsLoadingEl.style.display = 'block';
+        logsContentEl.textContent = '';
         try {
             const response = await fetch('/api/logs', { headers: buildAuthHeaders() });
             if (response.status === 401) {
-                logsContentEl.textContent = 'Logs are protected. Provide a valid API key above to view them.';
+                logsContentEl.textContent = 'Unauthorized. Please provide a valid API key.';
                 return;
             }
-            if (!response.ok) throw new Error(`Failed to fetch logs: ${response.status}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
-            logsContentEl.textContent = data.logs.join('\n');
+            logsContentEl.textContent = data.logs.length > 0 ? data.logs.join('\\n') : 'No logs to display.';
         } catch (error) {
             console.error('Error fetching logs:', error);
-            logsContentEl.textContent = 'Error loading logs.';
+            logsContentEl.textContent = `Error loading logs: ${error.message}`;
+        } finally {
+            logsLoadingEl.style.display = 'none';
         }
     }
 
     async function fetchSchedulerJobs() {
+        schedulerLoadingEl.style.display = 'block';
+        schedulerContentEl.innerHTML = '';
         try {
             const response = await fetch('/api/scheduler/jobs', { headers: buildAuthHeaders() });
-            if (response.status === 401) {
-                const schedulerContainer = document.getElementById('scheduler-content');
-                if (schedulerContainer) {
-                    schedulerContainer.innerHTML = '<p class="text-gray-400">Scheduler jobs are protected. Provide an API key to load them.</p>';
-                }
+             if (response.status === 401) {
+                schedulerContentEl.innerHTML = '<p class="text-gray-400">Unauthorized. Provide an API key.</p>';
+                totalJobsEl.textContent = 'N/A';
                 return;
             }
-            if (!response.ok) {
-                throw new Error(`Failed to fetch jobs: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
-            if (!data.jobs || !Array.isArray(data.jobs) || !data.jobs.length) {
+
+            totalJobsEl.textContent = data.jobs ? data.jobs.length : 0;
+
+            if (!data.jobs || data.jobs.length === 0) {
+                schedulerContentEl.innerHTML = '<p class="text-gray-400">No scheduled jobs found.</p>';
                 return;
             }
-            const schedulerContainer = document.getElementById('scheduler-content');
-            if (schedulerContainer) {
-                schedulerContainer.innerHTML = data.jobs.map(job => `
-                    <div class="p-4 bg-gray-800 rounded-lg">
-                        <p class="font-semibold text-white">${job.name || 'Job'}</p>
-                        <p class="text-sm text-gray-400">
-                            Next run: <span class="font-mono">${job.next_run_time || 'N/A'}</span>
-                        </p>
-                    </div>
-                `).join('');
-            }
+
+            schedulerContentEl.innerHTML = data.jobs.map(job => `
+                <div class="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                    <p class="font-semibold text-white truncate">${job.name || 'Unnamed Job'}</p>
+                    <p class="text-sm text-gray-400">
+                        Next run: <span class="font-mono">${job.next_run_time ? new Date(job.next_run_time).toLocaleString() : 'N/A'}</span>
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">Trigger: ${job.trigger}</p>
+                </div>
+            `).join('');
         } catch (error) {
             console.error('Error fetching scheduler jobs:', error);
+            schedulerContentEl.innerHTML = `<p class="text-red-400">Error: ${error.message}</p>`;
+            totalJobsEl.textContent = 'Error';
+        } finally {
+            schedulerLoadingEl.style.display = 'none';
         }
     }
 
+    // Initial load
     fetchSystemStatus();
     fetchLogs();
     fetchSchedulerJobs();
 
+    // Set intervals for refreshing data
     setInterval(fetchSystemStatus, 5000);
-    setInterval(fetchLogs, 10000);
-    setInterval(fetchSchedulerJobs, 15000);
+    setInterval(fetchLogs, 30000);
+    setInterval(fetchSchedulerJobs, 30000);
 });
 </script>
 {% endblock %}

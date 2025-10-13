@@ -4,150 +4,237 @@
 
 {% block header_title %}History{% endblock %}
 
+{% block head_extra %}
+<script src="{{ url_for('static', filename='vendor/chart.js/chart.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='vendor/chart.js/chartjs-adapter-date-fns.bundle.min.js') }}" defer></script>
+{% endblock %}
+
 {% block content %}
-<div class="space-y-8">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header -->
-    <div>
-        <h1 class="text-4xl font-extrabold text-white">Historical Data</h1>
-        <p class="mt-2 text-lg text-gray-400">
-            Browse and analyze historical performance data.
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-white">Historical Data</h1>
+        <p class="mt-1 text-lg text-gray-400">
+            Performance and test results from the last 72 hours.
         </p>
     </div>
 
+    <!-- Stats Cards -->
+    <div id="stats-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Populated by JS -->
+        <div class="card animate-pulse bg-gray-800 h-24" id="stat-card-loading-1"></div>
+        <div class="card animate-pulse bg-gray-800 h-24" id="stat-card-loading-2"></div>
+        <div class="card animate-pulse bg-gray-800 h-24" id="stat-card-loading-3"></div>
+        <div class.card animate-pulse bg-gray-800 h-24" id="stat-card-loading-4"></div>
+    </div>
+
     <!-- History Chart -->
-    <div class="card">
-        <h2 class="text-2xl font-bold mb-4">Performance Over Time</h2>
-        <canvas id="historyChart"></canvas>
+    <div class="card mb-8">
+        <h2 class="text-xl font-semibold mb-4 text-white">Performance Over Time</h2>
+        <div class="h-80 relative">
+            <canvas id="historyChart"></canvas>
+        </div>
     </div>
 
     <!-- History Table -->
-    <div class="card overflow-hidden">
-        <h2 class="text-2xl font-bold mb-4">Run History</h2>
+    <div class="card">
+        <h2 class="text-xl font-semibold mb-4 text-white">Run History</h2>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-700">
                 <thead class="bg-gray-800">
                     <tr>
-                        <th class="table-header">Timestamp</th>
+                        <th class="table-header text-left">Timestamp</th>
                         <th class="table-header">Total Tested</th>
                         <th class="table-header">Successful</th>
                         <th class="table-header">Failed</th>
                         <th class="table-header">Avg. Ping</th>
                     </tr>
                 </thead>
-                <tbody id="historyTableBody" class="divide-y divide-gray-700">
-                    <!-- Rows will be injected by JavaScript -->
+                <tbody id="historyTableBody" class="bg-gray-900 divide-y divide-gray-800">
+                     <tr id="table-loading">
+                        <td colspan="5" class="text-center py-8">
+                            <i class="fas fa-spinner fa-spin fa-2x text-gray-500"></i>
+                            <p class="mt-2 text-gray-400">Loading history...</p>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
-            <div id="table-loading" class="text-center p-8 text-gray-400"><i class="fas fa-spinner fa-spin fa-2x"></i></div>
         </div>
     </div>
 </div>
 {% endblock %}
 
-{% block head_extra %}
-<script src="{{ url_for('static', filename='vendor/chart.js/chart.min.js') }}" defer></script>
-<script src="{{ url_for('static', filename='vendor/chart.js/chartjs-adapter-date-fns.bundle.min.js') }}" defer></script>
+{% block scripts %}
+{{ super() }}
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        loadHistory();
-    });
+document.addEventListener('DOMContentLoaded', () => {
+    let historyChart;
+
+    const chartCommonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: true, labels: { color: '#9ca3af', font: { family: 'monospace' } } },
+            tooltip: {
+                bodyFont: { family: 'monospace' },
+                titleFont: { family: 'monospace' },
+                mode: 'index',
+                intersect: false,
+            }
+        },
+        scales: {
+            x: {
+                type: 'time',
+                time: { unit: 'day', tooltipFormat: 'MMM d, yyyy HH:mm' },
+                ticks: { color: '#9ca3af', font: { family: 'monospace' } },
+                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+            },
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: { display: true, text: 'Node Count', color: '#9ca3af' },
+                ticks: { color: '#9ca3af', font: { family: 'monospace' } },
+                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: { display: true, text: 'Avg Ping (ms)', color: '#9ca3af' },
+                ticks: { color: '#9ca3af', font: { family: 'monospace' } },
+                grid: { drawOnChartArea: false }
+            }
+        },
+    };
+
+    function initChart() {
+        const ctx = document.getElementById('historyChart').getContext('2d');
+        historyChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: [], datasets: [] },
+            options: chartCommonOptions
+        });
+    }
 
     function setLoading(isLoading) {
-        document.getElementById('table-loading').style.display = isLoading ? 'block' : 'none';
-        document.getElementById('historyTableBody').style.display = isLoading ? 'none' : '';
+        const loadingRow = document.getElementById('table-loading');
+        if (loadingRow) loadingRow.style.display = isLoading ? 'table-row' : 'none';
+
+        const statsContainer = document.getElementById('stats-cards');
+        if(isLoading) {
+            statsContainer.querySelectorAll('.animate-pulse').forEach(el => el.style.display = 'block');
+        } else {
+            statsContainer.querySelectorAll('.animate-pulse').forEach(el => el.style.display = 'none');
+        }
     }
 
     async function loadHistory() {
         setLoading(true);
         try {
-            const response = await fetch('/api/history?hours=72'); // Fetch last 3 days
+            const response = await fetch('/api/history?hours=72');
             if (!response.ok) throw new Error(`Request failed: ${response.status}`);
             const historyData = await response.json();
             if (!Array.isArray(historyData)) throw new Error("Invalid response format");
 
-            updateTable(historyData);
+            // Reverse data to show most recent first in table
+            const displayData = [...historyData].reverse();
+
+            updateStats(historyData);
+            updateTable(displayData);
             updateChart(historyData);
         } catch (err) {
             console.error("Error loading history data:", err);
-            document.getElementById('historyTableBody').innerHTML = `<tr><td class="px-6 py-4 text-red-400 text-center" colspan="5">Error loading data</td></tr>`;
+            const tableBody = document.getElementById('historyTableBody');
+            if (tableBody) tableBody.innerHTML = `<tr><td class="table-cell text-center text-red-400" colspan="5">Error: ${err.message}</td></tr>`;
         } finally {
             setLoading(false);
         }
     }
 
-    function updateTable(data) {
-        const tableBody = document.getElementById('historyTableBody');
-        if (data.length === 0) {
-            tableBody.innerHTML = `<tr><td class="px-6 py-4 text-center text-gray-400" colspan="5">No historical data available.</td></tr>`;
+    function createStatCard(icon, title, value, unit = '') {
+        return `
+            <div class="card">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-gray-700 text-gray-300">
+                        <i class="fas ${icon} fa-lg"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-400">${title}</p>
+                        <p class="text-2xl font-bold text-white">${value} <span class="text-base font-normal">${unit}</span></p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function updateStats(data) {
+        const statsContainer = document.getElementById('stats-cards');
+        if (!data.length) {
+            statsContainer.innerHTML = '<p class="text-gray-400 col-span-4">No summary data available.</p>';
             return;
         }
+
+        const totalRuns = data.length;
+        const totalNodesTested = data.reduce((sum, d) => sum + (d.total_tested || 0), 0);
+        const totalSuccessful = data.reduce((sum, d) => sum + (d.successful || 0), 0);
+        const overallSuccessRate = totalNodesTested > 0 ? ((totalSuccessful / totalNodesTested) * 100).toFixed(1) : 0;
+        const avgPingAllRuns = data.length > 0 ? (data.reduce((sum, d) => sum + (d.avg_ping || 0), 0) / data.length).toFixed(0) : 'N/A';
+
+        statsContainer.innerHTML = `
+            ${createStatCard('fa-history', 'Total Runs', totalRuns)}
+            ${createStatCard('fa-server', 'Nodes Tested', totalNodesTested.toLocaleString())}
+            ${createStatCard('fa-check-double', 'Success Rate', overallSuccessRate, '%')}
+            ${createStatCard('fa-stopwatch', 'Avg. Ping', avgPingAllRuns, 'ms')}
+        `;
+    }
+
+    function updateTable(data) {
+        const tableBody = document.getElementById('historyTableBody');
+        if (!data.length) {
+            tableBody.innerHTML = `<tr><td class="table-cell text-center" colspan="5">No historical data available.</td></tr>`;
+            return;
+        }
+
         tableBody.innerHTML = data.map(item => `
-            <tr class="hover:bg-gray-800">
+            <tr class="hover:bg-gray-800 transition-colors duration-200">
                 <td class="table-cell">${new Date(item.timestamp).toLocaleString()}</td>
-                <td class="table-cell">${item.total_tested}</td>
-                <td class="table-cell text-green-400">${item.successful}</td>
-                <td class="table-cell text-red-400">${item.failed}</td>
-                <td class="table-cell font-mono">${item.avg_ping ? item.avg_ping.toFixed(0) + ' ms' : 'N/A'}</td>
+                <td class="table-cell text-center">${item.total_tested || 0}</td>
+                <td class="table-cell text-center text-green-400">${item.successful || 0}</td>
+                <td class="table-cell text-center text-red-400">${item.failed || 0}</td>
+                <td class="table-cell text-center font-mono">${item.avg_ping ? item.avg_ping.toFixed(0) + ' ms' : 'N/A'}</td>
             </tr>
         `).join('');
     }
 
     function updateChart(data) {
-        const ctx = document.getElementById('historyChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: data.map(item => new Date(item.timestamp)),
-                datasets: [{
-                    label: 'Successful Nodes',
-                    data: data.map(item => item.successful),
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.5)',
-                    yAxisID: 'y',
-                    tension: 0.3,
-                }, {
-                    label: 'Average Ping (ms)',
-                    data: data.map(item => item.avg_ping),
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.5)',
-                    yAxisID: 'y1',
-                    tension: 0.3,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
-                },
-                scales: {
-                    x: {
-                        type: 'time',
-                        time: { unit: 'day' },
-                        ticks: { color: '#9ca3af' },
-                        grid: { color: 'rgba(255,255,255,0.1)' }
-                    },
-                    y: {
-                        type: 'linear',
-                        display: true,
-                        position: 'left',
-                        ticks: { color: '#9ca3af' },
-                        grid: { color: 'rgba(255,255,255,0.1)' }
-                    },
-                    y1: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
-                        ticks: { color: '#9ca3af' },
-                        grid: { drawOnChartArea: false }
-                    }
-                },
-                plugins: {
-                    legend: { labels: { color: '#9ca3af' } }
-                }
-            }
-        });
+        if (!historyChart) return;
+
+        const sortedData = data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+        historyChart.data.labels = sortedData.map(item => new Date(item.timestamp));
+        historyChart.data.datasets = [{
+            label: 'Successful Nodes',
+            data: sortedData.map(item => item.successful),
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+            yAxisID: 'y',
+            tension: 0.3,
+            fill: true,
+        }, {
+            label: 'Average Ping (ms)',
+            data: sortedData.map(item => item.avg_ping),
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+            yAxisID: 'y1',
+            tension: 0.3,
+            fill: true,
+        }];
+        historyChart.update();
     }
+
+    initChart();
+    loadHistory();
+});
 </script>
 {% endblock %}
