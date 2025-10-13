@@ -44,10 +44,4 @@ document.addEventListener('DOMContentLoaded', function() {
             }, { passive: false });
         });
     }
-        });
-    });
-
-    window.addEventListener('beforeunload', () => {
-        observer.disconnect();
-    });
 });
