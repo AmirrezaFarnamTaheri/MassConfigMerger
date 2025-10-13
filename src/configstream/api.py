@@ -311,8 +311,10 @@ def api_retest():
             tmp_path = tmp.name
 
         try:
-            settings = current_app.config["settings"]
-            # Override the resume_file to our temporary file
+            base_settings = current_app.config["settings"]
+            # Create an isolated copy to avoid mutating global state
+            from copy import deepcopy
+            settings = deepcopy(base_settings)
             settings.processing.resume_file = Path(tmp_path)
 
             # Run the re-tester flow
@@ -322,8 +324,10 @@ def api_retest():
             results.sort(key=lambda x: x.get('ping_ms', 9999) if x.get('success') else 99999)
 
         finally:
-            # Clean up the temporary file
-            os.unlink(tmp_path)
+            try:
+                os.unlink(tmp_path)
+            except FileNotFoundError:
+                pass
 
         return jsonify(results)
 

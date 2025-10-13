@@ -34,13 +34,18 @@ def _get_root() -> Path:
     return find_project_root()
 
 def _run_async_task(coro):
-    """Run an async task from a sync context."""
+    """Run an async task from a sync context safely."""
+    # Always use a fresh event loop to avoid 'event loop is running' errors
+    loop = asyncio.new_event_loop()
     try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-    return loop.run_until_complete(coro)
+        return loop.run_until_complete(coro)
+    finally:
+        try:
+            loop.run_until_complete(loop.shutdown_asyncgens())
+        except Exception:
+            pass
+        loop.close()
 
 async def _read_history(db_path: Path) -> Dict[str, Any]:
     """Read proxy history from the database."""
@@ -347,16 +352,20 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
         try:
             sources_file = project_root / cfg.sources.sources_file
             if sources_file.exists():
-                stats['total_sources'] = len(sources_file.read_text().strip().split('\n'))
+                lines = [ln for ln in sources_file.read_text().splitlines() if ln.strip()]
+                stats['total_sources'] = len(lines)
 
             if db_path.exists():
                 history_data = _run_async_task(_read_history(db_path))
-                all_entries = _serialize_history(history_data)
+                all_entries = web_utils._serialize_history(history_data)
 
                 if all_entries:
                     stats['active_proxies'] = len(all_entries)
-                    total_success = sum(e['reliability'] for e in all_entries)
-                    stats['success_rate'] = f"{total_success / len(all_entries):.1f}%"
+                    reliabilities = [e.get('reliability') for e in all_entries if isinstance(e.get('reliability'), (int, float))]
+                    if reliabilities:
+                        avg_rel = sum(reliabilities) / len(reliabilities)
+                        # If reliability is already 0–100, do not rescale. Format as percentage with one decimal.
+                        stats['success_rate'] = f"{avg_rel:.1f}%"
 
                     history_preview = all_entries[:preview_limit]
         except Exception as e:
