@@ -354,6 +354,11 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
         """Render the export page."""
         return render_template("export.html")
 
+    @app.route("/testing")
+    def testing():
+        """Serve the testing page."""
+        return render_template("testing.html")
+
     return app
 
 def run_dashboard(host: str = "0.0.0.0", port: int = 8080):
