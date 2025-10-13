@@ -16,6 +16,7 @@ of servers using a GeoIP database.
 from __future__ import annotations
 
 import asyncio
+import importlib
 import ipaddress
 import json
 import logging
@@ -66,6 +67,7 @@ class NodeTester:
     """A utility class for testing node latency and performing GeoIP lookups."""
 
     _resolver: Optional[AsyncResolver] = None
+    _resolver_init_failed: bool = False
     _geoip_reader: Optional[Reader] = None
 
     def __init__(self, config: Settings) -> None:
@@ -76,11 +78,35 @@ class NodeTester:
 
     def _get_resolver(self) -> Optional[AsyncResolver]:
         """Lazily initialize and return the asynchronous DNS resolver."""
-        if self._resolver is None and "aiodns" in sys.modules and AsyncResolver:
+        if self._resolver is not None:
+            return self._resolver
+
+        if self._resolver_init_failed:
+            return None
+
+        resolver_cls: Optional[type] = None
+
+        if AsyncResolver is not None:
+            resolver_cls = AsyncResolver
+        else:  # pragma: no cover - optional dependency
             try:
-                self._resolver = AsyncResolver()
+                resolver_module = importlib.import_module("aiohttp.resolver")
+                resolver_cls = getattr(resolver_module, "AsyncResolver", None)
             except Exception as exc:
-                logging.debug("AsyncResolver init failed: %s", exc)
+                logging.debug("Async resolver dependencies unavailable: %s", exc)
+                self._resolver_init_failed = True
+                return None
+
+        if resolver_cls is None:
+            self._resolver_init_failed = True
+            return None
+
+        try:
+            self._resolver = resolver_cls()
+        except Exception as exc:  # pragma: no cover - optional dependency
+            logging.debug("AsyncResolver init failed: %s", exc)
+            self._resolver = None
+            self._resolver_init_failed = True
         return self._resolver
 
     def _get_geoip_reader(self) -> Optional[Reader]:

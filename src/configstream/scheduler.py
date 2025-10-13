@@ -13,7 +13,7 @@ import json
 import logging
 import os
 import threading
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -43,7 +43,7 @@ class TestScheduler:
     async def run_test_cycle(self):
         """Execute a full test cycle and save results."""
         logger.info("Starting scheduled test cycle")
-        start_time = datetime.now()
+        start_time = datetime.now(timezone.utc)
 
         try:
             # Initialize DB if not already done
@@ -62,11 +62,13 @@ class TestScheduler:
             }
 
             for r in results:
+                country_value = (r.country or "Unknown").strip() or "Unknown"
                 node_data = {
                     "config": r.config,
                     "protocol": r.protocol,
                     "ping_ms": r.ping_time,
-                    "country_code": r.country or "Unknown",
+                    "country": country_value,
+                    "country_code": country_value,
                     "test_success": r.is_reachable,
                     "is_blocked": r.is_blocked,
                     "timestamp": start_time.isoformat(),

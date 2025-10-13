@@ -150,7 +150,51 @@ def test_api_export_json(fs, settings):
         assert response.mimetype == "application/json"
         assert "attachment" in response.headers["Content-Disposition"]
         response_data = response.get_json()
-        assert response_data == nodes
+        assert response_data["count"] == len(nodes)
+        assert response_data["nodes"] == nodes
+        assert "exported_at" in response_data
+        cleanup()
+
+
+def test_api_export_raw(fs, settings):
+    """Test exporting data as raw text."""
+    with patch("configstream.web_dashboard.get_current_results") as mock_get_results, \
+         patch("configstream.web_dashboard.filter_nodes") as mock_filter_nodes, \
+         patch("configstream.web_dashboard.export_raw") as mock_export_raw:
+        nodes = [{"config": "vless://example"}]
+        mock_get_results.return_value = {"nodes": nodes}
+        mock_filter_nodes.return_value = nodes
+        mock_export_raw.return_value = "vless://example"
+
+        app, cleanup = _setup_app(fs, settings)
+        client = app.test_client()
+
+        response = client.get("/api/export/raw")
+        assert response.status_code == 200
+        assert response.mimetype == "text/plain"
+        assert "attachment" in response.headers["Content-Disposition"]
+        assert response.get_data(as_text=True) == "vless://example"
+        cleanup()
+
+
+def test_api_export_base64(fs, settings):
+    """Test exporting data as base64."""
+    with patch("configstream.web_dashboard.get_current_results") as mock_get_results, \
+         patch("configstream.web_dashboard.filter_nodes") as mock_filter_nodes, \
+         patch("configstream.web_dashboard.export_base64") as mock_export_base64:
+        nodes = [{"config": "vless://example"}]
+        mock_get_results.return_value = {"nodes": nodes}
+        mock_filter_nodes.return_value = nodes
+        mock_export_base64.return_value = "dmxlc3M6Ly9leGFtcGxl"
+
+        app, cleanup = _setup_app(fs, settings)
+        client = app.test_client()
+
+        response = client.get("/api/export/base64")
+        assert response.status_code == 200
+        assert response.mimetype == "text/plain"
+        assert "attachment" in response.headers["Content-Disposition"]
+        assert response.get_data(as_text=True) == "dmxlc3M6Ly9leGFtcGxl"
         cleanup()
 
 

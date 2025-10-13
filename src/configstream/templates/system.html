@@ -67,6 +67,33 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- API Key Manager -->
+        <div class="lg:col-span-1 card">
+            <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fas fa-key mr-3 text-accent-yellow-500"></i>
+                API Access
+            </h2>
+            <p class="text-gray-400 mb-4">
+                Secure endpoints such as logs and scheduler jobs require an <code>X-API-Key</code> header.
+                Store the key locally in your browser to avoid repeated prompts.
+            </p>
+            <div class="space-y-3">
+                <label for="api-key-input" class="block text-sm text-gray-400">API key</label>
+                <input id="api-key-input" type="password" class="form-input w-full" placeholder="••••••">
+                <div class="flex items-center gap-3">
+                    <button type="button" id="save-api-key" class="btn btn-primary flex-1">
+                        <i class="fas fa-save mr-2"></i>
+                        Save key
+                    </button>
+                    <button type="button" id="clear-api-key" class="btn btn-secondary">
+                        <i class="fas fa-eraser mr-2"></i>
+                        Clear
+                    </button>
+                </div>
+                <p id="api-key-feedback" class="text-sm"></p>
+            </div>
+        </div>
+
         <!-- Scheduler Jobs -->
         <div class="lg:col-span-1 card">
             <h2 class="text-2xl font-bold mb-4 flex items-center">
@@ -110,6 +137,84 @@ document.addEventListener('DOMContentLoaded', function() {
     const memoryEl = document.getElementById('memory');
     const cpuEl = document.getElementById('cpu');
     const logsContentEl = document.getElementById('logs-content');
+    const apiKeyInput = document.getElementById('api-key-input');
+    const saveApiKeyBtn = document.getElementById('save-api-key');
+    const clearApiKeyBtn = document.getElementById('clear-api-key');
+    const apiKeyFeedback = document.getElementById('api-key-feedback');
+
+    const STORAGE_KEY = 'configstream_api_key';
+
+    function getStoredApiKey() {
+        try {
+            return window.localStorage.getItem(STORAGE_KEY) || '';
+        } catch (error) {
+            console.warn('Unable to read localStorage for API key', error);
+            return '';
+        }
+    }
+
+    function persistApiKey(value) {
+        try {
+            if (value) {
+                window.localStorage.setItem(STORAGE_KEY, value);
+            } else {
+                window.localStorage.removeItem(STORAGE_KEY);
+            }
+            return true;
+        } catch (error) {
+            console.warn('Unable to persist API key', error);
+            return false;
+        }
+    }
+
+    function buildAuthHeaders() {
+        const key = getStoredApiKey();
+        if (!key) {
+            return {};
+        }
+        return { 'X-API-Key': key };
+    }
+
+    function setApiKeyFeedback(message, isError = false) {
+        if (!apiKeyFeedback) {
+            return;
+        }
+        apiKeyFeedback.textContent = message;
+        apiKeyFeedback.className = `text-sm ${isError ? 'text-red-400' : 'text-green-400'}`;
+    }
+
+    if (apiKeyInput) {
+        apiKeyInput.value = getStoredApiKey();
+    }
+
+    if (saveApiKeyBtn) {
+        saveApiKeyBtn.addEventListener('click', () => {
+            const newKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+            const success = persistApiKey(newKey);
+            if (success) {
+                setApiKeyFeedback(newKey ? 'API key saved for this browser.' : 'Cleared stored API key.');
+                fetchLogs();
+                fetchSchedulerJobs();
+            } else {
+                setApiKeyFeedback('Could not store the key. Check browser privacy settings.', true);
+            }
+        });
+    }
+
+    if (clearApiKeyBtn) {
+        clearApiKeyBtn.addEventListener('click', () => {
+            if (persistApiKey('')) {
+                if (apiKeyInput) {
+                    apiKeyInput.value = '';
+                }
+                setApiKeyFeedback('Cleared stored API key.');
+                fetchLogs();
+                fetchSchedulerJobs();
+            } else {
+                setApiKeyFeedback('Browser blocked clearing stored key.', true);
+            }
+        });
+    }
 
     async function fetchSystemStatus() {
         try {
@@ -131,7 +236,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function fetchLogs() {
         try {
-            const response = await fetch('/api/logs');
+            const response = await fetch('/api/logs', { headers: buildAuthHeaders() });
+            if (response.status === 401) {
+                logsContentEl.textContent = 'Logs are protected. Provide a valid API key above to view them.';
+                return;
+            }
             if (!response.ok) throw new Error(`Failed to fetch logs: ${response.status}`);
             const data = await response.json();
             logsContentEl.textContent = data.logs.join('\n');
@@ -141,11 +250,46 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    async function fetchSchedulerJobs() {
+        try {
+            const response = await fetch('/api/scheduler/jobs', { headers: buildAuthHeaders() });
+            if (response.status === 401) {
+                const schedulerContainer = document.getElementById('scheduler-content');
+                if (schedulerContainer) {
+                    schedulerContainer.innerHTML = '<p class="text-gray-400">Scheduler jobs are protected. Provide an API key to load them.</p>';
+                }
+                return;
+            }
+            if (!response.ok) {
+                throw new Error(`Failed to fetch jobs: ${response.status}`);
+            }
+            const data = await response.json();
+            if (!data.jobs || !Array.isArray(data.jobs) || !data.jobs.length) {
+                return;
+            }
+            const schedulerContainer = document.getElementById('scheduler-content');
+            if (schedulerContainer) {
+                schedulerContainer.innerHTML = data.jobs.map(job => `
+                    <div class="p-4 bg-gray-800 rounded-lg">
+                        <p class="font-semibold text-white">${job.name || 'Job'}</p>
+                        <p class="text-sm text-gray-400">
+                            Next run: <span class="font-mono">${job.next_run_time || 'N/A'}</span>
+                        </p>
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error fetching scheduler jobs:', error);
+        }
+    }
+
     fetchSystemStatus();
     fetchLogs();
+    fetchSchedulerJobs();
 
     setInterval(fetchSystemStatus, 5000);
     setInterval(fetchLogs, 10000);
+    setInterval(fetchSchedulerJobs, 15000);
 });
 </script>
 {% endblock %}
