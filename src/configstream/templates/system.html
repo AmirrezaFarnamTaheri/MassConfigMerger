@@ -1,54 +1,103 @@
 {% extends "base.html" %}
 
-{% block title %}System - ConfigStream{% endblock %}
+{% block title %}System Monitoring - ConfigStream{% endblock %}
 
 {% block header_title %}System Monitoring{% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-4">
-    <h1 class="text-3xl font-bold mb-6">System Monitoring</h1>
+<div class="space-y-8">
+    <!-- Header -->
+    <div>
+        <h1 class="text-4xl font-extrabold text-white">System Monitoring</h1>
+        <p class="mt-2 text-lg text-gray-400">
+            An overview of the application's status, resource usage, and recent activity.
+        </p>
+    </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Scheduler Status -->
-        <div class="card">
-            <h2 class="text-xl font-semibold mb-4">Scheduler Jobs</h2>
-            <div id="scheduler-status">
-                <div id="scheduler-loading" class="flex items-center">
-                    <i class="fas fa-spinner fa-spin mr-2"></i>
-                    <span>Loading...</span>
+    <!-- System Status Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Uptime -->
+        <div class="card-glow">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-accent-blue-500/20 text-accent-blue-500">
+                    <i class="fas fa-clock fa-lg"></i>
                 </div>
-                <div id="scheduler-content" class="hidden">
-                    {% if jobs %}
-                        <ul>
-                            {% for job in jobs %}
-                                <li class="mb-2">
-                                    <span class="font-semibold">{{ job.name }}</span> - Next run: {{ job.next_run_time.strftime('%Y-%m-%d %H:%M:%S') if job.next_run_time else 'N/A' }}
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p>No scheduled jobs found.</p>
-                    {% endif %}
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-400">Uptime</p>
+                    <p id="uptime" class="text-2xl font-bold text-white">Loading...</p>
                 </div>
             </div>
         </div>
-
-        <!-- System Status -->
-        <div class="card">
-            <h2 class="text-xl font-semibold mb-4">System Status</h2>
-            <div id="system-status">
-                <p><strong>Uptime:</strong> <span id="uptime">Loading...</span></p>
-                <p><strong>Memory Usage:</strong> <span id="memory">Loading...</span></p>
-                <p><strong>CPU Usage:</strong> <span id="cpu">Loading...</span></p>
+        <!-- CPU Usage -->
+        <div class="card-glow">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-accent-purple-500/20 text-accent-purple-500">
+                    <i class="fas fa-microchip fa-lg"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-400">CPU Usage</p>
+                    <p id="cpu" class="text-2xl font-bold text-white">Loading...</p>
+                </div>
+            </div>
+        </div>
+        <!-- Memory Usage -->
+        <div class="card-glow">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-accent-green-500/20 text-accent-green-500">
+                    <i class="fas fa-memory fa-lg"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-400">Memory</p>
+                    <p id="memory" class="text-2xl font-bold text-white">Loading...</p>
+                </div>
+            </div>
+        </div>
+        <!-- Total Jobs -->
+        <div class="card-glow">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-accent-yellow-500/20 text-accent-yellow-500">
+                    <i class="fas fa-tasks fa-lg"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-400">Active Jobs</p>
+                    <p id="total-jobs" class="text-2xl font-bold text-white">{{ jobs|length }}</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Logs -->
-    <div class="card mt-6">
-        <h2 class="text-xl font-semibold mb-4">Logs</h2>
-        <div id="logs-container" class="bg-gray-900 rounded-md p-4 h-96 overflow-y-auto">
-            <pre id="logs-content" class="text-sm"></pre>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Scheduler Jobs -->
+        <div class="lg:col-span-1 card">
+            <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fas fa-calendar-alt mr-3 text-accent-blue-500"></i>
+                Scheduler Jobs
+            </h2>
+            <div id="scheduler-content" class="space-y-4">
+                {% if jobs %}
+                    {% for job in jobs %}
+                    <div class="p-4 bg-gray-800 rounded-lg">
+                        <p class="font-semibold text-white">{{ job.name }}</p>
+                        <p class="text-sm text-gray-400">
+                            Next run: <span class="font-mono">{{ job.next_run_time.strftime('%Y-%m-%d %H:%M:%S %Z') if job.next_run_time else 'N/A' }}</span>
+                        </p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-gray-400">No scheduled jobs found.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Logs -->
+        <div class="lg:col-span-2 card">
+            <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fas fa-file-alt mr-3 text-accent-green-500"></i>
+                Application Logs
+            </h2>
+            <div id="logs-container" class="bg-gray-950 rounded-lg p-4 h-96 overflow-y-auto font-mono text-sm border border-gray-700">
+                <pre id="logs-content" class="whitespace-pre-wrap"></pre>
+            </div>
         </div>
     </div>
 </div>
@@ -57,43 +106,46 @@
 {% block head_extra %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const schedulerLoading = document.getElementById('scheduler-loading');
-    const schedulerContent = document.getElementById('scheduler-content');
+    const uptimeEl = document.getElementById('uptime');
+    const memoryEl = document.getElementById('memory');
+    const cpuEl = document.getElementById('cpu');
+    const logsContentEl = document.getElementById('logs-content');
 
     async function fetchSystemStatus() {
         try {
             const response = await fetch('/api/status');
-            if (!response.ok) throw new Error('Failed to fetch status');
+            if (!response.ok) throw new Error(`Failed to fetch status: ${response.status}`);
             const data = await response.json();
-            document.getElementById('uptime').textContent = data.uptime;
-            document.getElementById('memory').textContent = `${data.memory.used_mb.toFixed(2)} MB / ${data.memory.total_mb.toFixed(2)} MB (${data.memory.percent}%)`;
-            document.getElementById('cpu').textContent = `${data.cpu.percent}%`;
+
+            uptimeEl.textContent = data.uptime;
+            memoryEl.textContent = `${data.memory.percent}%`;
+            cpuEl.textContent = `${data.cpu.percent}%`;
+
         } catch (error) {
             console.error('Error fetching system status:', error);
-            document.getElementById('uptime').textContent = 'Error';
-            document.getElementById('memory').textContent = 'Error';
-            document.getElementById('cpu').textContent = 'Error';
+            uptimeEl.textContent = 'Error';
+            memoryEl.textContent = 'Error';
+            cpuEl.textContent = 'Error';
         }
     }
 
     async function fetchLogs() {
         try {
             const response = await fetch('/api/logs');
-            if (!response.ok) throw new Error('Failed to fetch logs');
+            if (!response.ok) throw new Error(`Failed to fetch logs: ${response.status}`);
             const data = await response.json();
-            document.getElementById('logs-content').textContent = data.logs.join('\n');
+            logsContentEl.textContent = data.logs.join('\n');
         } catch (error) {
             console.error('Error fetching logs:', error);
-            document.getElementById('logs-content').textContent = 'Error loading logs.';
+            logsContentEl.textContent = 'Error loading logs.';
         }
     }
 
-    schedulerLoading.classList.add('hidden');
-    schedulerContent.classList.remove('hidden');
-
     fetchSystemStatus();
     fetchLogs();
-    setInterval(fetchSystemStatus, 5000); // Refresh every 5 seconds
+
+    setInterval(fetchSystemStatus, 5000);
+    setInterval(fetchLogs, 10000);
 });
 </script>
 {% endblock %}

@@ -2,104 +2,140 @@
 
 {% block title %}Sources - ConfigStream{% endblock %}
 
-{% block header_title %}Subscription Sources{% endblock %}
+{% block header_title %}Sources{% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-4">
+<div class="space-y-8">
+    <!-- Header -->
+    <div>
+        <h1 class="text-4xl font-extrabold text-white">Manage Sources</h1>
+        <p class="mt-2 text-lg text-gray-400">
+            View and manage the list of sources from your <code>sources.txt</code> file.
+        </p>
+    </div>
+
+    <!-- Add Source -->
     <div class="card">
-        <h1 class="text-2xl font-bold mb-4">Subscription Sources</h1>
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+            <i class="fas fa-plus-circle mr-3 text-accent-blue-500"></i>
+            Add New Source
+        </h2>
+        <form id="add-source-form" class="flex flex-col sm:flex-row gap-4">
+            <input type="text" id="new-source-url" class="form-input flex-grow" placeholder="https://example.com/subscription">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-plus mr-2"></i>Add Source
+            </button>
+        </form>
+    </div>
 
-        <div class="mb-6">
-            <h2 class="text-xl font-semibold mb-2">Add New Source</h2>
-            <form id="add-source-form" class="flex items-center gap-4">
-                <input id="source-url" type="url" placeholder="https://example.com/subscription" class="flex-grow bg-gray-700 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-accent-blue-500" required>
-                <button type="submit" class="btn btn-primary">
-                    <i id="add-source-icon" class="fas fa-plus mr-2"></i>
-                    <span id="add-source-text">Add Source</span>
-                </button>
-            </form>
-            <div id="add-source-feedback" class="mt-2 text-sm"></div>
-        </div>
-
-        <div>
-            <h2 class="text-xl font-semibold mb-2">Current Sources</h2>
-            <ul id="sources-list" class="space-y-2">
-                {% if sources %}
-                    {% for source in sources %}
-                        <li class="flex items-center justify-between bg-gray-800 p-3 rounded-md">
-                            <span class="text-gray-300">{{ source }}</span>
-                            <button class="text-red-500 hover:text-red-400">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </li>
-                    {% endfor %}
-                {% else %}
-                    <p class="text-gray-400">No sources found.</p>
-                {% endif %}
-            </ul>
-        </div>
+    <!-- Source List -->
+    <div class="card">
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+            <i class="fas fa-list-ul mr-3 text-accent-green-500"></i>
+            Current Sources
+        </h2>
+        {% if sources %}
+            <div id="sources-list" class="space-y-2">
+                {% for source in sources %}
+                <div class="bg-gray-800 p-3 rounded-md flex justify-between items-center source-item">
+                    <span class="font-mono text-sm text-gray-300 break-all">{{ source }}</span>
+                    <button class="btn btn-danger btn-sm" onclick="removeSource(this, '{{ source }}')">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p id="no-sources-msg" class="text-gray-400">No sources found.</p>
+        {% endif %}
     </div>
 </div>
+
+<!-- Toast Notification -->
+<div id="toast" class="fixed bottom-5 right-5 text-white px-4 py-2 rounded-md shadow-lg" style="display: none;"></div>
 {% endblock %}
 
 {% block head_extra %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('add-source-form');
-    const sourceUrlInput = document.getElementById('source-url');
-    const feedbackDiv = document.getElementById('add-source-feedback');
-    const addButtonIcon = document.getElementById('add-source-icon');
-    const addButtonText = document.getElementById('add-source-text');
-    const sourcesList = document.getElementById('sources-list');
+    const newSourceInput = document.getElementById('new-source-url');
 
     form.addEventListener('submit', async function(event) {
         event.preventDefault();
-        const url = sourceUrlInput.value.trim();
-        if (!url) return;
-
-        // Provide immediate feedback
-        addButtonIcon.className = 'fas fa-spinner fa-spin mr-2';
-        addButtonText.textContent = 'Adding...';
-        feedbackDiv.textContent = '';
-        feedbackDiv.className = 'mt-2 text-sm';
+        const newSource = newSourceInput.value.trim();
+        if (!newSource) return;
 
         try {
             const response = await fetch('/api/sources', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: url })
+                body: JSON.stringify({ url: newSource })
             });
-
             const data = await response.json();
-
             if (response.ok) {
-                feedbackDiv.textContent = 'Source added successfully!';
-                feedbackDiv.classList.add('text-green-400');
-
-                // Add the new source to the list
-                const li = document.createElement('li');
-                li.className = 'flex items-center justify-between bg-gray-800 p-3 rounded-md';
-                li.innerHTML = `
-                    <span class="text-gray-300">${url}</span>
-                    <button class="text-red-500 hover:text-red-400">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                `;
-                sourcesList.appendChild(li);
-                sourceUrlInput.value = '';
+                showToast('Source added successfully!');
+                addSourceToList(newSource);
+                newSourceInput.value = '';
             } else {
-                feedbackDiv.textContent = data.error || 'Failed to add source.';
-                feedbackDiv.classList.add('text-red-400');
+                showToast(data.error || 'Failed to add source.', true);
             }
         } catch (error) {
-            feedbackDiv.textContent = 'An unexpected error occurred.';
-            feedbackDiv.classList.add('text-red-400');
-        } finally {
-            // Restore button state
-            addButtonIcon.className = 'fas fa-plus mr-2';
-            addButtonText.textContent = 'Add Source';
+            showToast('An unexpected error occurred.', true);
         }
     });
 });
+
+function addSourceToList(sourceUrl) {
+    const list = document.getElementById('sources-list');
+    const noSourcesMsg = document.getElementById('no-sources-msg');
+    if (noSourcesMsg) noSourcesMsg.style.display = 'none';
+
+    const item = document.createElement('div');
+    item.className = 'bg-gray-800 p-3 rounded-md flex justify-between items-center source-item';
+    item.innerHTML = `
+        <span class="font-mono text-sm text-gray-300 break-all">${sourceUrl}</span>
+        <button class="btn btn-danger btn-sm" onclick="removeSource(this, '${sourceUrl}')">
+            <i class="fas fa-trash-alt"></i>
+        </button>
+    `;
+    list.appendChild(item);
+}
+
+async function removeSource(button, sourceUrl) {
+    if (!confirm(`Are you sure you want to remove this source?\n${sourceUrl}`)) return;
+
+    try {
+        const response = await fetch('/api/sources', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: sourceUrl })
+        });
+        const data = await response.json();
+        if (response.ok) {
+            showToast('Source removed successfully!');
+            button.closest('.source-item').remove();
+            const list = document.getElementById('sources-list');
+            if (!list.children.length) {
+                 const noSourcesMsg = document.getElementById('no-sources-msg');
+                 if (noSourcesMsg) noSourcesMsg.style.display = 'block';
+            }
+        } else {
+            showToast(data.error || 'Failed to remove source.', true);
+        }
+    } catch (error) {
+        showToast('An unexpected error occurred.', true);
+    }
+}
+
+function showToast(message, isError = false) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = `fixed bottom-5 right-5 text-white px-4 py-2 rounded-md shadow-lg ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+    toast.style.display = 'block';
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+}
 </script>
 {% endblock %}

@@ -16,52 +16,55 @@
         <!-- Sidebar -->
         <aside
             :class="{ 'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen }"
-            class="fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0">
-            <div class="flex items-center justify-center p-4 h-16 border-b border-gray-200 dark:border-gray-700">
+            class="fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col">
+            <div class="flex items-center justify-center p-4 h-16 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                 <img src="{{ url_for('static', filename='logo.svg') }}" alt="ConfigStream Logo" class="h-10 w-10 mr-3">
                 <span class="text-2xl font-bold text-gray-800 dark:text-white">ConfigStream</span>
             </div>
-            <nav class="mt-4">
-                <a href="/" class="nav-link">
-                    <i class="fas fa-home w-6"></i>
+            <nav class="mt-4 flex-1 flex flex-col" id="main-nav">
+                <a href="/" class="nav-link" data-path="/">
+                    <i class="fas fa-home w-6 mr-3"></i>
                     <span>Home</span>
                 </a>
-                <a href="/dashboard" class="nav-link">
-                    <i class="fas fa-tachometer-alt w-6"></i>
+                <a href="/dashboard" class="nav-link" data-path="/dashboard">
+                    <i class="fas fa-tachometer-alt w-6 mr-3"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="/system" class="nav-link">
-                    <i class="fas fa-server w-6"></i>
+                <a href="/system" class="nav-link" data-path="/system">
+                    <i class="fas fa-server w-6 mr-3"></i>
                     <span>System</span>
                 </a>
-                <a href="/export" class="nav-link">
-                    <i class="fas fa-file-export w-6"></i>
+                <a href="/export" class="nav-link" data-path="/export">
+                    <i class="fas fa-file-export w-6 mr-3"></i>
                     <span>Export</span>
                 </a>
-                <a href="/settings" class="nav-link">
-                    <i class="fas fa-cog w-6"></i>
+                <a href="/settings" class="nav-link" data-path="/settings">
+                    <i class="fas fa-cog w-6 mr-3"></i>
                     <span>Settings</span>
                 </a>
-                <a href="/documentation" class="nav-link">
-                    <i class="fas fa-book w-6"></i>
+                <a href="/sources" class="nav-link" data-path="/sources">
+                    <i class="fas fa-file-alt w-6 mr-3"></i>
+                    <span>Sources</span>
+                </a>
+                <a href="/history" class="nav-link" data-path="/history">
+                    <i class="fas fa-history w-6 mr-3"></i>
+                    <span>History</span>
+                </a>
+                <a href="/documentation" class="nav-link" data-path="/documentation">
+                    <i class="fas fa-book w-6 mr-3"></i>
                     <span>Documentation</span>
                 </a>
-                <a href="/quick-start" class="nav-link">
-                    <i class="fas fa-rocket w-6"></i>
-                    <span>Quick Start</span>
-                </a>
-                <a href="/api-docs" class="nav-link">
-                    <i class="fas fa-code w-6"></i>
+                <a href="/api-docs" class="nav-link" data-path="/api-docs">
+                    <i class="fas fa-code w-6 mr-3"></i>
                     <span>API Docs</span>
                 </a>
-                <a href="/roadmap" class="nav-link">
-                    <i class="fas fa-map-signs w-6"></i>
-                    <span>Roadmap</span>
-                </a>
-                <a href="https://github.com/amirrezafarnamtaheri/configStream" target="_blank" class="nav-link mt-auto">
-                    <i class="fab fa-github w-6"></i>
-                    <span>GitHub</span>
-                </a>
+
+                <div class="mt-auto">
+                    <a href="https://github.com/amirrezafarnamtaheri/configStream" target="_blank" class="nav-link">
+                        <i class="fab fa-github w-6 mr-3"></i>
+                        <span>GitHub</span>
+                    </a>
+                </div>
             </nav>
         </aside>
 
@@ -80,5 +83,18 @@
             </main>
         </div>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('#main-nav .nav-link');
+            const currentPath = window.location.pathname;
+
+            navLinks.forEach(link => {
+                const linkPath = link.getAttribute('data-path');
+                if (linkPath && currentPath === linkPath) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

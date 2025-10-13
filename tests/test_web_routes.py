@@ -43,16 +43,6 @@ def test_documentation_route(client):
     assert b"Documentation" in response.data
 
 
-def test_quick_start_route(client):
-    response = client.get("/quick-start")
-    assert response.status_code == 200
-    assert b"Quick Start" in response.data
-
-
-def test_roadmap_route(client):
-    response = client.get("/roadmap")
-    assert response.status_code == 200
-    assert b"Roadmap" in response.data
 
 
 

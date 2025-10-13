@@ -2,92 +2,63 @@
 
 {% block title %}Settings - ConfigStream{% endblock %}
 
-{% block header_title %}Application Settings{% endblock %}
+{% block header_title %}Settings{% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-4">
-    <div class="card">
-        <h1 class="text-2xl font-bold mb-6">Application Settings</h1>
-        <p class="text-gray-400 mb-6">
-            This page allows you to view and edit the application settings. The settings are loaded from your <code>config.yaml</code> file.
-            Changes made here will be saved to the server.
+<div class="space-y-8">
+    <!-- Header -->
+    <div>
+        <h1 class="text-4xl font-extrabold text-white">Application Settings</h1>
+        <p class="mt-2 text-lg text-gray-400">
+            A read-only view of the current configuration loaded from <code>config.yaml</code>.
         </p>
+    </div>
 
-        <form id="settings-form" class="space-y-6">
-            {% for section, values in settings.items() %}
-                <div class="card bg-gray-700 p-4">
-                    <h2 class="text-xl font-semibold capitalize mb-4">{{ section.replace('_', ' ') }}</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {% for key, value in values.items() %}
-                            <div>
-                                <label for="{{ section }}-{{ key }}" class="block text-sm font-medium text-gray-400">{{ key.replace('_', ' ') | title }}</label>
-                                <input type="text" id="{{ section }}-{{ key }}" name="{{ section }}.{{ key }}" value="{{ value }}" class="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-accent-blue-500 focus:border-accent-blue-500 sm:text-sm">
+    <!-- Settings Cards -->
+    <div class="space-y-6">
+        {% for category, values in settings.items() %}
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-4 capitalize text-accent-blue-500">{{ category.replace('_', ' ') }}</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% if values is mapping %}
+                    {% for key, value in values.items() %}
+                    <div class="setting-item">
+                        <p class="font-semibold text-gray-300 capitalize">{{ key.replace('_', ' ') }}</p>
+                        {% if value is mapping %}
+                            <div class="pl-4 mt-2 border-l-2 border-gray-700">
+                            {% for sub_key, sub_value in value.items() %}
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-400">{{ sub_key }}</span>
+                                    <span class="text-sm font-mono text-white">{{ sub_value | tojson }}</span>
+                                </div>
+                            {% endfor %}
                             </div>
-                        {% endfor %}
+                        {% elif value is iterable and value is not string and value is not none %}
+                            <ul class="list-disc list-inside pl-4 mt-2">
+                            {% for item in value %}
+                                <li class="font-mono text-sm text-white">{{ item }}</li>
+                            {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="font-mono text-white">{{ value | tojson }}</p>
+                        {% endif %}
                     </div>
-                </div>
-            {% endfor %}
-            <div class="flex justify-end">
-                <button type="submit" class="btn btn-primary">
-                    <i id="save-settings-icon" class="fas fa-save mr-2"></i>
-                    <span id="save-settings-text">Save Settings</span>
-                </button>
+                    {% endfor %}
+                {% endif %}
             </div>
-            <div id="save-settings-feedback" class="mt-2 text-sm"></div>
-        </form>
+        </div>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}
 
 {% block head_extra %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('settings-form');
-    const feedbackDiv = document.getElementById('save-settings-feedback');
-    const saveButtonIcon = document.getElementById('save-settings-icon');
-    const saveButtonText = document.getElementById('save-settings-text');
-
-    form.addEventListener('submit', async function(event) {
-        event.preventDefault();
-        const formData = new FormData(form);
-        const settings = {};
-        for (const [key, value] of formData.entries()) {
-            const [section, ...field] = key.split('.');
-            if (!settings[section]) {
-                settings[section] = {};
-            }
-            settings[section][field.join('.')] = value;
-        }
-
-        saveButtonIcon.className = 'fas fa-spinner fa-spin mr-2';
-        saveButtonText.textContent = 'Saving...';
-        feedbackDiv.textContent = '';
-        feedbackDiv.className = 'mt-2 text-sm';
-
-        try {
-            const response = await fetch('/api/settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(settings)
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                feedbackDiv.textContent = 'Settings saved successfully!';
-                feedbackDiv.classList.add('text-green-400');
-            } else {
-                feedbackDiv.textContent = data.error || 'Failed to save settings.';
-                feedbackDiv.classList.add('text-red-400');
-            }
-        } catch (error) {
-            feedbackDiv.textContent = 'An unexpected error occurred.';
-            feedbackDiv.classList.add('text-red-400');
-        } finally {
-            saveButtonIcon.className = 'fas fa-save mr-2';
-            saveButtonText.textContent = 'Save Settings';
-        }
-    });
-});
-</script>
+<style>
+    .setting-item {
+        background-color: var(--bg-dark-800);
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--border-color);
+    }
+</style>
 {% endblock %}

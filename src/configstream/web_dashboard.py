@@ -188,13 +188,6 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
     def documentation():
         return render_template("documentation.html")
 
-    @app.route("/quick-start")
-    def quick_start():
-        return render_template("quick-start.html")
-
-    @app.route("/roadmap")
-    def roadmap():
-        return render_template("roadmap.html")
 
     @app.route("/history")
     def history():

@@ -2,87 +2,152 @@
 
 {% block title %}History - ConfigStream{% endblock %}
 
-{% block header_title %}Connection History{% endblock %}
+{% block header_title %}History{% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-4">
+<div class="space-y-8">
+    <!-- Header -->
+    <div>
+        <h1 class="text-4xl font-extrabold text-white">Historical Data</h1>
+        <p class="mt-2 text-lg text-gray-400">
+            Browse and analyze historical performance data.
+        </p>
+    </div>
+
+    <!-- History Chart -->
     <div class="card">
-        <h1 class="text-2xl font-bold mb-4">Connection History</h1>
+        <h2 class="text-2xl font-bold mb-4">Performance Over Time</h2>
+        <canvas id="historyChart"></canvas>
+    </div>
+
+    <!-- History Table -->
+    <div class="card overflow-hidden">
+        <h2 class="text-2xl font-bold mb-4">Run History</h2>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-700">
                 <thead class="bg-gray-800">
                     <tr>
                         <th class="table-header">Timestamp</th>
-                        <th class="table-header">IP Address</th>
-                        <th class="table-header">Protocol</th>
-                        <th class="table-header">Ping (ms)</th>
-                        <th class="table-header">Status</th>
+                        <th class="table-header">Total Tested</th>
+                        <th class="table-header">Successful</th>
+                        <th class="table-header">Failed</th>
+                        <th class="table-header">Avg. Ping</th>
                     </tr>
                 </thead>
-                <tbody id="history-table-body" class="divide-y divide-gray-700">
-                    <!-- Data will be loaded here by JavaScript -->
+                <tbody id="historyTableBody" class="divide-y divide-gray-700">
+                    <!-- Rows will be injected by JavaScript -->
                 </tbody>
             </table>
+            <div id="table-loading" class="text-center p-8 text-gray-400"><i class="fas fa-spinner fa-spin fa-2x"></i></div>
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block head_extra %}
-<style>
-    .table-header {
-        padding: 0.75rem 1.5rem;
-        text-align: left;
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--text-light-200);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tableBody = document.getElementById('history-table-body');
+    document.addEventListener('DOMContentLoaded', () => {
+        loadHistory();
+    });
 
-    async function fetchHistory() {
+    function setLoading(isLoading) {
+        document.getElementById('table-loading').style.display = isLoading ? 'block' : 'none';
+        document.getElementById('historyTableBody').style.display = isLoading ? 'none' : '';
+    }
+
+    async function loadHistory() {
+        setLoading(true);
         try {
-            const response = await fetch('/api/history');
-            if (!response.ok) throw new Error('Failed to fetch history');
-            const data = await response.json();
+            const response = await fetch('/api/history?hours=72'); // Fetch last 3 days
+            if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+            const historyData = await response.json();
+            if (!Array.isArray(historyData)) throw new Error("Invalid response format");
 
-            if (!Array.isArray(data)) {
-                tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4">Unexpected response format.</td></tr>`;
-                return;
-            }
-
-            if (data.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4">No history found.</td></tr>`;
-                return;
-            }
-
-            tableBody.innerHTML = data.map(item => {
-                const ts = item.timestamp ? new Date(item.timestamp).toLocaleString() : 'N/A';
-                const ping = (item.ping_ms !== null && item.ping_ms >= 0) ? `${item.ping_ms} ms` : 'Failed';
-                const statusClass = item.test_success ? 'text-green-400' : 'text-red-400';
-                const statusText = item.test_success ? 'Success' : 'Failed';
-
-                return `
-                    <tr class="hover:bg-gray-800">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${ts}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${item.ip || 'N/A'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${item.protocol || 'N/A'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">${ping}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusText}</td>
-                    </tr>
-                `;
-            }).join('');
-        } catch (error) {
-            console.error('Error fetching history:', error);
-            tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-400">Error loading history.</td></tr>`;
+            updateTable(historyData);
+            updateChart(historyData);
+        } catch (err) {
+            console.error("Error loading history data:", err);
+            document.getElementById('historyTableBody').innerHTML = `<tr><td class="px-6 py-4 text-red-400 text-center" colspan="5">Error loading data</td></tr>`;
+        } finally {
+            setLoading(false);
         }
     }
 
-    fetchHistory();
-});
+    function updateTable(data) {
+        const tableBody = document.getElementById('historyTableBody');
+        if (data.length === 0) {
+            tableBody.innerHTML = `<tr><td class="px-6 py-4 text-center text-gray-400" colspan="5">No historical data available.</td></tr>`;
+            return;
+        }
+        tableBody.innerHTML = data.map(item => `
+            <tr class="hover:bg-gray-800">
+                <td class="table-cell">${new Date(item.timestamp).toLocaleString()}</td>
+                <td class="table-cell">${item.total_tested}</td>
+                <td class="table-cell text-green-400">${item.successful}</td>
+                <td class="table-cell text-red-400">${item.failed}</td>
+                <td class="table-cell font-mono">${item.avg_ping ? item.avg_ping.toFixed(0) + ' ms' : 'N/A'}</td>
+            </tr>
+        `).join('');
+    }
+
+    function updateChart(data) {
+        const ctx = document.getElementById('historyChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(item => new Date(item.timestamp)),
+                datasets: [{
+                    label: 'Successful Nodes',
+                    data: data.map(item => item.successful),
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.5)',
+                    yAxisID: 'y',
+                    tension: 0.3,
+                }, {
+                    label: 'Average Ping (ms)',
+                    data: data.map(item => item.avg_ping),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                    yAxisID: 'y1',
+                    tension: 0.3,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: { unit: 'day' },
+                        ticks: { color: '#9ca3af' },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        ticks: { color: '#9ca3af' },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        ticks: { color: '#9ca3af' },
+                        grid: { drawOnChartArea: false }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#9ca3af' } }
+                }
+            }
+        });
+    }
 </script>
 {% endblock %}
