@@ -511,12 +511,15 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
                             "ping": "N/A",
                             "error": "Could not extract host and port.",
                         })
-                except Exception as e:
+                except Exception as exc:
+                    current_app.logger.warning(
+                        "Error testing proxy %s: %s", config, exc
+                    )
                     results.append({
                         "proxy": config,
                         "status": "failure",
                         "ping": "N/A",
-                        "error": str(e),
+                        "error": "An unexpected error occurred during testing.",
                     })
             return results
 
