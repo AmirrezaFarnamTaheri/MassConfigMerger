@@ -4,9 +4,23 @@
 <div class="card">
     <h2>Manual Proxy Testing</h2>
     <form id="testForm">
-        <textarea placeholder="Paste proxy configurations (one per line)" rows="10" style="width: 100%; padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);"></textarea>
+        <textarea id="proxiesInput" name="proxies" placeholder="Paste proxy configurations (one per line)" rows="10" style="width: 100%; padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);"></textarea>
         <button type="submit" style="margin-top: 1rem; padding: 0.75rem 2rem; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer;">Test Proxies</button>
     </form>
     <div id="results" style="margin-top: 2rem;"></div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('testForm');
+        const input = document.getElementById('proxiesInput');
+        const results = document.getElementById('results');
+        if (form && input && results) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const lines = input.value.split('\n').map(l => l.trim()).filter(Boolean);
+                results.textContent = lines.length ? `Testing ${lines.length} proxies...` : 'Please paste at least one proxy.';
+            });
+        }
+    });
+    </script>
 </div>
 {% endblock %}
