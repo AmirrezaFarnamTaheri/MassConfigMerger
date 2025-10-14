@@ -35,12 +35,34 @@ def _get_root() -> Path:
 
 def _run_async_task(coro):
     """Run an async task from a sync context safely."""
-    # Always use a fresh event loop to avoid 'event loop is running' errors
-    loop = asyncio.new_event_loop()
     try:
-        asyncio.set_event_loop(loop)
-        return loop.run_until_complete(coro)
-    finally:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # No running loop: use asyncio.run which manages loop lifecycle safely
+        return asyncio.run(coro)
+    else:
+        # A loop is already running (e.g., inside an async-enabled server/thread).
+        # Create a new loop in a separate thread to avoid run_until_complete on running loop.
+        import threading
+        result_container = {}
+        exc_container = {}
+
+        def runner():
+            new_loop = asyncio.new_event_loop()
+            try:
+                asyncio.set_event_loop(new_loop)
+                result_container["result"] = new_loop.run_until_complete(coro)
+            except Exception as e:
+                exc_container["exc"] = e
+            finally:
+                new_loop.close()
+
+        t = threading.Thread(target=runner, daemon=True)
+        t.start()
+        t.join()
+        if "exc" in exc_container:
+            raise exc_container["exc"]
+        return result_container.get("result")
         try:
             loop.run_until_complete(loop.shutdown_asyncgens())
         except Exception:
