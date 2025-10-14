@@ -63,11 +63,6 @@ def _run_async_task(coro):
         if "exc" in exc_container:
             raise exc_container["exc"]
         return result_container.get("result")
-        try:
-            loop.run_until_complete(loop.shutdown_asyncgens())
-        except Exception:
-            pass
-        loop.close()
 
 async def _read_history(db_path: Path) -> Dict[str, Any]:
     """Read proxy history from the database."""
