@@ -45,14 +45,14 @@ Dynamic: license-file
 
 # ConfigStream
 
-A toolchain for collecting, testing, and merging free VPN configuration links from public sources.
+A toolchain for collecting, testing, and merging free VPN configuration links from public sources, now with a modern web interface.
 
 [![CI](https://github.com/AmirrezaFarnamTaheri/ConfigStream/actions/workflows/ci.yml/badge.svg)](https://github.com/AmirrezaFarnamTaheri/ConfigStream/actions/workflows/ci.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-This project provides a command-line tool to automatically fetch VPN configurations from public sources, test their connectivity, and merge them into a single, performance-sorted subscription link.
+This project provides a command-line tool and a web interface to automatically fetch VPN configurations from public sources, test their connectivity, and merge them into a single, performance-sorted subscription link.
 
-The `configstream` command provides several subcommands:
+The `configstream` command provides several subcommands for power users:
 ```mermaid
 graph TD
     A[configstream] --> B[fetch]
@@ -61,8 +61,6 @@ graph TD
     A --> E[full]
     A --> F[sources]
 ```
-
-This guide provides instructions for both basic usage and automation.
 
 **Security Note**: All VPN servers collected by this tool come from public lists. Operators are unknown and may log or even alter your traffic. Avoid using them for banking or other sensitive tasks. See the [Important Security & Privacy Disclaimer](docs/tutorial.md#-important-security--privacy-disclaimer) for best practices.
 
@@ -79,18 +77,29 @@ This guide provides instructions for both basic usage and automation.
 
 > **Note**: The default protocol list is optimised for the Hiddify client. Other VPN apps may require adjusting `--include-protocols`.
 
-> **How protocols are filtered**
->
-> The `fetch_protocols` list in `config.yaml` controls which types of links are
-> collected by the `fetch` command. You can override this with the `--fetch-protocols` argument.
->
-> The `merge` command uses `merge_include_protocols` and `merge_exclude_protocols` from `config.yaml` to filter the final list. Adjust this list to match what your VPN client supports.
->
-> To keep only a subset during a merge, you can run:
->
-> ```bash
-> configstream merge --include-protocols VLESS,VMESS
-> ```
+## Table of Contents
+
+- [Features](#features)
+- [Quick Start](#-quick-start)
+- [Modern Web Interface](#modern-web-interface)
+- [Full Tutorial](docs/tutorial.md)
+- [Protocol Details](docs/protocol-deep-dive.md)
+- [Troubleshooting](docs/advanced-troubleshooting.md)
+- [Source List](#source-list)
+- [Output Files](#output-files)
+- [FAQ](#faq)
+
+## Features
+
+- **Modern Web Interface:** A user-friendly dashboard to monitor, manage, and test your proxy configurations.
+- **Automated Fetching:** Gathers VPN configurations from web sources and Telegram channels.
+- **Wide Protocol Support:** Parses a variety of protocols, including VMess, VLESS, Trojan, and Shadowsocks.
+- **Comprehensive Testing:** Tests the connectivity and latency of each server.
+- **Advanced Filtering:** Filters configurations by protocol, country, or regex patterns.
+- **Performance Ranking:** Ranks the merged configurations by latency or reliability.
+- **Multiple Export Formats:** Generates subscription files for various clients, including raw text, base64, Clash, and Sing-Box.
+- **Powerful CLI:** Provides a command-line interface for all fetching, merging, and testing operations.
+- **Automation-Ready:** Can be automated for periodic runs using the included Docker Compose setup.
 
 ### ⚡ Quick Start
 
@@ -108,97 +117,78 @@ This guide provides instructions for both basic usage and automation.
 
 3.  **Install the package and its dependencies**
     ```bash
-    # Install the package and its dependencies
+    # Install the core package and CLI
     pip install .
     # For development (tests, linters), install the [dev] extras
     pip install -e .[dev]
+    # To run the web interface, install the [web] extras
+    pip install -e .[web]
     ```
-    *To filter by country, install `geoip2` and download the free GeoLite2 database from MaxMind.*
+    *To filter by country, also install `geoip2` and download the free GeoLite2 database from MaxMind.*
 
 4.  **Copy and customize `config.yaml`**
-    After installing the requirements, copy [`config.yaml.example`](config.yaml.example) to `config.yaml`. Edit this file to set proxy settings or tweak other options as needed.
+    After installing the requirements, copy `config.yaml.example` to `config.yaml`. Edit this file to set proxy settings or tweak other options as needed.
 
-5.  **Gather configuration links**
+5.  **Start the Web Interface (Recommended)**
+    ```bash
+    python -m configstream.web_dashboard
+    ```
+    Access the dashboard in your browser at `http://localhost:8080` to monitor and manage proxies visually.
+
+6.  **Gather configuration links (CLI)**
     ```bash
     configstream fetch --hours 12
     ```
     This creates `output/vpn_subscription_raw.txt` and other files based on your configuration.
 
-6.  **Merge and sort the results**
-    You can merge configurations from the `sources.txt` file or from a file you've already generated.
+7.  **Merge and sort the results (CLI)**
     ```bash
-    # Merge from sources.txt
     configstream merge
-
-    # Merge from a previously fetched file
-    configstream merge --resume output/vpn_subscription_raw.txt
     ```
 
-7.  **All in one step**
+8.  **All in one step (CLI)**
     ```bash
     configstream full --hours 12
     ```
     This runs the fetch and merge commands sequentially.
 
-8.  **Country filters**
-    ```bash
-    configstream merge --geoip-db GeoLite2-Country.mmdb --include-country US,CA
-    ```
-    Combine `--include-country` or `--exclude-country` with `--geoip-db` to select preferred regions.
-
-9.  **Check the logs**
-    Every run writes output to `logs/YYYY-MM-DD.log`. Review these files to monitor progress and diagnose issues.
-
-10. **Import your subscription**
-    -   Use the link in `output/vpn_subscription_base64.txt` (unless `--no-base64` was used) or load `vpn_singbox.json` in clients like sing-box.
-
 > **Need more options?** Run `configstream --help` or `configstream <command> --help` for the full list of options.
+
+### Modern Web Interface
+
+ConfigStream includes a modern, user-friendly web interface for monitoring and managing your proxy configurations.
+
+**To run the web interface:**
+1.  Install the web dependencies: `pip install -e .[web]`
+2.  Start the server:
+    ```bash
+    python -m configstream.web_dashboard
+    ```
+3.  Access the dashboard at `http://localhost:8080`.
+
+The interface provides a seamless experience for interacting with the core features of the toolchain.
+
+**Available Pages:**
+
+-   **Dashboard:** A comprehensive overview of your proxy network, featuring key statistics like total sources, active proxies, success rates, and average ping. It also includes a preview of the most reliable recent proxy tests.
+-   **Sources:** View and manage your list of configuration sources.
+-   **History:** A detailed table of all tested proxies, their reliability, test counts, and last-tested timestamps.
+-   **Analytics:** (Placeholder) This page will feature advanced data visualizations and analytics on proxy performance.
+-   **Testing:** A manual testing ground to paste and test proxy configurations on the fly.
+-   **Scheduler:** Monitor and manage scheduled jobs for fetching and testing proxies.
+-   **Settings:** View the current application configuration derived from `config.yaml`.
+-   **Help:** (Placeholder) This page will offer detailed guides and documentation.
+-   **API Docs:** (Placeholder) This page will provide comprehensive documentation for the ConfigStream API.
 
 ### Managing Sources
 
 The `sources` command provides a simple way to manage the `sources.txt` file from the command line.
 
-- **List all sources**:
-  ```bash
-  configstream sources list
-  ```
+- **List all sources**: `configstream sources list`
+- **Add a new source**: `configstream sources add "http://example.com/new-source"`
+- **Remove a source**: `configstream sources remove "http://example.com/new-source"`
 
-- **Add a new source**:
-  ```bash
-  configstream sources add "http://example.com/new-source"
-  ```
-  The command will validate the URL format and check for duplicates before adding it.
-
-- **Remove a source**:
-  ```bash
-  configstream sources remove "http://example.com/new-source"
-  ```
-
-## Features
-
-- Fetches VPN configurations from web sources and Telegram channels.
-- Parses a wide variety of protocols, including VMess, VLESS, Trojan, and Shadowsocks.
-- Tests the connectivity and latency of each server.
-- Filters configurations by protocol, country, or regex patterns.
-- Ranks the merged configurations by latency.
-- Generates subscription files for various clients, including raw text, base64, Clash, and Sing-Box.
-- Creates CSV and JSON reports for analysis.
-- Provides a command-line interface for all fetching, merging, and testing operations.
-- Includes a modern, user-friendly web interface for monitoring and managing your proxy configurations.
-- Can be automated for periodic runs using the included Docker Compose setup.
-
-## Table of Contents
-
-- [Quick Start](#-quick-start)
-- [Full Tutorial](docs/tutorial.md)
-- [Protocol Details](docs/protocol-deep-dive.md)
-- [Troubleshooting](docs/advanced-troubleshooting.md)
-- [Source List](#source-list)
-- [Output Files](#output-files)
-- [Additional Features](#additional-features)
-- [FAQ](#faq)
-
-## Output Files
+### Output Files
 
 | File Name                              | Purpose                                                                                                  |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------- |
@@ -209,138 +199,8 @@ The `sources` command provides a simple way to manage the `sources.txt` file fro
 | `vpn_report.html`             | *(optional)* An HTML table summarizing the results.                           |
 | `vpn_singbox.json`            | Outbound objects ready for import into sing-box/Stash.                                                   |
 | `clash.yaml`                  | A Clash configuration with all proxies and a basic group.                  |
-| `vpn_clash_proxies.yaml`      | A minimal Clash YAML listing only the proxies, suitable as a provider.                                      |
-| `surge.conf` *(via `--output-surge`)* | A Surge format configuration.                                    |
-| `quantumultx.conf` *(via `--output-qx`)* | A Quantumult X server list.                                      |
-| `xyz.conf` *(via `--output-xyz`)* | A demonstration XYZ format listing basic proxy info. |
 
-Enable the HTML summary by running the `merge` command with `--write-html` or by setting `write_html: true` in `config.yaml`.
-
-All of these files are written to the directory specified by `--output-dir` (defaults to `output/`) unless an absolute path is given.
-
-### Surge & Quantumult X Usage
-
-Enable these formats by passing `--output-surge` and `--output-qx` to the `merge` command.
-```bash
-configstream merge --output-surge surge.conf --output-qx quantumultx.conf
-```
-
-Once the files are generated, host them somewhere your phone can reach or copy them directly to the device.
-
-Example of generating and serving the files locally:
-```bash
-configstream merge --output-surge surge.conf --output-qx quantumultx.conf
-python3 -m http.server -d output 8000
-```
-Then import `http://<your-ip>:8000/surge.conf` or `http://<your-ip>:8000/quantumultx.conf` in the respective app.
-
-You can also call the converters directly from `src/configstream/format_converters_extra.py`:
-
-```python
-from configstream.format_converters_extra import (
-    generate_surge_conf,
-    generate_qx_conf,
-)
-
-surge_data = generate_surge_conf(proxies)
-qx_data = generate_qx_conf(proxies)
-```
-
-### Important Notes
-
-- The script only runs when executed and does **not** stay running in the background. Use your operating system's scheduler if you need periodic updates.
-- When scraping Telegram, make sure you only access **public** channels and respect Telegram's Terms of Service along with your local laws.
-- `allowed_user_ids` lists the Telegram user IDs that are permitted to issue commands when the bot is running.
-- All events are logged to the directory specified in `log_dir` (defaults to `logs/`).
-- On Windows consoles, colored output (like progress bars) requires the optional `colorama` library. Install it with `pip install colorama`.
-
-### Telegram Bot Mode
-
-Set `telegram_api_id`, `telegram_api_hash` and `telegram_bot_token` in `config.yaml` to enable the bot interface. Only Telegram accounts listed in `allowed_user_ids` may issue commands. Obtain your numeric ID by messaging [@userinfobot](https://t.me/userinfobot).
-
-Acquire the `telegram_api_id` and `telegram_api_hash` by signing in at [my.telegram.org](https://my.telegram.org) and creating a new application.
-
-Run the tool in bot mode:
-```bash
-configstream fetch --bot --config config.yaml
-```
-
-The tool must be running for the `/update` and `/status` commands to work.
-
-### Docker Compose Automation
-
-The included `docker-compose.yml` automates running the scripts. The `merger` service loops every `MERGE_INTERVAL` seconds (default `86400`). Enable the optional `aggregator` profile to fetch new links on a schedule.
-
-Start all services with:
-```bash
-docker compose up -d
-```
-
-Add profiles as needed:
-```bash
-docker compose --profile aggregator --profile retester up -d
-```
-
-### Optional Extras
-
-The project defines a couple of [extras](https://packaging.python.org/en/latest/tutorials/installing-packages/#installing-extras) for optional features:
-
-- `dev` – installs the testing tools and linters needed for development.
-- `web` – installs the minimal Flask-based web interface.
-
-Install them with `pip install -e .[dev]` or `pip install -e .[web]` as needed.
-
-### Web Interface
-
-The web interface provides a user-friendly way to monitor and manage your proxy configurations. To run the web interface, use the `daemon` command:
-
-```bash
-configstream daemon
-```
-
-This will start the web server, and you can access the dashboard at `http://localhost:8080`.
-
-The web interface includes the following pages:
-
-- **Dashboard:** Displays a summary of your proxy configurations, including the total number of nodes, the number of successful connections, the average ping, and the number of countries. You can also filter and sort the nodes by various criteria.
-- **Export:** Allows you to export your proxy configurations in various formats, including CSV, JSON, raw text, and base64.
-- **System:** Shows the status of the application, including the scheduler jobs, system uptime, and logs.
-- **Settings:** Displays the current application settings.
-- **Documentation:** Provides detailed documentation on how to use ConfigStream.
-- **Quick Start:** A guide to getting started with ConfigStream.
-- **API Docs:** Documentation for the ConfigStream API.
-- **Roadmap:** The project roadmap.
-
-### Proxy Configuration
-
-If your network requires using an HTTP or SOCKS proxy, you can provide the settings in two ways:
-
-1. **Environment variables** – export `HTTP_PROXY` or `SOCKS_PROXY`.
-2. **Configuration file** – set the `http_proxy` or `socks_proxy` fields in `config.yaml`.
-
-## Additional Features
-
-### Sorting by Reliability
-
-Use `configstream merge --sort-by reliability` to rank servers by past success rates recorded in `proxy_history.db`. This provides a way to prioritize servers that have been historically more reliable.
-
-### Regex Filtering
-
-Use `--include-pattern` and `--exclude-pattern` to filter configs that match a regular expression. This is useful for selecting or excluding servers based on their names or other attributes.
-
-### GitHub Gist Upload
-
-Use `--upload-gist` to automatically upload the generated files to a private GitHub Gist. This is a convenient way to share your subscription files across devices.
-
-### Included Source List
-
-The `sources.txt` file collects links from hundreds of projects across GitHub and Telegram. You can add your own sources to this file or use the `sources` command to manage them.
-
-### Handling Failing Sources
-
-Each time a URL in `sources.txt` cannot be fetched, its failure count is stored in `sources.failures.json`. When a source reaches a configurable failure threshold, it is removed from `sources.txt`. This helps to keep the source list clean and efficient.
-
-## FAQ
+### FAQ
 
 ### Why does the script take so long?
 The merger checks hundreds of servers. Reduce the number of sources or use a smaller `--concurrent-limit`. Skipping tests with `--no-url-test` on the `merge` command can also speed up runs.
@@ -369,18 +229,6 @@ python -m pytest
 
 See [CHANGELOG.md](CHANGELOG.md) for a summary of new features and updates.
 If you encounter problems or have improvements, please open an issue or submit a pull request. For detailed contribution guidelines see [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## Releasing a new version
-
-1. Update the `version` field in `pyproject.toml`.
-2. Add a corresponding entry at the top of `CHANGELOG.md`.
-3. Commit your changes and create a git tag that matches the version.
-```bash
-git commit -am "Release vX.Y.Z"
-git tag -a vX.Y.Z -m "vX.Y.Z"
-git push && git push --tags
-```
-Pushing the tag triggers the `release` workflow.
 
 ## License
 
