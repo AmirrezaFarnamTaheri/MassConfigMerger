@@ -3,6 +3,7 @@
 This module handles all database operations for storing and analyzing
 historical VPN node performance data.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -33,6 +34,7 @@ class NodeHistory:
         last_seen: Last time node was tested
         first_seen: First time node was seen
     """
+
     config_hash: str
     total_tests: int
     successful_tests: int
@@ -86,7 +88,7 @@ class HistoricalManager:
         Returns:
             SHA256 hash of configuration
         """
-        return hashlib.sha256(config.encode('utf-8')).hexdigest()
+        return hashlib.sha256(config.encode("utf-8")).hexdigest()
 
     async def initialize(self):
         """Initialize database schema.
@@ -110,7 +112,8 @@ class HistoricalManager:
             test_data: Dictionary with all test data
         """
         async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("""
+            await db.execute(
+                """
                 INSERT INTO node_test_history (
                     config_hash, protocol, ip, port, country_code, city,
                     organization, ping_ms, test_success, packet_loss_percent,
@@ -118,37 +121,35 @@ class HistoricalManager:
                     upload_mbps, is_blocked, reputation_score, cert_valid,
                     cert_days_until_expiry, is_tor, is_proxy, error_message
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                test_data.get("config_hash"),
-                test_data.get("protocol"),
-                test_data.get("ip"),
-                test_data.get("port"),
-                test_data.get("country_code"),
-                test_data.get("city"),
-                test_data.get("organization"),
-                test_data.get("ping_ms"),
-                test_data.get("test_success"),
-                test_data.get("packet_loss_percent", 0.0),
-                test_data.get("jitter_ms", 0.0),
-                test_data.get("quality_score", 0.0),
-                test_data.get("network_stable", False),
-                test_data.get("download_mbps", 0.0),
-                test_data.get("upload_mbps", 0.0),
-                test_data.get("is_blocked", False),
-                test_data.get("reputation_score"),
-                test_data.get("cert_valid", True),
-                test_data.get("cert_days_until_expiry", 0),
-                test_data.get("is_tor", False),
-                test_data.get("is_proxy", False),
-                test_data.get("error_message")
-            ))
+            """,
+                (
+                    test_data.get("config_hash"),
+                    test_data.get("protocol"),
+                    test_data.get("ip"),
+                    test_data.get("port"),
+                    test_data.get("country_code"),
+                    test_data.get("city"),
+                    test_data.get("organization"),
+                    test_data.get("ping_ms"),
+                    test_data.get("test_success"),
+                    test_data.get("packet_loss_percent", 0.0),
+                    test_data.get("jitter_ms", 0.0),
+                    test_data.get("quality_score", 0.0),
+                    test_data.get("network_stable", False),
+                    test_data.get("download_mbps", 0.0),
+                    test_data.get("upload_mbps", 0.0),
+                    test_data.get("is_blocked", False),
+                    test_data.get("reputation_score"),
+                    test_data.get("cert_valid", True),
+                    test_data.get("cert_days_until_expiry", 0),
+                    test_data.get("is_tor", False),
+                    test_data.get("is_proxy", False),
+                    test_data.get("error_message"),
+                ),
+            )
             await db.commit()
 
-    async def update_reliability(
-        self,
-        config_hash: str,
-        days_to_analyze: int = 30
-    ):
+    async def update_reliability(self, config_hash: str, days_to_analyze: int = 30):
         """Update reliability metrics for a node.
 
         Args:
@@ -159,7 +160,8 @@ class HistoricalManager:
 
         async with aiosqlite.connect(self.db_path) as db:
             # Calculate statistics from test history
-            cursor = await db.execute("""
+            cursor = await db.execute(
+                """
                 SELECT
                     COUNT(*) as total_tests,
                     SUM(CASE WHEN test_success = 1 THEN 1 ELSE 0 END) as successful,
@@ -178,14 +180,29 @@ class HistoricalManager:
                 FROM node_test_history
                 WHERE config_hash = ?
                 AND test_timestamp > ?
-            """, (config_hash, cutoff_date.isoformat()))
+            """,
+                (config_hash, cutoff_date.isoformat()),
+            )
 
             row = await cursor.fetchone()
 
             if row and row[0] > 0:
-                (total, successful, failed, avg_ping, min_ping, max_ping,
-                 avg_loss, avg_jitter, avg_quality, avg_download, avg_upload,
-                 first, last, last_success) = row
+                (
+                    total,
+                    successful,
+                    failed,
+                    avg_ping,
+                    min_ping,
+                    max_ping,
+                    avg_loss,
+                    avg_jitter,
+                    avg_quality,
+                    avg_download,
+                    avg_upload,
+                    first,
+                    last,
+                    last_success,
+                ) = row
 
                 # Calculate uptime percentage
                 uptime = (successful / total * 100) if total > 0 else 0
@@ -199,11 +216,7 @@ class HistoricalManager:
                 ping_score = max(0, 100 - (avg_ping or 0) / 5) if avg_ping else 50
                 quality_score = avg_quality or 50
 
-                reliability = (
-                    uptime * 0.4 +
-                    ping_score * 0.3 +
-                    quality_score * 0.3
-                )
+                reliability = uptime * 0.4 + ping_score * 0.3 + quality_score * 0.3
 
                 # Calculate stability score based on jitter and packet loss
                 jitter_score = max(0, 100 - (avg_jitter or 0) * 2)
@@ -211,19 +224,25 @@ class HistoricalManager:
                 stability = (jitter_score + loss_score) / 2
 
                 # Get latest node info
-                cursor = await db.execute("""
+                cursor = await db.execute(
+                    """
                     SELECT protocol, ip, port, country_code, city
                     FROM node_test_history
                     WHERE config_hash = ?
                     ORDER BY test_timestamp DESC
                     LIMIT 1
-                """, (config_hash,))
+                """,
+                    (config_hash,),
+                )
 
                 node_info = await cursor.fetchone()
-                protocol, ip, port, country, city = node_info if node_info else (None,) * 5
+                protocol, ip, port, country, city = (
+                    node_info if node_info else (None,) * 5
+                )
 
                 # Update or insert reliability record
-                await db.execute("""
+                await db.execute(
+                    """
                     INSERT OR REPLACE INTO node_reliability (
                         config_hash, total_tests, successful_tests, failed_tests,
                         avg_ping_ms, min_ping_ms, max_ping_ms, avg_packet_loss,
@@ -232,14 +251,33 @@ class HistoricalManager:
                         first_seen, last_seen, last_successful_test,
                         protocol, ip, port, country_code, city
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    config_hash, total, successful, failed,
-                    avg_ping, min_ping, max_ping, avg_loss,
-                    avg_jitter, avg_quality, avg_download, avg_upload,
-                    uptime, reliability, stability,
-                    first, last, last_success,
-                    protocol, ip, port, country, city
-                ))
+                """,
+                    (
+                        config_hash,
+                        total,
+                        successful,
+                        failed,
+                        avg_ping,
+                        min_ping,
+                        max_ping,
+                        avg_loss,
+                        avg_jitter,
+                        avg_quality,
+                        avg_download,
+                        avg_upload,
+                        uptime,
+                        reliability,
+                        stability,
+                        first,
+                        last,
+                        last_success,
+                        protocol,
+                        ip,
+                        port,
+                        country,
+                        city,
+                    ),
+                )
 
                 await db.commit()
 
@@ -249,10 +287,7 @@ class HistoricalManager:
                 )
 
     async def get_reliable_nodes(
-        self,
-        min_score: float = 70.0,
-        limit: int = 100,
-        days_active: int = 7
+        self, min_score: float = 70.0, limit: int = 100, days_active: int = 7
     ) -> List[NodeHistory]:
         """Get most reliable nodes based on historical data.
 
@@ -268,7 +303,8 @@ class HistoricalManager:
 
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = aiosqlite.Row
-            cursor = await db.execute("""
+            cursor = await db.execute(
+                """
                 SELECT *
                 FROM node_reliability
                 WHERE reliability_score >= ?
@@ -276,37 +312,37 @@ class HistoricalManager:
                 AND total_tests >= 3
                 ORDER BY reliability_score DESC, uptime_percent DESC
                 LIMIT ?
-            """, (min_score, cutoff_date.isoformat(), limit))
+            """,
+                (min_score, cutoff_date.isoformat(), limit),
+            )
 
             rows = await cursor.fetchall()
 
             return [
                 NodeHistory(
-                    config_hash=row['config_hash'],
-                    total_tests=row['total_tests'],
-                    successful_tests=row['successful_tests'],
-                    failed_tests=row['failed_tests'],
-                    avg_ping_ms=row['avg_ping_ms'] or 0.0,
-                    avg_packet_loss=row['avg_packet_loss'] or 0.0,
-                    avg_jitter=row['avg_jitter'] or 0.0,
-                    avg_quality_score=row['avg_quality_score'] or 0.0,
-                    uptime_percent=row['uptime_percent'] or 0.0,
-                    reliability_score=row['reliability_score'] or 0.0,
-                    stability_score=row['stability_score'] or 0.0,
-                    last_seen=datetime.fromisoformat(row['last_seen']),
-                    first_seen=datetime.fromisoformat(row['first_seen']),
-                    protocol=row['protocol'] or '',
-                    ip=row['ip'] or '',
-                    port=row['port'] or 0,
-                    country_code=row['country_code'] or ''
+                    config_hash=row["config_hash"],
+                    total_tests=row["total_tests"],
+                    successful_tests=row["successful_tests"],
+                    failed_tests=row["failed_tests"],
+                    avg_ping_ms=row["avg_ping_ms"] or 0.0,
+                    avg_packet_loss=row["avg_packet_loss"] or 0.0,
+                    avg_jitter=row["avg_jitter"] or 0.0,
+                    avg_quality_score=row["avg_quality_score"] or 0.0,
+                    uptime_percent=row["uptime_percent"] or 0.0,
+                    reliability_score=row["reliability_score"] or 0.0,
+                    stability_score=row["stability_score"] or 0.0,
+                    last_seen=datetime.fromisoformat(row["last_seen"]),
+                    first_seen=datetime.fromisoformat(row["first_seen"]),
+                    protocol=row["protocol"] or "",
+                    ip=row["ip"] or "",
+                    port=row["port"] or 0,
+                    country_code=row["country_code"] or "",
                 )
                 for row in rows
             ]
 
     async def get_node_history(
-        self,
-        config_hash: str,
-        days: int = 30
+        self, config_hash: str, days: int = 30
     ) -> List[Dict[str, Any]]:
         """Get test history for a specific node.
 
@@ -321,13 +357,16 @@ class HistoricalManager:
 
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = aiosqlite.Row
-            cursor = await db.execute("""
+            cursor = await db.execute(
+                """
                 SELECT *
                 FROM node_test_history
                 WHERE config_hash = ?
                 AND test_timestamp > ?
                 ORDER BY test_timestamp DESC
-            """, (config_hash, cutoff_date.isoformat()))
+            """,
+                (config_hash, cutoff_date.isoformat()),
+            )
 
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
@@ -335,4 +374,3 @@ class HistoricalManager:
     async def close(self):
         """Close the database connection."""
         # aiosqlite connections are managed by context managers, so no explicit close is needed
-        pass

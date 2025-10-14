@@ -7,7 +7,6 @@ import pytest
 
 from configstream import services
 from configstream.config import Settings
-from configstream.exceptions import ConfigError
 
 
 def test_list_sources_no_file(capsys):
@@ -27,8 +26,7 @@ def test_list_sources_empty_file(fs, capsys):
 
 def test_list_sources_with_content(fs, capsys):
     """Test list_sources with a file containing sources."""
-    fs.create_file(
-        "sources.txt", contents="http://source1.com\nhttp://source2.com\n")
+    fs.create_file("sources.txt", contents="http://source1.com\nhttp://source2.com\n")
     services.list_sources(Path("sources.txt"))
     captured = capsys.readouterr()
     assert "1. http://source1.com" in captured.out
@@ -67,8 +65,7 @@ def test_add_invalid_source(fs, capsys):
 def test_remove_existing_source(fs, capsys):
     """Test removing an existing source."""
     sources_file = Path("sources.txt")
-    fs.create_file(
-        sources_file, contents="http://source1.com\nhttp://source2.com\n")
+    fs.create_file(sources_file, contents="http://source1.com\nhttp://source2.com\n")
     services.remove_existing_source(sources_file, "http://source1.com")
     captured = capsys.readouterr()
     assert "Successfully removed source: http://source1.com" in captured.out
@@ -120,8 +117,7 @@ async def test_run_retest_pipeline(mock_run_retester):
     """Test the run_retest_pipeline service."""
     settings = Settings()
     await services.run_retest_pipeline(settings, Path("i.txt"))
-    mock_run_retester.assert_awaited_once_with(
-        settings, input_file=Path("i.txt"))
+    mock_run_retester.assert_awaited_once_with(settings, input_file=Path("i.txt"))
 
 
 @pytest.mark.asyncio

@@ -32,19 +32,17 @@ from .core.utils import print_public_source_warning
 def build_parser() -> argparse.ArgumentParser:
     """Build the main `argparse` parser with all subcommands and arguments."""
     parser = argparse.ArgumentParser(
-        prog="configstream", description="A tool for collecting and merging VPN configurations."
+        prog="configstream",
+        description="A tool for collecting and merging VPN configurations.",
     )
     parser.add_argument(
         "--config", default=CONFIG_FILE_NAME, help=f"Path to {CONFIG_FILE_NAME}"
     )
-    parser.add_argument(
-        "--version", action="version", version="%(prog)s 0.4.0"
-    )
+    parser.add_argument("--version", action="version", version="%(prog)s 0.4.0")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # Fetch command
-    fetch_p = subparsers.add_parser(
-        "fetch", help="Run the aggregation pipeline")
+    fetch_p = subparsers.add_parser("fetch", help="Run the aggregation pipeline")
     cli_args.add_fetch_arguments(fetch_p)
 
     # Merge command
@@ -52,8 +50,7 @@ def build_parser() -> argparse.ArgumentParser:
     cli_args.add_merge_arguments(merge_p)
 
     # Retest command
-    retest_p = subparsers.add_parser(
-        "retest", help="Retest an existing subscription")
+    retest_p = subparsers.add_parser("retest", help="Retest an existing subscription")
     cli_args.add_retest_arguments(retest_p)
 
     # Full command
@@ -76,20 +73,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Prometheus command
     prom_parser = subparsers.add_parser(
-        "prometheus",
-        help="Start Prometheus metrics exporter"
+        "prometheus", help="Start Prometheus metrics exporter"
     )
     prom_parser.add_argument(
-        "--port",
-        type=int,
-        default=9090,
-        help="Port for Prometheus exporter"
+        "--port", type=int, default=9090, help="Port for Prometheus exporter"
     )
     prom_parser.add_argument(
         "--data-dir",
         type=str,
         default="./data",
-        help="Directory containing test results"
+        help="Directory containing test results",
     )
     prom_parser.set_defaults(func=commands.handle_prometheus)
 
@@ -98,6 +91,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def _update_settings_from_args(cfg: Settings, args: argparse.Namespace):
     """Update the `Settings` object with values from parsed CLI arguments."""
+
     def _parse_protocol_list(value: str | list[str] | None) -> list[str]:
         """Parse a comma-separated string of protocols into a list of uppercase strings."""
         if not value:

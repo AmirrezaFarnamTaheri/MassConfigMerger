@@ -11,28 +11,18 @@
 class ConfigStreamError(Exception):
     """Base exception class for all application-specific errors."""
 
-    pass
-
 
 class GistUploadError(ConfigStreamError):
     """Raised for errors during GitHub Gist uploads."""
-
-    pass
 
 
 class ParserError(ConfigStreamError):
     """Raised for errors during configuration parsing."""
 
-    pass
-
 
 class NetworkError(ConfigStreamError):
     """Raised for network-related errors, such as connection or timeout issues."""
 
-    pass
-
 
 class ConfigError(ConfigStreamError):
     """Raised for configuration-related errors."""
-
-    pass

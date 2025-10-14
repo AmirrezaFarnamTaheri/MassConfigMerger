@@ -1,4 +1,5 @@
 """Network quality testing (packet loss, jitter)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -9,13 +10,16 @@ from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class NetworkQualityResult:
     """Results from network quality tests."""
+
     packet_loss_percent: float
     jitter_ms: float
     avg_latency_ms: float
     samples: int
+
 
 class NetworkQualityTester:
     """Tests packet loss and jitter."""
@@ -28,8 +32,7 @@ class NetworkQualityTester:
         start = time.time()
         try:
             reader, writer = await asyncio.wait_for(
-                asyncio.open_connection(host, port),
-                timeout=timeout
+                asyncio.open_connection(host, port), timeout=timeout
             )
             writer.close()
             await writer.wait_closed()
@@ -40,10 +43,7 @@ class NetworkQualityTester:
             return -1.0
 
     async def test_quality(
-        self,
-        host: str,
-        port: int,
-        timeout: float = 2.0
+        self, host: str, port: int, timeout: float = 2.0
     ) -> NetworkQualityResult:
         """Run multiple pings to measure quality."""
         latencies = []
@@ -62,7 +62,7 @@ class NetworkQualityTester:
                 packet_loss_percent=100.0,
                 jitter_ms=0.0,
                 avg_latency_ms=0.0,
-                samples=self.test_count
+                samples=self.test_count,
             )
 
         # Packet loss percentage
@@ -78,15 +78,13 @@ class NetworkQualityTester:
             packet_loss_percent=round(packet_loss, 2),
             jitter_ms=round(jitter, 2),
             avg_latency_ms=round(avg_latency, 2),
-            samples=self.test_count
+            samples=self.test_count,
         )
 
 
 # Convenience function
 async def quick_quality_test(
-    host: str,
-    port: int,
-    samples: int = 10
+    host: str, port: int, samples: int = 10
 ) -> NetworkQualityResult:
     """Quick network quality test with fewer samples.
 

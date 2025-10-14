@@ -32,12 +32,14 @@ async def test_run_aggregation_pipeline_full_flow(
     mock_output_generator = MockOutputGenerator.return_value
 
     mock_source_manager.check_and_update_sources = AsyncMock(
-        return_value=["http://source1"])
-    mock_source_manager.fetch_sources = AsyncMock(
-        return_value={"vless://config1"})
+        return_value=["http://source1"]
+    )
+    mock_source_manager.fetch_sources = AsyncMock(return_value={"vless://config1"})
     mock_scrape_telegram.return_value = {"ss://config2"}
     mock_config_processor.filter_configs.return_value = {
-        "vless://config1", "ss://config2"}
+        "vless://config1",
+        "ss://config2",
+    }
     mock_output_generator.write_outputs.return_value = [tmp_path / "file1.txt"]
     mock_source_manager.close_session = AsyncMock()
 
@@ -60,8 +62,7 @@ async def test_run_aggregation_pipeline_full_flow(
     mock_source_manager.check_and_update_sources.assert_awaited_once_with(
         sources_file, max_failures=5, prune=False
     )
-    mock_source_manager.fetch_sources.assert_awaited_once_with(
-        ["http://source1"])
+    mock_source_manager.fetch_sources.assert_awaited_once_with(["http://source1"])
     mock_scrape_telegram.assert_awaited_once_with(settings, channels_file, 12)
     mock_config_processor.filter_configs.assert_called_once_with(
         {"vless://config1", "ss://config2"}, use_fetch_rules=True
@@ -92,8 +93,7 @@ async def test_run_aggregation_pipeline_no_telegram(
     settings = Settings()
     mock_source_manager = MockSourceManager.return_value
     mock_source_manager.check_and_update_sources = AsyncMock(return_value=[])
-    mock_source_manager.fetch_sources = AsyncMock(
-        return_value={"vless://config1"})
+    mock_source_manager.fetch_sources = AsyncMock(return_value={"vless://config1"})
     mock_source_manager.close_session = AsyncMock()
 
     # Act

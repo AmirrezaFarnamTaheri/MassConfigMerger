@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime
 from configstream.web_utils import (
     _coerce_int,
     _coerce_float,
@@ -7,6 +7,7 @@ from configstream.web_utils import (
     _classify_reliability,
     _serialize_history,
 )
+
 
 # Tests for _coerce_int
 @pytest.mark.parametrize(
@@ -23,6 +24,7 @@ from configstream.web_utils import (
 def test_coerce_int(value, expected):
     assert _coerce_int(value) == expected
 
+
 # Tests for _coerce_float
 @pytest.mark.parametrize(
     "value, expected",
@@ -38,6 +40,7 @@ def test_coerce_int(value, expected):
 def test_coerce_float(value, expected):
     assert _coerce_float(value) == expected
 
+
 # Tests for _format_timestamp
 @pytest.mark.parametrize(
     "value, expected_pattern",
@@ -50,6 +53,7 @@ def test_coerce_float(value, expected):
 )
 def test_format_timestamp(value, expected_pattern):
     assert _format_timestamp(value) == expected_pattern
+
 
 # Tests for _classify_reliability
 @pytest.mark.parametrize(
@@ -65,6 +69,7 @@ def test_format_timestamp(value, expected_pattern):
 )
 def test_classify_reliability(successes, failures, expected):
     assert _classify_reliability(successes, failures) == expected
+
 
 # Tests for _serialize_history
 def test_serialize_history_basic():
@@ -92,8 +97,10 @@ def test_serialize_history_basic():
     assert entry["country"] == "US"
     assert entry["isp"] == "Test ISP"
 
+
 def test_serialize_history_empty():
     assert _serialize_history({}) == []
+
 
 def test_serialize_history_sorting():
     history_data = {
@@ -103,6 +110,7 @@ def test_serialize_history_sorting():
     }
     result = _serialize_history(history_data)
     assert [item["key"] for item in result] == ["node_good", "node_medium", "node_bad"]
+
 
 def test_serialize_history_missing_fields():
     history_data = {"node_missing": {}}

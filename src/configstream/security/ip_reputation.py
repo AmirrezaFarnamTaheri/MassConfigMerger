@@ -3,6 +3,7 @@
 This module integrates with various IP reputation services to identify
 potentially malicious or compromised VPN nodes.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -77,12 +78,14 @@ class IPReputationChecker:
         api_key = self.api_keys.get("abuseipdb")
         if not api_key:
             return {"error": "No API key configured"}
-        return (await self._check_service(
-            "AbuseIPDB",
-            "https://api.abuseipdb.com/api/v2/check",
-            headers={"Key": api_key, "Accept": "application/json"},
-            params={"ipAddress": ip, "maxAgeInDays": 90, "verbose": ""},
-        )).get("data", {})
+        return (
+            await self._check_service(
+                "AbuseIPDB",
+                "https://api.abuseipdb.com/api/v2/check",
+                headers={"Key": api_key, "Accept": "application/json"},
+                params={"ipAddress": ip, "maxAgeInDays": 90, "verbose": ""},
+            )
+        ).get("data", {})
 
     async def check_ipapi(self, ip: str) -> Dict[str, Any]:
         """Check ip-api.com for IP information."""
@@ -147,7 +150,11 @@ class IPReputationChecker:
             return ReputationScore.MALICIOUS
         if result.abuse_confidence > 25 or len(result.threat_types) > 2:
             return ReputationScore.SUSPICIOUS
-        return ReputationScore.CLEAN if result.checked_services else ReputationScore.UNKNOWN
+        return (
+            ReputationScore.CLEAN
+            if result.checked_services
+            else ReputationScore.UNKNOWN
+        )
 
     async def check_all(self, ip: str) -> ReputationResult:
         """Check IP against all available services."""

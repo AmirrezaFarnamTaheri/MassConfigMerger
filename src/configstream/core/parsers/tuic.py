@@ -29,7 +29,8 @@ class TuicParser(BaseParser):
         name = self.sanitize_str(p.fragment or f"tuic-{self.idx}")
         if not p.hostname or not p.port:
             raise ParserError(
-                f"Missing hostname or port in TUIC link: {self.config_uri}")
+                f"Missing hostname or port in TUIC link: {self.config_uri}"
+            )
 
         q = parse_qs(p.query)
         proxy = {

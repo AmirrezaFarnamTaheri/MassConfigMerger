@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import asyncio
 from pathlib import Path
 from unittest.mock import patch, AsyncMock, MagicMock
 
 import pytest
 
-from configstream.cli import main, build_parser, _update_settings_from_args
+from configstream.cli import main, build_parser
 from configstream.config import Settings
 
 
@@ -19,15 +18,23 @@ def test_cli_full_command(mock_run_full_pipeline, fs):
 
     cli_args = [
         "full",
-        "--concurrent-limit", "50",
-        "--request-timeout", "25",
+        "--concurrent-limit",
+        "50",
+        "--request-timeout",
+        "25",
         "--no-sort",
-        "--top-n", "100",
-        "--include-pattern", "US",
-        "--exclude-pattern", "RU",
-        "--fetch-protocols", "vmess,ss",
-        "--include-protocols", "VLESS,TROJAN",
-        "--exclude-protocols", "SHADOWSOCKS",
+        "--top-n",
+        "100",
+        "--include-pattern",
+        "US",
+        "--exclude-pattern",
+        "RU",
+        "--fetch-protocols",
+        "vmess,ss",
+        "--include-protocols",
+        "VLESS,TROJAN",
+        "--exclude-protocols",
+        "SHADOWSOCKS",
     ]
 
     main(cli_args)
@@ -44,8 +51,7 @@ def test_cli_full_command(mock_run_full_pipeline, fs):
     assert "US" in called_settings.filtering.include_patterns
     assert "RU" in called_settings.filtering.exclude_patterns
     assert set(called_settings.filtering.fetch_protocols) == {"VMESS", "SS"}
-    assert called_settings.filtering.merge_include_protocols == {
-        "VLESS", "TROJAN"}
+    assert called_settings.filtering.merge_include_protocols == {"VLESS", "TROJAN"}
     assert called_settings.filtering.merge_exclude_protocols == {"SHADOWSOCKS"}
 
 
@@ -111,23 +117,39 @@ def test_cli_sources_add_command(mock_add_source, fs):
     """Test the 'sources add' command."""
     fs.create_file("sources.txt")
     with patch("configstream.commands.services.add_new_source", mock_add_source):
-        main(["sources", "--sources-file", "sources.txt",
-             "add", "http://example.com/source"])
+        main(
+            [
+                "sources",
+                "--sources-file",
+                "sources.txt",
+                "add",
+                "http://example.com/source",
+            ]
+        )
     mock_add_source.assert_called_once_with(
-        Path("sources.txt"), "http://example.com/source")
+        Path("sources.txt"), "http://example.com/source"
+    )
 
 
 @patch("configstream.commands.services.remove_existing_source")
 def test_cli_sources_remove_command(mock_remove_source, fs):
     """Test the 'sources remove' command."""
     fs.create_file("sources.txt", contents="http://example.com/source\n")
-    with patch("configstream.commands.services.remove_existing_source", mock_remove_source):
-        main(["sources", "--sources-file", "sources.txt",
-             "remove", "http://example.com/source"])
+    with patch(
+        "configstream.commands.services.remove_existing_source", mock_remove_source
+    ):
+        main(
+            [
+                "sources",
+                "--sources-file",
+                "sources.txt",
+                "remove",
+                "http://example.com/source",
+            ]
+        )
     mock_remove_source.assert_called_once_with(
-        Path("sources.txt"), "http://example.com/source")
-
-
+        Path("sources.txt"), "http://example.com/source"
+    )
 
 
 @patch("configstream.cli.load_config", side_effect=ValueError("Invalid config"))
@@ -170,16 +192,14 @@ def test_main_entrypoint(mock_load_config, mock_handle_fetch, fs):
 def test_cli_sources_unknown_command(mock_list, mock_add, mock_remove, fs):
     """Test the 'sources' command with an unknown subcommand."""
     fs.create_file("sources.txt")
-    with patch("configstream.commands.services.list_sources", mock_list), \
-            patch("configstream.commands.services.add_new_source", mock_add), \
-            patch("configstream.commands.services.remove_existing_source", mock_remove):
+    with patch("configstream.commands.services.list_sources", mock_list), patch(
+        "configstream.commands.services.add_new_source", mock_add
+    ), patch("configstream.commands.services.remove_existing_source", mock_remove):
         with pytest.raises(SystemExit):
             main(["sources", "--sources-file", "sources.txt", "unknown"])
     mock_list.assert_not_called()
     mock_add.assert_not_called()
     mock_remove.assert_not_called()
-
-
 
 
 def test_cli_no_args_prints_help(capsys):
@@ -202,7 +222,7 @@ def test_cli_daemon_command(mock_run_daemon, fs):
     mock_run_daemon.assert_called_once()
     _args, _kwargs = mock_run_daemon.call_args
     daemon_instance = _args[0]
-    assert daemon_instance.settings.security.secret_key == 'test-key'
+    assert daemon_instance.settings.security.secret_key == "test-key"
     assert _args[1] == 1
     assert _args[2] == 8081
 

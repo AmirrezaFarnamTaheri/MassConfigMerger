@@ -1,9 +1,8 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import signal
-import asyncio
 
-from configstream.main_daemon import ConfigStreamDaemon, main
+from configstream.main_daemon import ConfigStreamDaemon
 from configstream.config import Settings
 
 
@@ -18,9 +17,9 @@ async def test_daemon_start(mock_settings, tmp_path):
     """Test the start method of the daemon."""
     daemon = ConfigStreamDaemon(settings=mock_settings, data_dir=tmp_path)
 
-    with patch("configstream.main_daemon.TestScheduler") as MockScheduler, \
-         patch("configstream.main_daemon.run_dashboard") as mock_run_dashboard, \
-         patch("signal.signal") as mock_signal:
+    with patch("configstream.main_daemon.TestScheduler") as MockScheduler, patch(
+        "configstream.main_daemon.run_dashboard"
+    ) as mock_run_dashboard, patch("signal.signal") as mock_signal:
 
         mock_scheduler_instance = MockScheduler.return_value
         daemon.scheduler = mock_scheduler_instance
@@ -44,8 +43,9 @@ def test_daemon_signal_handler(mock_settings, tmp_path):
     """Test the signal handler of the daemon."""
     daemon = ConfigStreamDaemon(settings=mock_settings, data_dir=tmp_path)
 
-    with patch.object(daemon.scheduler, "stop") as mock_stop, \
-         patch("sys.exit") as mock_exit:
+    with patch.object(daemon.scheduler, "stop") as mock_stop, patch(
+        "sys.exit"
+    ) as mock_exit:
 
         daemon._signal_handler(signal.SIGINT, None)
 

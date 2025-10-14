@@ -10,7 +10,6 @@ from configstream.config import Settings
 from configstream.core.config_processor import ConfigResult
 from configstream.processing.pipeline import (
     filter_results_by_ping,
-    sort_and_trim_results,
 )
 from configstream.vpn_retester import (
     filter_configs_by_protocol,
@@ -73,12 +72,9 @@ def test_filter_configs_by_protocol():
 def test_filter_results_by_ping():
     """Test filtering results by max_ping_ms."""
     results = [
-        ConfigResult(config="c1", protocol="VLESS",
-                     ping_time=0.1, is_reachable=True),
-        ConfigResult(config="c2", protocol="VLESS",
-                     ping_time=0.3, is_reachable=True),
-        ConfigResult(config="c3", protocol="VLESS",
-                     ping_time=None, is_reachable=False),
+        ConfigResult(config="c1", protocol="VLESS", ping_time=0.1, is_reachable=True),
+        ConfigResult(config="c2", protocol="VLESS", ping_time=0.3, is_reachable=True),
+        ConfigResult(config="c3", protocol="VLESS", ping_time=None, is_reachable=False),
     ]
     settings = Settings()
     settings.filtering.max_ping_ms = 200
@@ -162,8 +158,9 @@ async def test_run_retester_flow(
         ),
     ]
     mock_filter_ping.return_value = [
-        ConfigResult(config="c1", protocol="VLESS",
-                     is_reachable=True, host="h1", port=1)
+        ConfigResult(
+            config="c1", protocol="VLESS", is_reachable=True, host="h1", port=1
+        )
     ]
     mock_sort.return_value = [
         ConfigResult(
@@ -182,9 +179,7 @@ async def test_run_retester_flow(
     mock_db_instance.connect.assert_awaited_once()
     mock_load.assert_called_once()
     mock_filter_proto.assert_called_once()
-    mock_test.assert_awaited_once_with(
-        ["c1", "c2"], settings, {}, mock_db_instance
-    )
+    mock_test.assert_awaited_once_with(["c1", "c2"], settings, {}, mock_db_instance)
     mock_filter_ping.assert_called_once()
     mock_sort.assert_called_once()
     mock_save.assert_called_once()

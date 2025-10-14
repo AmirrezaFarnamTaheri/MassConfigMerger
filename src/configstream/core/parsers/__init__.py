@@ -10,4 +10,5 @@ configuration string and returns a dictionary of its components or `None`
 if parsing fails. This modular approach allows for easy extension to support
 new protocols.
 """
+
 from __future__ import annotations

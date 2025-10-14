@@ -65,14 +65,16 @@ async def test_run_merger_from_sources(
     ]
     mock_source_manager.close_session = AsyncMock()
 
-    with patch("configstream.processing.pipeline.sort_and_trim_results", side_effect=lambda r, c: sorted(r, key=lambda x: not x.is_reachable)):
+    with patch(
+        "configstream.processing.pipeline.sort_and_trim_results",
+        side_effect=lambda r, c: sorted(r, key=lambda x: not x.is_reachable),
+    ):
         # Act
         await run_merger(settings, Path("sources.txt"))
 
     # Assert
     mock_db.connect.assert_awaited_once()
-    mock_source_manager.fetch_sources.assert_awaited_once_with(
-        ["http://source1"])
+    mock_source_manager.fetch_sources.assert_awaited_once_with(["http://source1"])
     mock_config_processor.filter_configs.assert_called_once_with(
         {"vless://config1", "ss://config2"}
     )
@@ -95,7 +97,9 @@ async def test_run_merger_from_sources(
 @patch("configstream.vpn_merger.OutputGenerator")
 @patch("configstream.vpn_merger.pipeline.test_configs", new_callable=AsyncMock)
 @patch(
-    "pathlib.Path.open", new_callable=mock_open, read_data="vless://resume1\nss://resume2"
+    "pathlib.Path.open",
+    new_callable=mock_open,
+    read_data="vless://resume1\nss://resume2",
 )
 async def test_run_merger_with_resume(
     mock_open_file: MagicMock,
@@ -142,8 +146,15 @@ async def test_run_merger_with_resume(
     mock_source_manager.close_session = AsyncMock()
 
     # Act
-    with patch("configstream.processing.pipeline.sort_and_trim_results", side_effect=lambda r, c: sorted(r, key=lambda x: not x.is_reachable)[:c.processing.top_n or None]):
-        await run_merger(settings, Path("dummy_sources.txt"), resume_file=Path("resume.txt"))
+    with patch(
+        "configstream.processing.pipeline.sort_and_trim_results",
+        side_effect=lambda r, c: sorted(r, key=lambda x: not x.is_reachable)[
+            : c.processing.top_n or None
+        ],
+    ):
+        await run_merger(
+            settings, Path("dummy_sources.txt"), resume_file=Path("resume.txt")
+        )
 
     # Assert
     mock_db.connect.assert_awaited_once()

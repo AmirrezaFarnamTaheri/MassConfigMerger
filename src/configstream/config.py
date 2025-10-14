@@ -45,8 +45,7 @@ class YamlConfigSettingsSource:
         if self._data is None:
             if self._yaml_file and self._yaml_file.exists():
                 try:
-                    self._data = yaml.safe_load(
-                        self._yaml_file.read_text()) or {}
+                    self._data = yaml.safe_load(self._yaml_file.read_text()) or {}
                 except (yaml.YAMLError, IOError) as e:
                     logging.warning(
                         "Could not read or parse YAML config from %s: %s",
@@ -63,9 +62,11 @@ class TelegramSettings(BaseModel):
     """Settings for Telegram integration."""
 
     api_id: Optional[int] = Field(
-        None, description="Your Telegram API ID from my.telegram.org.")
+        None, description="Your Telegram API ID from my.telegram.org."
+    )
     api_hash: Optional[str] = Field(
-        None, description="Your Telegram API hash from my.telegram.org.")
+        None, description="Your Telegram API hash from my.telegram.org."
+    )
     session_path: Path = Field(
         "user.session", description="Path to the Telethon session file."
     )
@@ -95,7 +96,8 @@ class NetworkSettings(BaseModel):
     """Settings related to network requests, timeouts, and proxies."""
 
     request_timeout: int = Field(
-        10, description="General timeout for HTTP requests in seconds.")
+        10, description="General timeout for HTTP requests in seconds."
+    )
     concurrent_limit: int = Field(
         20, description="Maximum number of concurrent HTTP requests."
     )
@@ -113,13 +115,18 @@ class NetworkSettings(BaseModel):
         0.5, description="Amount of random jitter to apply to retry delays (0 to 1)."
     )
     connect_timeout: float = Field(
-        3.0, description="Connection timeout for testing individual VPN configs in seconds."
+        3.0,
+        description="Connection timeout for testing individual VPN configs in seconds.",
     )
     http_proxy: Optional[str] = Field(
-        None, alias="HTTP_PROXY", description="URL for an HTTP proxy (e.g., 'http://user:pass@host:port')."
+        None,
+        alias="HTTP_PROXY",
+        description="URL for an HTTP proxy (e.g., 'http://user:pass@host:port').",
     )
     socks_proxy: Optional[str] = Field(
-        None, alias="SOCKS_PROXY", description="URL for a SOCKS proxy (e.g., 'socks5://user:pass@host:port')."
+        None,
+        alias="SOCKS_PROXY",
+        description="URL for a SOCKS proxy (e.g., 'socks5://user:pass@host:port').",
     )
     headers: Dict[str, str] = Field(
         default={
@@ -147,8 +154,22 @@ class FilteringSettings(BaseModel):
         None, description="List of regex patterns to exclude configs by name."
     )
     merge_include_protocols: Set[str] = Field(
-        default={"SHADOWSOCKS", "SHADOWSOCKSR", "TROJAN", "REALITY", "VMESS", "VLESS",
-                 "HYSTERIA", "HYSTERIA2", "TUIC", "NAIVE", "JUICITY", "WIREGUARD", "SHADOWTLS", "BROOK"},
+        default={
+            "SHADOWSOCKS",
+            "SHADOWSOCKSR",
+            "TROJAN",
+            "REALITY",
+            "VMESS",
+            "VLESS",
+            "HYSTERIA",
+            "HYSTERIA2",
+            "TUIC",
+            "NAIVE",
+            "JUICITY",
+            "WIREGUARD",
+            "SHADOWTLS",
+            "BROOK",
+        },
         description="Set of protocols to include in the final merged output.",
     )
     merge_exclude_protocols: Set[str] = Field(
@@ -156,13 +177,15 @@ class FilteringSettings(BaseModel):
         description="Set of protocols to exclude from the final merged output.",
     )
     include_isps: Optional[Set[str]] = Field(
-        None, description="Set of ISP names to include (e.g., {'Google', 'Amazon'}). Requires GeoIP."
+        None,
+        description="Set of ISP names to include (e.g., {'Google', 'Amazon'}). Requires GeoIP.",
     )
     exclude_isps: Optional[Set[str]] = Field(
         None, description="Set of ISP names to exclude. Requires GeoIP."
     )
     max_ping_ms: Optional[int] = Field(
-        1000, description="Maximum acceptable ping in milliseconds for a config to be included."
+        1000,
+        description="Maximum acceptable ping in milliseconds for a config to be included.",
     )
 
 
@@ -177,7 +200,12 @@ class OutputSettings(BaseModel):
     )
 
     @field_validator(
-        "output_dir", "log_file", "history_db_file", "surge_file", "qx_file", mode="before"
+        "output_dir",
+        "log_file",
+        "history_db_file",
+        "surge_file",
+        "qx_file",
+        mode="before",
     )
     @classmethod
     def _validate_path_is_safe(cls, v: Any) -> Path | None:
@@ -194,8 +222,7 @@ class OutputSettings(BaseModel):
 
         # Reject absolute paths and parent traversal anywhere in parts
         if p.is_absolute() or ".." in p.parts:
-            raise ValueError(
-                f"Path cannot be absolute or contain '..': {path_str}")
+            raise ValueError(f"Path cannot be absolute or contain '..': {path_str}")
 
         # Allow drive letters if not absolute (e.g., 'C:folder' on Windows)
         return p
@@ -210,10 +237,8 @@ class OutputSettings(BaseModel):
     write_clash: bool = Field(
         True, description="Whether to write a Clash compatible subscription file."
     )
-    write_csv: bool = Field(
-        True, description="Whether to write a detailed CSV report.")
-    write_html: bool = Field(
-        False, description="Whether to write an HTML report.")
+    write_csv: bool = Field(True, description="Whether to write a detailed CSV report.")
+    write_html: bool = Field(False, description="Whether to write an HTML report.")
     write_clash_proxies: bool = Field(
         True, description="Whether to write a simple Clash proxies-only file."
     )
@@ -225,11 +250,11 @@ class OutputSettings(BaseModel):
     )
     current_results_file: Path = Field(
         Path("data/current_results.json"),
-        description="File to store the latest test results for the dashboard."
+        description="File to store the latest test results for the dashboard.",
     )
     history_file: Path = Field(
         Path("data/history.jsonl"),
-        description="File to store the historical test results for the dashboard."
+        description="File to store the historical test results for the dashboard.",
     )
 
 
@@ -280,9 +305,9 @@ class ProcessingSettings(BaseModel):
         0, description="Keep only the top N best configs after sorting. 0 to keep all."
     )
     mux_concurrency: int = Field(
-        8, description="Mux concurrency for supported URI configs.")
-    smux_streams: int = Field(
-        4, description="Smux streams for supported URI configs.")
+        8, description="Mux concurrency for supported URI configs."
+    )
+    smux_streams: int = Field(4, description="Smux streams for supported URI configs.")
     geoip_db: Optional[Path] = Field(
         None, description="Path to the GeoLite2 Country MMDB file for GeoIP lookups."
     )

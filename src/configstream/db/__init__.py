@@ -12,8 +12,7 @@ class Database:
 
     async def connect(self):
         if not self.db_path.parent.is_dir():
-            raise ValueError(
-                f"Database directory not found: {self.db_path.parent}")
+            raise ValueError(f"Database directory not found: {self.db_path.parent}")
         self.conn = await aiosqlite.connect(self.db_path)
         await self.conn.execute(
             """
@@ -35,7 +34,9 @@ class Database:
         if not self.conn:
             await self.connect()
 
-        cursor = await self.conn.execute("SELECT key, successes, failures, last_tested FROM proxy_history")
+        cursor = await self.conn.execute(
+            "SELECT key, successes, failures, last_tested FROM proxy_history"
+        )
         rows = await cursor.fetchall()
         history = {}
         for row in rows:

@@ -5,6 +5,7 @@ the application for various tasks, including parsing, validation, sorting,
 and networking. These utilities are designed to be self-contained and
 reusable.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -41,16 +42,14 @@ _warning_printed = False
 URL_PATTERN = re.compile(r'https?://[^\s<>"]+|www\.[^\s<>"]+')
 
 
-def haversine_distance(
-    lat1: float, lon1: float, lat2: float, lon2: float
-) -> float:
+def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Calculate the great-circle distance between two points on the earth."""
     R = 6371  # Radius of earth in kilometers
     dLat = math.radians(lat2 - lat1)
     dLon = math.radians(lon2 - lon1)
-    a = (math.sin(dLat / 2) * math.sin(dLat / 2) +
-         math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) *
-         math.sin(dLon / 2) * math.sin(dLon / 2))
+    a = math.sin(dLat / 2) * math.sin(dLat / 2) + math.cos(
+        math.radians(lat1)
+    ) * math.cos(math.radians(lat2)) * math.sin(dLon / 2) * math.sin(dLon / 2)
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
@@ -71,14 +70,15 @@ def get_sort_key(
         user_lat = settings.processing.proximity_latitude
         user_lon = settings.processing.proximity_longitude
         if user_lat is None or user_lon is None:
-            raise ValueError(
-                "Proximity sorting requires user latitude and longitude.")
+            raise ValueError("Proximity sorting requires user latitude and longitude.")
 
         return lambda r: (
             not r.is_reachable,
-            haversine_distance(user_lat, user_lon, r.latitude, r.longitude)
-            if r.latitude is not None and r.longitude is not None
-            else float("inf"),
+            (
+                haversine_distance(user_lat, user_lon, r.latitude, r.longitude)
+                if r.latitude is not None and r.longitude is not None
+                else float("inf")
+            ),
         )
     # Default to latency
     return lambda r: (
@@ -106,7 +106,7 @@ def extract_subscription_urls(text: str) -> Set[str]:
     cleaned_urls = set()
     for url in raw_urls:
         # Repeatedly strip trailing punctuation that might be attached to the URL
-        while url and url[-1] in '.,!?:;)]':
+        while url and url[-1] in ".,!?:;)]":
             url = url[:-1]
         cleaned_urls.add(url)
     return cleaned_urls
@@ -148,7 +148,7 @@ def parse_configs_from_text(text: str) -> Set[str]:
         line = line.strip()
         matches = PROTOCOL_RE.findall(line)
         if matches:
-            configs.update(m.rstrip('\'".,!?:;)') for m in matches)
+            configs.update(m.rstrip("'\".,!?:;)") for m in matches)
             continue
         if BASE64_RE.match(line):
             if len(line) > MAX_DECODE_SIZE:
@@ -162,7 +162,7 @@ def parse_configs_from_text(text: str) -> Set[str]:
                 padded = line + "=" * (-len(line) % 4)
                 decoded = base64.urlsafe_b64decode(padded).decode()
                 base64_matches = PROTOCOL_RE.findall(decoded)
-                configs.update(m.rstrip('\'".,!?:;)') for m in base64_matches)
+                configs.update(m.rstrip("'\".,!?:;)") for m in base64_matches)
             except (binascii.Error, UnicodeDecodeError) as exc:
                 logging.debug("Failed to decode base64 line: %s", exc)
                 continue
@@ -189,8 +189,7 @@ def choose_proxy(cfg: Settings) -> str | None:
     socks_proxy = (cfg.network.socks_proxy or "").strip() or None
 
     if http_proxy and socks_proxy:
-        raise ConfigError(
-            "http_proxy and socks_proxy cannot be used simultaneously")
+        raise ConfigError("http_proxy and socks_proxy cannot be used simultaneously")
     return socks_proxy or http_proxy
 
 
@@ -234,7 +233,8 @@ async def fetch_text(
     hostname = parsed.hostname
     if not hostname or hostname in BLOCKED_HOSTS:
         raise NetworkError(
-            f"Blocked or invalid hostname for security reasons: {hostname}")
+            f"Blocked or invalid hostname for security reasons: {hostname}"
+        )
     if parsed.scheme not in SAFE_URL_SCHEMES:
         raise NetworkError(f"Invalid URL scheme: {parsed.scheme}")
 
@@ -261,8 +261,7 @@ async def fetch_text(
     # Reconstruct the URL with the resolved IP and set the Host header
     port = parsed.port or (443 if parsed.scheme == "https" else 80)
     path = parsed.path or "/"
-    request_url = parsed._replace(
-        netloc=f"{safe_ip}:{port}", path=path).geturl()
+    request_url = parsed._replace(netloc=f"{safe_ip}:{port}", path=path).geturl()
     request_headers = {"Host": hostname}
     # --- End SSRF Mitigation ---
 
@@ -310,8 +309,7 @@ async def fetch_text(
         )
         await asyncio.sleep(sleep_duration)
 
-    raise NetworkError(
-        f"Failed to fetch {url} after {retries} retries.") from last_exc
+    raise NetworkError(f"Failed to fetch {url} after {retries} retries.") from last_exc
 
 
 def is_safe_url(url: str) -> bool:

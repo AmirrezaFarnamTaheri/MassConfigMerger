@@ -18,10 +18,10 @@ from .scheduler import TestScheduler
 from .web_dashboard import run_dashboard
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 class ConfigStreamDaemon:
     """Main daemon managing scheduler and web dashboard."""
@@ -55,6 +55,7 @@ class ConfigStreamDaemon:
         self.running = False
         sys.exit(0)
 
+
 def main():
     """Entry point for daemon."""
     settings = Settings()
@@ -63,6 +64,7 @@ def main():
 
     daemon = ConfigStreamDaemon(settings, data_dir)
     daemon.start(interval_hours=2, web_port=8080)
+
 
 if __name__ == "__main__":
     main()

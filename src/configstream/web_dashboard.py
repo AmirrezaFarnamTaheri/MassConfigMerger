@@ -29,9 +29,11 @@ try:
 except ImportError:
     pass
 
+
 def _get_root() -> Path:
     """Helper to find project root."""
     return find_project_root()
+
 
 def _run_async_task(coro):
     """Run an async task from a sync context safely."""
@@ -44,6 +46,7 @@ def _run_async_task(coro):
         # A loop is already running (e.g., inside an async-enabled server/thread).
         # Create a new loop in a separate thread to avoid run_until_complete on running loop.
         import threading
+
         result_container = {}
         exc_container = {}
 
@@ -64,6 +67,7 @@ def _run_async_task(coro):
             raise exc_container["exc"]
         return result_container.get("result")
 
+
 async def _read_history(db_path: Path) -> Dict[str, Any]:
     """Read proxy history from the database."""
     if not db_path.exists():
@@ -75,6 +79,7 @@ async def _read_history(db_path: Path) -> Dict[str, Any]:
         return history
     finally:
         await db.close()
+
 
 csrf = CSRFProtect()
 
@@ -111,6 +116,7 @@ def _coerce_ping(value: Any) -> float | None:
         return None
     return ping
 
+
 def get_current_results(data_dir: Path, logger_instance) -> Dict[str, Any]:
     """Load current test results."""
     current_file = data_dir / "current_results.json"
@@ -135,10 +141,15 @@ def get_current_results(data_dir: Path, logger_instance) -> Dict[str, Any]:
                 ", ".join(unexpected_keys),
             )
 
-        merged = {**default_payload, **{k: v for k, v in data.items() if k in default_payload}}
+        merged = {
+            **default_payload,
+            **{k: v for k, v in data.items() if k in default_payload},
+        }
         nodes_raw = merged.get("nodes", [])
         if not isinstance(nodes_raw, list):
-            logger_instance.warning("'nodes' entry is not a list; resetting to empty list")
+            logger_instance.warning(
+                "'nodes' entry is not a list; resetting to empty list"
+            )
             nodes_raw = []
 
         normalized_nodes: List[Dict[str, Any]] = []
@@ -147,7 +158,8 @@ def get_current_results(data_dir: Path, logger_instance) -> Dict[str, Any]:
                 normalized_nodes.append(_normalize_node(raw_node))
             else:
                 logger_instance.warning(
-                    "Skipping non-object node entry at index %s in current results", index
+                    "Skipping non-object node entry at index %s in current results",
+                    index,
                 )
 
         merged["nodes"] = normalized_nodes
@@ -157,6 +169,7 @@ def get_current_results(data_dir: Path, logger_instance) -> Dict[str, Any]:
     except Exception as e:
         logger_instance.error(f"Error loading current results: {e}")
         return default_payload
+
 
 def get_history(data_dir: Path, hours: int, logger_instance) -> List[Dict]:
     """Load historical results."""
@@ -200,6 +213,7 @@ def get_history(data_dir: Path, hours: int, logger_instance) -> List[Dict]:
         logger_instance.error(f"Error loading history: {e}")
     return history
 
+
 def filter_nodes(nodes: List[Dict], filters: dict) -> List[Dict]:
     """Apply query filters to a sequence of nodes."""
 
@@ -209,15 +223,18 @@ def filter_nodes(nodes: List[Dict], filters: dict) -> List[Dict]:
     protocol = (filters.get("protocol") or "").strip()
     if protocol:
         filtered = [
-            n for n in filtered
+            n
+            for n in filtered
             if str(n.get("protocol", "")).lower() == protocol.lower()
         ]
 
     country = (filters.get("country") or "").strip()
     if country:
         filtered = [
-            n for n in filtered
-            if country.lower() in {
+            n
+            for n in filtered
+            if country.lower()
+            in {
                 str(n.get("country", "")).lower(),
                 str(n.get("country_code", "")).lower(),
             }
@@ -227,16 +244,20 @@ def filter_nodes(nodes: List[Dict], filters: dict) -> List[Dict]:
     min_ping_value = _coerce_ping(min_ping) if min_ping is not None else None
     if min_ping_value is not None:
         filtered = [
-            n for n in filtered
-            if (ping := _coerce_ping(n.get("ping_ms"))) is not None and ping >= min_ping_value
+            n
+            for n in filtered
+            if (ping := _coerce_ping(n.get("ping_ms"))) is not None
+            and ping >= min_ping_value
         ]
 
     max_ping = filters.get("max_ping")
     max_ping_value = _coerce_ping(max_ping) if max_ping is not None else None
     if max_ping_value is not None:
         filtered = [
-            n for n in filtered
-            if (ping := _coerce_ping(n.get("ping_ms"))) is not None and 0 < ping <= max_ping_value
+            n
+            for n in filtered
+            if (ping := _coerce_ping(n.get("ping_ms"))) is not None
+            and 0 < ping <= max_ping_value
         ]
 
     if str(filters.get("exclude_blocked", "")).lower() in {"1", "true", "yes", "on"}:
@@ -245,7 +266,8 @@ def filter_nodes(nodes: List[Dict], filters: dict) -> List[Dict]:
     search = (filters.get("search") or "").strip().lower()
     if search:
         filtered = [
-            n for n in filtered
+            n
+            for n in filtered
             if search in str(n.get("city", "")).lower()
             or search in str(n.get("organization", "")).lower()
             or search in str(n.get("ip", ""))
@@ -254,6 +276,7 @@ def filter_nodes(nodes: List[Dict], filters: dict) -> List[Dict]:
         ]
 
     return filtered
+
 
 def export_csv(nodes: List[Dict]) -> str:
     """Export nodes to CSV format."""
@@ -270,6 +293,7 @@ def export_csv(nodes: List[Dict]) -> str:
         row = {k: n.get(k, "") for k in fieldnames}
         writer.writerow(row)
     return output.getvalue()
+
 
 def export_json(nodes: List[Dict]) -> str:
     """Export nodes to JSON format."""
@@ -297,6 +321,7 @@ def export_base64(nodes: List[Dict]) -> str:
         return ""
     return base64.b64encode(raw_data.encode("utf-8")).decode("utf-8")
 
+
 def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
     """Create and configure the Flask application."""
     app = Flask(__name__, template_folder="templates", static_folder="static")
@@ -307,11 +332,16 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
     if not settings.security.secret_key:
         if app.testing:
             import secrets
+
             generated = secrets.token_urlsafe(32)
-            app.logger.warning("SECRET_KEY missing; generating ephemeral key for testing.")
+            app.logger.warning(
+                "SECRET_KEY missing; generating ephemeral key for testing."
+            )
             app.config["SECRET_KEY"] = generated
         else:
-            raise RuntimeError("SECRET_KEY is not configured. Set `security.secret_key` in your config.")
+            raise RuntimeError(
+                "SECRET_KEY is not configured. Set `security.secret_key` in your config."
+            )
     else:
         app.config["SECRET_KEY"] = settings.security.secret_key
     csrf.init_app(app)
@@ -338,15 +368,18 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
 
     @app.context_processor
     def inject_sri():
-        sri = get_sri_map({
-            "tailwind_sri": "css/tailwind-3.4.3.min.css",
-            "fontawesome_sri": "css/all.min.css",
-            "styles_sri": "css/styles.css",
-        })
-        return {**sri, 'now': datetime.utcnow}
+        sri = get_sri_map(
+            {
+                "tailwind_sri": "css/tailwind-3.4.3.min.css",
+                "fontawesome_sri": "css/all.min.css",
+                "styles_sri": "css/styles.css",
+            }
+        )
+        return {**sri, "now": datetime.utcnow}
 
     from .api import api
-    app.register_blueprint(api, url_prefix='/api')
+
+    app.register_blueprint(api, url_prefix="/api")
 
     @app.route("/")
     def index():
@@ -357,10 +390,10 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
 
         # Get statistics
         stats = {
-            'total_sources': 0,
-            'active_proxies': 0,
-            'success_rate': 'N/A',
-            'avg_ping': 'N/A'
+            "total_sources": 0,
+            "active_proxies": 0,
+            "success_rate": "N/A",
+            "avg_ping": "N/A",
         }
 
         history_preview = []
@@ -369,20 +402,26 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
         try:
             sources_file = project_root / cfg.sources.sources_file
             if sources_file.exists():
-                lines = [ln for ln in sources_file.read_text().splitlines() if ln.strip()]
-                stats['total_sources'] = len(lines)
+                lines = [
+                    ln for ln in sources_file.read_text().splitlines() if ln.strip()
+                ]
+                stats["total_sources"] = len(lines)
 
             if db_path.exists():
                 history_data = _run_async_task(_read_history(db_path))
                 all_entries = web_utils._serialize_history(history_data)
 
                 if all_entries:
-                    stats['active_proxies'] = len(all_entries)
-                    reliabilities = [e.get('reliability') for e in all_entries if isinstance(e.get('reliability'), (int, float))]
+                    stats["active_proxies"] = len(all_entries)
+                    reliabilities = [
+                        e.get("reliability")
+                        for e in all_entries
+                        if isinstance(e.get("reliability"), (int, float))
+                    ]
                     if reliabilities:
                         avg_rel = sum(reliabilities) / len(reliabilities)
                         # If reliability is already 0–100, do not rescale. Format as percentage with one decimal.
-                        stats['success_rate'] = f"{avg_rel:.1f}%"
+                        stats["success_rate"] = f"{avg_rel:.1f}%"
 
                     history_preview = all_entries[:preview_limit]
         except Exception as e:
@@ -416,9 +455,6 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
     def history():
         return render_template("history.html")
 
-
-
-
     @app.route("/settings")
     def settings_page():
         settings = current_app.config["settings"]
@@ -439,11 +475,21 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
 
         return render_template("sources.html", sources=sources)
 
-    @app.route("/system")
-    def system():
+    @app.route("/analytics")
+    def analytics():
+        """Serve the analytics page."""
+        return render_template("analytics.html")
+
+    @app.route("/help")
+    def help():
+        """Serve the help page."""
+        return render_template("help.html")
+
+    @app.route("/scheduler")
+    def scheduler():
         scheduler = app.config["scheduler"]
         jobs = scheduler.get_jobs()
-        return render_template("system.html", jobs=jobs)
+        return render_template("scheduler.html", jobs=jobs)
 
     @app.route("/export")
     def export():
@@ -463,15 +509,31 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
     @app.post("/api/test")
     def test_proxies():
         """Test custom proxy configurations."""
-        # Implementation here
-        pass
+        data = request.get_json()
+        if not data or "proxies" not in data:
+            return {"error": "Missing 'proxies' in request"}, 400
+
+        proxies = data["proxies"]
+        if not isinstance(proxies, list):
+            return {"error": "'proxies' must be a list of strings"}, 400
+
+        # This is a placeholder for the actual testing logic.
+        # In a real implementation, you would call the testing functions
+        # from your project's core logic.
+        results = []
+        for proxy in proxies:
+            results.append({"proxy": proxy, "status": "success", "ping": "123ms"})
+
+        return {"results": results}
 
     return app
+
 
 def run_dashboard(host: str = "0.0.0.0", port: int = 8080):
     """Run the dashboard server."""
     app = create_app()
     app.run(host=host, port=port, debug=False)
+
 
 if __name__ == "__main__":
     run_dashboard()

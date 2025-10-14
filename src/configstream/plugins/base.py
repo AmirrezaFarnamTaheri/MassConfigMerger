@@ -2,6 +2,7 @@
 
 This module defines the interfaces that plugins must implement.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -20,6 +21,7 @@ class PluginMetadata:
         description: Short description
         priority: Loading priority (lower = earlier)
     """
+
     name: str
     version: str
     author: str
@@ -56,7 +58,6 @@ class ParserPlugin(ABC):
     @abstractmethod
     def metadata(self) -> PluginMetadata:
         """Get plugin metadata."""
-        pass
 
     @abstractmethod
     def can_parse(self, config: str) -> bool:
@@ -68,7 +69,6 @@ class ParserPlugin(ABC):
         Returns:
             True if this plugin can handle this config
         """
-        pass
 
     @abstractmethod
     def parse(self, config: str) -> Dict[str, Any]:
@@ -85,7 +85,6 @@ class ParserPlugin(ABC):
             - port: int
             Optional fields depend on protocol
         """
-        pass
 
 
 class OutputPlugin(ABC):
@@ -118,13 +117,11 @@ class OutputPlugin(ABC):
     @abstractmethod
     def metadata(self) -> PluginMetadata:
         """Get plugin metadata."""
-        pass
 
     @property
     @abstractmethod
     def file_extension(self) -> str:
         """Get file extension for this format (e.g., '.yaml')."""
-        pass
 
     @abstractmethod
     def format(self, nodes: List[Dict[str, Any]]) -> str:
@@ -136,7 +133,6 @@ class OutputPlugin(ABC):
         Returns:
             Formatted string ready to write to file
         """
-        pass
 
 
 class FilterPlugin(ABC):
@@ -158,7 +154,6 @@ class FilterPlugin(ABC):
     @abstractmethod
     def metadata(self) -> PluginMetadata:
         """Get plugin metadata."""
-        pass
 
     @abstractmethod
     def filter(self, node: Dict[str, Any]) -> bool:
@@ -170,7 +165,6 @@ class FilterPlugin(ABC):
         Returns:
             True if node should be kept, False to filter out
         """
-        pass
 
 
 class TestPlugin(ABC):
@@ -190,7 +184,6 @@ class TestPlugin(ABC):
     @abstractmethod
     def metadata(self) -> PluginMetadata:
         """Get plugin metadata."""
-        pass
 
     @abstractmethod
     async def test(self, node: Dict[str, Any]) -> Dict[str, Any]:
@@ -203,4 +196,3 @@ class TestPlugin(ABC):
             Dictionary with test results
             Keys should be descriptive (e.g., "dns_leak_detected": bool)
         """
-        pass

@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch
 
 import pytest
 
-from configstream.config import Settings
 from configstream.core.config_processor import ConfigResult
 from configstream.output_writer import (
     write_base64_configs,
@@ -13,7 +12,6 @@ from configstream.output_writer import (
     write_csv_report,
     write_raw_configs,
 )
-from configstream.report_generator import generate_html_report
 
 
 @pytest.fixture
@@ -72,10 +70,10 @@ def test_write_csv_report_content(fs, sample_results: list[ConfigResult]):
     path = write_csv_report(sample_results, Path("/output"))
     assert path.exists()
     content = path.read_text()
-    lines = content.strip().split('\n')
+    lines = content.strip().split("\n")
     assert len(lines) == 2  # Header + 1 result
-    assert lines[0] == 'config,protocol,host,port,ping_ms,reachable,country'
-    assert 'vmess://config1,VMess,example.com,443,123.0,True,US' in lines[1]
+    assert lines[0] == "config,protocol,host,port,ping_ms,reachable,country"
+    assert "vmess://config1,VMess,example.com,443,123.0,True,US" in lines[1]
 
 
 def test_write_csv_report_content(fs, sample_results: list[ConfigResult]):
@@ -84,7 +82,7 @@ def test_write_csv_report_content(fs, sample_results: list[ConfigResult]):
     path = write_csv_report(sample_results, Path("/output"))
     assert path.exists()
     content = path.read_text()
-    lines = content.strip().split('\n')
+    lines = content.strip().split("\n")
     assert len(lines) == 2  # Header + 1 result
-    assert lines[0] == 'config,protocol,host,port,ping_ms,reachable,country'
-    assert 'vmess://config1,VMess,example.com,443,123.0,True,US' in lines[1]
+    assert lines[0] == "config,protocol,host,port,ping_ms,reachable,country"
+    assert "vmess://config1,VMess,example.com,443,123.0,True,US" in lines[1]

@@ -25,8 +25,7 @@ from configstream.core import config_normalizer
 )
 def test_extract_host_port_edge_cases(config, expected_host, expected_port):
     """Test edge cases for extract_host_port."""
-    host, port = config_normalizer.extract_host_port(
-        config, max_decode_size=4096)
+    host, port = config_normalizer.extract_host_port(config, max_decode_size=4096)
     assert host == expected_host
     assert port == expected_port
 
@@ -54,8 +53,7 @@ def test_normalize_url(config, expected_normalized):
     "config1, config2, should_be_equal",
     [
         # Trojan with different fragments
-        ("trojan://pass@host.com:443#frag1",
-         "trojan://pass@host.com:443#frag2", True),
+        ("trojan://pass@host.com:443#frag1", "trojan://pass@host.com:443#frag2", True),
         # Trojan with different passwords
         ("trojan://pass1@host.com:443", "trojan://pass2@host.com:443", False),
         # SS with different fragments
@@ -93,8 +91,7 @@ def test_create_semantic_hash_protocols(config1, config2, should_be_equal):
         # Should be tuned
         ("trojan://pass@host.com:443", "trojan://pass@host.com:443?mux=8&smux=4"),
         # Should overwrite existing
-        ("trojan://pass@host.com:443?mux=1",
-         "trojan://pass@host.com:443?mux=8&smux=4"),
+        ("trojan://pass@host.com:443?mux=1", "trojan://pass@host.com:443?mux=8&smux=4"),
     ],
 )
 def test_apply_tuning(config, expected_tuned):
@@ -215,6 +212,7 @@ def test_normalize_url_vless_large_payload():
 def test_get_parser_hysteria_schemes():
     """Test get_parser with all supported Hysteria schemes."""
     from configstream.core.parsers.hysteria import HysteriaParser
+
     config_hy2 = "hy2://password@1.2.3.4:443"
     config_hysteria2 = "hysteria2://password@1.2.3.4:443"
 
@@ -289,6 +287,7 @@ def test_get_parser_unknown_scheme():
     parser = config_normalizer.get_parser("http://example.com", 0)
     assert parser is None
 
+
 def test_extract_host_port_ssr_invalid_base64():
     """Test ssr config with invalid base64 to trigger logging."""
     config = "ssr://invalid-base64"
@@ -296,7 +295,11 @@ def test_extract_host_port_ssr_invalid_base64():
     assert host is None
     assert port is None
 
-@patch("configstream.core.config_normalizer.urlunparse", side_effect=ValueError("mock error"))
+
+@patch(
+    "configstream.core.config_normalizer.urlunparse",
+    side_effect=ValueError("mock error"),
+)
 def test_apply_tuning_unparse_error(mock_unparse):
     """Test apply_tuning when urlunparse raises an error."""
     config = "vless://test@1.2.3.4:443"

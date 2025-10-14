@@ -55,9 +55,7 @@ def add_shared_arguments(parser: argparse.ArgumentParser, *groups: str):
         )
     if "output" in groups:
         group = parser.add_argument_group("output arguments")
-        group.add_argument(
-            "--output-dir", help="Override output directory from config"
-        )
+        group.add_argument("--output-dir", help="Override output directory from config")
         group.add_argument(
             "--no-base64",
             dest="write_base64",
@@ -76,8 +74,7 @@ def add_fetch_specific_arguments(
 ):
     """Add fetch-specific arguments to a parser under a named group."""
     group = parser.add_argument_group(group_name)
-    group.add_argument("--bot", action="store_true",
-                       help="Run in Telegram bot mode")
+    group.add_argument("--bot", action="store_true", help="Run in Telegram bot mode")
     group.add_argument(
         "--sources", default=str(SOURCES_FILE), help=f"Path to {SOURCES_FILE.name}"
     )
@@ -198,14 +195,15 @@ def add_retest_arguments(parser: argparse.ArgumentParser):
     """Add arguments for the 'retest' command."""
     add_shared_arguments(parser, "network")
     group = parser.add_argument_group("retest-specific arguments")
-    group.add_argument(
-        "input", help="Path to existing raw or base64 subscription file"
-    )
+    group.add_argument("input", help="Path to existing raw or base64 subscription file")
     group.add_argument(
         "--top-n", type=int, default=0, help="Keep only the N fastest configs"
     )
     group.add_argument(
-        "--no-sort", dest="enable_sorting", action="store_false", help="Skip sorting by latency"
+        "--no-sort",
+        dest="enable_sorting",
+        action="store_false",
+        help="Skip sorting by latency",
     )
     group.add_argument(
         "--connect-timeout", type=float, help="TCP connect timeout in seconds"
@@ -228,13 +226,18 @@ def add_retest_arguments(parser: argparse.ArgumentParser):
         type=str,
         help="Comma-separated protocols to exclude",
     )
-    group.add_argument("--output-dir", type=str,
-                       help="Directory to save output files")
+    group.add_argument("--output-dir", type=str, help="Directory to save output files")
     group.add_argument(
-        "--no-base64", dest="write_base64", action="store_false", help="Do not save base64 file"
+        "--no-base64",
+        dest="write_base64",
+        action="store_false",
+        help="Do not save base64 file",
     )
     group.add_argument(
-        "--no-csv", dest="write_csv", action="store_false", help="Do not save CSV report"
+        "--no-csv",
+        dest="write_csv",
+        action="store_false",
+        help="Do not save CSV report",
     )
 
 
@@ -243,7 +246,8 @@ def add_full_arguments(parser: argparse.ArgumentParser):
     add_shared_arguments(parser, "network", "filter", "output")
     add_fetch_specific_arguments(parser, group_name="fetch arguments")
     add_merge_specific_arguments(
-        parser, group_name="merge arguments", add_sources=False)
+        parser, group_name="merge arguments", add_sources=False
+    )
 
 
 def add_sources_parser(subparsers: argparse._SubParsersAction):
@@ -256,14 +260,9 @@ def add_sources_parser(subparsers: argparse._SubParsersAction):
         default=str(SOURCES_FILE),
         help="Path to the sources file",
     )
-    sources_subparsers = sources_p.add_subparsers(
-        dest="sources_command", required=True
-    )
-    sources_subparsers.add_parser(
-        "list", help="List all sources in the sources file"
-    )
-    add_p = sources_subparsers.add_parser(
-        "add", help="Add a source to the list")
+    sources_subparsers = sources_p.add_subparsers(dest="sources_command", required=True)
+    sources_subparsers.add_parser("list", help="List all sources in the sources file")
+    add_p = sources_subparsers.add_parser("add", help="Add a source to the list")
     add_p.add_argument("url", help="The URL of the source to add")
     remove_p = sources_subparsers.add_parser(
         "remove", help="Remove a source from the list"

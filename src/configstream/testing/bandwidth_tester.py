@@ -3,6 +3,7 @@
 This module provides speed testing capabilities to measure download and
 upload speeds through VPN connections.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -26,6 +27,7 @@ class BandwidthResult:
         test_duration_ms: Total test duration in milliseconds
         error: Error message if test failed
     """
+
     download_mbps: float
     upload_mbps: float
     test_duration_ms: int
@@ -51,14 +53,12 @@ class BandwidthTester:
 
     # Test configuration
     DOWNLOAD_SIZE_MB = 5  # 5MB download test
-    UPLOAD_SIZE_MB = 2    # 2MB upload test
+    UPLOAD_SIZE_MB = 2  # 2MB upload test
     TIMEOUT_SECONDS = 30  # 30 second timeout
-    CHUNK_SIZE = 8192     # Read in 8KB chunks
+    CHUNK_SIZE = 8192  # Read in 8KB chunks
 
     def __init__(
-        self,
-        test_url: str = "https://speedtest.tele2.net",
-        proxy: Optional[str] = None
+        self, test_url: str = "https://speedtest.tele2.net", proxy: Optional[str] = None
     ):
         """Initialize bandwidth tester.
 
@@ -85,16 +85,13 @@ class BandwidthTester:
 
             # Configure connector
             connector = aiohttp.TCPConnector(
-                limit=1,
-                limit_per_host=1,
-                force_close=True
+                limit=1, limit_per_host=1, force_close=True
             )
 
             # Create session with optional proxy
             timeout = aiohttp.ClientTimeout(total=self.TIMEOUT_SECONDS)
             async with aiohttp.ClientSession(
-                connector=connector,
-                timeout=timeout
+                connector=connector, timeout=timeout
             ) as session:
 
                 start_time = time.time()
@@ -102,15 +99,16 @@ class BandwidthTester:
 
                 # Download file in chunks
                 async with session.get(
-                    url,
-                    proxy=self.proxy,
-                    headers={"Accept-Encoding": "identity"}
+                    url, proxy=self.proxy, headers={"Accept-Encoding": "identity"}
                 ) as response:
                     response.raise_for_status()
 
                     expected_bytes = self.DOWNLOAD_SIZE_MB * 1024 * 1024
                     content_length = response.headers.get("Content-Length")
-                    if content_length is not None and int(content_length) < expected_bytes:
+                    if (
+                        content_length is not None
+                        and int(content_length) < expected_bytes
+                    ):
                         logger.warning(
                             f"Download payload smaller than expected: {content_length} < {expected_bytes}"
                         )
@@ -152,17 +150,15 @@ class BandwidthTester:
             data_size = self.UPLOAD_SIZE_MB * 1024 * 1024
             # Use random/incompressible bytes to avoid compression skew
             import os as _os
+
             data = _os.urandom(data_size)
 
             connector = aiohttp.TCPConnector(
-                limit=1,
-                limit_per_host=1,
-                force_close=True
+                limit=1, limit_per_host=1, force_close=True
             )
             timeout = aiohttp.ClientTimeout(total=self.TIMEOUT_SECONDS)
             async with aiohttp.ClientSession(
-                connector=connector,
-                timeout=timeout
+                connector=connector, timeout=timeout
             ) as session:
                 start_time = time.time()
 
@@ -175,7 +171,7 @@ class BandwidthTester:
                         "Content-Encoding": "identity",
                         "Accept-Encoding": "identity",
                         "Cache-Control": "no-store",
-                    }
+                    },
                 ) as response:
                     response.raise_for_status()
                     await response.read()
@@ -206,13 +202,10 @@ class BandwidthTester:
             return BandwidthResult(
                 download_mbps=round(download_mbps, 2),
                 upload_mbps=round(upload_mbps, 2),
-                test_duration_ms=duration_ms
+                test_duration_ms=duration_ms,
             )
 
         except Exception as e:
             return BandwidthResult(
-                download_mbps=0.0,
-                upload_mbps=0.0,
-                test_duration_ms=0,
-                error=str(e)
+                download_mbps=0.0, upload_mbps=0.0, test_duration_ms=0, error=str(e)
             )

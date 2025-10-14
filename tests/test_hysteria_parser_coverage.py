@@ -1,4 +1,3 @@
-import pytest
 from configstream.core.parsers.hysteria import HysteriaParser
 
 

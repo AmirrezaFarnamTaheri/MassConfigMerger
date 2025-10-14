@@ -2,6 +2,7 @@
 
 Hysteria is a modern protocol optimized for lossy networks.
 """
+
 from __future__ import annotations
 
 from typing import Dict, Any

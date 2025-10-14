@@ -1,9 +1,14 @@
 import pytest
-from unittest.mock import patch, MagicMock
 from pathlib import Path
 
 from configstream.plugins.manager import PluginManager
-from configstream.plugins.base import ParserPlugin, OutputPlugin, FilterPlugin, TestPlugin, PluginMetadata
+from configstream.plugins.base import (
+    ParserPlugin,
+    OutputPlugin,
+    FilterPlugin,
+    TestPlugin,
+    PluginMetadata,
+)
 
 
 class SampleParser(ParserPlugin):

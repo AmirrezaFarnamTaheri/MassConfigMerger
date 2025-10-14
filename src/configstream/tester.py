@@ -112,8 +112,7 @@ class NodeTester:
         """Lazily initialize and return the GeoIP database reader."""
         if self._geoip_reader is None and self.config.processing.geoip_db and Reader:
             try:
-                self._geoip_reader = Reader(
-                    str(self.config.processing.geoip_db))
+                self._geoip_reader = Reader(str(self.config.processing.geoip_db))
             except (OSError, ValueError) as exc:
                 logging.error("GeoIP reader init failed: %s", exc)
         return self._geoip_reader
@@ -172,8 +171,7 @@ class NodeTester:
         try:
             target_ip = await self.resolve_host(host)
             if not target_ip:
-                logging.debug(
-                    "Skipping connection test; unresolved host: %s", host)
+                logging.debug("Skipping connection test; unresolved host: %s", host)
                 return None
             if not is_public_ip_address(target_ip):
                 logging.debug(
@@ -190,11 +188,12 @@ class NodeTester:
             await writer.wait_closed()
             return time.time() - start_time
         except (OSError, asyncio.TimeoutError) as exc:
-            logging.debug("Connection test failed for %s:%d: %s",
-                          host, port, exc)
+            logging.debug("Connection test failed for %s:%d: %s", host, port, exc)
             return None
 
-    async def lookup_geo_data(self, host: str) -> tuple[Optional[str], Optional[str], Optional[float], Optional[float]]:
+    async def lookup_geo_data(
+        self, host: str
+    ) -> tuple[Optional[str], Optional[str], Optional[float], Optional[float]]:
         """
         Return the geo-data for a host using the GeoIP database.
 
@@ -300,9 +299,7 @@ class BlocklistChecker:
             return False
 
         if not is_public_ip_address(ip_address):
-            logging.debug(
-                "Skipping blocklist lookup for non-public IP: %s", ip_address
-            )
+            logging.debug("Skipping blocklist lookup for non-public IP: %s", ip_address)
             return False
 
         session = await self.get_session()
@@ -333,10 +330,7 @@ class BlocklistChecker:
                         .get("blacklists", {})
                         .get("detections", 0)
                     )
-                    if (
-                        detections
-                        >= self.config.security.blocklist_detection_threshold
-                    ):
+                    if detections >= self.config.security.blocklist_detection_threshold:
                         logging.info(
                             "IP %s is on %d blacklists, marking as malicious.",
                             ip_address,
@@ -354,9 +348,7 @@ class BlocklistChecker:
             asyncio.TimeoutError,
             json.JSONDecodeError,
         ) as exc:
-            logging.warning(
-                "APIVoid API request failed for IP %s: %s", ip_address, exc
-            )
+            logging.warning("APIVoid API request failed for IP %s: %s", ip_address, exc)
 
         return False
 
@@ -364,5 +356,6 @@ class BlocklistChecker:
         """Close the aiohttp client session."""
         if self._session and not self._session.closed:
             await self._session.close()
+
 
 # End of file

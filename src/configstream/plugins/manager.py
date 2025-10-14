@@ -2,6 +2,7 @@
 
 This module handles plugin discovery, loading, and registration.
 """
+
 from __future__ import annotations
 
 import importlib
@@ -10,12 +11,7 @@ import sys
 from pathlib import Path
 from typing import List
 
-from .base import (
-    ParserPlugin,
-    OutputPlugin,
-    FilterPlugin,
-    TestPlugin
-)
+from .base import ParserPlugin, OutputPlugin, FilterPlugin, TestPlugin
 
 logger = logging.getLogger(__name__)
 
@@ -132,10 +128,7 @@ class PluginManager:
                         Defaults to ~/.configstream/plugins
         """
         if plugin_dirs is None:
-            plugin_dirs = [
-                Path.home() / ".configstream" / "plugins",
-                Path("./plugins")
-            ]
+            plugin_dirs = [Path.home() / ".configstream" / "plugins", Path("./plugins")]
 
         for plugin_dir in plugin_dirs:
             if not plugin_dir.exists():
@@ -169,9 +162,13 @@ class PluginManager:
                         # Register based on type
                         if issubclass(attr, ParserPlugin) and attr is not ParserPlugin:
                             self.register_parser(attr())
-                        elif issubclass(attr, OutputPlugin) and attr is not OutputPlugin:
+                        elif (
+                            issubclass(attr, OutputPlugin) and attr is not OutputPlugin
+                        ):
                             self.register_output(attr())
-                        elif issubclass(attr, FilterPlugin) and attr is not FilterPlugin:
+                        elif (
+                            issubclass(attr, FilterPlugin) and attr is not FilterPlugin
+                        ):
                             self.register_filter(attr())
                         elif issubclass(attr, TestPlugin) and attr is not TestPlugin:
                             self.register_test(attr())

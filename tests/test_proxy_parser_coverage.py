@@ -31,6 +31,7 @@ def test_parse_ss_userinfo():
     to achieve test coverage before refactoring.
     """
     from urllib.parse import uses_netloc
+
     if "ss" not in uses_netloc:
         uses_netloc.append("ss")
 
@@ -124,6 +125,7 @@ def test_ssr_non_b64_params():
 def test_parse_vmess_fallback():
     """Test the fallback parsing logic for vmess."""
     from urllib.parse import uses_netloc
+
     if "vmess" not in uses_netloc:
         uses_netloc.append("vmess")
 
@@ -134,12 +136,12 @@ def test_parse_vmess_fallback():
     proxy = parser.config_to_clash_proxy(link)
 
     assert proxy is not None
-    assert proxy['name'] == 'VmessFallback'
-    assert proxy['server'] == 'server.com'
-    assert proxy['port'] == 1234
-    assert proxy['uuid'] == 'a-non-base64-string'
-    assert proxy['alterId'] == 2
-    assert proxy['network'] == 'ws'
+    assert proxy["name"] == "VmessFallback"
+    assert proxy["server"] == "server.com"
+    assert proxy["port"] == 1234
+    assert proxy["uuid"] == "a-non-base64-string"
+    assert proxy["alterId"] == 2
+    assert proxy["network"] == "ws"
 
     if "vmess" in uses_netloc:
         uses_netloc.remove("vmess")

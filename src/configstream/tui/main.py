@@ -2,6 +2,7 @@
 
 This module provides an interactive terminal interface using Rich.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -73,9 +74,10 @@ class ConfigStreamTUI:
 
         avg_ping = 0
         if successful > 0:
-            avg_ping = sum(
-                n.get("ping_ms", 0) for n in nodes if n.get("ping_ms", 0) > 0
-            ) / successful
+            avg_ping = (
+                sum(n.get("ping_ms", 0) for n in nodes if n.get("ping_ms", 0) > 0)
+                / successful
+            )
 
         countries = len(set(n.get("country") for n in nodes))
 
@@ -95,12 +97,7 @@ class ConfigStreamTUI:
         text.append("Countries: ", style="bold magenta")
         text.append(f"{countries}", style="bold white")
 
-        return Panel(
-            text,
-            title="📊 Statistics",
-            border_style="cyan",
-            box=box.ROUNDED
-        )
+        return Panel(text, title="📊 Statistics", border_style="cyan", box=box.ROUNDED)
 
     def create_nodes_table(self, data: dict) -> Table:
         """Create nodes table.
@@ -115,7 +112,7 @@ class ConfigStreamTUI:
             title="🌐 VPN Nodes",
             box=box.ROUNDED,
             show_header=True,
-            header_style="bold magenta"
+            header_style="bold magenta",
         )
 
         table.add_column("Protocol", style="cyan", width=12)
@@ -162,7 +159,7 @@ class ConfigStreamTUI:
                 node.get("ip", ""),
                 str(node.get("port", "")),
                 ping_str,
-                status
+                status,
             )
 
         return table
@@ -185,7 +182,9 @@ class ConfigStreamTUI:
         if self.show_only_successful:
             text.append("Only Successful\n", style="green")
 
-        if not (self.filter_protocol or self.filter_country or self.show_only_successful):
+        if not (
+            self.filter_protocol or self.filter_country or self.show_only_successful
+        ):
             text.append("None\n", style="dim")
 
         text.append("\nControls:\n", style="bold")
@@ -193,12 +192,7 @@ class ConfigStreamTUI:
         text.append("r - Refresh\n", style="dim")
         text.append("c - Clear filters\n", style="dim")
 
-        return Panel(
-            text,
-            title="🔧 Controls",
-            border_style="yellow",
-            box=box.ROUNDED
-        )
+        return Panel(text, title="🔧 Controls", border_style="yellow", box=box.ROUNDED)
 
     def create_layout(self, data: dict) -> Layout:
         """Create main layout.
@@ -212,29 +206,21 @@ class ConfigStreamTUI:
         layout = Layout()
 
         # Split into header and body
-        layout.split(
-            Layout(name="header", size=3),
-            Layout(name="body")
-        )
+        layout.split(Layout(name="header", size=3), Layout(name="body"))
 
         # Split body into sidebar and main
         layout["body"].split_row(
-            Layout(name="sidebar", ratio=1),
-            Layout(name="main", ratio=3)
+            Layout(name="sidebar", ratio=1), Layout(name="main", ratio=3)
         )
 
         # Split sidebar into stats and filters
         layout["sidebar"].split(
-            Layout(name="stats", ratio=1),
-            Layout(name="filters", ratio=1)
+            Layout(name="stats", ratio=1), Layout(name="filters", ratio=1)
         )
 
         # Populate layouts
         layout["header"].update(
-            Panel(
-                "ConfigStream - VPN Node Monitor",
-                style="bold white on blue"
-            )
+            Panel("ConfigStream - VPN Node Monitor", style="bold white on blue")
         )
 
         layout["stats"].update(self.create_stats_panel(data))
@@ -248,9 +234,7 @@ class ConfigStreamTUI:
         self.running = True
 
         with Live(
-            self.create_layout(self.load_data()),
-            refresh_per_second=1,
-            console=console
+            self.create_layout(self.load_data()), refresh_per_second=1, console=console
         ) as live:
             while self.running:
                 try:

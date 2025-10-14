@@ -5,6 +5,7 @@ Supports complex filter expressions like:
 - protocol IN ["vmess", "shadowsocks"] AND NOT is_blocked
 - quality_score > 80 OR uptime > 95
 """
+
 from __future__ import annotations
 
 import operator
@@ -16,6 +17,7 @@ from typing import Any, Callable, List
 @dataclass
 class FilterExpression:
     """Represents a filter expression."""
+
     field: str
     op: str
     value: Any
@@ -30,7 +32,7 @@ class FilterExpression:
         "IN": lambda a, b: a in b,
         "NOT IN": lambda a, b: a not in b,
         "CONTAINS": lambda a, b: b in str(a),
-        "MATCHES": lambda a, b: re.match(b, str(a)) is not None
+        "MATCHES": lambda a, b: re.match(b, str(a)) is not None,
     }
 
     def evaluate(self, node: dict) -> bool:

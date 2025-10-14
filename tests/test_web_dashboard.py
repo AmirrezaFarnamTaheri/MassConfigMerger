@@ -1,25 +1,27 @@
 import pytest
 from pathlib import Path
-import json
-from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from configstream.web_dashboard import create_app
-from configstream.config import Settings
+
 
 @pytest.fixture
 def app(fs, settings):
     """Create and configure a new app instance for each test."""
-    fs.add_real_directory(str(Path(__file__).resolve().parents[1] / "src" / "configstream" / "templates"))
+    fs.add_real_directory(
+        str(Path(__file__).resolve().parents[1] / "src" / "configstream" / "templates")
+    )
     app = create_app(settings)
     app.config.update({"TESTING": True})
     yield app
+
 
 @pytest.fixture
 def client(app):
     """A test client for the app."""
     with patch("importlib.metadata.version", return_value="3.0.3"):
         yield app.test_client()
+
 
 def test_api_export_unsupported_format(client):
     """Test that an unsupported export format returns an error."""
@@ -42,9 +44,9 @@ def test_dashboard_page(client):
     assert b"Dashboard" in response.data
 
 
-def test_system_page(client):
-    """Test the system page."""
-    response = client.get("/system")
+def test_scheduler_page(client):
+    """Test the scheduler page."""
+    response = client.get("/scheduler")
     assert response.status_code == 200
     assert b"System Monitoring" in response.data
 

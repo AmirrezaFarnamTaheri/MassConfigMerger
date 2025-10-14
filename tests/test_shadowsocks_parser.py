@@ -71,13 +71,12 @@ def test_ss_parser_invalid_base64_userinfo():
     [
         "method:pass@host",  # Missing port
         "method@host:port",  # Missing password
-        "pass@host:port",    # Missing method
+        "pass@host:port",  # Missing method
     ],
 )
 def test_parse_malformed_base64(malformed_base64_content: str):
     """Test that the ss parser raises ParserError for malformed base64 content."""
-    encoded_content = base64.b64encode(
-        malformed_base64_content.encode()).decode()
+    encoded_content = base64.b64encode(malformed_base64_content.encode()).decode()
     config = f"ss://{encoded_content}"
     parser = ShadowsocksParser(config, 0)
     with pytest.raises(ParserError):

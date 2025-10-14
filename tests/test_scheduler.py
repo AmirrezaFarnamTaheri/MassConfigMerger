@@ -1,10 +1,9 @@
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock, PropertyMock
-from pathlib import Path
+from unittest.mock import patch, AsyncMock, PropertyMock
 import json
-from datetime import datetime
 
 from configstream.scheduler import TestScheduler
+
 TestScheduler.__test__ = False
 from configstream.config import Settings
 from configstream.core.config_processor import ConfigResult
@@ -75,9 +74,9 @@ def test_scheduler_start_and_stop(mock_settings, tmp_path):
     """Test the start and stop methods of the scheduler."""
     scheduler = TestScheduler(settings=mock_settings, output_dir=tmp_path)
 
-    with patch.object(scheduler.scheduler, "add_job") as mock_add_job, \
-         patch.object(scheduler.scheduler, "start") as mock_start, \
-         patch.object(scheduler.scheduler, "shutdown") as mock_shutdown:
+    with patch.object(scheduler.scheduler, "add_job") as mock_add_job, patch.object(
+        scheduler.scheduler, "start"
+    ) as mock_start, patch.object(scheduler.scheduler, "shutdown") as mock_shutdown:
 
         scheduler.start(interval_hours=5)
 
@@ -86,7 +85,10 @@ def test_scheduler_start_and_stop(mock_settings, tmp_path):
         mock_start.assert_called_once()
 
         # Simulate the scheduler running
-        with patch('apscheduler.schedulers.base.BaseScheduler.running', new_callable=PropertyMock) as mock_running:
+        with patch(
+            "apscheduler.schedulers.base.BaseScheduler.running",
+            new_callable=PropertyMock,
+        ) as mock_running:
             mock_running.return_value = True
             scheduler.stop()
             mock_shutdown.assert_called_once()
