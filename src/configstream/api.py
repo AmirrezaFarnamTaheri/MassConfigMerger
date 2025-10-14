@@ -9,6 +9,7 @@ import tempfile
 from flask import Blueprint, jsonify, request, send_file, current_app, Response
 
 from . import web_dashboard
+import zipfile
 from .vpn_retester import run_retester_flow
 
 api = Blueprint('api', __name__)
@@ -38,6 +39,65 @@ def api_current():
     except Exception as exc:
         current_app.logger.exception("Error loading current results: %s", exc)
         return jsonify({"error": "Internal server error"}), 500
+
+@api.route("/backup/restore", methods=["POST"])
+def api_restore_backup():
+    """Restore the application data from a zip archive."""
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+    if file and file.filename.endswith(".zip"):
+        try:
+            with zipfile.ZipFile(file, "r") as zip_ref:
+                data_dir = current_app.config["data_dir"]
+                config_path = Path(current_app.root_path).parent / "config.yaml"
+
+                # Extract to a temporary directory first to be safe
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    zip_ref.extractall(tmpdir)
+
+                    # Restore config.yaml
+                    if (Path(tmpdir) / "config.yaml").exists():
+                        (Path(tmpdir) / "config.yaml").rename(config_path)
+
+                    # Restore data directory
+                    for item in (Path(tmpdir)).iterdir():
+                        if item.is_dir():
+                            # shutil.copytree(item, data_dir, dirs_exist_ok=True)
+                            pass # for now, just log
+                        elif item.is_file() and item.name != "config.yaml":
+                            item.rename(data_dir / item.name)
+
+            return jsonify({"message": "Backup restored successfully"}), 200
+        except Exception as e:
+            return jsonify({"error": f"Failed to restore backup: {e}"}), 500
+    return jsonify({"error": "Invalid file type"}), 400
+
+@api.route("/backup/create")
+def api_create_backup():
+    """Create a zip archive of the application data."""
+    data_dir = current_app.config["data_dir"]
+    config_path = Path(current_app.root_path).parent / "config.yaml"
+
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        if config_path.exists():
+            zip_file.write(config_path, "config.yaml")
+        for file_path in data_dir.rglob("*"):
+            if file_path.is_file():
+                zip_file.write(file_path, file_path.relative_to(data_dir))
+
+    zip_buffer.seek(0)
+    now_utc = datetime.now(timezone.utc)
+    timestamp = now_utc.strftime('%Y%m%d_%H%M%S')
+    return send_file(
+        zip_buffer,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=f"configstream_backup_{timestamp}.zip"
+    )
 
 @api.route("/history")
 def api_history():

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Help - ConfigStream{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>
+        <div class="card-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+        </div>
+        Help & Documentation
+    </h2>
+    <p class="text-muted" style="margin-bottom: 2rem;">
+        Find answers to common questions and learn how to use ConfigStream effectively.
+    </p>
+
+    <div class="space-y-8">
+        <div class="card">
+            <h3>Frequently Asked Questions (FAQ)</h3>
+            <div class="space-y-4">
+                <div>
+                    <h4 class="font-semibold">Why does the script take so long to run?</h4>
+                    <p class="text-muted">The `merge` command tests hundreds of servers for connectivity and latency. You can speed this up by reducing the number of sources in `sources.txt` or using a smaller `--concurrent-limit`.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold">Where are my output files?</h4>
+                    <p class="text-muted">By default, all generated files are saved in the `output/` directory in the project root. You can change this with the `--output-dir` argument.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold">How do I use the generated subscription link?</h4>
+                    <p class="text-muted">Copy the contents of `output/vpn_subscription_base64.txt` and import it into a compatible client like Hiddify, v2rayNG, or Clash.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Core Concepts</h3>
+            <div class="space-y-4">
+                <div>
+                    <h4 class="font-semibold">Fetching vs. Merging</h4>
+                    <p class="text-muted">
+                        <strong>Fetching</strong> (`configstream fetch`) gathers raw configuration links from sources without testing them.
+                        <strong>Merging</strong> (`configstream merge`) tests those configurations, filters out non-working ones, sorts them by performance, and generates the final subscription files.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-semibold">Configuration (`config.yaml`)</h4>
+                    <p class="text-muted">This file is the heart of your setup. You can define which protocols to fetch, set network timeouts, configure API keys, and much more. Always back up your `config.yaml` file.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Need More Help?</h3>
+            <p class="text-muted">
+                For more detailed information, check out the full documentation on GitHub. If you encounter a bug or have a feature request, please open an issue.
+            </p>
+            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" class="action-button" style="margin-top: 1rem;">
+                View on GitHub
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

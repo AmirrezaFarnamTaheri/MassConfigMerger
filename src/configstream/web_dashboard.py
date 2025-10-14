@@ -21,6 +21,9 @@ from .config import load_config
 from .core.file_utils import find_project_root
 from .db import Database
 from .scheduler import TestScheduler
+from .tester import NodeTester
+from .core.utils import parse_configs_from_text
+from .core.config_normalizer import extract_host_port
 
 try:
     import uvloop
@@ -321,6 +324,7 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
 
     app.config["settings"] = settings
     app.config["scheduler"] = TestScheduler(settings, data_dir)
+    app.config["tester"] = NodeTester(settings)
     app.config["data_dir"] = data_dir
 
     def get_sri_map(paths):
@@ -369,8 +373,7 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
         try:
             sources_file = project_root / cfg.sources.sources_file
             if sources_file.exists():
-                lines = [ln for ln in sources_file.read_text().splitlines() if ln.strip()]
-                stats['total_sources'] = len(lines)
+                stats['total_sources'] = len(sources_file.read_text().strip().split('\n'))
 
             if db_path.exists():
                 history_data = _run_async_task(_read_history(db_path))
@@ -378,11 +381,8 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
 
                 if all_entries:
                     stats['active_proxies'] = len(all_entries)
-                    reliabilities = [e.get('reliability') for e in all_entries if isinstance(e.get('reliability'), (int, float))]
-                    if reliabilities:
-                        avg_rel = sum(reliabilities) / len(reliabilities)
-                        # If reliability is already 0–100, do not rescale. Format as percentage with one decimal.
-                        stats['success_rate'] = f"{avg_rel:.1f}%"
+                    total_success = sum(e['reliability'] for e in all_entries)
+                    stats['success_rate'] = f"{total_success / len(all_entries):.1f}%"
 
                     history_preview = all_entries[:preview_limit]
         except Exception as e:
@@ -439,16 +439,25 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
 
         return render_template("sources.html", sources=sources)
 
-    @app.route("/system")
-    def system():
-        scheduler = app.config["scheduler"]
-        jobs = scheduler.get_jobs()
-        return render_template("system.html", jobs=jobs)
+    @app.route("/analytics")
+    def analytics():
+        """Serve the analytics page."""
+        return render_template("analytics.html")
+
+    @app.route("/help")
+    def help():
+        """Serve the help page."""
+        return render_template("help.html")
 
     @app.route("/export")
     def export():
         """Render the export page."""
         return render_template("export.html")
+
+    @app.route("/backup")
+    def backup():
+        """Render the backup page."""
+        return render_template("backup.html")
 
     @app.route("/testing")
     def testing():
@@ -460,11 +469,59 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
         """API documentation page."""
         return render_template("api-docs.html")
 
+    @app.route("/system")
+    def system():
+        """Serve the system page."""
+        return render_template("system.html")
+
+    @app.route("/scheduler")
+    def scheduler():
+        """Serve the scheduler page."""
+        scheduler = app.config["scheduler"]
+        jobs = scheduler.get_jobs()
+        return render_template("scheduler.html", jobs=jobs)
+
     @app.post("/api/test")
     def test_proxies():
         """Test custom proxy configurations."""
-        # Implementation here
-        pass
+        data = request.get_json()
+        if not data or "proxies" not in data:
+            return {"error": "Missing 'proxies' in request"}, 400
+
+        proxy_text = "\n".join(data["proxies"])
+        configs = parse_configs_from_text(proxy_text)
+
+        async def run_tests():
+            results = []
+            tester = current_app.config["tester"]
+            for config in configs:
+                try:
+                    host, port = extract_host_port(config)
+                    if host and port:
+                        latency = await tester.test_connection(host, port)
+                        results.append({
+                            "proxy": config,
+                            "status": "success" if latency is not None else "failure",
+                            "ping": f"{latency * 1000:.2f}ms" if latency is not None else "N/A",
+                        })
+                    else:
+                        results.append({
+                            "proxy": config,
+                            "status": "failure",
+                            "ping": "N/A",
+                            "error": "Could not extract host and port.",
+                        })
+                except Exception as e:
+                    results.append({
+                        "proxy": config,
+                        "status": "failure",
+                        "ping": "N/A",
+                        "error": str(e),
+                    })
+            return results
+
+        results = _run_async_task(run_tests())
+        return {"results": results}
 
     return app
 

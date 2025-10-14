@@ -42,11 +42,11 @@ def test_dashboard_page(client):
     assert b"Dashboard" in response.data
 
 
-def test_system_page(client):
-    """Test the system page."""
-    response = client.get("/system")
+def test_scheduler_page(client):
+    """Test the scheduler page."""
+    response = client.get("/scheduler")
     assert response.status_code == 200
-    assert b"System Monitoring" in response.data
+    assert b"Scheduler" in response.data
 
 
 def test_settings_page(client):

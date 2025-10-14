@@ -59,11 +59,11 @@ def test_sources_route(client):
     assert b"Sources" in response.data
 
 
-def test_system_route(client):
-    """Test the system route."""
-    response = client.get("/system")
+def test_scheduler_route(client):
+    """Test the scheduler route."""
+    response = client.get("/scheduler")
     assert response.status_code == 200
-    assert b"System Monitoring" in response.data
+    assert b"Scheduler" in response.data
 
 
 def test_api_current_with_filters(fs, settings):

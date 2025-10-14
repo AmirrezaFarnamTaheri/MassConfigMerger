@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Backup & Restore - ConfigStream{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>
+        <div class="card-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 3H7c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H7V5h10v14zM12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-1-4h2v-4h-2v4z"/></svg>
+        </div>
+        Backup & Restore
+    </h2>
+    <p class="text-muted" style="margin-bottom: 2rem;">
+        Manage your ConfigStream data by creating backups or restoring from a previous state.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="card">
+            <h3>Create Backup</h3>
+            <p class="text-muted">Download a snapshot of your current configuration, sources, and history.</p>
+            <button id="create-backup-btn" class="action-button" style="margin-top: 1rem;">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 1.25rem; height: 1.25rem; margin-right: 0.5rem;"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                Download Backup
+            </button>
+            <p class="text-xs text-muted" style="margin-top: 1rem;">
+                This will generate a `zip` file containing all your data.
+            </p>
+        </div>
+        <div class="card">
+            <h3>Restore from Backup</h3>
+            <p class="text-muted">Upload a backup file to restore your application state.</p>
+            <form id="restore-form" style="margin-top: 1rem;">
+                <input type="file" id="backup-file" name="file" class="file-input" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                <button type="submit" class="action-button" style="margin-top: 1rem;">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 1.25rem; height: 1.25rem; margin-right: 0.5rem;"><path d="M9 16h6v-6h4l-8-8-8 8h4v6zm-4 2h14v2H5v-2z"/></svg>
+                    Upload & Restore
+                </button>
+            </form>
+            <p class="text-xs text-red-500" style="margin-top: 1rem;">
+                <strong>Warning:</strong> Restoring will overwrite all current data.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('create-backup-btn').addEventListener('click', async () => {
+    window.location.href = '/api/backup/create';
+});
+
+document.getElementById('restore-form').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const fileInput = document.getElementById('backup-file');
+    const file = fileInput.files[0];
+    if (!file) {
+        alert('Please select a file to restore.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+
+    try {
+        const response = await fetch('/api/backup/restore', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-Token': csrfToken
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        alert(data.message);
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Analytics - ConfigStream{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>
+        <div class="card-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+        </div>
+        Proxy Analytics
+    </h2>
+    <p class="text-muted" style="margin-bottom: 2rem;">
+        In-depth analysis of proxy performance, reliability, and geographic distribution.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="card">
+            <h3>Performance Over Time</h3>
+            <p class="text-muted">Average latency and success rate trends.</p>
+            <div class="placeholder-chart" style="height: 300px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; border-radius: 8px; margin-top: 1rem;">
+                <span class="text-muted">Chart coming soon</span>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Geographic Distribution</h3>
+            <p class="text-muted">Map of active proxy locations.</p>
+            <div class="placeholder-chart" style="height: 300px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; border-radius: 8px; margin-top: 1rem;">
+                <span class="text-muted">Map visualization coming soon</span>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Protocol Breakdown</h3>
+            <p class="text-muted">Distribution of proxy protocols.</p>
+            <div class="placeholder-chart" style="height: 300px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; border-radius: 8px; margin-top: 1rem;">
+                <span class="text-muted">Pie chart coming soon</span>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Top Performing Countries</h3>
+            <p class="text-muted">Countries with the best average latency.</p>
+            <div class="placeholder-chart" style="height: 300px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; border-radius: 8px; margin-top: 1rem;">
+                <span class="text-muted">Bar chart coming soon</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
