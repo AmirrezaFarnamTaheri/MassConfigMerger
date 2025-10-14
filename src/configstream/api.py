@@ -73,7 +73,13 @@ def _safe_extract_zip(zip_ref: zipfile.ZipFile, destination: Path) -> None:
 
         target_path = (dest_path / member.filename).resolve()
         _ensure_within_directory(dest_path, target_path)
-        zip_ref.extract(member, dest_path)
+
+        if member.is_dir():
+            target_path.mkdir(parents=True, exist_ok=True)
+        else:
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            with zip_ref.open(member, "r") as source, open(target_path, "wb") as target:
+                shutil.copyfileobj(source, target)
 
 
 def _validate_csrf_token() -> None:
