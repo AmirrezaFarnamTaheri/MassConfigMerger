@@ -13,10 +13,10 @@ def test_filter_by_isp():
     processor = ConfigProcessor(settings)
 
     results = [
-        ConfigResult(config="c1", protocol="p1", isp="Google"),
-        ConfigResult(config="c2", protocol="p2", isp="Amazon"),
-        ConfigResult(config="c3", protocol="p3", isp="DigitalOcean"),
-        ConfigResult(config="c4", protocol="p4", isp=None),
+        ConfigResult(config="c1", protocol="p1", is_reachable=True, isp="Google"),
+        ConfigResult(config="c2", protocol="p2", is_reachable=True, isp="Amazon"),
+        ConfigResult(config="c3", protocol="p3", is_reachable=True, isp="DigitalOcean"),
+        ConfigResult(config="c4", protocol="p4", is_reachable=True, isp=None),
     ]
 
     # Test include

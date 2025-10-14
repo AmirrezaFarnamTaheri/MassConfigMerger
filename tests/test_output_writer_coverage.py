@@ -19,7 +19,6 @@ def mock_results() -> List[ConfigResult]:
             port=443,
             ping_time=0.1,
             is_reachable=True,
-            source_url="http://source.com/1",
             country="US",
         )
     ]

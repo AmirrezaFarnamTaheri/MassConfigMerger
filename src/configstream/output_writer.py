@@ -28,7 +28,7 @@ from .constants import (
     CSV_REPORT_FILE_NAME,
     RAW_SUBSCRIPTION_FILE_NAME,
 )
-from .core.types import ConfigResult
+from .core.config_processor import ConfigResult
 
 
 def write_raw_configs(configs: List[str], output_dir: Path, prefix: str = "") -> Path:
@@ -62,7 +62,6 @@ def write_csv_report(results: List[ConfigResult], output_dir: Path, prefix: str 
                 "port",
                 "ping_ms",
                 "reachable",
-                "source_url",
                 "country",
             ]
         )
@@ -77,7 +76,6 @@ def write_csv_report(results: List[ConfigResult], output_dir: Path, prefix: str 
                     result.port,
                     ping_ms,
                     result.is_reachable,
-                    result.source_url,
                     result.country,
                 ]
             )

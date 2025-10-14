@@ -10,19 +10,41 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from dataclasses import asdict, dataclass
 from functools import lru_cache
-from typing import List, Optional, Set
+from typing import Any, List, Optional, Set
 
 from tqdm.asyncio import tqdm_asyncio
 
 from .. import metrics
 from ..config import Settings
+from ..db import Database
+from ..security.cert_validator import CertificateValidator
+from ..security.ip_reputation import IPReputationChecker, ReputationScore
 from ..tester import BlocklistChecker, NodeTester
 from . import config_normalizer
-from .types import ConfigResult
-from ..security.ip_reputation import IPReputationChecker, ReputationScore
-from ..security.cert_validator import CertificateValidator
-from ..db import Database
+
+
+@dataclass
+class ConfigResult:
+    """Dataclass to hold the result of testing a single configuration."""
+
+    config: str
+    protocol: str
+    is_reachable: bool
+    ping_time: Optional[float] = None
+    host: Optional[str] = None
+    port: Optional[int] = None
+    country: Optional[str] = None
+    isp: Optional[str] = None
+    reliability: Optional[float] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    is_blocked: Optional[bool] = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the dataclass to a dictionary."""
+        return asdict(self)
 
 
 @lru_cache(maxsize=None)

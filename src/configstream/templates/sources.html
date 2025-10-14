@@ -1,87 +1,124 @@
 {% extends "base.html" %}
 
-{% block title %}Sources - ConfigStream{% endblock %}
+{% block title %}Manage Sources - ConfigStream{% endblock %}
 
 {% block header_title %}Sources{% endblock %}
 
 {% block content %}
-<div class="space-y-8">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header -->
-    <div>
-        <h1 class="text-4xl font-extrabold text-white">Manage Sources</h1>
-        <p class="mt-2 text-lg text-gray-400">
-            View and manage the list of sources from your <code>sources.txt</code> file.
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white">Manage Subscription Sources</h1>
+        <p class="mt-1 text-lg text-gray-400">
+            Add or view the sources used to fetch configurations. Changes are saved to <code>sources.txt</code>.
         </p>
     </div>
 
-    <!-- Add Source -->
-    <div class="card">
-        <h2 class="text-2xl font-bold mb-4 flex items-center">
-            <i class="fas fa-plus-circle mr-3 text-accent-blue-500"></i>
-            Add New Source
-        </h2>
-        <form id="add-source-form" class="flex flex-col sm:flex-row gap-4">
-            <input type="text" id="new-source-url" class="form-input flex-grow" placeholder="https://example.com/subscription">
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-plus mr-2"></i>Add Source
-            </button>
-        </form>
-    </div>
-
-    <!-- Source List -->
-    <div class="card">
-        <h2 class="text-2xl font-bold mb-4 flex items-center">
-            <i class="fas fa-list-ul mr-3 text-accent-green-500"></i>
-            Current Sources
-        </h2>
-        {% if sources %}
-            <div id="sources-list" class="space-y-2">
-                {% for source in sources %}
-                <div class="bg-gray-800 p-3 rounded-md flex justify-between items-center source-item">
-                    <span class="font-mono text-sm text-gray-300 break-all">{{ source }}</span>
-                    <button class="btn btn-danger btn-sm" onclick="removeSource(this, '{{ source }}')">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </div>
-                {% endfor %}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Add Source Card -->
+        <div class="lg:col-span-1">
+            <div class="card h-full">
+                <h2 class="text-xl font-semibold mb-4 text-white flex items-center">
+                    <i class="fas fa-plus-circle mr-3 text-accent-blue-500"></i>
+                    Add New Source
+                </h2>
+                <form id="add-source-form">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="new-source-url" class="block text-sm font-medium text-gray-300 mb-1">Source URL</label>
+                            <input type="url" id="new-source-url" name="url" required
+                                   class="form-input w-full"
+                                   placeholder="https://example.com/sub.txt">
+                        </div>
+                        <button type="submit" id="add-source-button" class="btn btn-primary w-full">
+                            <span id="button-text">Add Source</span>
+                            <i id="button-spinner" class="fas fa-spinner fa-spin ml-2 hidden"></i>
+                        </button>
+                    </div>
+                </form>
             </div>
-        {% else %}
-            <p id="no-sources-msg" class="text-gray-400">No sources found.</p>
-        {% endif %}
+        </div>
+
+        <!-- Source List Card -->
+        <div class="lg:col-span-2">
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-4 text-white flex items-center">
+                    <i class="fas fa-list-ul mr-3 text-accent-green-500"></i>
+                    Current Sources
+                </h2>
+                <div id="sources-list" class="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+                    {% if sources %}
+                        {% for source in sources %}
+                        <div class="bg-gray-800 p-3 rounded-md flex justify-between items-center source-item">
+                            <span class="font-mono text-sm text-gray-300 break-all">{{ source }}</span>
+                            <!-- Remove button is hidden until backend is ready -->
+                            <!--
+                            <button class="btn btn-danger btn-sm" onclick="removeSource(this, '{{ source }}')">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                            -->
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p id="no-sources-msg" class="text-gray-400 text-center py-4">No sources found in <code>sources.txt</code>.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Toast Notification -->
-<div id="toast" class="fixed bottom-5 right-5 text-white px-4 py-2 rounded-md shadow-lg" style="display: none;"></div>
+<!-- Toast Notification Container -->
+<div id="toast-container" class="fixed bottom-5 right-5 z-50"></div>
 {% endblock %}
 
-{% block head_extra %}
+{% block scripts %}
+{{ super() }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('add-source-form');
     const newSourceInput = document.getElementById('new-source-url');
+    const addButton = document.getElementById('add-source-button');
+    const buttonText = document.getElementById('button-text');
+    const buttonSpinner = document.getElementById('button-spinner');
+    const csrfToken = "{{ csrf_token() }}";
 
     form.addEventListener('submit', async function(event) {
         event.preventDefault();
         const newSource = newSourceInput.value.trim();
         if (!newSource) return;
 
+        // Disable button and show spinner
+        addButton.disabled = true;
+        buttonText.textContent = 'Adding...';
+        buttonSpinner.classList.remove('hidden');
+
         try {
             const response = await fetch('/api/sources', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
                 body: JSON.stringify({ url: newSource })
             });
+
             const data = await response.json();
+
             if (response.ok) {
-                showToast('Source added successfully!');
+                showToast('Source added successfully!', 'success');
                 addSourceToList(newSource);
                 newSourceInput.value = '';
             } else {
-                showToast(data.error || 'Failed to add source.', true);
+                throw new Error(data.error || 'An unknown error occurred.');
             }
         } catch (error) {
-            showToast('An unexpected error occurred.', true);
+            showToast(`Error: ${error.message}`, 'error');
+        } finally {
+            // Re-enable button and hide spinner
+            addButton.disabled = false;
+            buttonText.textContent = 'Add Source';
+            buttonSpinner.classList.add('hidden');
         }
     });
 });
@@ -89,55 +126,36 @@ document.addEventListener('DOMContentLoaded', function() {
 function addSourceToList(sourceUrl) {
     const list = document.getElementById('sources-list');
     const noSourcesMsg = document.getElementById('no-sources-msg');
-    if (noSourcesMsg) noSourcesMsg.style.display = 'none';
+    if (noSourcesMsg) {
+        noSourcesMsg.style.display = 'none';
+    }
 
     const item = document.createElement('div');
-    item.className = 'bg-gray-800 p-3 rounded-md flex justify-between items-center source-item';
-    item.innerHTML = `
-        <span class="font-mono text-sm text-gray-300 break-all">${sourceUrl}</span>
-        <button class="btn btn-danger btn-sm" onclick="removeSource(this, '${sourceUrl}')">
-            <i class="fas fa-trash-alt"></i>
-        </button>
-    `;
-    list.appendChild(item);
+    item.className = 'bg-gray-800 p-3 rounded-md flex justify-between items-center source-item animate-fade-in';
+    item.innerHTML = `<span class="font-mono text-sm text-gray-300 break-all">${escapeHTML(sourceUrl)}</span>`;
+    list.prepend(item); // Add to the top for immediate visibility
 }
 
-async function removeSource(button, sourceUrl) {
-    if (!confirm(`Are you sure you want to remove this source?\n${sourceUrl}`)) return;
-
-    try {
-        const response = await fetch('/api/sources', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: sourceUrl })
-        });
-        const data = await response.json();
-        if (response.ok) {
-            showToast('Source removed successfully!');
-            const sourceItem = button.closest('.source-item');
-            const list = sourceItem.parentElement;
-            sourceItem.remove();
-
-            if (list.querySelectorAll('.source-item').length === 0) {
-                 const noSourcesMsg = document.getElementById('no-sources-msg');
-                 if (noSourcesMsg) noSourcesMsg.style.display = 'block';
-            }
-        } else {
-            showToast(data.error || 'Failed to remove source.', true);
-        }
-    } catch (error) {
-        showToast('An unexpected error occurred.', true);
-    }
+function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
 }
 
-function showToast(message, isError = false) {
-    const toast = document.getElementById('toast');
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
+
+    toast.className = `text-white px-4 py-3 rounded-md shadow-lg mb-2 ${bgColor} animate-fade-in-up`;
     toast.textContent = message;
-    toast.className = `fixed bottom-5 right-5 text-white px-4 py-2 rounded-md shadow-lg ${isError ? 'bg-red-500' : 'bg-green-500'}`;
-    toast.style.display = 'block';
+
+    container.appendChild(toast);
+
     setTimeout(() => {
-        toast.style.display = 'none';
-    }, 3000);
+        toast.classList.add('animate-fade-out');
+        toast.addEventListener('animationend', () => toast.remove());
+    }, 4000);
 }
 </script>
 {% endblock %}

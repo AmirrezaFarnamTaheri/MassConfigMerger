@@ -24,7 +24,6 @@ def sample_results() -> list[ConfigResult]:
             port=443,
             ping_time=0.123,
             is_reachable=True,
-            source_url="http://source.com",
             country="US",
         )
     ]

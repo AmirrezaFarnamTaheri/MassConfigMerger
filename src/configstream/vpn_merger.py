@@ -18,8 +18,7 @@ from pathlib import Path
 from typing import Optional, Set
 
 from .config import Settings
-from .core.config_processor import ConfigProcessor
-from .core.types import ConfigResult
+from .core.config_processor import ConfigProcessor, ConfigResult
 from .core.output_generator import OutputGenerator
 from .core.source_manager import SourceManager
 from .db import Database

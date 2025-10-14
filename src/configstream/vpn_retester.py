@@ -12,9 +12,11 @@ to the `processing` module.
 """
 from __future__ import annotations
 
+import asyncio
 import base64
 import binascii
 import csv
+import logging
 from pathlib import Path
 
 from .config import Settings
@@ -118,5 +120,26 @@ async def run_retester(
         results = pipeline.filter_results_by_ping(results, cfg)
         processed_results = pipeline.sort_and_trim_results(results, cfg)
         save_retest_results(processed_results, cfg)
+        return [r.to_dict() for r in processed_results]
     finally:
         await db.close()
+
+
+def run_retester_flow(settings: Settings) -> list[dict]:
+    """Synchronous wrapper for the retesting flow."""
+    if not settings.processing.resume_file or not settings.processing.resume_file.exists():
+        logging.error("Retesting requires a valid resume_file path.")
+        return []
+
+    try:
+        # Get the current running event loop or create a new one
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # No running loop, create a new one
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    results = loop.run_until_complete(
+        run_retester(settings, settings.processing.resume_file)
+    )
+    return results

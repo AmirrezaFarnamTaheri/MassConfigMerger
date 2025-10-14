@@ -4,9 +4,12 @@ from io import BytesIO
 from pathlib import Path
 
 import psutil
+import os
+import tempfile
 from flask import Blueprint, jsonify, request, send_file, current_app, Response
 
 from . import web_dashboard
+from .vpn_retester import run_retester_flow
 
 api = Blueprint('api', __name__)
 
@@ -291,4 +294,43 @@ def api_add_source():
         return jsonify({"message": "Source added successfully"}), 200
     except Exception as exc:
         current_app.logger.exception("Unexpected error adding source: %s", exc)
+        return jsonify({"error": "Internal server error"}), 500
+
+@api.route("/retest", methods=["POST"])
+def api_retest():
+    """API endpoint for retesting a list of configurations."""
+    try:
+        data = request.get_json(silent=True) or {}
+        configs = data.get("configs", [])
+        if not isinstance(configs, list) or not configs:
+            return jsonify({"error": "A non-empty list of configs is required"}), 400
+
+        # Create a temporary file to store the configs
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8", suffix=".txt") as tmp:
+            tmp.write("\n".join(configs))
+            tmp_path = tmp.name
+
+        try:
+            base_settings = current_app.config["settings"]
+            # Create an isolated copy to avoid mutating global state
+            from copy import deepcopy
+            settings = deepcopy(base_settings)
+            settings.processing.resume_file = Path(tmp_path)
+
+            # Run the re-tester flow
+            results = run_retester_flow(settings)
+
+            # Sort results to have successful ones first
+            results.sort(key=lambda x: x.get('ping_ms', 9999) if x.get('success') else 99999)
+
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except FileNotFoundError:
+                pass
+
+        return jsonify(results)
+
+    except Exception as exc:
+        current_app.logger.exception("Error during retest: %s", exc)
         return jsonify({"error": "Internal server error"}), 500

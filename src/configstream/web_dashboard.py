@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import csv
 import hashlib
@@ -12,11 +13,68 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, Dict, List
 
-from flask import Flask, current_app, render_template
+from flask import Flask, current_app, render_template, request
 from flask_wtf.csrf import CSRFProtect
 
+from . import web_utils
 from .config import load_config
+from .core.file_utils import find_project_root
+from .db import Database
 from .scheduler import TestScheduler
+
+try:
+    import uvloop
+
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+except ImportError:
+    pass
+
+def _get_root() -> Path:
+    """Helper to find project root."""
+    return find_project_root()
+
+def _run_async_task(coro):
+    """Run an async task from a sync context safely."""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # No running loop: use asyncio.run which manages loop lifecycle safely
+        return asyncio.run(coro)
+    else:
+        # A loop is already running (e.g., inside an async-enabled server/thread).
+        # Create a new loop in a separate thread to avoid run_until_complete on running loop.
+        import threading
+        result_container = {}
+        exc_container = {}
+
+        def runner():
+            new_loop = asyncio.new_event_loop()
+            try:
+                asyncio.set_event_loop(new_loop)
+                result_container["result"] = new_loop.run_until_complete(coro)
+            except Exception as e:
+                exc_container["exc"] = e
+            finally:
+                new_loop.close()
+
+        t = threading.Thread(target=runner, daemon=True)
+        t.start()
+        t.join()
+        if "exc" in exc_container:
+            raise exc_container["exc"]
+        return result_container.get("result")
+
+async def _read_history(db_path: Path) -> Dict[str, Any]:
+    """Read proxy history from the database."""
+    if not db_path.exists():
+        return {}
+    db = Database(db_path)
+    await db.connect()
+    try:
+        history = await db.get_proxy_history()
+        return history
+    finally:
+        await db.close()
 
 csrf = CSRFProtect()
 
@@ -292,8 +350,50 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
 
     @app.route("/")
     def index():
-        """Serve the main dashboard page."""
-        return render_template("index.html")
+        """Modern dashboard with enhanced UI."""
+        cfg = load_config()
+        project_root = _get_root()
+        db_path = project_root / cfg.output.output_dir / cfg.output.history_db_file
+
+        # Get statistics
+        stats = {
+            'total_sources': 0,
+            'active_proxies': 0,
+            'success_rate': 'N/A',
+            'avg_ping': 'N/A'
+        }
+
+        history_preview = []
+        preview_limit = 5
+
+        try:
+            sources_file = project_root / cfg.sources.sources_file
+            if sources_file.exists():
+                lines = [ln for ln in sources_file.read_text().splitlines() if ln.strip()]
+                stats['total_sources'] = len(lines)
+
+            if db_path.exists():
+                history_data = _run_async_task(_read_history(db_path))
+                all_entries = web_utils._serialize_history(history_data)
+
+                if all_entries:
+                    stats['active_proxies'] = len(all_entries)
+                    reliabilities = [e.get('reliability') for e in all_entries if isinstance(e.get('reliability'), (int, float))]
+                    if reliabilities:
+                        avg_rel = sum(reliabilities) / len(reliabilities)
+                        # If reliability is already 0–100, do not rescale. Format as percentage with one decimal.
+                        stats['success_rate'] = f"{avg_rel:.1f}%"
+
+                    history_preview = all_entries[:preview_limit]
+        except Exception as e:
+            app.logger.warning("Could not fetch stats for dashboard: %s", e)
+
+        return render_template(
+            "index.html",
+            stats=stats,
+            history_preview=history_preview,
+            preview_limit=preview_limit,
+        )
 
     @app.route("/dashboard")
     def dashboard():
@@ -345,14 +445,26 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
         jobs = scheduler.get_jobs()
         return render_template("system.html", jobs=jobs)
 
-    @app.route("/api-docs")
-    def api_docs():
-        return render_template("api-docs.html")
-
     @app.route("/export")
     def export():
         """Render the export page."""
         return render_template("export.html")
+
+    @app.route("/testing")
+    def testing():
+        """Serve the testing page."""
+        return render_template("testing.html")
+
+    @app.route("/api-docs")
+    def api_docs():
+        """API documentation page."""
+        return render_template("api-docs.html")
+
+    @app.post("/api/test")
+    def test_proxies():
+        """Test custom proxy configurations."""
+        # Implementation here
+        pass
 
     return app
 
@@ -360,3 +472,6 @@ def run_dashboard(host: str = "0.0.0.0", port: int = 8080):
     """Run the dashboard server."""
     app = create_app()
     app.run(host=host, port=port, debug=False)
+
+if __name__ == "__main__":
+    run_dashboard()

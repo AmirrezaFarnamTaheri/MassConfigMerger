@@ -34,7 +34,7 @@ def test_index_route(client):
     """Test the index route."""
     response = client.get("/")
     assert response.status_code == 200
-    assert b"Welcome to ConfigStream" in response.data
+    assert b"Intelligent VPN Configuration Manager" in response.data
 
 
 def test_documentation_route(client):

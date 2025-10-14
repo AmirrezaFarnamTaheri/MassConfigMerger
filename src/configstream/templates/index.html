@@ -1,75 +1,138 @@
 {% extends "base.html" %}
 
-{% block title %}Welcome to ConfigStream{% endblock %}
+{% block title %}Dashboard - ConfigStream{% endblock %}
 
 {% block content %}
-<div class="text-center">
-    <img src="{{ url_for('static', filename='logo.svg') }}" alt="ConfigStream Logo" class="mx-auto h-24 w-24 mb-6">
-    <h1 class="text-5xl font-extrabold text-white mb-4">Welcome to ConfigStream</h1>
-    <p class="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-        Your all-in-one solution for fetching, testing, and managing proxy configurations with ease.
-    </p>
-    <div class="flex justify-center gap-4">
-        <a href="/dashboard" class="btn btn-primary text-lg">
-            <i class="fas fa-tachometer-alt mr-2"></i> Go to Dashboard
+<div class="card">
+    <h2>
+        <div class="card-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.11 0 2-.9 2-2V5c0-1.1-.89-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+            </svg>
+        </div>
+        Dashboard Overview
+    </h2>
+
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px;">
+            <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">Total Sources</div>
+            <div style="font-size: 2.5rem; font-weight: 700;">{{ stats.total_sources|default(0) }}</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 1.5rem; border-radius: 12px;">
+            <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">Active Proxies</div>
+            <div style="font-size: 2.5rem; font-weight: 700;">{{ stats.active_proxies|default(0) }}</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 1.5rem; border-radius: 12px;">
+            <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">Success Rate</div>
+            <div style="font-size: 2.5rem; font-weight: 700;">{{ stats.success_rate|default('N/A') }}</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; padding: 1.5rem; border-radius: 12px;">
+            <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">Avg Ping</div>
+            <div style="font-size: 2.5rem; font-weight: 700;">{{ stats.avg_ping|default('N/A') }}</div>
+        </div>
+    </div>
+
+    <div class="actions-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+        <button onclick="runAction('aggregate')" class="action-button" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border: none; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: transform 0.2s;">
+            🔄 Run Aggregation
+        </button>
+        <button onclick="runAction('merge')" class="action-button" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 1.5rem; border: none; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: transform 0.2s;">
+            🔀 Run Merge
+        </button>
+        <a href="/report" class="action-button" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 1.5rem; border-radius: 12px; text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 600; transition: transform 0.2s;">
+            📊 View Report
         </a>
-        <a href="/documentation" class="btn bg-gray-700 text-white hover:bg-gray-600 text-lg">
-            <i class="fas fa-book mr-2"></i> Read the Docs
+        <a href="/history" class="action-button" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; padding: 1.5rem; border-radius: 12px; text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 600; transition: transform 0.2s;">
+            📜 Full History
         </a>
     </div>
 </div>
 
-<div class="mt-16 max-w-7xl mx-auto">
-    <h2 class="text-4xl font-extrabold text-center text-white mb-12">Key Features</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <!-- Feature 1: Automated Fetching -->
-        <div class="card">
-            <div class="text-4xl text-accent-blue-500 mb-4"><i class="fas fa-cloud-download-alt"></i></div>
-            <h3 class="text-2xl font-bold mb-2">Automated Fetching</h3>
-            <p class="text-gray-400">
-                Gather proxy configurations from diverse sources like subscription links and Telegram channels automatically.
-            </p>
+{% if history_preview %}
+<div class="card" style="margin-top: 2rem;">
+    <h2>
+        <div class="card-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/>
+            </svg>
         </div>
-        <!-- Feature 2: Rigorous Testing -->
-        <div class="card">
-            <div class="text-4xl text-accent-blue-500 mb-4"><i class="fas fa-vial"></i></div>
-            <h3 class="text-2xl font-bold mb-2">Rigorous Testing</h3>
-            <p class="text-gray-400">
-                Test each proxy for latency, reliability, and location to ensure optimal performance.
-            </p>
-        </div>
-        <!-- Feature 3: Unified Subscription -->
-        <div class="card">
-            <div class="text-4xl text-accent-blue-500 mb-4"><i class="fas fa-link"></i></div>
-            <h3 class="text-2xl font-bold mb-2">Unified Subscription</h3>
-            <p class="text-gray-400">
-                Merge configurations into a single subscription file for clients like Clash and Quantumult X.
-            </p>
-        </div>
-        <!-- Feature 4: Modern Web UI -->
-        <div class="card">
-            <div class="text-4xl text-accent-blue-500 mb-4"><i class="fas fa-desktop"></i></div>
-            <h3 class="text-2xl font-bold mb-2">Modern Web UI</h3>
-            <p class="text-gray-400">
-                Monitor system status, manage configurations, and view results through an intuitive web dashboard.
-            </p>
-        </div>
-        <!-- Feature 5: Advanced Filtering -->
-        <div class="card">
-            <div class="text-4xl text-accent-blue-500 mb-4"><i class="fas fa-filter"></i></div>
-            <h3 class="text-2xl font-bold mb-2">Advanced Filtering</h3>
-            <p class="text-gray-400">
-                Filter proxies by country, protocol, and performance metrics to customize your connection.
-            </p>
-        </div>
-        <!-- Feature 6: Extensible Plugins -->
-        <div class="card">
-            <div class="text-4xl text-accent-blue-500 mb-4"><i class="fas fa-puzzle-piece"></i></div>
-            <h3 class="text-2xl font-bold mb-2">Extensible Plugins</h3>
-            <p class="text-gray-400">
-                Extend functionality with custom plugins for new sources, exporters, and notification services.
-            </p>
-        </div>
+        Recent Proxy Tests
+    </h2>
+    <div class="table-responsive">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--border-color);">
+                    <th style="padding: 1rem; text-align: left; font-weight: 600; color: var(--subtle-text-color);">Proxy</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600; color: var(--subtle-text-color);">Success Rate</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600; color: var(--subtle-text-color);">Tests</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600; color: var(--subtle-text-color);">Last Tested</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in history_preview %}
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 1rem;">{{ entry.proxy }}</td>
+                    <td style="padding: 1rem;">
+                        <span style="padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 600;
+                        {% if entry.reliability >= 80 %}background: #dcfce7; color: #166534;
+                        {% elif entry.reliability >= 50 %}background: #fef3c7; color: #92400e;
+                        {% else %}background: #fee2e2; color: #991b1b;{% endif %}">
+                            {{ "%.1f"|format(entry.reliability) }}%
+                        </span>
+                    </td>
+                    <td style="padding: 1rem;">{{ entry.total_tests }}</td>
+                    <td style="padding: 1rem; color: var(--subtle-text-color);">{{ entry.last_tested }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div style="margin-top: 1rem; text-align: center;">
+        <a href="/history" style="color: var(--primary-color); text-decoration: none; font-weight: 600;">View Full History →</a>
     </div>
 </div>
+{% endif %}
+
+<style>
+    .action-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function runAction(action) {
+    const token = prompt('Enter API token (if configured):');
+    const button = event.target;
+    button.disabled = true;
+    button.textContent = 'Running...';
+
+    try {
+        const response = await fetch(`/api/${action}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+            },
+            body: JSON.stringify({})
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert(`${action} completed successfully!`);
+            location.reload();
+        } else {
+            alert(`Error: ${data.error || 'Unknown error'}`);
+        }
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    } finally {
+        button.disabled = false;
+        button.textContent = button.textContent.replace('Running...', '');
+    }
+}
+</script>
 {% endblock %}

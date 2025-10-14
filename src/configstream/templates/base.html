@@ -7,194 +7,78 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}?v={{ now().timestamp() }}"{% if tailwind_sri %} integrity="{{ tailwind_sri }}" crossorigin="anonymous"{% endif %}>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}"{% if fontawesome_sri %} integrity="{{ fontawesome_sri }}" crossorigin="anonymous"{% endif %}>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}"{% if styles_sri %} integrity="{{ styles_sri }}" crossorigin="anonymous"{% endif %}>
-    {% block head_extra %}{% endblock %}
+    <style>
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            margin-top: 4rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--subtle-text-color);
+        }
+        .footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        {% block head_extra %}{% endblock %}
+    </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans antialiased">
-    <div class="flex h-screen bg-gray-100 dark:bg-gray-900">
-        <!-- Sidebar -->
-        <aside
-            id="sidebar"
-            class="fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 lg:static lg:inset-0 flex flex-col">
-            <div class="flex items-center justify-center p-4 h-16 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-                <img src="{{ url_for('static', filename='logo.svg') }}" alt="ConfigStream Logo" class="h-10 w-10 mr-3">
-                <span class="text-2xl font-bold text-gray-800 dark:text-white">ConfigStream</span>
-            </div>
-            <nav class="mt-4 flex-1 flex flex-col" id="main-nav">
-                <a href="/" class="nav-link" data-path="/">
-                    <i class="fas fa-home w-6 mr-3"></i>
-                    <span>Home</span>
-                </a>
-                <a href="/dashboard" class="nav-link" data-path="/dashboard">
-                    <i class="fas fa-tachometer-alt w-6 mr-3"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="/export" class="nav-link" data-path="/export">
-                    <i class="fas fa-file-export w-6 mr-3"></i>
-                    <span>Export</span>
-                </a>
-                <a href="/history" class="nav-link" data-path="/history">
-                    <i class="fas fa-history w-6 mr-3"></i>
-                    <span>History</span>
-                </a>
-                <a href="/documentation" class="nav-link" data-path="/documentation">
-                    <i class="fas fa-book w-6 mr-3"></i>
-                    <span>Documentation</span>
-                </a>
-                <a href="/quick-start" class="nav-link" data-path="/quick-start">
-                    <i class="fas fa-rocket w-6 mr-3"></i>
-                    <span>Quick Start</span>
-                </a>
-                <a href="/roadmap" class="nav-link" data-path="/roadmap">
-                    <i class="fas fa-map-signs w-6 mr-3"></i>
-                    <span>Roadmap</span>
-                </a>
-                <a href="/api-docs" class="nav-link" data-path="/api-docs">
-                    <i class="fas fa-code w-6 mr-3"></i>
-                    <span>API Docs</span>
-                </a>
-
-                <div class="mt-auto">
-                    <a href="https://github.com/amirrezafarnamtaheri/configStream" target="_blank" class="nav-link">
-                        <i class="fab fa-github w-6 mr-3"></i>
-                        <span>GitHub</span>
-                    </a>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" fill="white"/>
+                    </svg>
                 </div>
-            </nav>
-        </aside>
-
-        <div class="flex-1 flex flex-col overflow-hidden">
-            <!-- Topbar -->
-            <header class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 lg:hidden">
-                <button type="button"
-                        data-toggle-sidebar
-                        aria-label="Toggle navigation menu"
-                        aria-expanded="false"
-                        class="text-gray-800 dark:text-white focus:outline-none">
-                    <i class="fas fa-bars text-2xl" aria-hidden="true"></i>
-                </button>
-                <h1 class="text-xl font-bold text-gray-800 dark:text-white">{% block header_title %}ConfigStream{% endblock %}</h1>
-            </header>
-
-            <!-- Main Content -->
-            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900 p-6">
-                {% block content %}{% endblock %}
-            </main>
+                <h1>ConfigStream</h1>
+            </div>
+            <p class="tagline">Intelligent VPN Configuration Manager</p>
         </div>
+        <div class="nav-bar">
+            <nav class="nav-links">
+                <a href="/" class="nav-link {{ 'active' if request.path == '/' }}">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                    Dashboard
+                </a>
+                <a href="/sources" class="nav-link {{ 'active' if request.path == '/sources' }}">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                    Sources
+                </a>
+                <a href="/history" class="nav-link {{ 'active' if request.path == '/history' }}">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                    History
+                </a>
+                <a href="/analytics" class="nav-link {{ 'active' if request.path == '/analytics' }}">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+                    Analytics
+                </a>
+                <a href="/testing" class="nav-link {{ 'active' if request.path == '/testing' }}">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 8h-2.81c-.45-.78-1.07-1.45-1.82-1.96L17 4.41 15.59 3l-2.17 2.17C12.96 5.06 12.49 5 12 5c-.49 0-.96.06-1.41.17L8.41 3 7 4.41l1.62 1.63C7.88 6.55 7.26 7.22 6.81 8H4v2h2.09c-.05.33-.09.66-.09 1v1H4v2h2v1c0 .34.04.67.09 1H4v2h2.81c1.04 1.79 2.97 3 5.19 3s4.15-1.21 5.19-3H20v-2h-2.09c.05-.33.09-.66.09-1v-1h2v-2h-2v-1c0-.34-.04-.67-.09-1H20V8zm-6 8h-4v-2h4v2zm0-4h-4v-2h4v2z"/></svg>
+                    Testing
+                </a>
+                <a href="/scheduler" class="nav-link {{ 'active' if request.path == '/scheduler' }}">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                    Scheduler
+                </a>
+                <a href="/settings" class="nav-link {{ 'active' if request.path == '/settings' }}">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12-.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                    Settings
+                </a>
+                <a href="/help" class="nav-link {{ 'active' if request.path == '/help' }}">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+                    Help
+                </a>
+            </nav>
+        </div>
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+        <footer class="footer">
+            <p>&copy; 2025 ConfigStream. <a href="https://github.com/yourusername/ConfigStream" target="_blank">View on GitHub</a></p>
+        </footer>
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (document.documentElement.dataset.sidebarInit) return;
-            document.documentElement.dataset.sidebarInit = 'true';
 
-            const navLinks = document.querySelectorAll('#main-nav .nav-link');
-            const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
-
-            navLinks.forEach((link) => {
-                const linkPath = (link.getAttribute('data-path') || '').replace(/\/$/, '') || '/';
-                if (linkPath === currentPath) {
-                    link.classList.add('active');
-                }
-            });
-
-            const sidebar = document.getElementById('sidebar');
-            const toggleButtons = Array.from(document.querySelectorAll('[data-toggle-sidebar]'));
-            const mainContent = document.querySelector('main');
-
-            function focusable(container) {
-                return container.querySelectorAll('a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
-            }
-
-            function setAria(isOpen) {
-                if (sidebar) sidebar.setAttribute('aria-hidden', String(!isOpen));
-                toggleButtons.forEach(btn => btn.setAttribute('aria-expanded', String(isOpen)));
-            }
-
-            function setInert(isOpen) {
-                if (!mainContent) return;
-                if (isOpen && window.innerWidth < 1024) {
-                    mainContent.setAttribute('inert', '');
-                } else {
-                    mainContent.removeAttribute('inert');
-                }
-            }
-
-            let lastFocusedToggle = null;
-
-            function setSidebarState(isOpen) {
-                if (!sidebar) return;
-                if (isOpen) {
-                    sidebar.classList.remove('-translate-x-full');
-                    sidebar.classList.add('translate-x-0');
-                    document.body.dataset.sidebarOpen = 'true';
-                    if (window.innerWidth < 1024) {
-                        const first = focusable(sidebar)[0];
-                        if (first) first.focus();
-                    }
-                } else {
-                    sidebar.classList.add('-translate-x-full');
-                    sidebar.classList.remove('translate-x-0');
-                    delete document.body.dataset.sidebarOpen;
-                    if (lastFocusedToggle) {
-                        lastFocusedToggle.focus();
-                    }
-                }
-                setAria(isOpen);
-                setInert(isOpen);
-            }
-
-            // Initialize based on current breakpoint
-            let wasLarge = window.innerWidth >= 1024;
-            setSidebarState(wasLarge);
-
-            toggleButtons.forEach((button) => {
-                button.addEventListener('click', () => {
-                    lastFocusedToggle = button;
-                    const isOpen = !sidebar.classList.contains('-translate-x-full');
-                    setSidebarState(!isOpen);
-                }, { passive: true });
-            });
-
-            document.addEventListener('keydown', (e) => {
-                const isLarge = window.innerWidth >= 1024;
-                const isOpen = sidebar && !sidebar.classList.contains('-translate-x-full');
-                if (!isOpen || isLarge) return;
-                if (e.key === 'Tab') {
-                    const items = Array.from(focusable(sidebar));
-                    if (!items.length) return;
-                    const first = items[0];
-                    const last = items[items.length - 1];
-                    if (e.shiftKey && document.activeElement === first) {
-                        e.preventDefault();
-                        last.focus();
-                    } else if (!e.shiftKey && document.activeElement === last) {
-                        e.preventDefault();
-                        first.focus();
-                    }
-                } else if (e.key === 'Escape') {
-                    setSidebarState(false);
-                }
-            });
-
-            // Close on outside click (mobile)
-            document.addEventListener('click', (e) => {
-                const isLarge = window.innerWidth >= 1024;
-                if (isLarge) return;
-                const isOpen = !sidebar.classList.contains('-translate-x-full');
-                if (!isOpen) return;
-                if (!sidebar.contains(e.target) && !e.target.closest('[data-toggle-sidebar]')) {
-                    setSidebarState(false);
-                }
-            });
-
-            // Only adjust when crossing breakpoint to avoid flicker
-            window.addEventListener('resize', () => {
-                const isLarge = window.innerWidth >= 1024;
-                if (isLarge !== wasLarge) {
-                    setSidebarState(isLarge);
-                    wasLarge = isLarge;
-                }
-            });
-        });
-    </script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>
