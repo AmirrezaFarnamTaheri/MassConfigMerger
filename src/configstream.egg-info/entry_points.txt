@@ -1,2 +1,2 @@
 [console_scripts]
-configstream = configstream.cli:main
+configstream = configstream.cli:cli
