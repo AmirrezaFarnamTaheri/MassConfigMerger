@@ -80,23 +80,39 @@ document.addEventListener('DOMContentLoaded', function() {
                 feedbackEl.classList.remove('text-red-400', 'text-green-400');
             }
 
-            navigator.clipboard.writeText(jsonCodeEl.textContent.trim()).then(() => {
-                if (!feedbackEl) return;
-                feedbackEl.classList.remove('text-red-400');
-                feedbackEl.classList.add('text-green-400');
-                feedbackEl.textContent = 'Copied to clipboard!';
-                setTimeout(() => {
+            (async () => {
+                const text = jsonCodeEl.textContent.trim();
+                try {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(text);
+                    } else {
+                        const ta = document.createElement('textarea');
+                        ta.value = text;
+                        ta.setAttribute('readonly', '');
+                        ta.style.position = 'fixed';
+                        ta.style.top = '-1000px';
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                    }
                     if (!feedbackEl) return;
-                    feedbackEl.textContent = '';
+                    feedbackEl.classList.remove('text-red-400');
+                    feedbackEl.classList.add('text-green-400');
+                    feedbackEl.textContent = 'Copied to clipboard!';
+                    setTimeout(() => {
+                        if (!feedbackEl) return;
+                        feedbackEl.textContent = '';
+                        feedbackEl.classList.remove('text-green-400');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy settings:', err);
+                    if (!feedbackEl) return;
                     feedbackEl.classList.remove('text-green-400');
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy settings:', err);
-                if (!feedbackEl) return;
-                feedbackEl.classList.remove('text-green-400');
-                feedbackEl.classList.add('text-red-400');
-                feedbackEl.textContent = 'Failed to copy.';
-            });
+                    feedbackEl.classList.add('text-red-400');
+                    feedbackEl.textContent = 'Could not access clipboard. Copy manually.';
+                }
+            })();
         });
     }
 
