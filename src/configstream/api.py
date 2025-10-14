@@ -67,17 +67,31 @@ def _safe_extract_zip(zip_ref: zipfile.ZipFile, destination: Path) -> None:
 
     dest_path = destination.resolve()
     for member in zip_ref.infolist():
+        name = member.filename
+
+        # Reject empty or current/parent directory entries
+        if not name or name in (".", "./") or name.startswith("./") or name in ("..", "../") or name.startswith("../"):
+            raise ValueError(f"Invalid path in archive: {name}")
+
+        # Disallow absolute paths
+        if name.startswith("/") or (len(name) >= 3 and name[1:3] == ":\\" or name[1:3] == ":/"):
+            raise ValueError(f"Absolute paths not allowed in archive: {name}")
+
         # Disallow symbolic links which could escape the directory on extraction
         if _is_symlink(member):
             raise ValueError(f"Unsupported symbolic link in archive: {member.filename}")
 
-        target_path = (dest_path / member.filename).resolve()
+        target_path = (dest_path / name).resolve()
         _ensure_within_directory(dest_path, target_path)
 
         if member.is_dir():
             target_path.mkdir(parents=True, exist_ok=True)
         else:
+            # Reject extraction to special device files or FIFOs
+            # by ensuring parent exists and path does not already exist as a special file
             target_path.parent.mkdir(parents=True, exist_ok=True)
+            if target_path.exists() and not target_path.is_file():
+                raise ValueError(f"Refusing to overwrite non-regular file: {target_path}")
             with zip_ref.open(member, "r") as source, open(target_path, "wb") as target:
                 shutil.copyfileobj(source, target)
 
