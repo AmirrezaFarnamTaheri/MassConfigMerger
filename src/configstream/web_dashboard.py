@@ -359,40 +359,48 @@ def create_app(settings=None, data_dir=DATA_DIR) -> Flask:
         project_root = _get_root()
         db_path = project_root / cfg.output.output_dir / cfg.output.history_db_file
 
-        # Get statistics
+        # Gather stats
         stats = {
-            'total_sources': 0,
-            'active_proxies': 0,
-            'success_rate': 'N/A',
-            'avg_ping': 'N/A'
+            'total_proxies': 0,
+            'active_sources': 0,
+            'success_rate': '0%',
+            'last_updated': 'Never'
         }
 
         history_preview = []
         preview_limit = 5
 
         try:
-            sources_file = project_root / cfg.sources.sources_file
-            if sources_file.exists():
-                stats['total_sources'] = len(sources_file.read_text().strip().split('\n'))
-
             if db_path.exists():
                 history_data = _run_async_task(_read_history(db_path))
                 all_entries = web_utils._serialize_history(history_data)
+                history_preview = all_entries[:preview_limit]
 
+                # Calculate stats
                 if all_entries:
-                    stats['active_proxies'] = len(all_entries)
-                    total_success = sum(e['reliability'] for e in all_entries)
-                    stats['success_rate'] = f"{total_success / len(all_entries):.1f}%"
-
-                    history_preview = all_entries[:preview_limit]
+                    stats['total_proxies'] = len(all_entries)
+                    successful = sum(1 for e in all_entries if e.get('reliability', 0) >= 80)
+                    stats['success_rate'] = f"{(successful/len(all_entries)*100):.0f}%"
+                    if all_entries[0].get('last_tested'):
+                        stats['last_updated'] = all_entries[0]['last_tested']
         except Exception as e:
-            app.logger.warning("Could not fetch stats for dashboard: %s", e)
+            app.logger.warning("Could not fetch history for dashboard: %s", e)
+
+        # Count active sources
+        try:
+            sources_path = project_root / cfg.sources.sources_file
+            if sources_path.exists():
+                with open(sources_path) as f:
+                    sources = f.read().splitlines()
+                    stats['active_sources'] = len(sources)
+        except Exception:
+            pass
 
         return render_template(
             "index.html",
-            stats=stats,
             history_preview=history_preview,
             preview_limit=preview_limit,
+            stats=stats
         )
 
     @app.route("/dashboard")

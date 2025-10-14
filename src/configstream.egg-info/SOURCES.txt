@@ -37,7 +37,6 @@ src/configstream/core/format_converters.py
 src/configstream/core/output_generator.py
 src/configstream/core/proxy_parser.py
 src/configstream/core/source_manager.py
-src/configstream/core/types.py
 src/configstream/core/utils.py
 src/configstream/core/parsers/__init__.py
 src/configstream/core/parsers/common.py
