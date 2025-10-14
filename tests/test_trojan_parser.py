@@ -56,7 +56,6 @@ def test_parse_trojan_full_config():
 def test_parse_trojan_no_password():
     """Test that parsing a Trojan config without a password raises a ParserError."""
     from configstream.exceptions import ParserError
-
     config = "trojan://example.com:443"  # Missing password
     parser = TrojanParser(config, 0)
     with pytest.raises(ParserError):

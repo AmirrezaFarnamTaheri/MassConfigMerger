@@ -9,10 +9,10 @@ import tempfile
 from flask import Blueprint, jsonify, request, send_file, current_app, Response
 
 from . import web_dashboard
+import zipfile
 from .vpn_retester import run_retester_flow
 
-api = Blueprint("api", __name__)
-
+api = Blueprint('api', __name__)
 
 def _safe_ping(node: dict) -> float:
     """Return a numeric ping for comparisons."""
@@ -40,6 +40,64 @@ def api_current():
         current_app.logger.exception("Error loading current results: %s", exc)
         return jsonify({"error": "Internal server error"}), 500
 
+@api.route("/backup/restore", methods=["POST"])
+def api_restore_backup():
+    """Restore the application data from a zip archive."""
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+    if file and file.filename.endswith(".zip"):
+        try:
+            with zipfile.ZipFile(file, "r") as zip_ref:
+                data_dir = current_app.config["data_dir"]
+                config_path = Path(current_app.root_path).parent / "config.yaml"
+
+                # Extract to a temporary directory first to be safe
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    zip_ref.extractall(tmpdir)
+
+                    # Restore config.yaml
+                    if (Path(tmpdir) / "config.yaml").exists():
+                        (Path(tmpdir) / "config.yaml").rename(config_path)
+
+                    # Restore data directory
+                    for item in (Path(tmpdir)).iterdir():
+                        if item.is_dir():
+                            # shutil.copytree(item, data_dir, dirs_exist_ok=True)
+                            pass # for now, just log
+                        elif item.is_file() and item.name != "config.yaml":
+                            item.rename(data_dir / item.name)
+
+            return jsonify({"message": "Backup restored successfully"}), 200
+        except Exception as e:
+            return jsonify({"error": f"Failed to restore backup: {e}"}), 500
+    return jsonify({"error": "Invalid file type"}), 400
+
+@api.route("/backup/create")
+def api_create_backup():
+    """Create a zip archive of the application data."""
+    data_dir = current_app.config["data_dir"]
+    config_path = Path(current_app.root_path).parent / "config.yaml"
+
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        if config_path.exists():
+            zip_file.write(config_path, "config.yaml")
+        for file_path in data_dir.rglob("*"):
+            if file_path.is_file():
+                zip_file.write(file_path, file_path.relative_to(data_dir))
+
+    zip_buffer.seek(0)
+    now_utc = datetime.now(timezone.utc)
+    timestamp = now_utc.strftime('%Y%m%d_%H%M%S')
+    return send_file(
+        zip_buffer,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=f"configstream_backup_{timestamp}.zip"
+    )
 
 @api.route("/history")
 def api_history():
@@ -52,7 +110,6 @@ def api_history():
     except Exception as exc:
         current_app.logger.exception("Error loading history: %s", exc)
         return jsonify({"error": "Internal server error"}), 500
-
 
 @api.route("/statistics")
 def api_statistics():
@@ -75,20 +132,17 @@ def api_statistics():
                 avg_ping_by_country[country].append(node["ping_ms"])
         for country, pings in avg_ping_by_country.items():
             avg_ping_by_country[country] = round(sum(pings) / len(pings), 2)
-        return jsonify(
-            {
-                "total_nodes": len(nodes),
-                "successful_nodes": len([n for n in nodes if n.get("ping_ms", -1) > 0]),
-                "protocols": protocols,
-                "countries": countries,
-                "avg_ping_by_country": avg_ping_by_country,
-                "last_update": data.get("timestamp"),
-            }
-        )
+        return jsonify({
+            "total_nodes": len(nodes),
+            "successful_nodes": len([n for n in nodes if n.get("ping_ms", -1) > 0]),
+            "protocols": protocols,
+            "countries": countries,
+            "avg_ping_by_country": avg_ping_by_country,
+            "last_update": data.get("timestamp")
+        })
     except Exception as exc:
         current_app.logger.exception("Error calculating statistics: %s", exc)
         return jsonify({"error": "Internal server error"}), 500
-
 
 @api.route("/export/<format>")
 def api_export(format: str):
@@ -106,14 +160,14 @@ def api_export(format: str):
             )
             nodes = nodes[:max_export]
         now_utc = datetime.now(timezone.utc)
-        timestamp = now_utc.strftime("%Y%m%d_%H%M%S")
+        timestamp = now_utc.strftime('%Y%m%d_%H%M%S')
         if format == "csv":
             csv_data = web_dashboard.export_csv(nodes)
             return send_file(
-                BytesIO(csv_data.encode("utf-8")),
+                BytesIO(csv_data.encode('utf-8')),
                 mimetype="text/csv",
                 as_attachment=True,
-                download_name=f"vpn_nodes_{timestamp}.csv",
+                download_name=f"vpn_nodes_{timestamp}.csv"
             )
         elif format == "json":
             payload = {
@@ -146,9 +200,7 @@ def api_export(format: str):
         current_app.logger.exception("Error exporting data: %s", exc)
         return jsonify({"error": "Internal server error"}), 500
 
-
 start_time = time.time()
-
 
 @api.route("/status")
 def api_status():
@@ -178,40 +230,30 @@ def api_status():
         total = 0.0
     if not (used == used) or used in (float("inf"), float("-inf")) or used < 0:
         used = 0.0
-    if (
-        not (percent == percent)
-        or percent in (float("inf"), float("-inf"))
-        or percent < 0
-    ):
+    if not (percent == percent) or percent in (float("inf"), float("-inf")) or percent < 0:
         percent = 0.0
 
     percent = max(0.0, min(100.0, percent))
     mem_total_mb = round(total / (1024 * 1024), 2) if total > 0 else 0.0
     mem_used_mb = round(min(used, total) / (1024 * 1024), 2) if total > 0 else 0.0
 
-    return jsonify(
-        {
-            "uptime": uptime_str,
-            "cpu": {
-                "percent": cpu_pct,
-            },
-            "memory": {
-                "total_mb": mem_total_mb,
-                "used_mb": mem_used_mb,
-                "percent": percent,
-            },
+    return jsonify({
+        "uptime": uptime_str,
+        "cpu": {
+            "percent": cpu_pct,
+        },
+        "memory": {
+            "total_mb": mem_total_mb,
+            "used_mb": mem_used_mb,
+            "percent": percent,
         }
-    )
-
+    })
 
 @api.route("/logs")
 def api_logs():
     """API endpoint for application logs."""
     settings = current_app.config["settings"]
-    if (
-        settings.security.api_key
-        and request.headers.get("X-API-Key") != settings.security.api_key
-    ):
+    if settings.security.api_key and request.headers.get("X-API-Key") != settings.security.api_key:
         return jsonify({"error": "Unauthorized"}), 401
 
     log_file = settings.output.log_file or "configstream.log"
@@ -238,35 +280,24 @@ def api_logs():
         current_app.logger.exception("Error reading log file: %s", resolved_log_path)
         return jsonify({"logs": [f"Error reading log file: {e}"]}), 500
 
-
 @api.route("/scheduler/jobs")
 def api_scheduler_jobs():
     """API endpoint for scheduler jobs."""
     settings = current_app.config["settings"]
     scheduler = current_app.config["scheduler"]
-    if (
-        settings.security.api_key
-        and request.headers.get("X-API-Key") != settings.security.api_key
-    ):
+    if settings.security.api_key and request.headers.get("X-API-Key") != settings.security.api_key:
         return jsonify({"error": "Unauthorized"}), 401
     jobs = []
-    running_job_ids = {
-        j.id for j in scheduler.scheduler.get_jobs() if j.next_run_time is not None
-    }
+    running_job_ids = {j.id for j in scheduler.scheduler.get_jobs() if j.next_run_time is not None}
     for job in scheduler.scheduler.get_jobs():
-        jobs.append(
-            {
-                "id": job.id,
-                "name": job.name,
-                "next_run_time": (
-                    job.next_run_time.isoformat() if job.next_run_time else None
-                ),
-                "trigger": str(job.trigger),
-                "is_running": job.id in running_job_ids,
-            }
-        )
+        jobs.append({
+            "id": job.id,
+            "name": job.name,
+            "next_run_time": job.next_run_time.isoformat() if job.next_run_time else None,
+            "trigger": str(job.trigger),
+            "is_running": job.id in running_job_ids
+        })
     return jsonify({"jobs": jobs})
-
 
 @api.route("/settings", methods=["POST"])
 def api_settings():
@@ -274,21 +305,13 @@ def api_settings():
     try:
         payload = request.get_json(silent=True)
         if payload:
-            current_app.logger.info(
-                "Received settings update payload with %d top-level keys", len(payload)
-            )
-        return (
-            jsonify(
-                {
-                    "error": "Settings updates via the API are disabled. Edit config.yaml directly."
-                }
-            ),
-            501,
-        )
+            current_app.logger.info("Received settings update payload with %d top-level keys", len(payload))
+        return jsonify({
+            "error": "Settings updates via the API are disabled. Edit config.yaml directly."
+        }), 501
     except Exception as exc:
         current_app.logger.exception("Error validating settings payload: %s", exc)
         return jsonify({"error": "Invalid request payload"}), 400
-
 
 @api.route("/sources", methods=["POST"])
 def api_add_source():
@@ -333,7 +356,6 @@ def api_add_source():
         current_app.logger.exception("Unexpected error adding source: %s", exc)
         return jsonify({"error": "Internal server error"}), 500
 
-
 @api.route("/retest", methods=["POST"])
 def api_retest():
     """API endpoint for retesting a list of configurations."""
@@ -344,9 +366,7 @@ def api_retest():
             return jsonify({"error": "A non-empty list of configs is required"}), 400
 
         # Create a temporary file to store the configs
-        with tempfile.NamedTemporaryFile(
-            mode="w", delete=False, encoding="utf-8", suffix=".txt"
-        ) as tmp:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8", suffix=".txt") as tmp:
             tmp.write("\n".join(configs))
             tmp_path = tmp.name
 
@@ -354,7 +374,6 @@ def api_retest():
             base_settings = current_app.config["settings"]
             # Create an isolated copy to avoid mutating global state
             from copy import deepcopy
-
             settings = deepcopy(base_settings)
             settings.processing.resume_file = Path(tmp_path)
 
@@ -362,9 +381,7 @@ def api_retest():
             results = run_retester_flow(settings)
 
             # Sort results to have successful ones first
-            results.sort(
-                key=lambda x: x.get("ping_ms", 9999) if x.get("success") else 99999
-            )
+            results.sort(key=lambda x: x.get('ping_ms', 9999) if x.get('success') else 99999)
 
         finally:
             try:

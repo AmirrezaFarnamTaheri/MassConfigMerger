@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
+from unittest.mock import patch, MagicMock
 
 import pytest
+import aiosqlite
 
 from configstream.db import Database
 
@@ -47,10 +50,7 @@ async def test_db_get_proxy_history(db_path: Path):
     await db.connect()
 
     # Add some data to the database
-    await db.conn.execute(
-        "INSERT INTO proxy_history (key, successes, failures, last_tested) VALUES (?, ?, ?, ?)",
-        ("test_key", 10, 2, 12345),
-    )
+    await db.conn.execute("INSERT INTO proxy_history (key, successes, failures, last_tested) VALUES (?, ?, ?, ?)", ("test_key", 10, 2, 12345))
     await db.conn.commit()
 
     history = await db.get_proxy_history()

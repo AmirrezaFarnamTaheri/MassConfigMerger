@@ -93,5 +93,6 @@ class ProxyParser:
             UnicodeDecodeError,
             json.JSONDecodeError,
         ) as exc:
-            logging.debug("config_to_clash_proxy failed for '%s': %s", config, exc)
+            logging.debug(
+                "config_to_clash_proxy failed for '%s': %s", config, exc)
             return None

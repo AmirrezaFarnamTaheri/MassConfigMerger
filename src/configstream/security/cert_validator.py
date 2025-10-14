@@ -1,5 +1,4 @@
 """SSL/TLS certificate validation."""
-
 from __future__ import annotations
 
 import asyncio
@@ -30,8 +29,8 @@ class CertificateValidator:
     def _parse_cert_datetime(self, value: str) -> datetime:
         """Parse OpenSSL date strings robustly."""
         fmts = [
-            "%b %d %H:%M:%S %Y %Z",  # e.g., 'Jun 12 12:34:56 2025 GMT'
-            "%b %d %H:%M:%S %Y",  # without timezone
+            "%b %d %H:%M:%S %Y %Z",   # e.g., 'Jun 12 12:34:56 2025 GMT'
+            "%b %d %H:%M:%S %Y",      # without timezone
         ]
         for fmt in fmts:
             try:

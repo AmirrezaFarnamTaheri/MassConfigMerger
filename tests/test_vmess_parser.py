@@ -1,4 +1,6 @@
+import pytest
 from configstream.core.parsers.vmess import VmessParser
+from configstream.exceptions import ParserError
 import base64
 import json
 
@@ -121,7 +123,12 @@ def test_parse_vmess_with_ws_opts():
         "port": 80,
         "id": "uuid",
         "net": "ws",
-        "ws-opts": {"path": "/path", "headers": {"Host": "example.com"}},
+        "ws-opts": {
+            "path": "/path",
+            "headers": {
+                "Host": "example.com"
+            }
+        }
     }
     encoded_data = base64.b64encode(json.dumps(vmess_data).encode()).decode()
     config = f"vmess://{encoded_data}"

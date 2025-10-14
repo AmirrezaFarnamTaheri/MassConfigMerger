@@ -2,7 +2,6 @@
 
 Exposes VPN node metrics in Prometheus format for monitoring.
 """
-
 from __future__ import annotations
 
 import json
@@ -10,47 +9,69 @@ import logging
 from pathlib import Path
 from typing import Dict
 
-from prometheus_client import Counter, Gauge, Histogram, Info, start_http_server
+from prometheus_client import (
+    Counter,
+    Gauge,
+    Histogram,
+    Info,
+    start_http_server
+)
 
 logger = logging.getLogger(__name__)
 
 
 # Define metrics
 vpn_nodes_total = Gauge(
-    "configstream_vpn_nodes_total", "Total number of VPN nodes tested"
+    'configstream_vpn_nodes_total',
+    'Total number of VPN nodes tested'
 )
 
 vpn_nodes_successful = Gauge(
-    "configstream_vpn_nodes_successful", "Number of successful VPN nodes"
+    'configstream_vpn_nodes_successful',
+    'Number of successful VPN nodes'
 )
 
-vpn_nodes_failed = Gauge("configstream_vpn_nodes_failed", "Number of failed VPN nodes")
+vpn_nodes_failed = Gauge(
+    'configstream_vpn_nodes_failed',
+    'Number of failed VPN nodes'
+)
 
 vpn_avg_ping_ms = Gauge(
-    "configstream_avg_ping_milliseconds", "Average ping time in milliseconds"
+    'configstream_avg_ping_milliseconds',
+    'Average ping time in milliseconds'
 )
 
 vpn_nodes_by_protocol = Gauge(
-    "configstream_nodes_by_protocol", "Number of nodes by protocol", ["protocol"]
+    'configstream_nodes_by_protocol',
+    'Number of nodes by protocol',
+    ['protocol']
 )
 
 vpn_nodes_by_country = Gauge(
-    "configstream_nodes_by_country", "Number of nodes by country", ["country"]
+    'configstream_nodes_by_country',
+    'Number of nodes by country',
+    ['country']
 )
 
 vpn_test_cycles_total = Counter(
-    "configstream_test_cycles_total", "Total number of test cycles run"
+    'configstream_test_cycles_total',
+    'Total number of test cycles run'
 )
 
 vpn_test_duration_seconds = Histogram(
-    "configstream_test_duration_seconds", "Duration of test cycles in seconds"
+    'configstream_test_duration_seconds',
+    'Duration of test cycles in seconds'
 )
 
 vpn_avg_quality_score = Gauge(
-    "configstream_avg_quality_score", "Average network quality score (0-100)"
+    'configstream_avg_quality_score',
+    'Average network quality score (0-100)'
 )
 
-vpn_info = Info("configstream", "ConfigStream version and configuration info")
+vpn_info = Info(
+    'configstream',
+    'ConfigStream version and configuration info'
+)
 
 
 class PrometheusExporter:
@@ -73,7 +94,10 @@ class PrometheusExporter:
         self.current_file = data_dir / "current_results.json"
 
         # Set version info
-        vpn_info.info({"version": "0.4.0", "python_version": "3.10+"})
+        vpn_info.info({
+            'version': '0.4.0',
+            'python_version': '3.10+'
+        })
 
     def update_metrics(self):
         """Update all metrics from current test results."""

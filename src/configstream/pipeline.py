@@ -40,9 +40,8 @@ async def _fetch_web_sources(
         sources_file, max_failures=failure_threshold, prune=prune
     )
     configs = await source_manager.fetch_sources(available_sources)
-    logging.info(
-        "Found %d configs from %d web sources.", len(configs), len(available_sources)
-    )
+    logging.info("Found %d configs from %d web sources.",
+                 len(configs), len(available_sources))
     return configs
 
 
@@ -109,7 +108,8 @@ async def run_aggregation_pipeline(
         files = output_generator.write_outputs(sorted_configs, output_dir)
 
         logging.info(
-            "Aggregation complete. Found %d final configs.", len(sorted_configs)
+            "Aggregation complete. Found %d final configs.", len(
+                sorted_configs)
         )
         return output_dir, files
 

@@ -19,9 +19,7 @@ async def test_fetch_sources_circuit_breaker(fs):
     manager = SourceManager(settings)
     manager.FAILURE_THRESHOLD = 2
 
-    with patch(
-        "configstream.core.utils.fetch_text", new_callable=AsyncMock
-    ) as mock_fetch:
+    with patch("configstream.core.utils.fetch_text", new_callable=AsyncMock) as mock_fetch:
         # First 2 calls should fail, opening the circuit
         mock_fetch.side_effect = NetworkError("Failed to fetch")
         await manager.fetch_sources(["http://fails.com"])
@@ -46,9 +44,7 @@ async def test_check_and_update_sources_no_prune(fs):
     settings = Settings()
     manager = SourceManager(settings)
 
-    with patch(
-        "configstream.core.utils.fetch_text", new_callable=AsyncMock
-    ) as mock_fetch:
+    with patch("configstream.core.utils.fetch_text", new_callable=AsyncMock) as mock_fetch:
         mock_fetch.side_effect = NetworkError("Failed to fetch")
         valid_sources = await manager.check_and_update_sources(
             sources_file, max_failures=1, prune=False
@@ -62,6 +58,8 @@ async def test_check_and_update_sources_no_prune(fs):
     await manager.close_session()
 
 
+
+
 @pytest.mark.asyncio
 async def test_circuit_breaker_half_open_success(fs):
     """Test that a HALF_OPEN circuit closes on success."""
@@ -71,9 +69,7 @@ async def test_circuit_breaker_half_open_success(fs):
     manager._circuit_states[url] = "HALF_OPEN"
     manager._failure_counts[url] = manager.FAILURE_THRESHOLD
 
-    with patch(
-        "configstream.core.utils.fetch_text", new_callable=AsyncMock
-    ) as mock_fetch:
+    with patch("configstream.core.utils.fetch_text", new_callable=AsyncMock) as mock_fetch:
         mock_fetch.return_value = "vless://config"
         await manager.fetch_sources([url])
         assert url not in manager._circuit_states
@@ -91,9 +87,7 @@ async def test_circuit_breaker_half_open_failure(fs):
     manager._circuit_states[url] = "HALF_OPEN"
     manager._failure_counts[url] = manager.FAILURE_THRESHOLD
 
-    with patch(
-        "configstream.core.utils.fetch_text", new_callable=AsyncMock
-    ) as mock_fetch:
+    with patch("configstream.core.utils.fetch_text", new_callable=AsyncMock) as mock_fetch:
         mock_fetch.side_effect = NetworkError("Failed again")
         await manager.fetch_sources([url])
         assert manager._circuit_states[url] == "OPEN"
@@ -123,9 +117,7 @@ async def test_check_sources_invalid_failures_json(fs):
     settings = Settings()
     manager = SourceManager(settings)
 
-    with patch(
-        "configstream.core.utils.fetch_text", new_callable=AsyncMock
-    ) as mock_fetch:
+    with patch("configstream.core.utils.fetch_text", new_callable=AsyncMock) as mock_fetch:
         mock_fetch.return_value = "vless://config"
         valid_sources = await manager.check_and_update_sources(sources_file)
         assert valid_sources == ["http://works.com"]
@@ -144,9 +136,7 @@ async def test_check_and_update_sources_with_prune(fs):
     settings = Settings()
     manager = SourceManager(settings)
 
-    with patch(
-        "configstream.core.utils.fetch_text", new_callable=AsyncMock
-    ) as mock_fetch:
+    with patch("configstream.core.utils.fetch_text", new_callable=AsyncMock) as mock_fetch:
         # Let one source fail and the other succeed
         async def fetch_side_effect(session, url, **kwargs):
             if "fails.com" in url:

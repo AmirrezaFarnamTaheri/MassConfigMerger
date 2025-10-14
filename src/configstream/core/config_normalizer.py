@@ -35,19 +35,13 @@ def extract_host_port(
                 host = data.get("add") or data.get("host")
                 port = data.get("port")
                 return host, int(port) if port else None
-            except (
-                binascii.Error,
-                UnicodeDecodeError,
-                json.JSONDecodeError,
-                ValueError,
-            ):
+            except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError):
                 # Fallback to URI-style parsing (common for VLESS)
                 p = urlparse(config)
                 if p.hostname and p.port:
                     return p.hostname, p.port
                 logging.debug(
-                    "extract_host_port vmess/vless fallback failed for: %s", config
-                )
+                    "extract_host_port vmess/vless fallback failed for: %s", config)
 
         if config.startswith("ssr://"):
             try:
@@ -97,7 +91,10 @@ def _normalize_url(config: str, max_decode_size: int = MAX_DECODE_SIZE) -> str:
                 decoded = decoded_bytes.decode("utf-8", "ignore")
                 data = json.loads(decoded)
                 canonical_json = json.dumps(data, sort_keys=True)
-                payload = base64.b64encode(canonical_json.encode()).decode().rstrip("=")
+                payload = (
+                    base64.b64encode(canonical_json.encode()
+                                     ).decode().rstrip("=")
+                )
                 parsed = parsed._replace(netloc=payload, path="")
             except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError):
                 pass
@@ -161,6 +158,7 @@ def create_semantic_hash(config: str, idx: int) -> str:
         digest = hashlib.sha256(semantic_key.encode("utf-8")).hexdigest()
         return digest[:16]
     except Exception as e:
-        logging.debug("Semantic hash failed for '%s': %s. Falling back.", config, e)
+        logging.debug(
+            "Semantic hash failed for '%s': %s. Falling back.", config, e)
         fallback_key = f"{config}:{idx}"
         return hashlib.sha256(fallback_key.encode("utf-8")).hexdigest()[:16]

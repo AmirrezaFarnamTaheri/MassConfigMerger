@@ -2,7 +2,6 @@
 
 TUIC is a proxy protocol based on QUIC.
 """
-
 from __future__ import annotations
 
 from typing import Dict, Any
@@ -36,11 +35,7 @@ def parse_tuic(config: str) -> Dict[str, Any]:
 
     # Normalize ALPN (comma-separated allowed)
     raw_alpn = params.get("alpn", ["h3"])[0]
-    alpn = (
-        ",".join([p.strip() for p in raw_alpn.split(",") if p.strip()])
-        if raw_alpn
-        else "h3"
-    )
+    alpn = ",".join([p.strip() for p in raw_alpn.split(",") if p.strip()]) if raw_alpn else "h3"
 
     return {
         "protocol": "tuic",

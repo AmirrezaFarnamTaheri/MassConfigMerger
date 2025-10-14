@@ -53,7 +53,7 @@ async def test_node_tester_with_dns_resolve(
     tester = NodeTester(settings)
 
     mock_resolver = MockAsyncResolver.return_value
-    mock_resolver.resolve = AsyncMock(return_value=[{"host": "1.2.3.4"}])
+    mock_resolver.resolve = AsyncMock(return_value=[{'host': '1.2.3.4'}])
 
     mock_reader = AsyncMock()
     mock_writer = MagicMock(spec=asyncio.StreamWriter)
@@ -100,7 +100,8 @@ async def test_lookup_geo_data_success(
     mock_city_response.traits.isp = "Google"
     mock_city_response.location.latitude = 37.7749
     mock_city_response.location.longitude = -122.4194
-    type(mock_reader_instance).city = MagicMock(return_value=mock_city_response)
+    type(mock_reader_instance).city = MagicMock(
+        return_value=mock_city_response)
 
     country, isp, lat, lon = await tester.lookup_geo_data("example.com")
 
@@ -137,9 +138,7 @@ async def test_close():
     tester._geoip_reader = mock_geoip_reader
 
     # Mock the helper method to isolate the close logic
-    with patch.object(
-        tester, "_close_resource", new_callable=AsyncMock
-    ) as mock_close_resource:
+    with patch.object(tester, "_close_resource", new_callable=AsyncMock) as mock_close_resource:
         await tester.close()
 
         # Assert that the close helper was called for each resource
@@ -200,11 +199,7 @@ async def test_resolve_host_all_failures(MockAsyncResolver, caplog):
 
 
 @pytest.mark.asyncio
-@patch(
-    "configstream.tester.NodeTester.resolve_host",
-    new_callable=AsyncMock,
-    return_value="1.2.3.4",
-)
+@patch("configstream.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value="1.2.3.4")
 @patch("asyncio.open_connection", side_effect=OSError("Connection failed"))
 async def test_test_connection_failure(mock_open_connection, mock_resolve_host, caplog):
     """Test that test_connection returns None on connection failure."""
@@ -218,24 +213,18 @@ async def test_test_connection_failure(mock_open_connection, mock_resolve_host, 
 
 @pytest.mark.asyncio
 @patch("configstream.tester.Reader")
-@patch(
-    "configstream.tester.NodeTester.resolve_host",
-    new_callable=AsyncMock,
-    return_value="1.2.3.4",
-)
+@patch("configstream.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value="1.2.3.4")
 async def test_lookup_geo_data_geoip_error(mock_resolve_host, MockReader, caplog):
     """Test that lookup_geo_data returns None if the GeoIP lookup fails."""
     caplog.set_level(logging.DEBUG)
     from configstream.tester import AddressNotFoundError
-
     settings = Settings()
     settings.processing.geoip_db = "dummy.mmdb"
     tester = NodeTester(settings)
 
     mock_reader_instance = MockReader.return_value
     type(mock_reader_instance).city = MagicMock(
-        side_effect=AddressNotFoundError("IP not found")
-    )
+        side_effect=AddressNotFoundError("IP not found"))
 
     geo_data = await tester.lookup_geo_data("example.com")
     assert geo_data == (None, None, None, None)
@@ -273,9 +262,9 @@ async def test_aiodns_not_installed():
     tester = NodeTester(settings)
 
     with patch("asyncio.get_running_loop") as mock_loop:
-        mock_loop.return_value.getaddrinfo = AsyncMock(
-            return_value=[(None, None, None, None, ("1.2.3.4", 0))]
-        )
+        mock_loop.return_value.getaddrinfo = AsyncMock(return_value=[
+            (None, None, None, None, ("1.2.3.4", 0))
+        ])
         ip = await tester.resolve_host("example.com")
         assert ip == "1.2.3.4"
         mock_loop.return_value.getaddrinfo.assert_awaited_once()
@@ -287,9 +276,9 @@ async def test_resolve_host_caching():
     settings = Settings()
     tester = NodeTester(settings)
 
-    with patch.object(tester, "_get_resolver") as mock_get_resolver:
+    with patch.object(tester, '_get_resolver') as mock_get_resolver:
         mock_resolver = AsyncMock()
-        mock_resolver.resolve.return_value = [{"host": "1.2.3.4"}]
+        mock_resolver.resolve.return_value = [{'host': '1.2.3.4'}]
         mock_get_resolver.return_value = mock_resolver
 
         # First call, should use resolver
@@ -311,18 +300,14 @@ async def test_resolve_host_with_ip_address():
     """Test that resolve_host returns the IP directly if an IP is passed."""
     settings = Settings()
     tester = NodeTester(settings)
-    with patch.object(tester, "_get_resolver") as mock_get_resolver:
+    with patch.object(tester, '_get_resolver') as mock_get_resolver:
         ip = await tester.resolve_host("1.1.1.1")
         assert ip == "1.1.1.1"
         mock_get_resolver.assert_not_called()
 
 
 @pytest.mark.asyncio
-@patch(
-    "configstream.tester.NodeTester.resolve_host",
-    new_callable=AsyncMock,
-    return_value=None,
-)
+@patch("configstream.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value=None)
 async def test_test_connection_unresolved_host(mock_resolve_host, caplog):
     """Test that test_connection skips if host cannot be resolved."""
     caplog.set_level(logging.DEBUG)
@@ -334,11 +319,7 @@ async def test_test_connection_unresolved_host(mock_resolve_host, caplog):
 
 
 @pytest.mark.asyncio
-@patch(
-    "configstream.tester.NodeTester.resolve_host",
-    new_callable=AsyncMock,
-    return_value="10.0.0.2",
-)
+@patch("configstream.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value="10.0.0.2")
 async def test_test_connection_private_ip(mock_resolve_host, caplog):
     """Ensure private IPs resolved from hostnames are rejected."""
     caplog.set_level(logging.DEBUG)
@@ -353,11 +334,7 @@ async def test_test_connection_private_ip(mock_resolve_host, caplog):
 
 
 @pytest.mark.asyncio
-@patch(
-    "configstream.tester.NodeTester.resolve_host",
-    new_callable=AsyncMock,
-    return_value=None,
-)
+@patch("configstream.tester.NodeTester.resolve_host", new_callable=AsyncMock, return_value=None)
 async def test_lookup_geo_data_unresolved_host(mock_resolve_host, caplog):
     """Test that lookup_geo_data skips if host cannot be resolved."""
     caplog.set_level(logging.DEBUG)
@@ -385,7 +362,6 @@ async def test_geoip_import_error(mock_settings):
         # We need to re-import the module to trigger the ImportError handling
         from importlib import reload
         from configstream import tester as t
-
         reload(t)
 
         # Now create an instance of the reloaded NodeTester

@@ -94,7 +94,8 @@ def save_retest_results(
                 writer.writerow(
                     [
                         r.config,
-                        round(r.ping_time * 1000, 2) if r.ping_time is not None else "",
+                        round(r.ping_time * 1000,
+                              2) if r.ping_time is not None else "",
                         r.protocol,
                         r.country or "",
                     ]
@@ -126,10 +127,7 @@ async def run_retester(
 
 def run_retester_flow(settings: Settings) -> list[dict]:
     """Synchronous wrapper for the retesting flow."""
-    if (
-        not settings.processing.resume_file
-        or not settings.processing.resume_file.exists()
-    ):
+    if not settings.processing.resume_file or not settings.processing.resume_file.exists():
         logging.error("Retesting requires a valid resume_file path.")
         return []
 

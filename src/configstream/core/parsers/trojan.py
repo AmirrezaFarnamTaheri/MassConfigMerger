@@ -31,7 +31,9 @@ class TrojanParser(BaseParser):
 
         password = self.sanitize_str(p.username or p.password or "")
         if not p.hostname or not p.port or not password:
-            raise ParserError(f"Missing components in Trojan link: {self.config_uri}")
+            raise ParserError(
+                f"Missing components in Trojan link: {self.config_uri}"
+            )
 
         proxy = {
             "name": name,

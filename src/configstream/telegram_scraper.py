@@ -39,7 +39,8 @@ async def scrape_telegram_configs(
 ) -> Set[str]:
     """Scrape configurations from Telegram channels."""
     if not all([cfg.telegram.api_id, cfg.telegram.api_hash]):
-        logging.info("Telegram credentials not provided; skipping Telegram scrape")
+        logging.info(
+            "Telegram credentials not provided; skipping Telegram scrape")
         return set()
     if not channels_path.exists():
         logging.warning("Channels file missing: %s", channels_path)
@@ -49,7 +50,7 @@ async def scrape_telegram_configs(
     with channels_path.open() as f:
         channels = [
             (
-                line.strip()[len(prefix) :]
+                line.strip()[len(prefix):]
                 if line.strip().startswith(prefix)
                 else line.strip()
             )
@@ -123,7 +124,8 @@ async def scrape_telegram_configs(
                                     proxy=proxy,
                                 )
                                 if text2:
-                                    configs.update(parse_configs_from_text(text2))
+                                    configs.update(
+                                        parse_configs_from_text(text2))
                 except (errors.RPCError, OSError) as e:
                     logging.warning("Error scraping %s: %s", channel, e)
     finally:

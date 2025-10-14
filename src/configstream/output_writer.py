@@ -40,21 +40,16 @@ def write_raw_configs(configs: List[str], output_dir: Path, prefix: str = "") ->
     return raw_file
 
 
-def write_base64_configs(
-    configs: List[str], output_dir: Path, prefix: str = ""
-) -> Path:
+def write_base64_configs(configs: List[str], output_dir: Path, prefix: str = "") -> Path:
     """Write base64-encoded config links to a file."""
     base64_file = output_dir / f"{prefix}{BASE64_SUBSCRIPTION_FILE_NAME}"
-    base64_content = base64.b64encode("\n".join(configs).encode("utf-8")).decode(
-        "utf-8"
-    )
+    base64_content = base64.b64encode(
+        "\n".join(configs).encode("utf-8")).decode("utf-8")
     base64_file.write_text(base64_content, encoding="utf-8")
     return base64_file
 
 
-def write_csv_report(
-    results: List[ConfigResult], output_dir: Path, prefix: str = ""
-) -> Path:
+def write_csv_report(results: List[ConfigResult], output_dir: Path, prefix: str = "") -> Path:
     """Write a detailed CSV report of the results."""
     csv_file = output_dir / f"{prefix}{CSV_REPORT_FILE_NAME}"
     with open(csv_file, "w", newline="", encoding="utf-8") as f:
@@ -71,7 +66,8 @@ def write_csv_report(
             ]
         )
         for result in results:
-            ping_ms = round(result.ping_time * 1000, 2) if result.ping_time else None
+            ping_ms = round(result.ping_time * 1000,
+                            2) if result.ping_time else None
             writer.writerow(
                 [
                     result.config,

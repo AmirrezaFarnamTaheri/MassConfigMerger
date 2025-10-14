@@ -1,18 +1,20 @@
 """Test network quality testing module."""
-
 import pytest
 import asyncio
 from configstream.testing.network_quality import (
     NetworkQualityTester,
     NetworkQualityResult,
-    quick_quality_test,
+    quick_quality_test
 )
 
 
 def test_quality_result_dataclass():
     """Test NetworkQualityResult dataclass."""
     result = NetworkQualityResult(
-        packet_loss_percent=2.5, jitter_ms=15.3, avg_latency_ms=45.2, samples=20
+        packet_loss_percent=2.5,
+        jitter_ms=15.3,
+        avg_latency_ms=45.2,
+        samples=20
     )
 
     assert result.packet_loss_percent == 2.5
@@ -72,7 +74,9 @@ async def test_quality_test_timeout():
     """Test quality test with quick timeout."""
     tester = NetworkQualityTester(test_count=5)
     result = await tester.test_quality(
-        "192.0.2.1", 12345, timeout=0.5  # TEST-NET-1, should timeout
+        "192.0.2.1",  # TEST-NET-1, should timeout
+        12345,
+        timeout=0.5
     )
 
     # Should complete without crashing

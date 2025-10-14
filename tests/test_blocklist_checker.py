@@ -40,9 +40,7 @@ async def test_get_session(config: Settings):
 
 @pytest.mark.asyncio
 @patch("aiohttp.ClientSession")
-async def test_get_session_creation_failure(
-    MockClientSession, config: Settings, caplog
-):
+async def test_get_session_creation_failure(MockClientSession, config: Settings, caplog):
     """Test get_session handles session creation failure."""
     MockClientSession.side_effect = Exception("Session creation failed")
     checker = BlocklistChecker(config)
@@ -115,9 +113,7 @@ async def test_is_malicious_http_error(MockClientSession, config: Settings, capl
 
 @pytest.mark.asyncio
 @patch("aiohttp.ClientSession")
-async def test_is_malicious_request_exception(
-    MockClientSession, config: Settings, caplog
-):
+async def test_is_malicious_request_exception(MockClientSession, config: Settings, caplog):
     """Test is_malicious handles request exceptions."""
     mock_session = MockClientSession.return_value
     mock_session.get.side_effect = ClientError("Connection failed")

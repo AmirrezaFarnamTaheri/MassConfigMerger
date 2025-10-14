@@ -4,7 +4,6 @@ This module contains the core logic for processing, testing, and filtering
 VPN configurations. It is designed to be reusable across different commands
 like 'merge' and 'retest'.
 """
-
 from __future__ import annotations
 
 import logging

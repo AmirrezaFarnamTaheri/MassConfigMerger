@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import patch, AsyncMock
 from pathlib import Path
+import json
 import time
 import asyncio
 
@@ -16,9 +17,7 @@ async def test_fetch_sources_network_error():
     manager = SourceManager(settings)
     source_url = "http://example.com/source"
 
-    with patch(
-        "configstream.core.utils.fetch_text", new_callable=AsyncMock
-    ) as mock_fetch:
+    with patch("configstream.core.utils.fetch_text", new_callable=AsyncMock) as mock_fetch:
         mock_fetch.side_effect = NetworkError("HTTP 404")
         results = await manager.fetch_sources([source_url])
         assert results == set()
@@ -43,9 +42,7 @@ async def test_unhandled_exception_in_check(tmp_path):
     sources_path = tmp_path / "sources.txt"
     sources_path.write_text("http://test.com\n")
 
-    with patch(
-        "configstream.core.utils.fetch_text", side_effect=Exception("Unhandled")
-    ):
+    with patch("configstream.core.utils.fetch_text", side_effect=Exception("Unhandled")):
         valid_sources = await manager.check_and_update_sources(sources_path)
         assert valid_sources == []
     await manager.close_session()
@@ -59,11 +56,8 @@ async def test_circuit_breaker_opens_and_recovers():
     manager.RETRY_TIMEOUT = 0.1  # Shorten for test
     source_url = "http://fails.com"
 
-    with patch(
-        "configstream.core.utils.fetch_text", new_callable=AsyncMock
-    ) as mock_fetch, patch(
-        "configstream.core.source_manager.tqdm", side_effect=lambda x, **kw: x
-    ):
+    with patch("configstream.core.utils.fetch_text", new_callable=AsyncMock) as mock_fetch, \
+         patch("configstream.core.source_manager.tqdm", side_effect=lambda x, **kw: x):
         # 1. Fail 3 times to open the circuit
         mock_fetch.side_effect = NetworkError("Fail")
         for _ in range(3):
@@ -129,7 +123,6 @@ async def test_check_and_update_sources_no_tasks(tmp_path):
     results = await manager.check_and_update_sources(sources_path)
     assert results == []
     await manager.close_session()
-
 
 @pytest.mark.asyncio
 async def test_check_and_update_cancelled_task(tmp_path):

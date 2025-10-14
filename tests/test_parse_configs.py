@@ -40,7 +40,7 @@ def test_extract_all_protocols():
 
 def test_parse_oversized_line(caplog):
     big_line = "A" * (MAX_DECODE_SIZE + 1)
-    with caplog.at_level("DEBUG"):
+    with caplog.at_level('DEBUG'):
         result = utils.parse_configs_from_text(big_line)
     assert result == set()
     assert "Skipping oversized base64 line" in caplog.text

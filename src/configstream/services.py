@@ -68,7 +68,9 @@ async def run_merge_pipeline(
     cfg: Settings, sources_file: Path, resume_file: Path | None
 ) -> None:
     """Run the VPN merger to test, sort, and merge configurations."""
-    await vpn_merger.run_merger(cfg, sources_file=sources_file, resume_file=resume_file)
+    await vpn_merger.run_merger(
+        cfg, sources_file=sources_file, resume_file=resume_file
+    )
 
 
 async def run_retest_pipeline(cfg: Settings, input_file: Path) -> None:
@@ -94,7 +96,9 @@ async def run_full_pipeline(
         prune=prune,
     )
     resume_file = aggregator_output_dir / RAW_SUBSCRIPTION_FILE_NAME
-    await vpn_merger.run_merger(cfg, sources_file=sources_file, resume_file=resume_file)
+    await vpn_merger.run_merger(
+        cfg, sources_file=sources_file, resume_file=resume_file
+    )
 
 
 def list_sources(sources_file: Path) -> None:

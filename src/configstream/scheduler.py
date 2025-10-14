@@ -27,10 +27,8 @@ logger = logging.getLogger(__name__)
 
 _history_lock = threading.Lock()
 
-
 class TestScheduler:
     """Manages periodic testing of VPN configurations."""
-
     __test__ = False
 
     def __init__(self, settings: Settings, output_dir: Path):
@@ -52,9 +50,7 @@ class TestScheduler:
             await self.db_manager.initialize()
 
             # Run the merger pipeline
-            results = await run_merger(
-                self.settings, Path(self.settings.sources.sources_file)
-            )
+            results = await run_merger(self.settings, Path(self.settings.sources.sources_file))
 
             # Prepare data for storage
             test_data = {
@@ -89,10 +85,10 @@ class TestScheduler:
                 await self.db_manager.record_test(node_data)
                 await self.db_manager.update_reliability(node_data["config_hash"])
 
+
             # Save current results (overwrite)
             self.current_results_file.write_text(
-                json.dumps(test_data, indent=2), encoding="utf-8"
-            )
+                json.dumps(test_data, indent=2), encoding="utf-8")
 
             # Append to history (for historical tracking)
             with _history_lock:
@@ -111,9 +107,7 @@ class TestScheduler:
 
     def _run_test_cycle_sync(self):
         """Synchronous wrapper to run the async test cycle."""
-        logger.info(
-            "Scheduler triggered. Running async test cycle in a new event loop."
-        )
+        logger.info("Scheduler triggered. Running async test cycle in a new event loop.")
         try:
             asyncio.run(self.run_test_cycle())
         except Exception as e:
@@ -127,14 +121,12 @@ class TestScheduler:
             trigger=IntervalTrigger(hours=interval_hours),
             id="test_cycle",
             name="Periodic VPN Test Cycle",
-            replace_existing=True,
+            replace_existing=True
         )
 
         # Run immediately on start in a separate thread to not block
         logger.info("Scheduling immediate initial test run.")
-        initial_run_thread = threading.Thread(
-            target=self._run_test_cycle_sync, daemon=True
-        )
+        initial_run_thread = threading.Thread(target=self._run_test_cycle_sync, daemon=True)
         initial_run_thread.start()
 
         self.scheduler.start()

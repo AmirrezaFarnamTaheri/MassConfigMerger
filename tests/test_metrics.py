@@ -35,7 +35,8 @@ def test_metrics_generation():
     sources_fetched_before = _get_metric_value(metrics.SOURCES_FETCHED_TOTAL)
     sources_failed_before = _get_metric_value(metrics.SOURCES_FAILED_TOTAL)
     configs_tested_before = _get_metric_value(metrics.CONFIGS_TESTED_TOTAL)
-    configs_reachable_before = _get_metric_value(metrics.CONFIGS_REACHABLE_TOTAL)
+    configs_reachable_before = _get_metric_value(
+        metrics.CONFIGS_REACHABLE_TOTAL)
     latency_bucket_before = _get_histogram_bucket_value(
         metrics.CONFIG_LATENCY_SECONDS, 0.5
     )
@@ -51,11 +52,21 @@ def test_metrics_generation():
     text = generate_latest().decode("utf-8")
 
     # Assertions
-    assert f"configstream_sources_fetched_total {sources_fetched_before + 1.0}" in text
-    assert f"configstream_sources_failed_total {sources_failed_before + 2.0}" in text
-    assert f"configstream_configs_tested_total {configs_tested_before + 3.0}" in text
     assert (
-        f"configstream_configs_reachable_total {configs_reachable_before + 4.0}" in text
+        f"configstream_sources_fetched_total {sources_fetched_before + 1.0}"
+        in text
+    )
+    assert (
+        f"configstream_sources_failed_total {sources_failed_before + 2.0}"
+        in text
+    )
+    assert (
+        f"configstream_configs_tested_total {configs_tested_before + 3.0}"
+        in text
+    )
+    assert (
+        f"configstream_configs_reachable_total {configs_reachable_before + 4.0}"
+        in text
     )
     assert (
         f'configstream_config_latency_seconds_bucket{{le="0.5"}} {latency_bucket_before + 1.0}'

@@ -33,7 +33,9 @@ def _format_timestamp(value: Any) -> str:
     except (TypeError, ValueError):
         return "N/A"
     try:
-        return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        return datetime.fromtimestamp(ts, tz=timezone.utc).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
     except (OSError, OverflowError, ValueError):
         return "N/A"
 
@@ -50,7 +52,9 @@ def _classify_reliability(successes: int, failures: int) -> tuple[str, str]:
     return "Critical", "status-critical"
 
 
-def _serialize_history(history_data: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _serialize_history(
+    history_data: Dict[str, Dict[str, Any]]
+) -> List[Dict[str, Any]]:
     entries: List[Dict[str, Any]] = []
     for key, stats in history_data.items():
         successes = _coerce_int(stats.get("successes"))

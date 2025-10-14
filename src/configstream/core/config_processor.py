@@ -6,7 +6,6 @@ protocol, to testing for connectivity and latency, and finally to normalizing
 and categorizing the results. It uses a `NodeTester` for network operations
 and produces structured `ConfigResult` objects.
 """
-
 from __future__ import annotations
 
 import asyncio
@@ -128,15 +127,12 @@ class ConfigProcessor:
         """
         if use_fetch_rules:
             # Use fetch_protocols for simple inclusion filtering.
-            include_protos = {
-                p.upper() for p in self.settings.filtering.fetch_protocols
-            }
+            include_protos = {p.upper()
+                              for p in self.settings.filtering.fetch_protocols}
             if not include_protos:
                 return configs
             return {
-                cfg
-                for cfg in configs
-                if categorize_protocol(cfg).upper() in include_protos
+                cfg for cfg in configs if categorize_protocol(cfg).upper() in include_protos
             }
         else:
             # Use merge_include/exclude_protocols for more complex filtering.
@@ -209,7 +205,8 @@ class ConfigProcessor:
         stats = history.get(key)
         reliability = None
         if stats and (stats["successes"] + stats["failures"]) > 0:
-            reliability = stats["successes"] / (stats["successes"] + stats["failures"])
+            reliability = stats["successes"] / \
+                (stats["successes"] + stats["failures"])
 
         return ConfigResult(
             config=cfg,
@@ -229,7 +226,6 @@ class ConfigProcessor:
         self, results: List[ConfigResult]
     ) -> List[ConfigResult]:
         """Run security checks on the results."""
-
         async def _check(result: ConfigResult) -> Optional[ConfigResult]:
             """Check a single result for security issues."""
             if not result.is_reachable or not result.host:
@@ -250,18 +246,14 @@ class ConfigProcessor:
 
                 # Certificate Validation
                 if result.port == 443:
-                    cert_info = await self._certificate_validator.validate(
-                        result.host, result.port
-                    )
+                    cert_info = await self._certificate_validator.validate(result.host, result.port)
                     if not cert_info.valid:
                         result.is_blocked = True
                         return None
                 result.is_blocked = False
                 return result
             except Exception as exc:
-                logging.debug(
-                    "Security check failed for %s:%s: %s", result.host, result.port, exc
-                )
+                logging.debug("Security check failed for %s:%s: %s", result.host, result.port, exc)
                 # On error, do not drop the node; treat as not blocked
                 result.is_blocked = False
                 return result
@@ -302,7 +294,8 @@ class ConfigProcessor:
                 try:
                     return await self._test_config(cfg, history)
                 except Exception as exc:
-                    logging.debug("test_configs worker failed for %s: %s", cfg, exc)
+                    logging.debug(
+                        "test_configs worker failed for %s: %s", cfg, exc)
                     return None
 
         tasks = [asyncio.create_task(safe_worker(c)) for c in configs]

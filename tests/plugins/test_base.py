@@ -4,7 +4,6 @@ from configstream.plugins.base import ParserPlugin, OutputPlugin
 
 from configstream.plugins.base import PluginMetadata
 
-
 # Concrete implementation for ParserPlugin for testing purposes
 class MyTestParser(ParserPlugin):
     @property

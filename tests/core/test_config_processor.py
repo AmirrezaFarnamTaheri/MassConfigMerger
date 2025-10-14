@@ -1,4 +1,5 @@
 from __future__ import annotations
+from configstream.core.config_processor import ConfigResult
 import asyncio
 import logging
 from unittest.mock import AsyncMock, patch, MagicMock
@@ -49,7 +50,8 @@ def test_filter_configs():
     settings_fetch = Settings()
     settings_fetch.filtering.fetch_protocols = ["VMess", "Shadowsocks"]
     processor_fetch = ConfigProcessor(settings_fetch)
-    filtered_fetch = processor_fetch.filter_configs(configs, use_fetch_rules=True)
+    filtered_fetch = processor_fetch.filter_configs(
+        configs, use_fetch_rules=True)
     assert filtered_fetch == {"vmess://config1", "ss://config3"}
 
     # Test case-insensitivity for fetch rules
@@ -57,8 +59,7 @@ def test_filter_configs():
     settings_fetch_case.filtering.fetch_protocols = ["vmess", "shadowsocks"]
     processor_fetch_case = ConfigProcessor(settings_fetch_case)
     filtered_fetch_case = processor_fetch_case.filter_configs(
-        configs, use_fetch_rules=True
-    )
+        configs, use_fetch_rules=True)
     assert filtered_fetch_case == {"vmess://config1", "ss://config3"}
 
     # Test empty fetch protocols (should return all)
@@ -66,16 +67,17 @@ def test_filter_configs():
     settings_fetch_empty.filtering.fetch_protocols = []
     processor_fetch_empty = ConfigProcessor(settings_fetch_empty)
     filtered_fetch_empty = processor_fetch_empty.filter_configs(
-        configs, use_fetch_rules=True
-    )
+        configs, use_fetch_rules=True)
     assert filtered_fetch_empty == configs
 
     # 2. Test with merge rules (include/exclude)
     settings_merge = Settings()
     settings_merge.filtering.merge_include_protocols = {"VMESS", "VLESS"}
-    settings_merge.filtering.merge_exclude_protocols = {"VLESS"}  # exclude should win
+    settings_merge.filtering.merge_exclude_protocols = {
+        "VLESS"}  # exclude should win
     processor_merge = ConfigProcessor(settings_merge)
-    filtered_merge = processor_merge.filter_configs(configs, use_fetch_rules=False)
+    filtered_merge = processor_merge.filter_configs(
+        configs, use_fetch_rules=False)
     assert filtered_merge == {"vmess://config1"}
 
     # Test with no merge rules (should return all)
@@ -84,8 +86,7 @@ def test_filter_configs():
     settings_merge_all.filtering.merge_exclude_protocols = set()
     processor_merge_all = ConfigProcessor(settings_merge_all)
     filtered_merge_all = processor_merge_all.filter_configs(
-        configs, use_fetch_rules=False
-    )
+        configs, use_fetch_rules=False)
     assert filtered_merge_all == configs
 
 
@@ -117,42 +118,34 @@ def test_extract_host_port():
     """Test the extract_host_port method for various protocols."""
     # VMess
     vmess_b64 = base64.b64encode(b'{"add": "vmess.com", "port": 100}').decode()
-    assert config_normalizer.extract_host_port(f"vmess://{vmess_b64}") == (
-        "vmess.com",
-        100,
-    )
+    assert config_normalizer.extract_host_port(
+        f"vmess://{vmess_b64}") == ("vmess.com", 100)
 
     # VLESS
     vless_b64 = base64.b64encode(b'{"add": "vless.com", "port": 200}').decode()
-    assert config_normalizer.extract_host_port(f"vless://{vless_b64}") == (
-        "vless.com",
-        200,
-    )
+    assert config_normalizer.extract_host_port(
+        f"vless://{vless_b64}") == ("vless.com", 200)
 
     # SSR
     ssr_raw = "ssr.com:300:origin:aes-128-gcm:plain:cGFzcw=="
     ssr_b64 = base64.urlsafe_b64encode(ssr_raw.encode()).decode()
-    assert config_normalizer.extract_host_port(f"ssr://{ssr_b64}") == ("ssr.com", 300)
+    assert config_normalizer.extract_host_port(
+        f"ssr://{ssr_b64}") == ("ssr.com", 300)
 
     # SSR with invalid parts
     ssr_invalid_raw = "ssr.com"
-    ssr_invalid_b64 = base64.urlsafe_b64encode(ssr_invalid_raw.encode()).decode()
-    assert config_normalizer.extract_host_port(f"ssr://{ssr_invalid_b64}") == (
-        None,
-        None,
-    )
+    ssr_invalid_b64 = base64.urlsafe_b64encode(
+        ssr_invalid_raw.encode()).decode()
+    assert config_normalizer.extract_host_port(
+        f"ssr://{ssr_invalid_b64}") == (None, None)
 
     # Trojan
-    assert config_normalizer.extract_host_port("trojan://pass@trojan.com:400") == (
-        "trojan.com",
-        400,
-    )
+    assert config_normalizer.extract_host_port(
+        "trojan://pass@trojan.com:400") == ("trojan.com", 400)
 
     # Regex fallback
-    assert config_normalizer.extract_host_port("other://user@regex.com:500/path") == (
-        "regex.com",
-        500,
-    )
+    assert config_normalizer.extract_host_port(
+        "other://user@regex.com:500/path") == ("regex.com", 500)
 
     # Invalid
     assert config_normalizer.extract_host_port("invalid-link") == (None, None)
@@ -199,19 +192,19 @@ def test_create_semantic_hash():
     assert isinstance(no_host_hash, str)
 
 
+
+
 @pytest.mark.asyncio
 @patch("configstream.core.config_processor.tqdm_asyncio")
-async def test_test_configs_worker_failure(
-    mock_tqdm, config_processor: ConfigProcessor, caplog
-):
+async def test_test_configs_worker_failure(mock_tqdm, config_processor: ConfigProcessor, caplog):
     """Test that test_configs handles exceptions within the worker."""
-
     async def gather_side_effect(*tasks, **kwargs):
         return await asyncio.gather(*tasks)
 
     mock_tqdm.gather = AsyncMock(side_effect=gather_side_effect)
 
-    config_processor._test_config = AsyncMock(side_effect=Exception("Worker failed"))
+    config_processor._test_config = AsyncMock(
+        side_effect=Exception("Worker failed"))
     config_processor.tester.close = AsyncMock()
     config_processor.blocklist_checker.close = AsyncMock()
 
@@ -221,9 +214,7 @@ async def test_test_configs_worker_failure(
         results = await config_processor.test_configs(configs)
 
     assert results == []
-    assert (
-        "test_configs worker failed for vless://config1: Worker failed" in caplog.text
-    )
+    assert "test_configs worker failed for vless://config1: Worker failed" in caplog.text
 
     config_processor.tester.close.assert_awaited_once()
     config_processor.blocklist_checker.close.assert_awaited_once()
@@ -266,9 +257,7 @@ async def test_test_connection_wrapper():
     settings = Settings()
     processor = ConfigProcessor(settings)
 
-    with patch.object(
-        processor.tester, "test_connection", new_callable=AsyncMock
-    ) as mock_test:
+    with patch.object(processor.tester, "test_connection", new_callable=AsyncMock) as mock_test:
         mock_test.return_value = 0.123
         result = await processor.test_connection("example.com", 443)
         mock_test.assert_awaited_once_with("example.com", 443)
@@ -281,9 +270,7 @@ async def test_lookup_geo_data_wrapper():
     settings = Settings()
     processor = ConfigProcessor(settings)
 
-    with patch.object(
-        processor.tester, "lookup_geo_data", new_callable=AsyncMock
-    ) as mock_lookup:
+    with patch.object(processor.tester, "lookup_geo_data", new_callable=AsyncMock) as mock_lookup:
         mock_lookup.return_value = ("US", "Google", 37.7749, -122.4194)
         result = await processor.lookup_geo_data("example.com")
         mock_lookup.assert_awaited_once_with("example.com")
@@ -296,9 +283,7 @@ def test_apply_tuning_wrapper():
     processor = ConfigProcessor(settings)
     config = "vless://test"
 
-    with patch(
-        "configstream.core.config_processor.config_normalizer.apply_tuning"
-    ) as mock_apply:
+    with patch("configstream.core.config_processor.config_normalizer.apply_tuning") as mock_apply:
         mock_apply.return_value = "tuned-config"
         result = processor.apply_tuning(config)
         mock_apply.assert_called_once_with(config, settings)
@@ -322,8 +307,9 @@ async def test_test_configs_filter_malicious_exception(fs):
         # to ensure our expected log was made, even if other logs were made too.
         found_log = False
         for call in mock_debug.call_args_list:
-            if len(call.args) > 1 and "An error occurred during config testing" in str(
-                call.args[0]
+            if (
+                len(call.args) > 1
+                and "An error occurred during config testing" in str(call.args[0])
             ):
                 found_log = True
                 break
@@ -337,10 +323,7 @@ async def test_test_config_no_host_port():
     settings = Settings()
     processor = ConfigProcessor(settings)
 
-    with patch(
-        "configstream.core.config_normalizer.extract_host_port",
-        return_value=(None, None),
-    ):
+    with patch("configstream.core.config_normalizer.extract_host_port", return_value=(None, None)):
         result = await processor._test_config("invalid-config", {})
         assert not result.is_reachable
         assert result.ping_time is None
@@ -353,7 +336,6 @@ async def test_test_config_no_host_port():
 async def test_write_history_batch(processor: ConfigProcessor):
     """Test the write_history_batch method."""
     from configstream.db import Database
-
     mock_db = MagicMock(spec=Database)
     mock_db.add_proxy_history_batch = AsyncMock()
 
@@ -389,10 +371,7 @@ async def test_test_config_with_reliability_coverage():
     settings = Settings()
     processor = ConfigProcessor(settings)
     history = {"example.com:443": {"successes": 1, "failures": 1}}
-    with patch(
-        "configstream.core.config_normalizer.extract_host_port",
-        return_value=("example.com", 443),
-    ):
+    with patch("configstream.core.config_normalizer.extract_host_port", return_value=("example.com", 443)):
         result = await processor._test_config("vless://config", history)
     assert result.reliability == 0.5
     await processor.tester.close()

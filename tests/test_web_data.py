@@ -64,18 +64,14 @@ def test_get_current_results_invalid_json(app, tmp_path: Path):
 def test_get_current_results_normalizes_nodes(app, tmp_path: Path):
     """Ensure nodes are normalized and unexpected keys trigger warnings."""
     results_file = tmp_path / "current_results.json"
-    results_file.write_text(
-        json.dumps(
-            {
-                "timestamp": "2024-01-01T00:00:00Z",
-                "nodes": [
-                    {"protocol": "vless", "ping_ms": "120", "country_code": "US"},
-                    "invalid-node",
-                ],
-                "unexpected": True,
-            }
-        )
-    )
+    results_file.write_text(json.dumps({
+        "timestamp": "2024-01-01T00:00:00Z",
+        "nodes": [
+            {"protocol": "vless", "ping_ms": "120", "country_code": "US"},
+            "invalid-node",
+        ],
+        "unexpected": True,
+    }))
 
     results = get_current_results(tmp_path, app.logger)
     assert results["nodes"][0]["country"] == "US"
@@ -104,24 +100,8 @@ def test_get_history_naive_timestamps(app, tmp_path: Path):
 def test_filter_nodes(tmp_path: Path):
     """Filter using protocol, country, ping bounds, and search."""
     nodes = [
-        {
-            "protocol": "VLESS",
-            "country": "US",
-            "ping_ms": 100,
-            "is_blocked": False,
-            "city": "New York",
-            "organization": "Test",
-            "ip": "1.1.1.1",
-        },
-        {
-            "protocol": "SS",
-            "country": "DE",
-            "ping_ms": 200,
-            "is_blocked": True,
-            "city": "Berlin",
-            "organization": "Test",
-            "ip": "2.2.2.2",
-        },
+        {"protocol": "VLESS", "country": "US", "ping_ms": 100, "is_blocked": False, "city": "New York", "organization": "Test", "ip": "1.1.1.1"},
+        {"protocol": "SS", "country": "DE", "ping_ms": 200, "is_blocked": True, "city": "Berlin", "organization": "Test", "ip": "2.2.2.2"},
     ]
     filters = {
         "protocol": "VLESS",
@@ -151,7 +131,7 @@ def test_export_csv(tmp_path: Path):
     """Export nodes to CSV."""
     nodes = [{"protocol": "vless", "ping_ms": 100}]
     csv_data = export_csv(nodes)
-    assert csv_data.replace("\r\n", "\n") == "ping_ms,protocol\n100,vless\n"
+    assert csv_data.replace('\r\n', '\n') == "ping_ms,protocol\n100,vless\n"
 
 
 def test_export_json(tmp_path: Path):
@@ -172,6 +152,4 @@ def test_export_base64(tmp_path: Path):
     """Export nodes to base64 payloads."""
     nodes = [{"config": "vless://example"}]
     encoded = export_base64(nodes)
-    assert encoded == base64.b64encode("vless://example".encode("utf-8")).decode(
-        "utf-8"
-    )
+    assert encoded == base64.b64encode("vless://example".encode("utf-8")).decode("utf-8")

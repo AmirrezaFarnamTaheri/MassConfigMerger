@@ -5,9 +5,12 @@ import pytest
 import importlib.util
 import importlib
 import asyncio
+import os
+import shutil
 import sys
 from pathlib import Path
 from typing import Optional
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC_PATH = ROOT / "src"
@@ -35,9 +38,8 @@ pytest_plugins = [
 
 def pytest_addoption(parser):
     """Register compatibility ini options when pytest-asyncio is unavailable."""
-    parser.addini(
-        "asyncio_mode", "Compatibility shim for pytest-asyncio", default="auto"
-    )
+    parser.addini("asyncio_mode",
+                  "Compatibility shim for pytest-asyncio", default="auto")
 
 
 @pytest.fixture
@@ -60,7 +62,8 @@ def settings(fs) -> Settings:
     output_dir_name = "test_output"
     fs.create_dir(output_dir_name)
     fs.create_file("pyproject.toml", contents="[tool.pytest.ini_options]")
-    fs.create_file("config.yaml", contents=f"output:\n  output_dir: {output_dir_name}")
+    fs.create_file(
+        "config.yaml", contents=f"output:\n  output_dir: {output_dir_name}")
 
     settings_obj = Settings(
         output={"output_dir": output_dir_name},
@@ -79,7 +82,6 @@ def settings(fs) -> Settings:
     if not fs.exists(current_results_file):
         import json
         from datetime import datetime
-
         sample_data = {
             "timestamp": datetime.now().isoformat(),
             "nodes": [
@@ -106,16 +108,13 @@ def app(fs, settings):
         return "3.0.3"
 
     from flask import testing
-
     original_get_version = testing._get_werkzeug_version
     testing._get_werkzeug_version = _get_werkzeug_version
 
     from werkzeug.middleware.dispatcher import DispatcherMiddleware
     from prometheus_client import make_wsgi_app
-
     app_instance.wsgi_app = DispatcherMiddleware(
-        app_instance.wsgi_app, {"/metrics": make_wsgi_app()}
-    )
+        app_instance.wsgi_app, {"/metrics": make_wsgi_app()})
 
     yield app_instance
 

@@ -29,8 +29,7 @@ class NaiveParser(BaseParser):
         name = self.sanitize_str(p.fragment or f"naive-{self.idx}")
         if not p.hostname or not p.port:
             raise ParserError(
-                f"Missing hostname or port in NaiveProxy link: {self.config_uri}"
-            )
+                f"Missing hostname or port in NaiveProxy link: {self.config_uri}")
 
         return {
             "name": name,

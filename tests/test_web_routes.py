@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-from datetime import datetime
+import json
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+from flask import testing
 from prometheus_client import make_wsgi_app
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
+from configstream.config import Settings
 from configstream.web_dashboard import create_app
 
 SRC_PATH = Path(__file__).resolve().parents[1] / "src"
@@ -39,6 +43,16 @@ def test_documentation_route(client):
     assert b"Documentation" in response.data
 
 
+
+
+
+
+
+
+
+
+
+
 def test_sources_route(client):
     response = client.get("/sources")
     assert response.status_code == 200
@@ -54,9 +68,7 @@ def test_scheduler_route(client):
 
 def test_api_current_with_filters(fs, settings):
     """Test the /api/current endpoint with filters."""
-    with patch(
-        "configstream.web_dashboard.get_current_results"
-    ) as mock_get_results, patch(
+    with patch("configstream.web_dashboard.get_current_results") as mock_get_results, patch(
         "configstream.web_dashboard.filter_nodes"
     ) as mock_filter_nodes:
         nodes = [{"id": 1, "protocol": "vless", "ping_ms": 100}]
@@ -81,10 +93,10 @@ def test_api_statistics(fs, settings):
     with patch("configstream.web_dashboard.get_current_results") as mock_get_results:
         mock_get_results.return_value = {
             "nodes": [
-                {"protocol": "vless", "country_code": "US", "ping_ms": 100},
-                {"protocol": "vless", "country_code": "DE", "ping_ms": 200},
-                {"protocol": "ss", "country_code": "US", "ping_ms": 150},
-                {"protocol": "vless", "country_code": "US", "ping_ms": -1},
+                    {"protocol": "vless", "country_code": "US", "ping_ms": 100},
+                    {"protocol": "vless", "country_code": "DE", "ping_ms": 200},
+                    {"protocol": "ss", "country_code": "US", "ping_ms": 150},
+                    {"protocol": "vless", "country_code": "US", "ping_ms": -1},
             ]
         }
 
@@ -101,16 +113,11 @@ def test_api_statistics(fs, settings):
         assert round(stats["avg_ping_by_country"]["US"]) == 125
         cleanup()
 
-
 def test_api_export_csv(fs, settings):
     """Test exporting data as CSV."""
-    with patch(
-        "configstream.web_dashboard.get_current_results"
-    ) as mock_get_results, patch(
-        "configstream.web_dashboard.filter_nodes"
-    ) as mock_filter_nodes, patch(
-        "configstream.web_dashboard.export_csv"
-    ) as mock_export_csv:
+    with patch("configstream.web_dashboard.get_current_results") as mock_get_results, \
+         patch("configstream.web_dashboard.filter_nodes") as mock_filter_nodes, \
+         patch("configstream.web_dashboard.export_csv") as mock_export_csv:
         nodes = [{"protocol": "vless", "ping_time": 100}]
         mock_get_results.return_value = {"nodes": nodes}
         mock_filter_nodes.return_value = nodes
@@ -129,11 +136,8 @@ def test_api_export_csv(fs, settings):
 
 def test_api_export_json(fs, settings):
     """Test exporting data as JSON."""
-    with patch(
-        "configstream.web_dashboard.get_current_results"
-    ) as mock_get_results, patch(
-        "configstream.web_dashboard.filter_nodes"
-    ) as mock_filter_nodes:
+    with patch("configstream.web_dashboard.get_current_results") as mock_get_results, \
+         patch("configstream.web_dashboard.filter_nodes") as mock_filter_nodes:
         nodes = [{"protocol": "vless", "ping_ms": 100}]
         mock_get_results.return_value = {"nodes": nodes}
         mock_filter_nodes.return_value = nodes
@@ -154,13 +158,9 @@ def test_api_export_json(fs, settings):
 
 def test_api_export_raw(fs, settings):
     """Test exporting data as raw text."""
-    with patch(
-        "configstream.web_dashboard.get_current_results"
-    ) as mock_get_results, patch(
-        "configstream.web_dashboard.filter_nodes"
-    ) as mock_filter_nodes, patch(
-        "configstream.web_dashboard.export_raw"
-    ) as mock_export_raw:
+    with patch("configstream.web_dashboard.get_current_results") as mock_get_results, \
+         patch("configstream.web_dashboard.filter_nodes") as mock_filter_nodes, \
+         patch("configstream.web_dashboard.export_raw") as mock_export_raw:
         nodes = [{"config": "vless://example"}]
         mock_get_results.return_value = {"nodes": nodes}
         mock_filter_nodes.return_value = nodes
@@ -179,13 +179,9 @@ def test_api_export_raw(fs, settings):
 
 def test_api_export_base64(fs, settings):
     """Test exporting data as base64."""
-    with patch(
-        "configstream.web_dashboard.get_current_results"
-    ) as mock_get_results, patch(
-        "configstream.web_dashboard.filter_nodes"
-    ) as mock_filter_nodes, patch(
-        "configstream.web_dashboard.export_base64"
-    ) as mock_export_base64:
+    with patch("configstream.web_dashboard.get_current_results") as mock_get_results, \
+         patch("configstream.web_dashboard.filter_nodes") as mock_filter_nodes, \
+         patch("configstream.web_dashboard.export_base64") as mock_export_base64:
         nodes = [{"config": "vless://example"}]
         mock_get_results.return_value = {"nodes": nodes}
         mock_filter_nodes.return_value = nodes

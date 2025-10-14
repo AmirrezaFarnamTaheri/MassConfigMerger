@@ -1,6 +1,10 @@
 """Test expression-based filtering."""
-
-from configstream.filtering.expressions import filter_nodes
+import pytest
+from configstream.filtering.expressions import (
+    FilterExpression,
+    FilterParser,
+    filter_nodes
+)
 
 
 def test_simple_comparison():
@@ -8,7 +12,7 @@ def test_simple_comparison():
     nodes = [
         {"ping_ms": 50, "country": "US"},
         {"ping_ms": 150, "country": "UK"},
-        {"ping_ms": 250, "country": "US"},
+        {"ping_ms": 250, "country": "US"}
     ]
 
     # Less than
@@ -33,7 +37,7 @@ def test_compound_expressions():
     nodes = [
         {"ping_ms": 50, "country": "US", "protocol": "vmess"},
         {"ping_ms": 150, "country": "US", "protocol": "shadowsocks"},
-        {"ping_ms": 75, "country": "UK", "protocol": "vmess"},
+        {"ping_ms": 75, "country": "UK", "protocol": "vmess"}
     ]
 
     # AND
@@ -49,7 +53,8 @@ def test_compound_expressions():
 
     # Combined
     result = filter_nodes(
-        nodes, "ping_ms < 100 AND (country == 'US' OR protocol == 'vmess')"
+        nodes,
+        "ping_ms < 100 AND (country == 'US' OR protocol == 'vmess')"
     )
     assert len(result) == 2
     print("✓ Combined expressions work")
@@ -57,7 +62,11 @@ def test_compound_expressions():
 
 def test_in_operator():
     """Test IN operator."""
-    nodes = [{"protocol": "vmess"}, {"protocol": "shadowsocks"}, {"protocol": "trojan"}]
+    nodes = [
+        {"protocol": "vmess"},
+        {"protocol": "shadowsocks"},
+        {"protocol": "trojan"}
+    ]
 
     result = filter_nodes(nodes, "protocol IN ['vmess', 'shadowsocks']")
     assert len(result) == 2
@@ -66,7 +75,10 @@ def test_in_operator():
 
 def test_not_operator():
     """Test NOT operator."""
-    nodes = [{"is_blocked": True, "ping_ms": 50}, {"is_blocked": False, "ping_ms": 75}]
+    nodes = [
+        {"is_blocked": True, "ping_ms": 50},
+        {"is_blocked": False, "ping_ms": 75}
+    ]
 
     result = filter_nodes(nodes, "NOT is_blocked")
     assert len(result) == 1

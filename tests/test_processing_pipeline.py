@@ -13,10 +13,14 @@ from configstream.processing import pipeline
 def test_sort_and_trim_results():
     """Test the sort_and_trim_results function."""
     results = [
-        ConfigResult(config="c1", protocol="p1", ping_time=0.3, is_reachable=True),
-        ConfigResult(config="c2", protocol="p2", ping_time=0.1, is_reachable=True),
-        ConfigResult(config="c3", protocol="p3", ping_time=0.2, is_reachable=True),
-        ConfigResult(config="c4", protocol="p4", ping_time=0.05, is_reachable=False),
+        ConfigResult(config="c1", protocol="p1",
+                     ping_time=0.3, is_reachable=True),
+        ConfigResult(config="c2", protocol="p2",
+                     ping_time=0.1, is_reachable=True),
+        ConfigResult(config="c3", protocol="p3",
+                     ping_time=0.2, is_reachable=True),
+        ConfigResult(config="c4", protocol="p4",
+                     ping_time=0.05, is_reachable=False),
     ]
     settings = Settings()
 
@@ -28,15 +32,18 @@ def test_sort_and_trim_results():
 
     # Test sorting by reliability
     results_reliability = [
-        ConfigResult(config="c1", protocol="p1", reliability=0.9, is_reachable=True),
-        ConfigResult(config="c2", protocol="p2", reliability=0.5, is_reachable=True),
-        ConfigResult(config="c3", protocol="p3", reliability=1.0, is_reachable=True),
-        ConfigResult(config="c4", protocol="p4", reliability=1.0, is_reachable=False),
+        ConfigResult(config="c1", protocol="p1",
+                     reliability=0.9, is_reachable=True),
+        ConfigResult(config="c2", protocol="p2",
+                     reliability=0.5, is_reachable=True),
+        ConfigResult(config="c3", protocol="p3",
+                     reliability=1.0, is_reachable=True),
+        ConfigResult(config="c4", protocol="p4",
+                     reliability=1.0, is_reachable=False),
     ]
     settings.processing.sort_by = "reliability"
     sorted_reliability = pipeline.sort_and_trim_results(
-        results_reliability.copy(), settings
-    )
+        results_reliability.copy(), settings)
     assert [r.config for r in sorted_reliability] == ["c3", "c1", "c2", "c4"]
 
     # Test trimming
@@ -49,7 +56,8 @@ def test_sort_and_trim_results():
     # Test disabled sorting
     settings.processing.enable_sorting = False
     settings.processing.top_n = 0
-    not_sorted_results = pipeline.sort_and_trim_results(results.copy(), settings)
+    not_sorted_results = pipeline.sort_and_trim_results(
+        results.copy(), settings)
     assert [r.config for r in not_sorted_results] == ["c1", "c2", "c3", "c4"]
 
 
@@ -75,13 +83,12 @@ async def test_test_configs(MockConfigProcessor):
 def test_filter_results_by_ping():
     """Test the filter_results_by_ping function."""
     results = [
-        ConfigResult(
-            config="c1", protocol="p1", ping_time=0.1, is_reachable=True
-        ),  # 100ms
-        ConfigResult(
-            config="c2", protocol="p2", ping_time=0.3, is_reachable=True
-        ),  # 300ms
-        ConfigResult(config="c3", protocol="p3", ping_time=None, is_reachable=False),
+        ConfigResult(config="c1", protocol="p1", ping_time=0.1,
+                     is_reachable=True),  # 100ms
+        ConfigResult(config="c2", protocol="p2", ping_time=0.3,
+                     is_reachable=True),  # 300ms
+        ConfigResult(config="c3", protocol="p3",
+                     ping_time=None, is_reachable=False),
     ]
     settings = Settings()
 

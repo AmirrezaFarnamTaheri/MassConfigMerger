@@ -1,8 +1,11 @@
 from configstream.exceptions import NetworkError
+import asyncio
 import base64
 import json
-from unittest.mock import AsyncMock, patch
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import aiohttp
 import pytest
 from configstream.config import Settings
 from configstream.core.config_processor import ConfigProcessor, ConfigResult
@@ -36,9 +39,7 @@ def settings():
 @pytest.mark.asyncio
 @patch("configstream.core.source_manager.utils.choose_proxy", return_value=None)
 @patch("configstream.core.source_manager.utils.fetch_text", new_callable=AsyncMock)
-async def test_source_manager_fetch_sources(
-    mock_fetch_text, mock_choose_proxy, settings
-):
+async def test_source_manager_fetch_sources(mock_fetch_text, mock_choose_proxy, settings):
     """Test that the SourceManager can fetch and parse sources."""
     source_manager = SourceManager(settings)
     sources = ["http://example.com/sub1"]
@@ -53,9 +54,7 @@ async def test_source_manager_fetch_sources(
 @pytest.mark.asyncio
 @patch("configstream.core.source_manager.utils.choose_proxy", return_value=None)
 @patch("configstream.core.source_manager.utils.fetch_text")
-async def test_source_manager_check_and_update_sources(
-    mock_fetch_text, mock_choose_proxy, settings, tmp_path
-):
+async def test_source_manager_check_and_update_sources(mock_fetch_text, mock_choose_proxy, settings, tmp_path):
     """Test that the SourceManager can check and update sources."""
     source_manager = SourceManager(settings)
     sources_file = tmp_path / "sources.txt"
@@ -88,7 +87,8 @@ def test_config_processor_filter_configs(settings):
     # Test merge rules
     settings.filtering.merge_include_protocols = {"TROJAN"}
     settings.filtering.merge_exclude_protocols = set()
-    filtered_merge = config_processor.filter_configs(configs, use_fetch_rules=False)
+    filtered_merge = config_processor.filter_configs(
+        configs, use_fetch_rules=False)
     assert VALID_TROJAN in filtered_merge
     assert VALID_VMESS not in filtered_merge
 
@@ -98,26 +98,10 @@ async def test_config_processor_test_configs(settings):
     """Test that the ConfigProcessor can test configs."""
     config_processor = ConfigProcessor(settings)
     configs = {VALID_VMESS}
-    with patch.object(
-        config_processor, "_test_config", new_callable=AsyncMock
-    ) as mock_test_config, patch.object(
-        config_processor, "_filter_by_isp", side_effect=lambda x: x
-    ), patch.object(
-        config_processor, "_run_security_checks", side_effect=lambda x: x
-    ):
-        mock_test_config.return_value = ConfigResult(
-            config=VALID_VMESS,
-            protocol="VMess",
-            ping_time=0.1,
-            is_reachable=True,
-            host="1.1.1.1",
-            port=80,
-            country="US",
-            isp="test",
-            latitude=0.0,
-            longitude=0.0,
-            reliability=0.0,
-        )
+    with patch.object(config_processor, "_test_config", new_callable=AsyncMock) as mock_test_config, \
+         patch.object(config_processor, "_filter_by_isp", side_effect=lambda x: x), \
+         patch.object(config_processor, "_run_security_checks", side_effect=lambda x: x):
+        mock_test_config.return_value = ConfigResult(config=VALID_VMESS, protocol="VMess", ping_time=0.1, is_reachable=True, host="1.1.1.1", port=80, country="US", isp="test", latitude=0.0, longitude=0.0, reliability=0.0)
         results = await config_processor.test_configs(configs)
         assert len(results) == 1
         assert results[0].config == VALID_VMESS
@@ -140,5 +124,6 @@ def test_output_generator_write_outputs(settings, tmp_path):
 
     base64_path = output_dir / "vpn_subscription_base64.txt"
     assert base64_path.exists()
-    expected_b64 = base64.b64encode(f"{VALID_VMESS}\n{VALID_VLESS}".encode()).decode()
+    expected_b64 = base64.b64encode(
+        f"{VALID_VMESS}\n{VALID_VLESS}".encode()).decode()
     assert base64_path.read_text() == expected_b64

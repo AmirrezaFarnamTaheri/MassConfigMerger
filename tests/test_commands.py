@@ -94,9 +94,7 @@ def test_handle_full(mock_services, mock_args, mock_settings):
 
 @patch("configstream.commands.ConfigStreamDaemon")
 @patch("configstream.commands.asyncio")
-def test_handle_daemon_no_running_loop(
-    mock_asyncio, mock_daemon_cls, mock_args, mock_settings
-):
+def test_handle_daemon_no_running_loop(mock_asyncio, mock_daemon_cls, mock_args, mock_settings):
     """Test the daemon command handler when no event loop is running."""
     mock_asyncio.get_running_loop.side_effect = RuntimeError
     mock_daemon_instance = mock_daemon_cls.return_value
@@ -112,9 +110,7 @@ def test_handle_daemon_no_running_loop(
 
 @patch("configstream.commands.ConfigStreamDaemon")
 @patch("configstream.commands.asyncio")
-def test_handle_daemon_with_running_loop(
-    mock_asyncio, mock_daemon_cls, mock_args, mock_settings
-):
+def test_handle_daemon_with_running_loop(mock_asyncio, mock_daemon_cls, mock_args, mock_settings):
     """Test the daemon command handler when an event loop is already running."""
     mock_loop = MagicMock()
     mock_asyncio.get_running_loop.return_value = mock_loop
@@ -126,9 +122,9 @@ def test_handle_daemon_with_running_loop(
     mock_daemon_instance.start.assert_called_once_with(
         interval_hours=mock_args.interval_hours, web_port=mock_args.web_port
     )
-    mock_loop.create_task.assert_called_once_with(
-        mock_daemon_instance.start.return_value
-    )
+    mock_loop.create_task.assert_called_once_with(mock_daemon_instance.start.return_value)
+
+
 
 
 @patch("configstream.commands.HistoricalManager", autospec=True)
@@ -142,11 +138,7 @@ def test_handle_history_db_exists(mock_manager, mock_args, mock_settings, fs, ca
 
     mock_instance = mock_manager.return_value
     mock_node = MagicMock(
-        protocol="test",
-        ip="1.1.1.1",
-        port=1234,
-        reliability_score=95.5,
-        uptime_percent=99.1,
+        protocol="test", ip="1.1.1.1", port=1234, reliability_score=95.5, uptime_percent=99.1
     )
     mock_instance.get_reliable_nodes.return_value = [mock_node]
 

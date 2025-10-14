@@ -31,7 +31,8 @@ class FormatConverter:
                 if proxy:
                     proxies.append(proxy)
             except Exception as e:
-                logging.debug(f"Could not parse config for Clash: {config}, error: {e}")
+                logging.debug(
+                    f"Could not parse config for Clash: {config}, error: {e}")
         return proxies
 
     def to_clash_config(self) -> str:
@@ -57,9 +58,7 @@ class FormatConverter:
             def ignore_aliases(self, data):
                 return True
 
-        return yaml.dump(
-            clash_config, Dumper=NoAliasDumper, allow_unicode=True, sort_keys=False
-        )
+        return yaml.dump(clash_config, Dumper=NoAliasDumper, allow_unicode=True, sort_keys=False)
 
     def to_clash_proxies(self) -> str:
         """Generate content for a Clash proxies-only file."""
@@ -72,6 +71,4 @@ class FormatConverter:
             def ignore_aliases(self, data):
                 return True
 
-        return yaml.dump(
-            clash_proxies, Dumper=NoAliasDumper, allow_unicode=True, sort_keys=False
-        )
+        return yaml.dump(clash_proxies, Dumper=NoAliasDumper, allow_unicode=True, sort_keys=False)

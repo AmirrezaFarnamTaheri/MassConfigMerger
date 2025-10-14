@@ -1,30 +1,22 @@
 import pytest
-from unittest.mock import patch, AsyncMock
-from configstream.security.ip_reputation import IPReputationChecker, ReputationScore
+from unittest.mock import patch, AsyncMock, MagicMock
+from configstream.security.ip_reputation import IPReputationChecker, ReputationScore, ReputationResult
 from configstream.config import Settings, SecuritySettings
-
 
 @pytest.fixture
 def mock_settings():
     """Fixture for a mock Settings object."""
     settings = Settings()
-    settings.security = SecuritySettings(
-        api_keys={"abuseipdb": "test", "ipqualityscore": "test"}
-    )
+    settings.security = SecuritySettings(api_keys={"abuseipdb": "test", "ipqualityscore": "test"})
     return settings
-
 
 @pytest.mark.asyncio
 async def test_check_all_services(mock_settings):
     """Test checking all IP reputation services."""
     checker = IPReputationChecker(mock_settings)
-    with patch.object(
-        checker, "check_abuseipdb", new_callable=AsyncMock
-    ) as mock_abuseipdb, patch.object(
-        checker, "check_ipapi", new_callable=AsyncMock
-    ) as mock_ipapi, patch.object(
-        checker, "check_ipqualityscore", new_callable=AsyncMock
-    ) as mock_ipqualityscore:
+    with patch.object(checker, "check_abuseipdb", new_callable=AsyncMock) as mock_abuseipdb, \
+         patch.object(checker, "check_ipapi", new_callable=AsyncMock) as mock_ipapi, \
+         patch.object(checker, "check_ipqualityscore", new_callable=AsyncMock) as mock_ipqualityscore:
 
         mock_abuseipdb.return_value = {"abuseConfidenceScore": 80}
         mock_ipapi.return_value = {"status": "success", "proxy": True}
@@ -42,13 +34,9 @@ async def test_check_all_services(mock_settings):
 async def test_check_all_services_clean(mock_settings):
     """Test checking all IP reputation services with a clean IP."""
     checker = IPReputationChecker(mock_settings)
-    with patch.object(
-        checker, "check_abuseipdb", new_callable=AsyncMock
-    ) as mock_abuseipdb, patch.object(
-        checker, "check_ipapi", new_callable=AsyncMock
-    ) as mock_ipapi, patch.object(
-        checker, "check_ipqualityscore", new_callable=AsyncMock
-    ) as mock_ipqualityscore:
+    with patch.object(checker, "check_abuseipdb", new_callable=AsyncMock) as mock_abuseipdb, \
+         patch.object(checker, "check_ipapi", new_callable=AsyncMock) as mock_ipapi, \
+         patch.object(checker, "check_ipqualityscore", new_callable=AsyncMock) as mock_ipqualityscore:
 
         mock_abuseipdb.return_value = {"abuseConfidenceScore": 0}
         mock_ipapi.return_value = {"status": "success", "proxy": False}
@@ -63,13 +51,9 @@ async def test_check_all_services_clean(mock_settings):
 async def test_check_all_services_suspicious(mock_settings):
     """Test checking all IP reputation services with a suspicious IP."""
     checker = IPReputationChecker(mock_settings)
-    with patch.object(
-        checker, "check_abuseipdb", new_callable=AsyncMock
-    ) as mock_abuseipdb, patch.object(
-        checker, "check_ipapi", new_callable=AsyncMock
-    ) as mock_ipapi, patch.object(
-        checker, "check_ipqualityscore", new_callable=AsyncMock
-    ) as mock_ipqualityscore:
+    with patch.object(checker, "check_abuseipdb", new_callable=AsyncMock) as mock_abuseipdb, \
+         patch.object(checker, "check_ipapi", new_callable=AsyncMock) as mock_ipapi, \
+         patch.object(checker, "check_ipqualityscore", new_callable=AsyncMock) as mock_ipqualityscore:
 
         mock_abuseipdb.return_value = {"abuseConfidenceScore": 30}
         mock_ipapi.return_value = {"status": "success", "proxy": False}
@@ -123,8 +107,5 @@ def test_ip_masking(mock_settings):
     """Test the IP masking logic."""
     checker = IPReputationChecker(mock_settings)
     assert checker._mask_ip("192.168.1.100") == "192.168.1.x"
-    assert (
-        checker._mask_ip("2001:0db8:85a3:0000:0000:8a2e:0370:7334")
-        == "2001:0db8:85a3:0000:0000:8a2e:0370:xxxx"
-    )
+    assert checker._mask_ip("2001:0db8:85a3:0000:0000:8a2e:0370:7334") == "2001:0db8:85a3:0000:0000:8a2e:0370:xxxx"
     assert checker._mask_ip("invalid-ip") == "x.x.x.x"
