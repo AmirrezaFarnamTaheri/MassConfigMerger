@@ -2,14 +2,18 @@ import time
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from pathlib import Path
+import shutil
+import stat
 
 import psutil
 import os
 import tempfile
 from flask import Blueprint, jsonify, request, send_file, current_app, Response
+from flask_wtf.csrf import CSRFError, validate_csrf
 
 from . import web_dashboard
 import zipfile
+from wtforms.validators import ValidationError
 from .vpn_retester import run_retester_flow
 
 api = Blueprint('api', __name__)
@@ -40,9 +44,78 @@ def api_current():
         current_app.logger.exception("Error loading current results: %s", exc)
         return jsonify({"error": "Internal server error"}), 500
 
+def _ensure_within_directory(base: Path, target: Path) -> None:
+    """Ensure the resolved target path is confined to the base directory."""
+
+    try:
+        target.relative_to(base)
+    except ValueError:
+        raise ValueError("Attempted path traversal in zip file")
+
+
+def _is_symlink(zip_info: zipfile.ZipInfo) -> bool:
+    """Detect whether a zip entry represents a symbolic link."""
+
+    if zip_info.create_system != 3:  # Not created on Unix-like system
+        return False
+    file_type = (zip_info.external_attr >> 16) & 0o170000
+    return file_type == stat.S_IFLNK
+
+
+def _safe_extract_zip(zip_ref: zipfile.ZipFile, destination: Path) -> None:
+    """Safely extract a zip file, guarding against zip slip attacks."""
+
+    dest_path = destination.resolve()
+    for member in zip_ref.infolist():
+        name = member.filename
+
+        # Reject empty or current/parent directory entries
+        if not name or name in (".", "./") or name.startswith("./") or name in ("..", "../") or name.startswith("../"):
+            raise ValueError(f"Invalid path in archive: {name}")
+
+        # Disallow absolute paths
+        if name.startswith("/") or (len(name) >= 3 and name[1:3] == ":\\" or name[1:3] == ":/"):
+            raise ValueError(f"Absolute paths not allowed in archive: {name}")
+
+        # Disallow symbolic links which could escape the directory on extraction
+        if _is_symlink(member):
+            raise ValueError(f"Unsupported symbolic link in archive: {member.filename}")
+
+        target_path = (dest_path / name).resolve()
+        _ensure_within_directory(dest_path, target_path)
+
+        if member.is_dir():
+            target_path.mkdir(parents=True, exist_ok=True)
+        else:
+            # Reject extraction to special device files or FIFOs
+            # by ensuring parent exists and path does not already exist as a special file
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            if target_path.exists() and not target_path.is_file():
+                raise ValueError(f"Refusing to overwrite non-regular file: {target_path}")
+            with zip_ref.open(member, "r") as source, open(target_path, "wb") as target:
+                shutil.copyfileobj(source, target)
+
+
+def _validate_csrf_token() -> None:
+    """Validate CSRF token sent via form data or header."""
+
+    token = request.headers.get("X-CSRF-Token") or request.form.get("csrf_token")
+    if not token:
+        raise CSRFError("Missing CSRF token")
+    try:
+        validate_csrf(token)
+    except (ValidationError, CSRFError) as exc:
+        raise CSRFError(str(exc))
+
+
 @api.route("/backup/restore", methods=["POST"])
 def api_restore_backup():
     """Restore the application data from a zip archive."""
+    try:
+        _validate_csrf_token()
+    except CSRFError as exc:
+        current_app.logger.warning("CSRF validation failed during backup restore: %s", exc)
+        return jsonify({"error": "CSRF validation failed"}), 400
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
     file = request.files['file']
@@ -51,28 +124,35 @@ def api_restore_backup():
     if file and file.filename.endswith(".zip"):
         try:
             with zipfile.ZipFile(file, "r") as zip_ref:
-                data_dir = current_app.config["data_dir"]
+                data_dir = Path(current_app.config["data_dir"])
+                data_dir.mkdir(parents=True, exist_ok=True)
                 config_path = Path(current_app.root_path).parent / "config.yaml"
 
-                # Extract to a temporary directory first to be safe
                 with tempfile.TemporaryDirectory() as tmpdir:
-                    zip_ref.extractall(tmpdir)
+                    tmp_path = Path(tmpdir)
+                    _safe_extract_zip(zip_ref, tmp_path)
 
-                    # Restore config.yaml
-                    if (Path(tmpdir) / "config.yaml").exists():
-                        (Path(tmpdir) / "config.yaml").rename(config_path)
+                    extracted_config = tmp_path / "config.yaml"
+                    if extracted_config.exists():
+                        extracted_config.replace(config_path)
 
-                    # Restore data directory
-                    for item in (Path(tmpdir)).iterdir():
+                    for item in tmp_path.iterdir():
+                        if item.name == "config.yaml":
+                            continue
+                        destination = data_dir / item.name
                         if item.is_dir():
-                            # shutil.copytree(item, data_dir, dirs_exist_ok=True)
-                            pass # for now, just log
-                        elif item.is_file() and item.name != "config.yaml":
-                            item.rename(data_dir / item.name)
+                            shutil.copytree(item, destination, dirs_exist_ok=True)
+                        elif item.is_file():
+                            destination.parent.mkdir(parents=True, exist_ok=True)
+                            shutil.copy2(item, destination)
 
             return jsonify({"message": "Backup restored successfully"}), 200
-        except Exception as e:
-            return jsonify({"error": f"Failed to restore backup: {e}"}), 500
+        except (zipfile.BadZipFile, ValueError) as exc:
+            current_app.logger.warning("Invalid backup archive: %s", exc)
+            return jsonify({"error": "Invalid backup archive"}), 400
+        except Exception as exc:
+            current_app.logger.exception("Failed to restore backup: %s", exc)
+            return jsonify({"error": "Failed to restore backup"}), 500
     return jsonify({"error": "Invalid file type"}), 400
 
 @api.route("/backup/create")
