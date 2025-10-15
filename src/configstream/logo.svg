@@ -2,26 +2,22 @@
     <!-- Gradient Definition -->
     <defs>
         <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+            <stop offset="0%" style="stop-color:#818cf8;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#c084fc;stop-opacity:1" />
         </linearGradient>
     </defs>
 
-    <!-- Outer Shape (Shield/Crest) -->
-    <path d="M100 10 C160 10, 190 40, 190 100 C190 160, 160 190, 100 190 C40 190, 10 160, 10 100 C10 40, 40 10, 100 10 Z" fill="url(#logoGradient)"/>
+    <!-- Outer Circle -->
+    <circle cx="100" cy="100" r="90" fill="url(#logoGradient)"/>
 
-    <!-- Inner "C" Shape (for ConfigStream) -->
-    <path d="M130 50 C100 50, 70 70, 70 100 C70 130, 100 150, 130 150"
+    <!-- Inner Wave/Stream Shape -->
+    <path d="M50 100 C80 70, 120 130, 150 100"
           stroke="white"
-          stroke-width="20"
-          stroke-linecap="round"
-          fill="none"/>
-
-    <!-- Inner "S" Shape (Stream) -->
-    <path d="M100 75 C120 75, 120 90, 100 100 C80 110, 80 125, 100 125"
-          stroke="white"
-          stroke-width="12"
+          stroke-width="18"
           stroke-linecap="round"
           fill="none"
-          opacity="0.8"/>
+          stroke-dasharray="200"
+          stroke-dashoffset="0">
+        <animate attributeName="stroke-dashoffset" from="400" to="0" dur="2s" repeatCount="indefinite" />
+    </path>
 </svg>

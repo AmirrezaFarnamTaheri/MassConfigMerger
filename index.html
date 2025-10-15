@@ -142,6 +142,35 @@
             box-shadow: 0 10px 25px var(--shadow-color);
         }
 
+        .card-actions {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .action-button {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-button:hover {
+            background-color: var(--primary);
+            color: var(--text-main);
+            border-color: var(--primary);
+        }
+
+        .copy-button.copied {
+            background-color: #22c55e;
+            color: var(--text-main);
+            border-color: #22c55e;
+        }
+
         .download-icon {
             width: 50px;
             height: 50px;
@@ -262,21 +291,33 @@
 
         <main>
             <section class="downloads">
-                <a href="output/vpn_subscription_base64.txt" class="download-card" download>
+            <div class="download-card">
                     <div class="download-icon" id="icon-base64"></div>
                     <h3 class="download-title">Base64 Subscription</h3>
                     <p class="download-desc">The universal format for most modern VPN clients (V2Ray, etc.).</p>
-                </a>
-                <a href="output/clash.yaml" class="download-card" download>
+                <div class="card-actions">
+                    <a href="output/vpn_subscription_base64.txt" class="action-button download-button" download>Download</a>
+                    <button class="action-button copy-button" data-link="output/vpn_subscription_base64.txt">Copy Link</button>
+                </div>
+            </div>
+            <div class="download-card">
                     <div class="download-icon" id="icon-clash"></div>
                     <h3 class="download-title">Clash Config</h3>
                     <p class="download-desc">A complete configuration file for Clash, Clash Meta, and derivatives.</p>
-                </a>
-                <a href="output/configs_raw.txt" class="download-card" download>
+                <div class="card-actions">
+                    <a href="output/clash.yaml" class="action-button download-button" download>Download</a>
+                    <button class="action-button copy-button" data-link="output/clash.yaml">Copy Link</button>
+                </div>
+            </div>
+            <div class="download-card">
                     <div class="download-icon" id="icon-raw"></div>
                     <h3 class="download-title">Raw Configs</h3>
                     <p class="download-desc">A simple text file with all unencoded configuration links.</p>
-                </a>
+                <div class="card-actions">
+                    <a href="output/configs_raw.txt" class="action-button download-button" download>Download</a>
+                    <button class="action-button copy-button" data-link="output/configs_raw.txt">Copy Link</button>
+                </div>
+            </div>
             </section>
 
             <section class="info-grid">
@@ -363,10 +404,29 @@
                 }
             }
 
+            // Add event listeners for copy buttons
+            function setupCopyButtons() {
+                const copyButtons = document.querySelectorAll('.copy-button');
+                copyButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const link = window.location.origin + window.location.pathname.replace('index.html', '') + button.dataset.link;
+                        navigator.clipboard.writeText(link).then(() => {
+                            button.textContent = 'Copied!';
+                            button.classList.add('copied');
+                            setTimeout(() => {
+                                button.textContent = 'Copy Link';
+                                button.classList.remove('copied');
+                            }, 2000);
+                        });
+                    });
+                });
+            }
+
             // Initialize
             fetchLastUpdate();
             fetchStats();
             loadIcons();
+            setupCopyButtons();
         });
     </script>
 </body>

@@ -6,6 +6,7 @@ import json
 import random
 from dataclasses import dataclass, field
 from typing import ClassVar
+from urllib.parse import parse_qs, unquote, urlparse
 
 import aiohttp
 import yaml
@@ -50,10 +51,65 @@ class Proxy:
         """
         if config.startswith("vmess://"):
             return cls._parse_vmess(config)
-        # Add parsers for other protocols like vless, ss, trojan here
-        # elif config.startswith("ss://"):
-        #     return cls._parse_ss(config)
+        elif config.startswith("vless://"):
+            return cls._parse_vless(config)
+        elif config.startswith("ss://"):
+            return cls._parse_ss(config)
+        # Add parsers for other protocols like trojan here
         return None  # Return None for unsupported protocols
+
+    @staticmethod
+    def _parse_ss(config: str) -> "Proxy" | None:
+        """Parses a ss:// URI."""
+        try:
+            parsed_url = urlparse(config)
+
+            # The format is ss://base64(method:password)@server:port#remarks
+            encoded_user_info = parsed_url.username
+            if not encoded_user_info:
+                return None
+
+            # Decode the user info from Base64, adding padding if necessary
+            padded_encoded_info = encoded_user_info + '=' * (-len(encoded_user_info) % 4)
+            decoded_user_info_bytes = base64.b64decode(padded_encoded_info)
+            decoded_user_info = decoded_user_info_bytes.decode("utf-8")
+
+            if ":" not in decoded_user_info:
+                return None # Invalid format
+
+            method, password = decoded_user_info.split(":", 1)
+
+            return Proxy(
+                config=config,
+                protocol="ss",
+                remarks=unquote(parsed_url.fragment),
+                address=parsed_url.hostname,
+                port=parsed_url.port,
+                _details={"method": method, "password": password},
+            )
+        except (TypeError, ValueError, base64.binascii.Error):
+            return None
+
+    @staticmethod
+    def _parse_vless(config: str) -> "Proxy" | None:
+        """Parses a vless:// URI."""
+        try:
+            parsed_url = urlparse(config)
+            query_params = parse_qs(parsed_url.query)
+
+            return Proxy(
+                config=config,
+                protocol="vless",
+                remarks=unquote(parsed_url.fragment),
+                address=parsed_url.hostname,
+                port=parsed_url.port,
+                uuid=parsed_url.username,
+                _details={
+                    key: value[0] for key, value in query_params.items()
+                },
+            )
+        except (TypeError, ValueError):
+            return None
 
     @staticmethod
     def _parse_vmess(config: str) -> "Proxy" | None:
@@ -89,9 +145,10 @@ class Proxy:
         if proxy_instance.config in cls._test_cache:
             return cls._test_cache[proxy_instance.config]
 
-        # Only VMess is supported for now. In a real app, you'd have different
-        # connectors for ss, trojan, etc.
-        if proxy_instance.protocol != "vmess":
+        # For the purpose of a simple connectivity test, we can treat
+        # vmess, vless, and ss as HTTP proxies. A more advanced implementation
+        # would use protocol-specific libraries for more accurate testing.
+        if proxy_instance.protocol not in ["vmess", "vless", "ss"]:
             proxy_instance.is_working = False
             cls._test_cache[proxy_instance.config] = proxy_instance
             return proxy_instance
@@ -187,19 +244,42 @@ def generate_base64_subscription(proxies: list[Proxy]) -> str:
 def generate_clash_config(proxies: list[Proxy]) -> str:
     """Generates a Clash-compatible YAML configuration file."""
     proxy_list = []
-    for proxy in (p for p in proxies if p.is_working and p.protocol == "vmess"):
-        clash_proxy = {
-            "name": proxy.remarks,
-            "type": "vmess",
-            "server": proxy.address,
-            "port": proxy.port,
-            "uuid": proxy.uuid,
-            "alterId": proxy._details.get("aid", 0),
-            "cipher": proxy.security,
-            "tls": proxy._details.get("tls", "none") != "none",
-            "network": proxy._details.get("net", "tcp"),
-        }
-        proxy_list.append(clash_proxy)
+    for proxy in (p for p in proxies if p.is_working):
+        clash_proxy = None
+        if proxy.protocol == "vmess":
+            clash_proxy = {
+                "name": proxy.remarks,
+                "type": "vmess",
+                "server": proxy.address,
+                "port": proxy.port,
+                "uuid": proxy.uuid,
+                "alterId": proxy._details.get("aid", 0),
+                "cipher": proxy.security,
+                "tls": proxy._details.get("tls", "none") != "none",
+                "network": proxy._details.get("net", "tcp"),
+            }
+        elif proxy.protocol == "vless":
+            clash_proxy = {
+                "name": proxy.remarks,
+                "type": "vless",
+                "server": proxy.address,
+                "port": proxy.port,
+                "uuid": proxy.uuid,
+                "tls": proxy._details.get("security", "none") == "tls",
+                "network": proxy._details.get("type", "tcp"),
+            }
+        elif proxy.protocol == "ss":
+            clash_proxy = {
+                "name": proxy.remarks,
+                "type": "ss",
+                "server": proxy.address,
+                "port": proxy.port,
+                "cipher": proxy._details.get("method"),
+                "password": proxy._details.get("password"),
+            }
+
+        if clash_proxy:
+            proxy_list.append(clash_proxy)
 
     if not proxy_list:
         return ""
