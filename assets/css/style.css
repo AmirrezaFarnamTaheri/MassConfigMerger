@@ -46,12 +46,21 @@ body {
     justify-content: center;
     gap: 10px;
     padding: 20px 40px;
-    background: rgba(255, 255, 255, 0.3);
+    /* Fallback for no backdrop-filter support */
+    background: rgba(255, 255, 255, 0.85);
+    /* Prefer glass effect when supported */
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 16px;
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
     margin-bottom: 40px;
+}
+
+@supports (-webkit-backdrop-filter: blur(10px)) or (backdrop-filter: blur(10px)) {
+    .nav {
+        background: rgba(255, 255, 255, 0.3);
+    }
 }
 
 .nav-link {
@@ -156,6 +165,12 @@ body {
     cursor: pointer;
     border: none;
     font-size: 1em;
+    outline: none;
+}
+
+.btn:focus-visible {
+    outline: 3px solid rgba(106, 130, 251, 0.6);
+    outline-offset: 2px;
 }
 
 .btn-primary {
@@ -199,21 +214,23 @@ body {
 }
 
 #proxiesTable th {
-    background-color: transparent;
-    color: var(--text-light);
-    font-weight: 600;
+    background-color: rgba(255, 255, 255, 0.9);
+    color: var(--text-dark);
+    font-weight: 700;
     text-transform: uppercase;
     font-size: 0.9em;
     border-bottom: 2px solid var(--card-border);
 }
 
 #proxiesTable td {
-    background: var(--card-background);
+    background: rgba(255, 255, 255, 0.95);
     border: 1px solid var(--card-border);
+    color: var(--text-dark);
 }
 
-#proxiesTable tr:hover td {
-    background: rgba(255, 255, 255, 0.8);
+#proxiesTable tbody tr:hover td {
+    background: rgba(245, 247, 250, 0.95);
+    border-color: var(--card-border);
 }
 
 /* Statistics */
@@ -236,4 +253,45 @@ body {
 .stat-label {
     color: var(--text-light);
     font-size: 1.1em;
+}
+
+.loading {
+    display: inline-block;
+    animation: pulse-opacity 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-opacity {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.warning-box {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    padding: 25px;
+    border-radius: 12px;
+    margin: 30px 0;
+    border-left: 4px solid var(--warning);
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    .header {
+        padding: 40px 20px;
+    }
+    .header h1 {
+        font-size: 2em;
+    }
+    .nav {
+        flex-direction: column;
+        padding: 20px;
+    }
+    .downloads-grid,
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    .content {
+        padding: 30px 20px;
+    }
 }
