@@ -334,9 +334,9 @@ class Proxy:
 
         try:
             with geoip2.database.Reader("data/ip-to-asn.mmdb") as reader:
-                response = reader.asn(proxy.address)
-                proxy.asn_number = response.autonomous_system_number
-                proxy.asn = f"AS{response.autonomous_system_number} ({response.autonomous_system_organization})"
+                asn_response = reader.asn(proxy.address)
+                proxy.asn_number = asn_response.autonomous_system_number
+                proxy.asn = f"AS{asn_response.autonomous_system_number} ({asn_response.autonomous_system_organization})"
         except Exception:
             pass
 
@@ -400,6 +400,9 @@ class SingBoxWorker:
 
     async def _run_security_tests(self, proxy: Proxy):
         """Run security tests on proxy."""
+        if not self.session:
+            return
+
         try:
             # Test 1: Redirect handling
             async with self.session.get(
@@ -498,7 +501,7 @@ async def process_and_test_proxies(configs: list[str], progress: Progress) -> li
     # Sort by working status and latency
     working = sorted(
         [p for p in results if p.is_working and p.is_secure and p.latency is not None],
-        key=lambda p: p.latency
+        key=lambda p: p.latency or float("inf")
     )
     non_working = [p for p in results if not p.is_working or not p.is_secure]
 
@@ -628,12 +631,12 @@ def generate_statistics_json(proxies: list[Proxy]) -> str:
     working = [p for p in proxies if p.is_working and p.is_secure]
 
     # Protocol distribution
-    protocols = {}
+    protocols: dict[str, int] = {}
     for p in working:
         protocols[p.protocol] = protocols.get(p.protocol, 0) + 1
 
     # Country distribution
-    countries = {}
+    countries: dict[str, int] = {}
     for p in working:
         countries[p.country_code] = countries.get(p.country_code, 0) + 1
 

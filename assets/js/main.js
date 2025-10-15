@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const filteredProxies = allProxies.filter(p => {
                 const protocol = p.protocol.toLowerCase();
-                const location = `${p.location.city}, ${p.location.country}`.toLowerCase();
+                const location = [p.location?.city, p.location?.country].filter(Boolean).join(', ').toLowerCase();
                 return protocol.includes(protoFilter) && location.includes(locFilter);
             });
 
@@ -109,8 +109,8 @@ document.addEventListener('DOMContentLoaded', () => {
             filteredProxies.sort((a, b) => {
                 let valA, valB;
                 if (currentSort.key === 'location') {
-                    valA = `${a.location.city}, ${a.location.country}`;
-                    valB = `${b.location.city}, ${b.location.country}`;
+                    valA = [a.location?.city, a.location?.country].filter(Boolean).join(', ');
+                    valB = [b.location?.city, b.location?.country].filter(Boolean).join(', ');
                 } else if (currentSort.key === 'asn') {
                     valA = a.location.asn.name;
                     valB = b.location.asn.name;
