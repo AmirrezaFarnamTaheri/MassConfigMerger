@@ -15,43 +15,25 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Icons -->
-    <script src="https://unpkg.com/feather-icons"></script>
-
     <!-- Stylesheet -->
     <link rel="stylesheet" href="assets/css/style.css">
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body>
     <div class="container">
         <!-- Header -->
-        <div class="header">
+        <header class="header">
             <div class="header-content">
                 <img src="src/configstream/logo.svg" alt="ConfigStream Logo" class="logo">
-                <h1>🚀 ConfigStream</h1>
+                <h1>ConfigStream</h1>
                 <p class="subtitle">Automated Free VPN Configuration Aggregator</p>
-                <div class="badges">
-                    <span class="badge">
-                        <i data-feather="check-circle"></i>
-                        Auto-Updated
-                    </span>
-                    <span class="badge">
-                        <i data-feather="shield"></i>
-                        Security Tested
-                    </span>
-                    <span class="badge">
-                        <i data-feather="zap"></i>
-                        Performance Sorted
-                    </span>
-                    <span class="badge">
-                        <i data-feather="globe"></i>
-                        Open Source
-                    </span>
-                </div>
             </div>
-        </div>
+        </header>
 
         <!-- Navigation -->
-        <div class="nav">
+        <nav class="nav">
             <a href="index.html" class="nav-link active">
                 <i data-feather="home"></i>
                 Home
@@ -68,89 +50,82 @@
                 <i data-feather="info"></i>
                 About
             </a>
-        </div>
+        </nav>
 
         <!-- Content -->
-        <div class="content">
-            <!-- Update Info -->
-            <div class="update-box">
-                <div class="icon">📅</div>
-                <div>
-                    <div style="font-size: 0.9em; color: var(--gray); margin-bottom: 5px;">Last Updated</div>
-                    <div class="update-time loading" id="lastUpdate">Checking...</div>
-                </div>
-            </div>
-
+        <main class="content">
             <!-- Statistics -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <span class="stat-number">6h</span>
-                    <span class="stat-label">Update Interval</span>
+            <section class="card">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-number">6h</span>
+                        <span class="stat-label">Update Interval</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number loading" id="totalConfigs">...</span>
+                        <span class="stat-label">Total Configs</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number loading" id="workingConfigs">...</span>
+                        <span class="stat-label">Working</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number loading" id="avgLatency">...</span>
+                        <span class="stat-label">Avg Latency</span>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <span class="stat-number loading" id="totalConfigs">...</span>
-                    <span class="stat-label">Total Configs</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-number loading" id="workingConfigs">...</span>
-                    <span class="stat-label">Working</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-number loading" id="avgLatency">...</span>
-                    <span class="stat-label">Avg Latency</span>
-                </div>
-            </div>
+            </section>
 
             <!-- Download Cards -->
-            <div class="downloads-grid">
-                <div class="download-card">
-                    <div class="download-icon">📄</div>
-                    <div class="download-title">Base64 Subscription</div>
-                    <div class="download-desc">Universal format for V2RayNG, V2Box, and similar clients</div>
-                    <div class="download-actions">
-                        <a href="output/vpn_subscription_base64.txt" class="btn btn-primary" download>
-                            <i data-feather="download"></i>
-                            Download
-                        </a>
-                        <button class="btn btn-secondary copy-btn" data-file="output/vpn_subscription_base64.txt">
-                            <i data-feather="copy"></i>
-                            Copy Link
-                        </button>
+            <section class="card">
+                <div class="downloads-grid">
+                    <div class="download-card">
+                        <div class="download-icon">📄</div>
+                        <div class="download-title">Base64 Subscription</div>
+                        <div class="download-desc">Universal format for V2RayNG, V2Box, and similar clients</div>
+                        <div class="download-actions">
+                            <a href="output/vpn_subscription_base64.txt" class="btn btn-primary" download>
+                                <i data-feather="download"></i>
+                                Download
+                            </a>
+                            <button class="btn btn-secondary copy-btn" data-file="output/vpn_subscription_base64.txt">
+                                <i data-feather="copy"></i>
+                                Copy Link
+                            </button>
+                        </div>
+                    </div>
+                    <div class="download-card">
+                        <div class="download-icon">⚙️</div>
+                        <div class="download-title">Clash Config</div>
+                        <div class="download-desc">Ready-to-use YAML for Clash and Clash Meta clients</div>
+                        <div class="download-actions">
+                            <a href="output/clash.yaml" class="btn btn-primary" download>
+                                <i data-feather="download"></i>
+                                Download
+                            </a>
+                            <button class="btn btn-secondary copy-btn" data-file="output/clash.yaml">
+                                <i data-feather="copy"></i>
+                                Copy Link
+                            </button>
+                        </div>
+                    </div>
+                    <div class="download-card">
+                        <div class="download-icon">📋</div>
+                        <div class="download-title">Raw Configs</div>
+                        <div class="download-desc">Unencoded configuration links for manual import</div>
+                        <div class="download-actions">
+                            <a href="output/configs_raw.txt" class="btn btn-primary" download>
+                                <i data-feather="download"></i>
+                                Download
+                            </a>
+                            <button class="btn btn-secondary copy-btn" data-file="output/configs_raw.txt">
+                                <i data-feather="copy"></i>
+                                Copy Link
+                            </button>
+                        </div>
                     </div>
                 </div>
-
-                <div class="download-card">
-                    <div class="download-icon">⚙️</div>
-                    <div class="download-title">Clash Config</div>
-                    <div class="download-desc">Ready-to-use YAML for Clash and Clash Meta clients</div>
-                    <div class="download-actions">
-                        <a href="output/clash.yaml" class="btn btn-primary" download>
-                            <i data-feather="download"></i>
-                            Download
-                        </a>
-                        <button class="btn btn-secondary copy-btn" data-file="output/clash.yaml">
-                            <i data-feather="copy"></i>
-                            Copy Link
-                        </button>
-                    </div>
-                </div>
-
-                <div class="download-card">
-                    <div class="download-icon">📋</div>
-                    <div class="download-title">Raw Configs</div>
-                    <div class="download-desc">Unencoded configuration links for manual import</div>
-                    <div class="download-actions">
-                        <a href="output/configs_raw.txt" class="btn btn-primary" download>
-                            <i data-feather="download"></i>
-                            Download
-                        </a>
-                        <button class="btn btn-secondary copy-btn" data-file="output/configs_raw.txt">
-                            <i data-feather="copy"></i>
-                            Copy Link
-                        </button>
-                    </div>
-                </div>
-            </div>
+            </section>
 
             <div style="text-align: center; margin-bottom: 50px;">
                 <a href="proxies.html" class="btn btn-primary" style="padding: 15px 30px; font-size: 1.1em;">

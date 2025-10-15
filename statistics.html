@@ -6,20 +6,22 @@
     <title>Statistics - ConfigStream</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/feather-icons"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <!-- Stylesheet -->
     <link rel="stylesheet" href="assets/css/style.css">
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>📊 Statistics</h1>
+        <header class="header">
+            <h1>Statistics</h1>
             <p class="subtitle">Detailed analytics and insights</p>
-        </div>
+        </header>
 
-        <div class="nav">
+        <nav class="nav">
             <a href="index.html" class="nav-link">
                 <i data-feather="home"></i>
                 Home
@@ -36,15 +38,16 @@
                 <i data-feather="info"></i>
                 About
             </a>
-        </div>
+        </nav>
 
-        <div class="content">
-            <div id="loadingIndicator" class="loading">
-                <div class="loading-spinner"></div>
-                <div>Loading statistics...</div>
-            </div>
+        <main class="content">
+            <section class="card">
+                <div id="loadingIndicator" class="loading">
+                    <div class="loading-spinner"></div>
+                    <div>Loading statistics...</div>
+                </div>
 
-            <div id="statsContent" style="display: none;">
+                <div id="statsContent" style="display: none;">
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-icon">📊</div>

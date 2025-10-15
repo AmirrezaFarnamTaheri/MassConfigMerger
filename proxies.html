@@ -12,20 +12,20 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
 
-    <!-- Icons -->
-    <script src="https://unpkg.com/feather-icons"></script>
-
     <!-- Stylesheet -->
     <link rel="stylesheet" href="assets/css/style.css">
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🔍 Proxy List</h1>
+        <header class="header">
+            <h1>Proxy List</h1>
             <p class="subtitle">Detailed information about all available proxies</p>
-        </div>
+        </header>
 
-        <div class="nav">
+        <nav class="nav">
             <a href="index.html" class="nav-link">
                 <i data-feather="home"></i>
                 Home
@@ -42,69 +42,57 @@
                 <i data-feather="info"></i>
                 About
             </a>
-        </div>
+        </nav>
 
-        <div class="content">
-            <div class="info-box">
-                <div class="icon">ℹ️</div>
-                <div>
-                    <strong>Total Proxies:</strong> <span id="totalProxies">Loading...</span><br>
-                    <strong>Last Updated:</strong> <span id="lastUpdate">Loading...</span>
+        <main class="content">
+            <section class="card">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Protocol</label>
+                        <select id="filterProtocol">
+                            <option value="">All Protocols</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Country</label>
+                        <select id="filterCountry">
+                            <option value="">All Countries</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Max Latency (ms)</label>
+                        <input type="number" id="filterLatency" placeholder="e.g., 500">
+                    </div>
+                    <div class="filter-group">
+                        <label>Security</label>
+                        <select id="filterSecurity">
+                            <option value="">All</option>
+                            <option value="secure">Secure Only</option>
+                            <option value="issues">With Issues</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
+            </section>
 
-            <div class="filters">
-                <div class="filter-group">
-                    <label>Protocol</label>
-                    <select id="filterProtocol">
-                        <option value="">All Protocols</option>
-                    </select>
+            <section class="card">
+                <div class="actions">
+                    <div>
+                        <button class="btn btn-primary" id="exportCSV">Export CSV</button>
+                        <button class="btn btn-primary" id="exportJSON">Export JSON</button>
+                    </div>
+                    <div>
+                        <button class="btn" id="refreshData">Refresh</button>
+                    </div>
                 </div>
-                <div class="filter-group">
-                    <label>Country</label>
-                    <select id="filterCountry">
-                        <option value="">All Countries</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>Max Latency (ms)</label>
-                    <input type="number" id="filterLatency" placeholder="e.g., 500">
-                </div>
-                <div class="filter-group">
-                    <label>Security</label>
-                    <select id="filterSecurity">
-                        <option value="">All</option>
-                        <option value="secure">Secure Only</option>
-                        <option value="issues">With Issues</option>
-                    </select>
-                </div>
-            </div>
+            </section>
 
-            <div class="actions">
-                <div>
-                    <button class="btn btn-primary" id="exportCSV">
-                        <i data-feather="download"></i>
-                        Export CSV
-                    </button>
-                    <button class="btn btn-primary" id="exportJSON">
-                        <i data-feather="download"></i>
-                        Export JSON
-                    </button>
+            <section class="card">
+                <div id="loadingIndicator" class="loading">
+                    <div class="loading-spinner"></div>
+                    <div>Loading proxy data...</div>
                 </div>
-                <div>
-                    <button class="btn btn-success" id="refreshData">
-                        <i data-feather="refresh-cw"></i>
-                        Refresh
-                    </button>
-                </div>
-            </div>
 
-            <div id="loadingIndicator" class="loading">
-                <div class="loading-spinner"></div>
-                <div>Loading proxy data...</div>
-            </div>
-
-            <table id="proxiesTable" class="display responsive nowrap" style="width:100%; display:none;">
+                <table id="proxiesTable" class="display responsive nowrap" style="width:100%; display:none;">
                 <thead>
                     <tr>
                         <th>Protocol</th>
