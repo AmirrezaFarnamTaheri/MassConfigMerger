@@ -4,363 +4,69 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proxies - ConfigStream</title>
-
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
-
-    <!-- Stylesheet -->
+    <link rel="icon" type="image/svg+xml" href="src/configstream/logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
-
-    <!-- Icons -->
-    <script src="https://unpkg.com/feather-icons" integrity="sha384-uO3SXW5IuS1ZpFPKugNNWqTZRRglnUJK6UAZ/gxOX80nxEkN9NcGZTftn6RzhGWE" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body>
     <div class="container">
         <header class="header">
+            <a href="index.html"><img src="src/configstream/logo.svg" alt="ConfigStream Logo" class="logo" id="logo"></a>
             <h1>Proxy List</h1>
-            <p class="subtitle">Detailed information about all available proxies</p>
+            <p class="subtitle">Detailed information for all working proxies</p>
         </header>
 
-        <nav class="nav">
-            <a href="index.html" class="nav-link">
-                <i data-feather="home"></i>
-                Home
-            </a>
-            <a href="proxies.html" class="nav-link active">
-                <i data-feather="list"></i>
-                Proxies
-            </a>
-            <a href="statistics.html" class="nav-link">
-                <i data-feather="bar-chart-2"></i>
-                Statistics
-            </a>
-            <a href="about.html" class="nav-link">
-                <i data-feather="info"></i>
-                About
-            </a>
-        </nav>
+        <div class="nav-container">
+            <nav class="nav">
+                <a href="index.html" class="nav-link"><i data-feather="home"></i>Home</a>
+                <a href="proxies.html" class="nav-link active"><i data-feather="list"></i>Proxies</a>
+                <a href="statistics.html" class="nav-link"><i data-feather="bar-chart-2"></i>Statistics</a>
+                <a href="about.html" class="nav-link"><i data-feather="info"></i>About</a>
+                <button class="theme-switcher" id="theme-switcher" aria-label="Toggle theme">
+                    <i data-feather="moon" class="theme-icon-moon"></i>
+                    <i data-feather="sun" class="theme-icon-sun" style="display:none;"></i>
+                </button>
+            </nav>
+        </div>
 
         <main class="content">
-            <section class="card">
-                <div class="filters">
-                    <div class="filter-group">
-                        <label>Protocol</label>
-                        <select id="filterProtocol">
-                            <option value="">All Protocols</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Country</label>
-                        <select id="filterCountry">
-                            <option value="">All Countries</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Max Latency (ms)</label>
-                        <input type="number" id="filterLatency" placeholder="e.g., 500">
-                    </div>
-                    <div class="filter-group">
-                        <label>Security</label>
-                        <select id="filterSecurity">
-                            <option value="">All</option>
-                            <option value="secure">Secure Only</option>
-                            <option value="issues">With Issues</option>
-                        </select>
-                    </div>
+            <section class="card" id="proxies-card">
+                <div style="overflow-x: auto;">
+                    <table id="proxiesTable">
+                        <thead>
+                            <tr>
+                                <th>Protocol</th>
+                                <th>Location</th>
+                                <th>Latency</th>
+                                <th>ASN</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="proxiesTBody">
+                            <!-- Rows will be injected by script -->
+                        </tbody>
+                    </table>
                 </div>
+                 <p id="loading-proxies" style="text-align:center; padding: 2rem;">
+                    <span class="loading">Loading proxies...</span>
+                </p>
             </section>
+        </main>
 
-            <section class="card">
-                <div class="actions">
-                    <div>
-                        <button class="btn btn-primary" id="exportCSV">Export CSV</button>
-                        <button class="btn btn-primary" id="exportJSON">Export JSON</button>
-                    </div>
-                    <div>
-                        <button class="btn" id="refreshData">Refresh</button>
-                    </div>
-                </div>
-            </section>
-
-            <section class="card">
-                <div id="loadingIndicator" class="loading">
-                    <div class="loading-spinner"></div>
-                    <div>Loading proxy data...</div>
-                </div>
-
-                <table id="proxiesTable" class="display responsive nowrap" style="width:100%; display:none;">
-                <thead>
-                    <tr>
-                        <th>Protocol</th>
-                        <th>Country</th>
-                        <th>City</th>
-                        <th>ASN</th>
-                        <th>Remarks</th>
-                        <th>Latency</th>
-                        <th>Security</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <footer class="footer">
+             <p>Source code & contributions on <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank">GitHub</a></p>
+            <div class="social-links">
+                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" title="GitHub"><i data-feather="github"></i></a>
+                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" title="Issues"><i data-feather="alert-circle"></i></a>
+                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/stargazers" target="_blank" title="Star"><i data-feather="star"></i></a>
+            </div>
+            <p style="margin-top: 1rem; font-size: 0.9em; opacity: 0.7;">Last updated: <span id="footerUpdate" class="loading">...</span></p>
+        </footer>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-
-    <script>
-        feather.replace();
-
-        let proxiesData = [];
-        let dataTable = null;
-
-        // Fetch proxies data
-        async function fetchProxies() {
-            const cacheBust = new Date().getTime();
-            try {
-                const response = await fetch(`output/proxies.json?_=${cacheBust}`);
-                proxiesData = await response.json();
-
-                document.getElementById('totalProxies').textContent = proxiesData.length;
-
-                populateFilters();
-                initializeDataTable();
-
-                document.getElementById('loadingIndicator').style.display = 'none';
-                document.getElementById('proxiesTable').style.display = 'table';
-            } catch (error) {
-                console.error('Error fetching proxies:', error);
-                document.getElementById('loadingIndicator').innerHTML =
-                    '<div style="color: var(--danger);">Failed to load proxy data. Please try again later.</div>';
-            }
-        }
-
-        // Fetch metadata
-        async function fetchMetadata() {
-            const cacheBust = new Date().getTime();
-            try {
-                const response = await fetch(`output/metadata.json?_=${cacheBust}`);
-                const metadata = await response.json();
-
-                const date = new Date(metadata.generated_at);
-                document.getElementById('lastUpdate').textContent = date.toLocaleString();
-            } catch (error) {
-                document.getElementById('lastUpdate').textContent = 'Recently';
-            }
-        }
-
-        // Populate filter dropdowns
-        function populateFilters() {
-            const protocols = [...new Set(proxiesData.map(p => p.protocol))].sort();
-            const countries = [...new Set(proxiesData.map(p => p.country))].sort();
-
-            const protocolSelect = document.getElementById('filterProtocol');
-            protocols.forEach(protocol => {
-                const option = document.createElement('option');
-                option.value = protocol;
-                option.textContent = protocol.toUpperCase();
-                protocolSelect.appendChild(option);
-            });
-
-            const countrySelect = document.getElementById('filterCountry');
-            countries.forEach(country => {
-                const option = document.createElement('option');
-                option.value = country;
-                option.textContent = country;
-                countrySelect.appendChild(option);
-            });
-        }
-
-        // Initialize DataTable
-        function initializeDataTable() {
-            dataTable = $('#proxiesTable').DataTable({
-                data: proxiesData,
-                responsive: true,
-                order: [[5, 'asc']], // Sort by latency
-                pageLength: 25,
-                columns: [
-                    {
-                        data: 'protocol',
-                        render: function(data) {
-                            return `<span class="badge badge-info">${data.toUpperCase()}</span>`;
-                        }
-                    },
-                    {
-                        data: 'country',
-                        render: function(data, type, row) {
-                            return `${getFlag(row.country_code)} ${data}`;
-                        }
-                    },
-                    { data: 'city' },
-                    {
-                        data: 'asn',
-                        render: function(data) {
-                            return data.length > 30 ? data.substring(0, 30) + '...' : data;
-                        }
-                    },
-                    {
-                        data: 'remarks',
-                        render: function(data) {
-                            return data || 'N/A';
-                        }
-                    },
-                    {
-                        data: 'latency',
-                        render: function(data) {
-                            if (!data) return 'N/A';
-                            const latency = parseFloat(data);
-                            let className = 'latency-good';
-                            if (latency > 500) className = 'latency-bad';
-                            else if (latency > 200) className = 'latency-medium';
-                            return `<span class="${className}">${latency.toFixed(0)}ms</span>`;
-                        }
-                    },
-                    {
-                        data: 'security_issues',
-                        render: function(data) {
-                            if (!data || data.length === 0) {
-                                return '<span class="badge badge-success">✓ Secure</span>';
-                            }
-                            return `<span class="badge badge-warning" title="${data.join(', ')}">⚠ ${data.length} Issue(s)</span>`;
-                        }
-                    },
-                    {
-                        data: null,
-                        orderable: false,
-                        render: function(data, type, row) {
-                            return `<a href="#" class="copy-config" data-config="${encodeURIComponent(row.config)}">
-                                <i data-feather="copy"></i> Copy
-                            </a>`;
-                        }
-                    }
-                ],
-                drawCallback: function() {
-                    feather.replace();
-                }
-            });
-        }
-
-        // Get country flag emoji
-        function getFlag(countryCode) {
-            if (!countryCode || countryCode === 'XX') return '🌐';
-            const codePoints = countryCode
-                .toUpperCase()
-                .split('')
-                .map(char => 127397 + char.charCodeAt());
-            return String.fromCodePoint(...codePoints);
-        }
-
-        // Filter functionality
-        function applyFilters() {
-            const protocol = document.getElementById('filterProtocol').value;
-            const country = document.getElementById('filterCountry').value;
-            const maxLatency = document.getElementById('filterLatency').value;
-            const security = document.getElementById('filterSecurity').value;
-
-            let filtered = [...proxiesData];
-
-            if (protocol) {
-                filtered = filtered.filter(p => p.protocol === protocol);
-            }
-
-            if (country) {
-                filtered = filtered.filter(p => p.country === country);
-            }
-
-            if (maxLatency) {
-                filtered = filtered.filter(p => p.latency && p.latency <= parseFloat(maxLatency));
-            }
-
-            if (security === 'secure') {
-                filtered = filtered.filter(p => !p.security_issues || p.security_issues.length === 0);
-            } else if (security === 'issues') {
-                filtered = filtered.filter(p => p.security_issues && p.security_issues.length > 0);
-            }
-
-            dataTable.clear();
-            dataTable.rows.add(filtered);
-            dataTable.draw();
-        }
-
-        // Copy config functionality
-        $(document).on('click', '.copy-config', async function(e) {
-            e.preventDefault();
-            const config = decodeURIComponent($(this).data('config'));
-
-            try {
-                await navigator.clipboard.writeText(config);
-                const originalHTML = $(this).html();
-                $(this).html('<i data-feather="check"></i> Copied!');
-                feather.replace();
-
-                setTimeout(() => {
-                    $(this).html(originalHTML);
-                    feather.replace();
-                }, 2000);
-            } catch (err) {
-                alert('Failed to copy. Please try again.');
-            }
-        });
-
-        // Export to CSV
-        document.getElementById('exportCSV').addEventListener('click', () => {
-            const csv = [
-                ['Protocol', 'Country', 'City', 'ASN', 'Remarks', 'Latency', 'Security', 'Config'].join(','),
-                ...proxiesData.map(p => [
-                    p.protocol,
-                    p.country,
-                    p.city,
-                    `"${p.asn}"`,
-                    `"${p.remarks || 'N/A'}"`,
-                    p.latency || 'N/A',
-                    p.security_issues?.length > 0 ? 'Issues' : 'Secure',
-                    `"${p.config}"`
-                ].join(','))
-            ].join('\n');
-
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `proxies-${Date.now()}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-        });
-
-        // Export to JSON
-        document.getElementById('exportJSON').addEventListener('click', () => {
-            const json = JSON.stringify(proxiesData, null, 2);
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `proxies-${Date.now()}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-        });
-
-        // Refresh data
-        document.getElementById('refreshData').addEventListener('click', () => {
-            location.reload();
-        });
-
-        // Attach filter listeners
-        ['filterProtocol', 'filterCountry', 'filterLatency', 'filterSecurity'].forEach(id => {
-            document.getElementById(id).addEventListener('change', applyFilters);
-            document.getElementById(id).addEventListener('input', applyFilters);
-        });
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchProxies();
-            fetchMetadata();
-        });
-    </script>
+    <script src="assets/js/main.js"></script>
 </body>
 </html>

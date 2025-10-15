@@ -9,7 +9,7 @@ pydantic-settings
 rich
 click
 aiohttp-proxy
-singbox2proxy
+singbox2proxy~=0.2.0
 requests
 
 [dev]
