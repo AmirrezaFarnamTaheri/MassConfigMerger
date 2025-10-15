@@ -127,15 +127,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 return 0;
             });
 
-            tableBody.innerHTML = filteredProxies.map((p, index) => `
-                <tr style="animation-delay: ${index * 0.03}s">
-                    <td>${p.protocol}</td>
-                    <td>${p.location.city}, ${p.location.country}</td>
-                    <td>${p.latency}ms</td>
-                    <td>${p.location.asn.name}</td>
-                    <td><button class="btn btn-secondary copy-btn" data-config="${p.config}"><i data-feather="copy"></i></button></td>
-                </tr>
-            `).join('');
+            tableBody.innerHTML = filteredProxies.map((p, index) => {
+                const city = p.location?.city || '—';
+                const country = p.location?.country || '—';
+                const asnName = p.location?.asn?.name || '—';
+                const latency = (p.latency ?? '') !== '' ? `${p.latency}ms` : '—';
+                const protocol = p.protocol || '—';
+                const config = p.config || '';
+                return `
+                    <tr style="animation-delay: ${index * 0.03}s">
+                        <td>${protocol}</td>
+                        <td>${city}${city !== '—' && country !== '—' ? ', ' : ''}${country}</td>
+                        <td>${latency}</td>
+                        <td>${asnName}</td>
+                        <td><button class="btn btn-secondary copy-btn" data-config="${config}"><i data-feather="copy"></i></button></td>
+                    </tr>
+                `;
+            }).join('');
             feather.replace();
 
             // Add class to trigger animation
