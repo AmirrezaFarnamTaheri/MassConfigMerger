@@ -18,12 +18,12 @@
 
     /* Light Theme */
     --bg-light: #F4F7FE;
-    --bg-glass-light: rgba(255, 255, 255, 0.5);
+    --bg-glass-light: rgba(255, 255, 255, 0.3);
     --border-light: rgba(0, 0, 0, 0.07);
     --text-primary-light: #171923;
     --text-secondary-light: #6B7280;
-    --shadow-light: rgba(0, 0, 0, 0.05);
-    --glow-light: #5E72E4;
+    --shadow-light: rgba(0, 0, 0, 0.1);
+    --glow-light: #6B72E4;
     --brand-gradient-light: linear-gradient(135deg, #6B72E4 0%, #825EE4 100%);
 
     /* Dark Theme */
@@ -50,7 +50,7 @@ body {
     color: var(--text-primary-light);
     line-height: 1.6;
     min-height: 100vh;
-    padding: clamp(1rem, 5vw, 2rem);
+    padding: clamp(2rem, 5vw, 3rem);
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -68,8 +68,8 @@ body.dark {
 /* 4. Header */
 .header {
     text-align: center;
-    padding: clamp(2rem, 10vw, 5rem) 2rem;
-    margin-bottom: 2rem;
+    padding: clamp(3rem, 10vw, 6rem) 2rem;
+    margin-bottom: 3rem;
 }
 
 .logo {
@@ -100,9 +100,10 @@ body.dark .header h1 {
 }
 
 .header .subtitle {
-    font-size: clamp(1rem, 4vw, 1.25rem);
+    font-size: clamp(1.1rem, 4vw, 1.35rem);
     color: var(--text-secondary-light);
-    margin-top: 0.5rem;
+    margin-top: 1rem;
+    font-weight: 500;
 }
 
 body.dark .header .subtitle {
@@ -164,9 +165,9 @@ body.dark .nav-link:hover {
 }
 
 .nav-link.active {
-    background: white;
-    color: #171923;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    background: var(--brand-gradient-light);
+    color: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 body.dark .nav-link.active {
@@ -204,12 +205,15 @@ body.dark .theme-switcher:hover {
     background: var(--bg-glass-light);
     border: 1px solid var(--border-light);
     border-radius: var(--border-radius-lg);
-    padding: clamp(1.5rem, 5vw, 2.5rem);
-    margin-bottom: 2rem;
+    padding: clamp(2rem, 5vw, 3rem);
+    margin-bottom: 2.5rem;
     box-shadow: 0 10px 40px -10px var(--shadow-light);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     overflow: hidden;
     position: relative;
+    animation: card-enter 0.5s ease-out forwards;
+    opacity: 0;
+    transform: translateY(20px);
 }
 
 body.dark .card {
