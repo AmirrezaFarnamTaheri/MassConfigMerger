@@ -127,3 +127,10 @@ node_modules/
 
 # Config
 config.yaml
+
+# Local data and artifacts
+data/
+proxy_history.db
+sources.failures.json
+*.egg-info/
+__pycache__/

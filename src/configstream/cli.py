@@ -1,179 +1,78 @@
-# ConfigStream
-# Copyright (C) 2025 Amirreza "Farnam" Taheri
-# This program comes with ABSOLUTELY NO WARRANTY; for details type `show w`.
-# This is free software, and you are welcome to redistribute it
-# under certain conditions; type `show c` for details.
-# For more information, see <https://amirrezafarnamtaheri.github.io/configStream/>.
-
-"""Command-line interface for ConfigStream.
-
-This module provides the main entry point for the `configstream` command-line
-tool. It uses `argparse` to define a set of subcommands (`fetch`, `merge`,
-`retest`, `full`) and their corresponding arguments. The CLI is responsible for
-parsing user input, loading the application configuration, overriding settings
-with command-line arguments, and dispatching to the appropriate handler function
-for the selected command.
-"""
 from __future__ import annotations
 
-import argparse
-import sys
-from pathlib import Path
-from typing import Callable, Dict
+import click
 
-from pydantic import BaseModel
-
-from . import cli_args, commands
-from .config import Settings, load_config
-from .constants import CONFIG_FILE_NAME
-from .core.utils import print_public_source_warning
+from . import generator, tester
+from .config import settings
+from .fetcher import fetch_all
 
 
-def build_parser() -> argparse.ArgumentParser:
-    """Build the main `argparse` parser with all subcommands and arguments."""
-    parser = argparse.ArgumentParser(
-        prog="configstream", description="A tool for collecting and merging VPN configurations."
-    )
-    parser.add_argument(
-        "--config", default=CONFIG_FILE_NAME, help=f"Path to {CONFIG_FILE_NAME}"
-    )
-    parser.add_argument(
-        "--version", action="version", version="%(prog)s 0.4.0"
-    )
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    # Fetch command
-    fetch_p = subparsers.add_parser(
-        "fetch", help="Run the aggregation pipeline")
-    cli_args.add_fetch_arguments(fetch_p)
-
-    # Merge command
-    merge_p = subparsers.add_parser("merge", help="Run the VPN merger")
-    cli_args.add_merge_arguments(merge_p)
-
-    # Retest command
-    retest_p = subparsers.add_parser(
-        "retest", help="Retest an existing subscription")
-    cli_args.add_retest_arguments(retest_p)
-
-    # Full command
-    full_p = subparsers.add_parser(
-        "full", help="Aggregate, then merge and test configurations"
-    )
-    cli_args.add_full_arguments(full_p)
-
-    # Sources command
-    cli_args.add_sources_parser(subparsers)
-
-    # Daemon command
-    daemon_p = subparsers.add_parser(
-        "daemon", help="Run the scheduler and web dashboard"
-    )
-    cli_args.add_daemon_arguments(daemon_p)
-
-    # History command
-    cli_args.add_history_arguments(subparsers)
-
-    # Prometheus command
-    prom_parser = subparsers.add_parser(
-        "prometheus",
-        help="Start Prometheus metrics exporter"
-    )
-    prom_parser.add_argument(
-        "--port",
-        type=int,
-        default=9090,
-        help="Port for Prometheus exporter"
-    )
-    prom_parser.add_argument(
-        "--data-dir",
-        type=str,
-        default="./data",
-        help="Directory containing test results"
-    )
-    prom_parser.set_defaults(func=commands.handle_prometheus)
-
-    return parser
+@click.group()
+def cli():
+    """
+    Automated Free VPN Configuration Aggregator.
+    """
+    pass
 
 
-def _update_settings_from_args(cfg: Settings, args: argparse.Namespace):
-    """Update the `Settings` object with values from parsed CLI arguments."""
-    def _parse_protocol_list(value: str | list[str] | None) -> list[str]:
-        """Parse a comma-separated string of protocols into a list of uppercase strings."""
-        if not value:
-            return []
-        if isinstance(value, str):
-            return [v.strip().upper() for v in value.split(",") if v.strip()]
-        return [v.strip().upper() for v in value]
-
-    def _parse_protocol_set(value: str | list[str] | None) -> set[str]:
-        """Parse a comma-separated string of protocols into a set of uppercase strings."""
-        if not value:
-            return set()
-        if isinstance(value, str):
-            return {v.strip().upper() for v in value.split(",") if v.strip()}
-        return {v.strip().upper() for v in value}
-
-    arg_dict = {k: v for k, v in vars(args).items() if v is not None}
-
-    # Arguments that are lists and need to be extended
-    list_extend_fields = {"include_patterns", "exclude_patterns"}
-
-    for group_name, _ in Settings.model_fields.items():
-        if not hasattr(cfg, group_name):
-            continue
-
-        group = getattr(cfg, group_name)
-        if not isinstance(group, BaseModel):
-            continue
-
-        for field_name in group.__class__.model_fields:
-            if field_name in arg_dict:
-                value = arg_dict[field_name]
-
-                if field_name in list_extend_fields:
-                    if getattr(group, field_name) is None:
-                        setattr(group, field_name, [])
-                    getattr(group, field_name).extend(value)
-                    continue
-
-                if "protocols" in field_name:
-                    if isinstance(getattr(group, field_name), set):
-                        value = _parse_protocol_set(value)
-                    else:
-                        value = _parse_protocol_list(value)
-
-                setattr(group, field_name, value)
+@click.command("fetch")
+def fetch_command():
+    """
+    Fetch configurations from sources.
+    """
+    click.echo("Fetching configurations...")
+    configs = fetch_all(settings.sources)
+    click.echo(f"Fetched {len(configs)} configurations.")
+    # For now, we'll just print them
+    for config in configs:
+        click.echo(config)
 
 
-HANDLERS: Dict[str, Callable[..., None]] = {
-    "fetch": commands.handle_fetch,
-    "merge": commands.handle_merge,
-    "retest": commands.handle_retest,
-    "full": commands.handle_full,
-    "sources": commands.handle_sources,
-    "daemon": commands.handle_daemon,
-    "history": commands.handle_history,
-}
+@click.command("test")
+def test_command():
+    """
+    Test existing configurations.
+    """
+    click.echo("Testing configurations...")
+    # This is a placeholder
+    results = tester.test_configs([])
+    click.echo(f"Tested {len(results)} configurations.")
 
 
-def main(argv: list[str] | None = None) -> None:
-    """Main entry point for the `configstream` command."""
-    print_public_source_warning()
-    parser = build_parser()
-    args = parser.parse_args(argv or sys.argv[1:])
+@click.command("generate")
+def generate_command():
+    """
+    Generate output files.
+    """
+    click.echo("Generating output files...")
+    # This is a placeholder
+    generator.generate_files([], settings.output_dir)
+    click.echo("Output files generated.")
 
-    try:
-        cfg = load_config(Path(args.config))
-    except (ValueError, FileNotFoundError):
-        print("Config file not found. Using default settings.")
-        cfg = Settings()
 
-    _update_settings_from_args(cfg, args)
+@click.command("full")
+def full_command():
+    """
+    Run the full pipeline: fetch, test, and generate.
+    """
+    click.echo("Running full pipeline...")
+    click.echo("Step 1: Fetching configurations...")
+    configs = fetch_all(settings.sources)
+    click.echo(f"Fetched {len(configs)} configurations.")
 
-    if command_handler := HANDLERS.get(args.command):
-        command_handler(args, cfg)
+    click.echo("Step 2: Testing configurations...")
+    results = tester.test_configs(configs)
+    click.echo(f"Tested {len(results)} configurations.")
 
+    click.echo("Step 3: Generating output files...")
+    generator.generate_files(results, settings.output_dir)
+    click.echo("Full pipeline complete.")
+
+
+cli.add_command(fetch_command)
+cli.add_command(test_command)
+cli.add_command(generate_command)
+cli.add_command(full_command)
 
 if __name__ == "__main__":
-    main()
+    cli()
