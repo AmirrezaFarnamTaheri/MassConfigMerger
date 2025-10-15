@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import sys
 import gzip
 import hashlib
@@ -38,6 +39,9 @@ def _download_file(url: str, dest_path: Path, expected_hash: str | None = None) 
     """
     try:
         click.echo(f"Downloading from {url}...")
+
+        # Ensure the destination directory exists
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
 
         with requests.get(url, stream=True, timeout=60) as r:
             r.raise_for_status()
@@ -83,7 +87,7 @@ def download_geoip_dbs():
     DATA_DIR.mkdir(exist_ok=True)
 
     # Download Country DB
-    if not GEOIP_COUNTRY_DB_PATH.exists():
+    if not os.path.exists(GEOIP_COUNTRY_DB_PATH):
         click.echo("GeoIP Country database not found, downloading...")
         gz_path = DATA_DIR / "GeoLite2-Country.mmdb.gz"
 
@@ -97,13 +101,13 @@ def download_geoip_dbs():
                 click.echo(f"✗ Error decompressing Country database: {e}", err=True)
                 sys.exit(1)
             finally:
-                if gz_path.exists():
+                if os.path.exists(gz_path):
                     gz_path.unlink()
         else:
             sys.exit(1)
 
     # Download City DB
-    if not GEOIP_CITY_DB_PATH.exists():
+    if not os.path.exists(GEOIP_CITY_DB_PATH):
         click.echo("GeoIP City database not found, downloading...")
         gz_path = DATA_DIR / "GeoLite2-City.mmdb.gz"
 
@@ -117,13 +121,13 @@ def download_geoip_dbs():
                 click.echo(f"✗ Error decompressing City database: {e}", err=True)
                 click.echo("⚠ Warning: City database decompression failed, continuing without it...")
             finally:
-                if gz_path.exists():
+                if os.path.exists(gz_path):
                     gz_path.unlink()
         else:
             click.echo("⚠ Warning: City database download failed, continuing without it...")
 
     # Download ASN DB
-    if not GEOIP_ASN_DB_PATH.exists():
+    if not os.path.exists(GEOIP_ASN_DB_PATH):
         click.echo("GeoIP ASN database not found, downloading...")
         if not _download_file(GEOIP_ASN_URL, GEOIP_ASN_DB_PATH):
             sys.exit(1)
@@ -265,7 +269,7 @@ def update_databases():
 
     # Remove existing databases
     for db_path in [GEOIP_COUNTRY_DB_PATH, GEOIP_CITY_DB_PATH, GEOIP_ASN_DB_PATH]:
-        if db_path.exists():
+        if os.path.exists(db_path):
             db_path.unlink()
             click.echo(f"✓ Removed old database: {db_path.name}")
 
