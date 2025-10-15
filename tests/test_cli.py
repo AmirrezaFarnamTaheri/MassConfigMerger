@@ -21,6 +21,7 @@ def test_download_geoip_dbs_exists(fs):
     """
     # Create fake existing database files
     fs.create_file("data/GeoLite2-Country.mmdb", contents="exists")
+    fs.create_file("data/GeoLite2-City.mmdb", contents="exists")
     fs.create_file("data/ip-to-asn.mmdb", contents="exists")
 
     with patch("requests.get") as mock_get:
