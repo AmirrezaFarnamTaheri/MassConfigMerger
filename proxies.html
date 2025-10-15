@@ -34,15 +34,19 @@
 
         <main class="content">
             <section class="card" id="proxies-card">
+                <div class="table-controls">
+                    <input type="text" id="filterProtocol" placeholder="Filter by protocol..." class="filter-input" aria-label="Filter by protocol">
+                    <input type="text" id="filterLocation" placeholder="Filter by location..." class="filter-input" aria-label="Filter by location">
+                </div>
                 <div style="overflow-x: auto;">
                     <table id="proxiesTable">
                         <thead>
                             <tr>
-                                <th>Protocol</th>
-                                <th>Location</th>
-                                <th>Latency</th>
-                                <th>ASN</th>
-                                <th>Action</th>
+                                <th scope="col" data-sort="protocol" title="Sort by Protocol">Protocol <i data-feather="chevron-down"></i></th>
+                                <th scope="col" data-sort="location" title="Sort by Location">Location <i data-feather="chevron-down"></i></th>
+                                <th scope="col" data-sort="latency" title="Sort by Latency">Latency <i data-feather="chevron-down"></i></th>
+                                <th scope="col" data-sort="asn" title="Sort by ASN">ASN <i data-feather="chevron-down"></i></th>
+                                <th scope="col">Action</th>
                             </tr>
                         </thead>
                         <tbody id="proxiesTBody">
@@ -50,7 +54,10 @@
                         </tbody>
                     </table>
                 </div>
-                 <p id="loading-proxies" style="text-align:center; padding: 2rem;">
+                <div id="loading-container" style="text-align:center; padding: 2rem;">
+                    <div class="loader"></div>
+                </div>
+                <p id="loading-proxies" style="text-align:center; padding: 2rem; display: none;">
                     <span class="loading">Loading proxies...</span>
                 </p>
             </section>

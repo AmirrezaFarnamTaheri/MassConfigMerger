@@ -218,6 +218,23 @@ body.dark .card {
     box-shadow: 0 10px 40px -10px var(--shadow-dark);
 }
 
+.card {
+    animation: card-enter 0.5s ease-out forwards;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.card:nth-child(1) { animation-delay: 0.1s; }
+.card:nth-child(2) { animation-delay: 0.2s; }
+.card:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes card-enter {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .card:hover {
     transform: translateY(-8px);
     box-shadow: 0 20px 50px -15px var(--shadow-light);
@@ -452,8 +469,9 @@ body.dark #proxiesTable tbody tr {
 }
 
 #proxiesTable tbody tr:hover {
-    transform: scale(1.02);
+    transform: scale(1.01);
     background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 8px 20px -10px var(--shadow-light);
 }
 
 body.dark #proxiesTable tbody tr:hover {
@@ -489,4 +507,61 @@ body.dark #proxiesTable td {
     .stats-grid, .downloads-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* Table Controls */
+.table-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.filter-input {
+    background-color: rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary-light);
+    border-radius: var(--border-radius-sm);
+    padding: 0.75rem 1rem;
+    width: 100%;
+}
+
+body.dark .filter-input {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--border-dark);
+    color: var(--text-primary-dark);
+}
+
+#proxiesTable th[data-sort] {
+    cursor: pointer;
+    user-select: none;
+}
+
+#proxiesTable th[data-sort] .feather {
+    width: 1em;
+    height: 1em;
+    vertical-align: middle;
+    transition: transform 0.2s ease;
+}
+
+#proxiesTable th[data-sort].asc .feather {
+    transform: rotate(180deg);
+}
+
+/* Loader */
+.loader {
+    border: 4px solid rgba(0,0,0,0.1);
+    border-left-color: var(--glow-light);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+body.dark .loader {
+    border-left-color: var(--glow-dark);
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }

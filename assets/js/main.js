@@ -86,39 +86,89 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- PAGE-SPECIFIC LOGIC ---
-    if (document.getElementById('proxiesTBody')) { // Proxies page
-        async function fetchProxies() {
-            try {
-                const response = await fetchWithCacheBust('output/proxies.json');
-                const proxies = await response.json();
-                const tbody = document.getElementById('proxiesTBody');
-                const loadingEl = document.getElementById('loading-proxies');
+    if (document.getElementById('proxiesTable')) { // Proxies page
+        let allProxies = [];
+        let currentSort = { key: 'latency', asc: true };
 
-                if (!proxies.length) {
-                    loadingEl.textContent = "No working proxies found in the last run.";
-                    return;
+        const protocolFilter = document.getElementById('filterProtocol');
+        const locationFilter = document.getElementById('filterLocation');
+        const tableBody = document.getElementById('proxiesTBody');
+        const loadingContainer = document.getElementById('loading-container');
+
+        const renderTable = () => {
+            const protoFilter = protocolFilter.value.toLowerCase();
+            const locFilter = locationFilter.value.toLowerCase();
+
+            const filteredProxies = allProxies.filter(p => {
+                const protocol = p.protocol.toLowerCase();
+                const location = `${p.location.city}, ${p.location.country}`.toLowerCase();
+                return protocol.includes(protoFilter) && location.includes(locFilter);
+            });
+
+            // Sort
+            filteredProxies.sort((a, b) => {
+                let valA, valB;
+                if (currentSort.key === 'location') {
+                    valA = `${a.location.city}, ${a.location.country}`;
+                    valB = `${b.location.city}, ${b.location.country}`;
+                } else if (currentSort.key === 'asn') {
+                    valA = a.location.asn.name;
+                    valB = b.location.asn.name;
+                } else {
+                    valA = a[currentSort.key];
+                    valB = b[currentSort.key];
                 }
 
-                tbody.innerHTML = ''; // Clear loading state
-                proxies.forEach(p => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${p.protocol}</td>
-                        <td>${p.location.city}, ${p.location.country}</td>
-                        <td>${p.latency}ms</td>
-                        <td>${p.location.asn.name}</td>
-                        <td><button class="btn btn-secondary copy-btn" data-config="${p.config}">Copy</button></td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-                loadingEl.style.display = 'none';
-                feather.replace();
+                if (valA < valB) return currentSort.asc ? -1 : 1;
+                if (valA > valB) return currentSort.asc ? 1 : -1;
+                return 0;
+            });
+
+            tableBody.innerHTML = filteredProxies.map(p => `
+                <tr>
+                    <td>${p.protocol}</td>
+                    <td>${p.location.city}, ${p.location.country}</td>
+                    <td>${p.latency}ms</td>
+                    <td>${p.location.asn.name}</td>
+                    <td><button class="btn btn-secondary copy-btn" data-config="${p.config}"><i data-feather="copy"></i></button></td>
+                </tr>
+            `).join('');
+            feather.replace();
+        };
+
+        protocolFilter.addEventListener('input', renderTable);
+        locationFilter.addEventListener('input', renderTable);
+
+        document.querySelectorAll('#proxiesTable th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                const sortKey = th.dataset.sort;
+                if (currentSort.key === sortKey) {
+                    currentSort.asc = !currentSort.asc;
+                } else {
+                    currentSort.key = sortKey;
+                    currentSort.asc = true;
+                }
+
+                document.querySelectorAll('#proxiesTable th[data-sort]').forEach(header => header.classList.remove('asc', 'desc'));
+                th.classList.add(currentSort.asc ? 'asc' : 'desc');
+
+                renderTable();
+            });
+        });
+
+        async function fetchAndRenderProxies() {
+            try {
+                const response = await fetchWithCacheBust('output/proxies.json');
+                allProxies = await response.json();
+                loadingContainer.style.display = 'none';
+                renderTable();
             } catch (error) {
                 console.error('Error fetching proxies:', error);
-                 document.getElementById('loading-proxies').textContent = 'Failed to load proxy data.';
+                loadingContainer.innerHTML = '<p>Failed to load proxy data.</p>';
             }
         }
-        fetchProxies();
+
+        fetchAndRenderProxies();
     }
 
     if (document.getElementById('charts-card')) { // Statistics page
