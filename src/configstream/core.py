@@ -4,6 +4,7 @@ import asyncio
 import base64
 import json
 import random
+import socket
 from dataclasses import dataclass, field
 from typing import ClassVar
 from urllib.parse import parse_qs, unquote, urlparse
@@ -14,7 +15,7 @@ from aiohttp_proxy import ProxyConnector
 from aiohttp_proxy.errors import SocksConnectionError
 from rich.progress import Progress
 import geoip2.database
-from v2ray2proxy import V2RayProxy
+from singbox2proxy import SingBoxProxy
 
 # The URL to test proxies against.
 # Using a URL that returns a 204 No Content response is efficient.
@@ -33,6 +34,7 @@ class Proxy:
     is_working: bool = False
     latency: float | None = None  # in milliseconds
     country: str = "Unknown"
+    asn: str = "Unknown"
 
     # Parsed fields
     remarks: str = ""
@@ -60,8 +62,36 @@ class Proxy:
             return cls._parse_ss(config)
         elif config.startswith("trojan://"):
             return cls._parse_trojan(config)
-        # Add parsers for other protocols like trojan here
-        return None  # Return None for unsupported protocols
+        elif any(config.startswith(f"{p}://") for p in ["hy2", "hysteria", "tuic", "wg", "ssh", "http", "https", "socks", "socks4", "socks5"]) or config.startswith("naive+https://"):
+            return cls._parse_generic(config)
+        return None
+
+    @staticmethod
+    def _parse_generic(config: str) -> "Proxy" | None:
+        """Parses a generic URI format for protocols like hy2, hysteria, tuic, wg."""
+        try:
+            if config.startswith("naive+https://"):
+                # urlparse doesn't handle custom schemes with '+' well, so we replace it temporarily
+                parsed_url = urlparse(config.replace("naive+", "https"))
+                protocol = "naive+https"
+            else:
+                parsed_url = urlparse(config)
+                protocol = parsed_url.scheme
+            query_params = parse_qs(parsed_url.query)
+
+            return Proxy(
+                config=config,
+                protocol=protocol,
+                remarks=unquote(parsed_url.fragment),
+                address=parsed_url.hostname,
+                port=parsed_url.port,
+                uuid=parsed_url.username,
+                _details={
+                    key: value[0] for key, value in query_params.items()
+                },
+            )
+        except (TypeError, ValueError):
+            return None
 
     @staticmethod
     def _parse_trojan(config: str) -> "Proxy" | None:
@@ -163,7 +193,7 @@ class Proxy:
             return None
 
     @classmethod
-    async def test(cls, proxy_instance: "Proxy") -> "Proxy":
+    async def test(cls, proxy_instance: "Proxy", worker: "SingBoxWorker") -> "Proxy":
         """
         Tests a single proxy configuration to see if it's working and measures latency.
         Uses a simple cache to avoid re-testing.
@@ -171,7 +201,7 @@ class Proxy:
         if proxy_instance.config in cls._test_cache:
             return cls._test_cache[proxy_instance.config]
 
-        if proxy_instance.protocol not in ["vmess", "vless", "ss", "trojan"]:
+        if proxy_instance.protocol not in ["vmess", "vless", "ss", "trojan", "hy2", "hysteria", "tuic", "wg", "ssh", "http", "https", "socks", "socks4", "socks5", "naive+https"]:
             proxy_instance.is_working = False
             cls._test_cache[proxy_instance.config] = proxy_instance
             return proxy_instance
@@ -183,15 +213,35 @@ class Proxy:
         except (geoip2.errors.AddressNotFoundError, FileNotFoundError):
             pass  # Keep country as "Unknown"
 
-        proxy = None
         try:
-            # This part is blocking
-            def start_proxy():
-                return V2RayProxy(proxy_instance.config)
+            with geoip2.database.Reader("data/ip-to-asn.mmdb") as reader:
+                response = reader.asn(proxy_instance.address)
+                proxy_instance.asn = f"AS{response.autonomous_system_number} ({response.autonomous_system_organization})"
+        except (geoip2.errors.AddressNotFoundError, FileNotFoundError):
+            pass
 
-            proxy = await asyncio.to_thread(start_proxy)
+        try:
+            await worker.test_proxy(proxy_instance)
+        except Exception:
+            proxy_instance.is_working = False
 
-            connector = ProxyConnector.from_url(proxy.http_proxy_url)
+        cls._test_cache[proxy_instance.config] = proxy_instance
+        return proxy_instance
+
+
+class SingBoxWorker:
+    """A worker that manages a long-lived sing-box process for testing proxies."""
+
+    def __init__(self):
+        self.proxy: SingBoxProxy | None = None
+
+    async def test_proxy(self, proxy_instance: Proxy):
+        """Tests a single proxy configuration."""
+        self.proxy = SingBoxProxy(proxy_instance.config)
+        await self.proxy.start()
+
+        try:
+            connector = ProxyConnector.from_url(self.proxy.http_proxy_url)
             async with aiohttp.ClientSession(connector=connector) as session:
                 start_time = asyncio.get_event_loop().time()
                 async with session.get(TEST_URL, timeout=TEST_TIMEOUT) as response:
@@ -201,55 +251,42 @@ class Proxy:
                         proxy_instance.is_working = True
                     else:
                         proxy_instance.is_working = False
-        except Exception:
-            proxy_instance.is_working = False
-        finally:
-            if proxy:
-                # This is also blocking
-                await asyncio.to_thread(proxy.stop)
+                        return
 
-        cls._test_cache[proxy_instance.config] = proxy_instance
-        return proxy_instance
-
-
-async def security_test(proxy: Proxy) -> bool:
-    """
-    Performs a security test on a working proxy to detect malicious behavior.
-    Returns True if the proxy is safe, False otherwise.
-    """
-    if not proxy.is_working:
-        return False
-
-    try:
-        v2ray_proxy = None
-        try:
-            # This part is blocking
-            def start_proxy():
-                return V2RayProxy(proxy.config)
-
-            v2ray_proxy = await asyncio.to_thread(start_proxy)
-
-            connector = ProxyConnector.from_url(v2ray_proxy.http_proxy_url)
-            async with aiohttp.ClientSession(connector=connector) as session:
-                # Test for redirects
+                # Security tests
                 async with session.get("http://httpbin.org/redirect/1", timeout=TEST_TIMEOUT, allow_redirects=False) as response:
                     if response.status not in [301, 302, 307, 308]:
-                        return False # Not a redirect, something is wrong
+                        proxy_instance.is_working = False
+                        return
 
-                # Test for malicious code injection
+                async with session.get("http://httpbin.org/headers", timeout=TEST_TIMEOUT) as response:
+                    headers = await response.json()
+                    if "User-Agent" not in headers["headers"] or "Accept-Encoding" not in headers["headers"]:
+                        proxy_instance.is_working = False
+                        return
+
                 async with session.get("http://example.com", timeout=TEST_TIMEOUT) as response:
                     text = await response.text()
                     if "eval(" in text or "atob(" in text:
-                        return False
+                        proxy_instance.is_working = False
+                        return
 
-            return True
-        except Exception:
-            return False
+                # Check for common open ports
+                common_ports = [21, 22, 23, 25, 110]
+                for port in common_ports:
+                    try:
+                        sock = socket.create_connection((proxy_instance.address, port), timeout=1)
+                        sock.close()
+                        # If the connection succeeds, the port is open
+                        proxy_instance.is_working = False
+                        return
+                    except (socket.timeout, ConnectionRefusedError):
+                        # The port is closed, which is good
+                        pass
         finally:
-            if v2ray_proxy:
-                await asyncio.to_thread(v2ray_proxy.stop)
-    except Exception:
-        return False
+            if self.proxy:
+                await self.proxy.stop()
+                self.proxy = None
 
 
 async def fetch_from_source(session: aiohttp.ClientSession, source: str) -> list[str]:
@@ -282,24 +319,26 @@ async def process_and_test_proxies(
     if not valid_proxies:
         return []
 
-    # Step 2: Test all valid proxies
+    # Step 2: Create a pool of workers
+    num_workers = min(10, len(valid_proxies))
+    workers = [SingBoxWorker() for _ in range(num_workers)]
+
+    # Step 3: Test all valid proxies
     task = progress.add_task("[cyan]Testing proxies...", total=len(valid_proxies))
     results: list[Proxy] = []
 
-    semaphore = asyncio.Semaphore(10)
-
-    async def _test_and_update(proxy: Proxy):
-        async with semaphore:
-            tested_proxy = await Proxy.test(proxy)
-            if tested_proxy.is_working:
-                is_safe = await security_test(tested_proxy)
-                if not is_safe:
-                    tested_proxy.is_working = False
-            results.append(tested_proxy)
+    async def _test_and_update(proxy: Proxy, worker: SingBoxWorker):
+        tested_proxy = await Proxy.test(proxy, worker)
+        results.append(tested_proxy)
         progress.update(task, advance=1)
 
-    # Run tests concurrently
-    await asyncio.gather(*[_test_and_update(p) for p in valid_proxies])
+    # Distribute proxies among workers
+    tasks = []
+    for i, proxy in enumerate(valid_proxies):
+        worker = workers[i % num_workers]
+        tasks.append(_test_and_update(proxy, worker))
+
+    await asyncio.gather(*tasks)
 
     # Sort working proxies by latency (lower is better)
     working_proxies = sorted(
@@ -367,6 +406,44 @@ def generate_clash_config(proxies: list[Proxy]) -> str:
                 "password": proxy.uuid,
                 "tls": proxy._details.get("security", "none") == "tls",
                 "network": proxy._details.get("type", "tcp"),
+            }
+        elif proxy.protocol == "hysteria":
+            clash_proxy = {
+                "name": proxy.remarks,
+                "type": "hysteria",
+                "server": proxy.address,
+                "port": proxy.port,
+                "auth_str": proxy.uuid,
+                "up": proxy._details.get("up", 100),
+                "down": proxy._details.get("down", 500),
+            }
+        elif proxy.protocol == "tuic":
+            clash_proxy = {
+                "name": proxy.remarks,
+                "type": "tuic",
+                "server": proxy.address,
+                "port": proxy.port,
+                "uuid": proxy.uuid,
+                "password": proxy._details.get("password", ""),
+            }
+        elif proxy.protocol in ["http", "https"]:
+            clash_proxy = {
+                "name": proxy.remarks,
+                "type": "http",
+                "server": proxy.address,
+                "port": proxy.port,
+                "user": proxy.uuid,
+                "password": proxy._details.get("password", ""),
+                "tls": proxy.protocol == "https",
+            }
+        elif proxy.protocol in ["socks", "socks4", "socks5"]:
+            clash_proxy = {
+                "name": proxy.remarks,
+                "type": "socks5",
+                "server": proxy.address,
+                "port": proxy.port,
+                "user": proxy.uuid,
+                "password": proxy._details.get("password", ""),
             }
 
         if clash_proxy:
