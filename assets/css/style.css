@@ -291,17 +291,19 @@ body.dark .card:hover {
     box-shadow: 0 20px 50px -15px var(--shadow-dark);
 }
 
-/* CSS remains the same; add JS to set --mouse-x/--mouse-y per card */
-// In assets/js/main.js, after DOMContentLoaded:
-document.querySelectorAll('.card').forEach(card => {
-  card.addEventListener('mousemove', (e) => {
-    const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    card.style.setProperty('--mouse-x', `${x}px`);
-    card.style.setProperty('--mouse-y', `${y}px`);
-  });
-});
+.card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: var(--border-radius-lg);
+    background: radial-gradient(300px circle at var(--mouse-x) var(--mouse-y), rgba(0, 198, 255, 0.15), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
 
 body.dark .card::before {
     background: radial-gradient(300px circle at var(--mouse-x) var(--mouse-y), rgba(102, 16, 242, 0.15), transparent);

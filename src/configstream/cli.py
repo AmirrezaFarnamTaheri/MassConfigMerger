@@ -31,6 +31,7 @@ def _download_file(url: str, dest_path: Path, expected_hash: str | None = None) 
     """
     try:
         click.echo(f"Downloading from {url}...")
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
 
         with requests.get(url, stream=True, timeout=60) as r:
             r.raise_for_status()
@@ -96,7 +97,7 @@ def download_geoip_dbs():
                 # Only remove archive if we have a valid non-empty output
                 if os.path.exists(GEOIP_COUNTRY_DB_PATH) and os.path.getsize(GEOIP_COUNTRY_DB_PATH) > 0:
                     if os.path.exists(gz_path):
-                        gz_path.unlink()
+                        os.remove(gz_path)
         else:
             sys.exit(1)
 
