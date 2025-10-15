@@ -16,7 +16,7 @@ from rich.progress import Progress
 
 # The URL to test proxies against.
 # Using a URL that returns a 204 No Content response is efficient.
-TEST_URL = "https://www.gstatic.com/generate_204"
+TEST_URL = "https://www.google.com/generate_204"
 
 # Timeout for testing each proxy, in seconds.
 TEST_TIMEOUT = 5
@@ -154,6 +154,7 @@ class Proxy:
 
         # Unsupported protocols explicitly marked non-working
         proxy_instance.is_working = False
+        proxy_instance.latency = None
 
         cls._test_cache[proxy_instance.config] = proxy_instance
         return proxy_instance

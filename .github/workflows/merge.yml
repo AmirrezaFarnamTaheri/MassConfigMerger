@@ -35,7 +35,8 @@ jobs:
       - name: Validate sources file
         run: |
           if [ ! -s sources.txt ]; then
-            echo "sources.txt is missing or empty"; exit 1;
+            echo "sources.txt is missing or empty"
+            exit 1
           fi
       - name: Run merge command
         run: |
@@ -62,7 +63,7 @@ jobs:
 
           # Only commit if there are changes
           if git diff --staged --quiet; then
-            echo "No changes to commit"
+            echo "No changes to commit."
           else
             git commit -m "🤖 Auto-update VPN configs - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
             git push

@@ -76,7 +76,7 @@ def _generate_output_files(proxies: list[Proxy], output_dir: str, progress: Prog
     output_path.mkdir(parents=True, exist_ok=True)
     task = progress.add_task("[blue]Generating output files...", total=3)
 
-    # Generate Base64 subscription file
+    # Generate Base64 subscription file (for V2Ray, etc.)
     base64_content = generate_base64_subscription(proxies)
     if base64_content:
         (output_path / "vpn_subscription_base64.txt").write_text(
