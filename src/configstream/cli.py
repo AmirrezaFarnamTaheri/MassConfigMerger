@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import sys
 import gzip
 import hashlib
@@ -27,34 +28,22 @@ GEOIP_ASN_DB_PATH = DATA_DIR / "ip-to-asn.mmdb"
 def _download_file(url: str, dest_path: Path, expected_hash: str | None = None) -> bool:
     """
     Download a file from URL to destination path with optional hash verification.
-
-    Args:
-        url: URL to download from
-        dest_path: Destination file path
-        expected_hash: Optional SHA256 hash for verification
-
-    Returns:
-        True if download successful, False otherwise
     """
     try:
         click.echo(f"Downloading from {url}...")
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
 
         with requests.get(url, stream=True, timeout=60) as r:
             r.raise_for_status()
-
-            # Download with progress
             total_size = int(r.headers.get('content-length', 0))
             block_size = 8192
-
             with open(dest_path, "wb") as f:
                 if total_size:
-                    downloaded = 0
-                    for chunk in r.iter_content(chunk_size=block_size):
-                        f.write(chunk)
-                        downloaded += len(chunk)
-                        progress = (downloaded / total_size) * 100
-                        click.echo(f"\rProgress: {progress:.1f}%", nl=False)
-                    click.echo()  # New line after progress
+                    with Progress() as progress:
+                        task = progress.add_task("[cyan]Downloading...", total=total_size)
+                        for chunk in r.iter_content(chunk_size=block_size):
+                            f.write(chunk)
+                            progress.update(task, advance=len(chunk))
                 else:
                     for chunk in r.iter_content(chunk_size=block_size):
                         f.write(chunk)
@@ -64,17 +53,19 @@ def _download_file(url: str, dest_path: Path, expected_hash: str | None = None) 
             with open(dest_path, "rb") as f:
                 file_hash = hashlib.sha256(f.read()).hexdigest()
                 if file_hash != expected_hash:
-                    click.echo(f"Hash mismatch! Expected {expected_hash}, got {file_hash}", err=True)
-                    dest_path.unlink()
+                    click.echo(f"✗ Hash mismatch! Expected {expected_hash}, got {file_hash}", err=True)
+                    dest_path.unlink(missing_ok=True)
                     return False
 
         click.echo(f"✓ Downloaded successfully: {dest_path.name}")
         return True
-
-    except requests.exceptions.RequestException as e:
+    except requests.RequestException as e:
         click.echo(f"✗ Error downloading from {url}: {e}", err=True)
-        if dest_path.exists():
-            dest_path.unlink()
+        dest_path.unlink(missing_ok=True)
+        return False
+    except Exception as e:
+        click.echo(f"✗ An unexpected error occurred: {e}", err=True)
+        dest_path.unlink(missing_ok=True)
         return False
 
 
@@ -83,7 +74,7 @@ def download_geoip_dbs():
     DATA_DIR.mkdir(exist_ok=True)
 
     # Download Country DB
-    if not GEOIP_COUNTRY_DB_PATH.exists():
+    if not os.path.exists(GEOIP_COUNTRY_DB_PATH):
         click.echo("GeoIP Country database not found, downloading...")
         gz_path = DATA_DIR / "GeoLite2-Country.mmdb.gz"
 
@@ -92,38 +83,53 @@ def download_geoip_dbs():
                 with gzip.open(gz_path, "rb") as f_in:
                     with open(GEOIP_COUNTRY_DB_PATH, "wb") as f_out:
                         f_out.write(f_in.read())
+                # Basic sanity check to ensure extraction produced data
+                if os.path.getsize(GEOIP_COUNTRY_DB_PATH) == 0:
+                    click.echo("✗ Extracted Country database is empty, aborting.", err=True)
+                    if os.path.exists(GEOIP_COUNTRY_DB_PATH):
+                        os.remove(GEOIP_COUNTRY_DB_PATH)
+                    sys.exit(1)
                 click.echo("✓ GeoIP Country database extracted successfully")
             except gzip.BadGzipFile as e:
                 click.echo(f"✗ Error decompressing Country database: {e}", err=True)
                 sys.exit(1)
             finally:
-                if gz_path.exists():
-                    gz_path.unlink()
+                # Only remove archive if we have a valid non-empty output
+                if os.path.exists(GEOIP_COUNTRY_DB_PATH) and os.path.getsize(GEOIP_COUNTRY_DB_PATH) > 0:
+                    if os.path.exists(gz_path):
+                        os.remove(gz_path)
         else:
             sys.exit(1)
 
     # Download City DB
-    if not GEOIP_CITY_DB_PATH.exists():
+    if not os.path.exists(GEOIP_CITY_DB_PATH):
         click.echo("GeoIP City database not found, downloading...")
         gz_path = DATA_DIR / "GeoLite2-City.mmdb.gz"
+        tmp_city_path = DATA_DIR / "GeoLite2-City.mmdb.tmp"
 
         if _download_file(GEOIP_CITY_URL, gz_path):
             try:
-                with gzip.open(gz_path, "rb") as f_in:
-                    with open(GEOIP_CITY_DB_PATH, "wb") as f_out:
-                        f_out.write(f_in.read())
+                with gzip.open(gz_path, "rb") as f_in, open(tmp_city_path, "wb") as f_out:
+                    f_out.write(f_in.read())
+                os.rename(tmp_city_path, GEOIP_CITY_DB_PATH)
                 click.echo("✓ GeoIP City database extracted successfully")
             except gzip.BadGzipFile as e:
                 click.echo(f"✗ Error decompressing City database: {e}", err=True)
-                click.echo("⚠ Warning: City database decompression failed, continuing without it...")
+                click.echo("⚠ Warning: City database decompression failed; proceeding without City DB.")
+                if os.path.exists(tmp_city_path):
+                    os.remove(tmp_city_path)
+            except Exception as e:
+                click.echo(f"✗ Error writing City database: {e}", err=True)
+                if os.path.exists(tmp_city_path):
+                    os.remove(tmp_city_path)
             finally:
-                if gz_path.exists():
-                    gz_path.unlink()
+                if os.path.exists(gz_path):
+                    os.remove(gz_path)
         else:
-            click.echo("⚠ Warning: City database download failed, continuing without it...")
+            click.echo("⚠ Warning: City database download failed; proceeding without City DB.")
 
     # Download ASN DB
-    if not GEOIP_ASN_DB_PATH.exists():
+    if not os.path.exists(GEOIP_ASN_DB_PATH):
         click.echo("GeoIP ASN database not found, downloading...")
         if not _download_file(GEOIP_ASN_URL, GEOIP_ASN_DB_PATH):
             sys.exit(1)
@@ -265,7 +271,7 @@ def update_databases():
 
     # Remove existing databases
     for db_path in [GEOIP_COUNTRY_DB_PATH, GEOIP_CITY_DB_PATH, GEOIP_ASN_DB_PATH]:
-        if db_path.exists():
+        if os.path.exists(db_path):
             db_path.unlink()
             click.echo(f"✓ Removed old database: {db_path.name}")
 

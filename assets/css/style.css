@@ -24,6 +24,10 @@
     --shadow-light: rgba(0, 0, 0, 0.05);
     --glow-light: #007BFF;
     --brand-gradient-light: linear-gradient(135deg, #007BFF 0%, #00C6FF 100%);
+    --logo-color1-light: #007BFF;
+    --logo-color2-light: #00C6FF;
+    --logo-bg-light: rgba(255, 255, 255, 0.7);
+    --logo-shadow-light: rgba(0, 0, 0, 0.08);
 
     /* Dark Theme */
     --bg-dark: #0a0a0a;
@@ -34,6 +38,10 @@
     --shadow-dark: rgba(0, 0, 0, 0.2);
     --glow-dark: #17A2B8;
     --brand-gradient-dark: linear-gradient(135deg, #17A2B8 0%, #6610F2 100%);
+    --logo-color1-dark: #17A2B8;
+    --logo-color2-dark: #6610F2;
+    --logo-bg-dark: rgba(28, 30, 40, 0.7);
+    --logo-shadow-dark: rgba(0, 0, 0, 0.25);
 }
 
 /* 2. Base Styles */
@@ -67,7 +75,7 @@ body.dark {
     padding: 0 2rem;
 }
 
-/* 4. Header */
+/* 4. Header & Logo */
 .header {
     display: flex;
     justify-content: space-between;
@@ -84,6 +92,32 @@ body.dark {
 
 .logo:hover {
     transform: rotate(10deg) scale(1.1);
+}
+
+/* Logo SVG styles */
+.logo-svg {
+    --logo-color1: var(--logo-color1-light);
+    --logo-color2: var(--logo-color2-light);
+    --logo-bg: var(--logo-bg-light);
+    --logo-shadow-color: var(--logo-shadow-light);
+}
+body.dark .logo-svg {
+    --logo-color1: var(--logo-color1-dark);
+    --logo-color2: var(--logo-color2-dark);
+    --logo-bg: var(--logo-bg-dark);
+    --logo-shadow-color: var(--logo-shadow-dark);
+}
+.logo-svg .stop1 { stop-color: var(--logo-color1); transition: stop-color 0.3s ease; }
+.logo-svg .stop2 { stop-color: var(--logo-color2); transition: stop-color 0.3s ease; }
+.logo-svg .bg-rect { fill: var(--logo-bg); transition: fill 0.3s ease; }
+.logo-svg .shape {
+    stroke: url(#logoGradient);
+    stroke-width: 12;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transform-origin: center;
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 /* 5. Navigation & Theme Switcher */
@@ -179,9 +213,9 @@ body.dark .theme-switcher:hover {
 }
 
 .hero h1 {
-    font-size: clamp(3.5rem, 10vw, 6rem);
+    font-size: clamp(3rem, 10vw, 5.5rem);
     font-weight: 800;
-    letter-spacing: -0.05em;
+    letter-spacing: -0.04em;
     line-height: 1.1;
     background: var(--brand-gradient-light);
     -webkit-background-clip: text;
@@ -199,7 +233,7 @@ body.dark .hero h1 {
 .hero p {
     max-width: 650px;
     margin: 0 auto 2.5rem;
-    font-size: 1.25rem; /* 20px */
+    font-size: 1.2rem; /* 19px */
     line-height: 1.7;
     color: var(--text-secondary-light);
 }
@@ -231,11 +265,15 @@ body.dark .card {
     animation: card-enter 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
     opacity: 0;
     transform: translateY(30px);
+    position: relative;
 }
 
-.card:nth-child(1) { animation-delay: 0.1s; }
-.card:nth-child(2) { animation-delay: 0.2s; }
-.card:nth-child(3) { animation-delay: 0.3s; }
+#stats-card { animation-delay: 0.1s; }
+#downloads-card { animation-delay: 0.2s; }
+#proxies-card { animation-delay: 0.1s; }
+#charts-card { animation-delay: 0.2s; }
+#about-card { animation-delay: 0.1s; }
+
 
 @keyframes card-enter {
     to {
@@ -251,6 +289,28 @@ body.dark .card {
 
 body.dark .card:hover {
     box-shadow: 0 20px 50px -15px var(--shadow-dark);
+}
+
+.card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: var(--border-radius-lg);
+    background: radial-gradient(300px circle at var(--mouse-x) var(--mouse-y), rgba(0, 198, 255, 0.15), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+body.dark .card::before {
+    background: radial-gradient(300px circle at var(--mouse-x) var(--mouse-y), rgba(102, 16, 242, 0.15), transparent);
+}
+
+.card:hover::before {
+    opacity: 1;
 }
 
 /* 8. Buttons */
@@ -387,6 +447,12 @@ body.dark .stat-label {
     color: transparent;
 }
 
+.download-icon .feather {
+    width: 2.5rem;
+    height: 2.5rem;
+    stroke-width: 1.5;
+}
+
 body.dark .download-icon {
     background: var(--brand-gradient-dark);
     -webkit-background-clip: text;
@@ -419,10 +485,11 @@ body.dark .download-desc {
 /* 10. Footer */
 .footer {
     text-align: center;
-    padding: 4rem 1rem 2rem;
+    padding: 3rem 1rem 2rem;
     color: var(--text-secondary-light);
-    margin-top: 4rem;
+    margin-top: 3rem;
     border-top: 1px solid var(--border-light);
+    font-size: 0.95rem;
 }
 
 body.dark .footer {
@@ -489,10 +556,26 @@ body.dark #proxiesTable th {
     color: var(--text-secondary-dark);
 }
 
+#proxiesTable tbody.visible tr {
+    animation: row-enter 0.4s ease-out forwards;
+}
+
 #proxiesTable tbody tr {
     background-color: transparent;
     border-radius: var(--border-radius-md);
     transition: background-color 0.2s ease, transform 0.2s ease;
+    opacity: 0; /* Start hidden */
+}
+
+@keyframes row-enter {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 #proxiesTable tbody tr:hover {
