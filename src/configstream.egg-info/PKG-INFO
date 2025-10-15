@@ -30,7 +30,8 @@ Requires-Dist: pydantic-settings
 Requires-Dist: rich
 Requires-Dist: click
 Requires-Dist: aiohttp-proxy
-Requires-Dist: v2ray2proxy
+Requires-Dist: singbox2proxy
+Requires-Dist: requests
 Provides-Extra: dev
 Requires-Dist: pytest; extra == "dev"
 Requires-Dist: pytest-asyncio; extra == "dev"
@@ -112,6 +113,12 @@ graph LR
 
 - Python 3.8 or higher
 - pip
+- **V2Ray Executable**: The core testing functionality of ConfigStream depends on the V2Ray executable. You must install it on your system and ensure it's available in your system's `PATH`.
+
+  You can install it using the official script:
+  ```bash
+  bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh)
+  ```
 
 ### Installation
 

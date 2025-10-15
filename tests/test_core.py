@@ -43,6 +43,15 @@ SS_PASSWORD = "a-very-secret-password"
 SS_USER_INFO = base64.b64encode(f"{SS_METHOD}:{SS_PASSWORD}".encode("utf-8")).decode("utf-8")
 VALID_SS_CONFIG = f"ss://{SS_USER_INFO}@server3.example.com:8888#My-SS-Proxy"
 
+# Hysteria2
+VALID_HY2_CONFIG = "hy2://password@server4.example.com:443?insecure=1#My-Hysteria2-Proxy"
+
+# TUIC
+VALID_TUIC_CONFIG = "tuic://a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6:password@server5.example.com:443?congestion_control=bbr#My-TUIC-Proxy"
+
+# WireGuard
+VALID_WG_CONFIG = "wg://server6.example.com:51820?private_key=...&public_key=...#My-WG-Proxy"
+
 
 INVALID_CONFIG = "invalid-protocol://some-data"
 MALFORMED_VMESS_CONFIG = "vmess://this-is-not-base64"
@@ -87,6 +96,32 @@ class TestProxyParser:
         proxy = Proxy.from_config(MALFORMED_VMESS_CONFIG)
         assert proxy is None
 
+    def test_parse_valid_hy2(self):
+        proxy = Proxy.from_config(VALID_HY2_CONFIG)
+        assert proxy is not None
+        assert proxy.protocol == "hy2"
+        assert proxy.remarks == "My-Hysteria2-Proxy"
+        assert proxy.address == "server4.example.com"
+        assert proxy.port == 443
+        assert proxy.uuid == "password"
+
+    def test_parse_valid_tuic(self):
+        proxy = Proxy.from_config(VALID_TUIC_CONFIG)
+        assert proxy is not None
+        assert proxy.protocol == "tuic"
+        assert proxy.remarks == "My-TUIC-Proxy"
+        assert proxy.address == "server5.example.com"
+        assert proxy.port == 443
+        assert proxy.uuid == "a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6"
+
+    def test_parse_valid_wg(self):
+        proxy = Proxy.from_config(VALID_WG_CONFIG)
+        assert proxy is not None
+        assert proxy.protocol == "wg"
+        assert proxy.remarks == "My-WG-Proxy"
+        assert proxy.address == "server6.example.com"
+        assert proxy.port == 51820
+
 
 class TestClashGenerator:
     def test_generate_clash_with_all_protocols(self):
@@ -96,16 +131,23 @@ class TestClashGenerator:
         proxy2.is_working = True
         proxy3 = Proxy.from_config(VALID_SS_CONFIG)
         proxy3.is_working = True
-        proxies = [proxy1, proxy2, proxy3]
+        proxy4 = Proxy.from_config(VALID_HY2_CONFIG)
+        proxy4.is_working = True
+        proxy4.protocol = "hysteria" # a bit of a hack to test hysteria
+        proxy5 = Proxy.from_config(VALID_TUIC_CONFIG)
+        proxy5.is_working = True
+        proxies = [proxy1, proxy2, proxy3, proxy4, proxy5]
 
         clash_yaml_str = generate_clash_config(proxies)
         clash_config = yaml.safe_load(clash_yaml_str)
 
         assert "proxies" in clash_config
-        assert len(clash_config["proxies"]) == 3
+        assert len(clash_config["proxies"]) == 5
         assert clash_config["proxies"][0]["type"] == "vmess"
         assert clash_config["proxies"][1]["type"] == "vless"
         assert clash_config["proxies"][2]["type"] == "ss"
+        assert clash_config["proxies"][3]["type"] == "hysteria"
+        assert clash_config["proxies"][4]["type"] == "tuic"
         assert "proxy-groups" in clash_config
         assert "rules" in clash_config
 
@@ -116,3 +158,43 @@ class TestClashGenerator:
 
         clash_yaml_str = generate_clash_config(proxies)
         assert clash_yaml_str == ""
+
+
+@pytest.mark.asyncio
+async def test_process_and_test_proxies():
+    """
+    Tests the main proxy processing and testing pipeline.
+    """
+    # Create a mock for the progress bar
+    mock_progress = MagicMock()
+
+    # Mock the SingBoxWorker and its test_proxy method
+    mock_worker = AsyncMock()
+    mock_worker.test_proxy = AsyncMock()
+
+    # Patch the Proxy.test method to use our mock worker
+    with patch("configstream.core.Proxy.test", new_callable=AsyncMock) as mock_proxy_test:
+        # Define the behavior of the mock
+        async def side_effect(proxy, worker):
+            if "vless" in proxy.config:
+                proxy.is_working = True
+                proxy.latency = 100
+            else:
+                proxy.is_working = False
+            return proxy
+
+        mock_proxy_test.side_effect = side_effect
+
+        configs = [VALID_VMESS_CONFIG, VALID_VLESS_CONFIG]
+        results = await process_and_test_proxies(configs, mock_progress)
+
+        assert len(results) == 2
+
+        working_proxies = [p for p in results if p.is_working]
+        assert len(working_proxies) == 1
+        assert working_proxies[0].protocol == "vless"
+        assert working_proxies[0].latency == 100
+
+        # Check that the progress bar was updated
+        assert mock_progress.add_task.called
+        assert mock_progress.update.call_count == 2

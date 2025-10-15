@@ -10,25 +10,25 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --background: #ffffff;
-            --surface: #f9fafb;
-            --primary: #4f46e5;
-            --primary-light: #6366f1;
-            --text-main: #111827;
-            --text-secondary: #6b7280;
-            --border-color: #e5e7eb;
-            --shadow-color: rgba(0, 0, 0, 0.1);
+            --background: #f8f9fa;
+            --surface: #ffffff;
+            --primary: #007bff;
+            --primary-light: #54a0ff;
+            --text-main: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --shadow-color: rgba(0, 0, 0, 0.05);
         }
 
         body.dark {
-            --background: #111827;
-            --surface: #1F2937;
-            --primary: #818cf8;
-            --primary-light: #a78bfa;
-            --text-main: #F9FAFB;
-            --text-secondary: #9CA3AF;
-            --border-color: #374151;
-            --shadow-color: rgba(0, 0, 0, 0.5);
+            --background: #121212;
+            --surface: #1e1e1e;
+            --primary: #6ca6ff;
+            --primary-light: #8bb9ff;
+            --text-main: #e9ecef;
+            --text-secondary: #adb5bd;
+            --border-color: #343a40;
+            --shadow-color: rgba(0, 0, 0, 0.2);
         }
 
         * {
@@ -68,33 +68,23 @@
         }
 
         .logo {
-            width: 100px;
-            height: 100px;
+            width: 80px;
+            height: 80px;
             margin-bottom: 1.5rem;
         }
 
         header h1 {
-            font-size: 3rem;
+            font-size: 2.8rem;
             font-weight: 700;
             letter-spacing: -0.05em;
         }
 
         header h1 span {
-            background: linear-gradient(to right, var(--primary), var(--primary-light));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: gradient-flow 5s ease-in-out infinite;
-            background-size: 200% 200%;
-        }
-
-        @keyframes gradient-flow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            color: var(--primary);
         }
 
         header p {
-            font-size: 1.125rem;
+            font-size: 1.1rem;
             color: var(--text-secondary);
             max-width: 600px;
         }
@@ -110,7 +100,7 @@
             flex-wrap: wrap;
             gap: 1.5rem;
             border: 1px solid var(--border-color);
-            box-shadow: 0 4px 6px -1px var(--shadow-color);
+            box-shadow: 0 4px 12px var(--shadow-color);
         }
 
         .status-item {
@@ -124,7 +114,7 @@
         }
 
         .status-item .value {
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             font-weight: 600;
         }
 
@@ -170,26 +160,23 @@
         }
 
         .action-button {
-            background-color: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-            padding: 0.5rem 1rem;
+            background-color: var(--primary);
+            color: #fff;
+            padding: 0.75rem 1.5rem;
             border-radius: 8px;
             text-decoration: none;
             cursor: pointer;
             transition: all 0.2s ease;
+            border: none;
+            font-size: 1rem;
         }
 
         .action-button:hover {
-            background-color: var(--primary);
-            color: var(--text-main);
-            border-color: var(--primary);
+            background-color: var(--primary-light);
         }
 
         .copy-button.copied {
-            background-color: #22c55e;
-            color: var(--text-main);
-            border-color: #22c55e;
+            background-color: #28a745;
         }
 
         .download-icon {
@@ -252,7 +239,7 @@
 
         .warning-section li::before {
             content: '⚠️';
-            color: #facc15;
+            color: #ffc107;
         }
 
         footer {
@@ -297,53 +284,18 @@
             color: var(--text-main);
         }
 
-        .filters-section {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .search-bar {
-            flex-grow: 1;
-        }
-
-        #search-input {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            background-color: var(--surface);
-            color: var(--text-main);
-            font-size: 1rem;
-        }
-
-        .filter-options {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .filter-options select {
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            background-color: var(--surface);
-            color: var(--text-main);
-            font-size: 1rem;
-        }
-
         @media (max-width: 768px) {
             .info-grid {
                 grid-template-columns: 1fr;
             }
             header h1 {
-                font-size: 2.5rem;
+                font-size: 2.2rem;
             }
         }
 
         @media (max-width: 480px) {
             header h1 {
-                font-size: 2rem;
+                font-size: 1.8rem;
             }
         }
     </style>
@@ -359,7 +311,7 @@
         <section class="status-section">
             <div class="status-item">
                 <div class="label">Status</div>
-                <div class="value" style="color: #34d399;">● Active</div>
+                <div class="value" style="color: #28a745;">● Active</div>
             </div>
             <div class="status-item">
                 <div class="label">Last Updated</div>
@@ -487,7 +439,7 @@
 
             document.querySelectorAll('.qr-button').forEach(button => {
                 button.addEventListener('click', () => {
-                    const link = window.location.origin + window.location.pathname.replace('index.html', '') + button.dataset.link;
+                    const link = new URL(button.dataset.link, window.location.href).href;
                     qrCodeContainer.innerHTML = '';
                     const qr = qrcode(0, 'M');
                     qr.addData(link);
@@ -578,7 +530,7 @@
                 const copyButtons = document.querySelectorAll('.copy-button');
                 copyButtons.forEach(button => {
                     button.addEventListener('click', () => {
-                        const link = window.location.origin + window.location.pathname.replace('index.html', '') + button.dataset.link;
+                        const link = new URL(button.dataset.link, window.location.href).href;
                         navigator.clipboard.writeText(link).then(() => {
                             button.textContent = 'Copied!';
                             button.classList.add('copied');
@@ -589,6 +541,7 @@
                         });
                     });
                 });
+_
             }
 
             // Initialize
