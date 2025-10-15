@@ -33,9 +33,8 @@ dependencies = [
     "geoip2",
     "pydantic>=2",
     "pydantic-settings",
-    "tqdm",
-    "aiosqlite",
     "rich",
+    "click",
 ]
 
 [project.optional-dependencies]
@@ -45,7 +44,6 @@ dev = [
     "pytest-cov",
     "pyfakefs",
     "types-PyYAML",
-    "types-requests",
     "flake8",
     "mypy",
     "pre-commit",

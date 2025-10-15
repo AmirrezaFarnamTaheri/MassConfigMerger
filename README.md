@@ -81,22 +81,18 @@ pip install -e .
 
 ### Usage
 
+The primary command for local use is `merge`, which runs the entire pipeline.
+
 ```bash
-# Fetch and merge configurations
+# Run the full fetch, test, and generate pipeline
 configstream merge --sources sources.txt --output output/
-
-# Fetch only (no testing)
-configstream fetch --sources sources.txt --output fetched.txt
-
-# Retest existing configs
-configstream retest --input configs.txt --output tested.txt
-
-# Add a new source
-configstream sources add https://example.com/configs.txt
-
-# List all sources
-configstream sources list
 ```
+
+This will:
+1.  Read the list of URLs from `sources.txt`.
+2.  Fetch all configurations from those URLs.
+3.  Test each configuration for connectivity and latency.
+4.  Generate `vpn_subscription_base64.txt`, `clash.yaml`, and `configs_raw.txt` in the `output/` directory.
 
 ## 📁 Project Structure
 
@@ -104,49 +100,19 @@ configstream sources list
 ConfigStream/
 ├── .github/
 │   └── workflows/
-│       └── merge.yml              # Automated workflow
+│       └── merge.yml          # Automated GitHub Actions workflow
 ├── src/
 │   └── configstream/
-│       ├── cli.py                 # Command-line interface
-│       ├── commands.py            # CLI command handlers
-│       ├── vpn_merger.py          # Main merge logic
-│       ├── tester.py              # Connection tester
-│       ├── output_writer.py       # Output generator
-│       └── core/                  # Core modules
-├── tests/                         # Test suite
-├── output/                        # Generated configs (auto-updated)
-├── sources.txt                    # Source URLs
-├── index.html                     # GitHub Pages landing
+│       ├── cli.py             # Command-line interface logic
+│       ├── core.py            # Core async logic for fetching and testing
+│       ├── fetcher.py         # Module for fetching sources
+│       ├── tester.py          # Module for testing proxies
+│       └── generator.py       # Module for generating output files
+├── tests/                     # Test suite
+├── output/                    # Generated configs (auto-updated by workflow)
+├── sources.txt                # List of source URLs for the workflow
+├── index.html                 # GitHub Pages landing page
 └── README.md
-```
-
-## 🛠️ Configuration
-
-Create `config.yaml` for custom settings:
-
-```yaml
-sources:
-  sources_file: sources.txt
-
-testing:
-  timeout: 5
-  max_workers: 20
-  test_url: "http://www.gstatic.com/generate_204"
-
-output:
-  output_dir: output
-  base64_file: vpn_subscription_base64.txt
-  clash_file: clash.yaml
-  raw_file: configs_raw.txt
-
-filtering:
-  include_protocols:
-    - vmess
-    - vless
-    - trojan
-    - shadowsocks
-  min_ping_ms: null
-  max_ping_ms: 2000
 ```
 
 ## 🧪 Testing
@@ -155,11 +121,8 @@ filtering:
 # Run all tests
 pytest
 
-# Run with coverage
+# Run with coverage report
 pytest --cov=configstream
-
-# Run specific test
-pytest tests/test_vpn_merger.py
 ```
 
 ## 📊 Supported Protocols
