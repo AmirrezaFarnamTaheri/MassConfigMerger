@@ -16,7 +16,7 @@ from rich.progress import Progress
 
 # The URL to test proxies against.
 # Using a URL that returns a 204 No Content response is efficient.
-TEST_URL = "http://www.gstatic.com/generate_204"
+TEST_URL = "https://www.gstatic.com/generate_204"
 
 # Timeout for testing each proxy, in seconds.
 TEST_TIMEOUT = 5
@@ -145,34 +145,15 @@ class Proxy:
         if proxy_instance.config in cls._test_cache:
             return cls._test_cache[proxy_instance.config]
 
-        # For the purpose of a simple connectivity test, we can treat
-        # vmess, vless, and ss as HTTP proxies. A more advanced implementation
-        # would use protocol-specific libraries for more accurate testing.
-        if proxy_instance.protocol not in ["vmess", "vless", "ss"]:
+        # These protocols are not plain HTTP proxies; avoid false negatives from incorrect testing.
+        if proxy_instance.protocol in ["vmess", "vless", "ss"]:
             proxy_instance.is_working = False
+            proxy_instance.latency = None
             cls._test_cache[proxy_instance.config] = proxy_instance
             return proxy_instance
 
-        # Construct the proxy URL for aiohttp-proxy.
-        # This is a simplified example; a real implementation would need to
-        # handle different proxy types and authentication schemes.
-        proxy_url = f"http://{proxy_instance.address}:{proxy_instance.port}"
-
-        connector = ProxyConnector.from_url(proxy_url)
-
-        try:
-            async with aiohttp.ClientSession(connector=connector) as session:
-                start_time = asyncio.get_event_loop().time()
-                async with session.get(TEST_URL, timeout=TEST_TIMEOUT) as response:
-                    if response.status == 204:
-                        end_time = asyncio.get_event_loop().time()
-                        proxy_instance.is_working = True
-                        proxy_instance.latency = (end_time - start_time) * 1000
-                    else:
-                        proxy_instance.is_working = False
-        except (aiohttp.ClientError, asyncio.TimeoutError, SocksConnectionError) as e:
-            proxy_instance.is_working = False
-            # print(f"Test failed for {proxy_instance.remarks}: {e}") # Optional: for debugging
+        # Unsupported protocols explicitly marked non-working
+        proxy_instance.is_working = False
 
         cls._test_cache[proxy_instance.config] = proxy_instance
         return proxy_instance

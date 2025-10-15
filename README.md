@@ -104,10 +104,8 @@ ConfigStream/
 ├── src/
 │   └── configstream/
 │       ├── cli.py             # Command-line interface logic
-│       ├── core.py            # Core async logic for fetching and testing
-│       ├── fetcher.py         # Module for fetching sources
-│       ├── tester.py          # Module for testing proxies
-│       └── generator.py       # Module for generating output files
+│       ├── core.py            # Core parsing and testing logic
+│       └── pipeline.py        # Main application pipeline
 ├── tests/                     # Test suite
 ├── output/                    # Generated configs (auto-updated by workflow)
 ├── sources.txt                # List of source URLs for the workflow
@@ -125,16 +123,12 @@ pytest
 pytest --cov=configstream
 ```
 
-## 📊 Supported Protocols
+## 📊 Supported Protocols (Parsing)
 
 - ✅ VMess
-- ✅ VLESS (including REALITY)
-- ✅ Trojan
-- ✅ Shadowsocks
-- ✅ SSR (ShadowsocksR)
-- ✅ Hysteria / Hysteria2
-- ✅ TUIC
-- ✅ Naive
+- ✅ VLESS
+- ✅ Shadowsocks (SS)
+- ❌ **Note:** Real-time testing for these protocols is not yet implemented. The application currently parses them but does not verify their connectivity.
 
 ## 🤝 Contributing
 

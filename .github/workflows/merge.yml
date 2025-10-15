@@ -32,6 +32,11 @@ jobs:
       - name: Create output directory
         run: mkdir -p output
 
+      - name: Validate sources file
+        run: |
+          if [ ! -s sources.txt ]; then
+            echo "sources.txt is missing or empty"; exit 1;
+          fi
       - name: Run merge command
         run: |
           configstream merge \
@@ -44,6 +49,12 @@ jobs:
           echo "Last updated: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" > output/LAST_UPDATE.txt
 
       - name: Commit and push changes
+        # IMPORTANT: This step pushes directly to the main branch.
+        # For production repositories, it is strongly recommended to:
+        # 1. Use a dedicated branch for the auto-updates.
+        # 2. Open a pull request from that branch.
+        # 3. Require a manual approval or automated checks on the PR.
+        # This provides a layer of security and review before modifying the main branch.
         run: |
           git config --local user.name "github-actions[bot]"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
