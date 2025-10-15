@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Free, auto-updated, tested VPN configurations. Updated every 3 hours via GitHub Actions.">
-    <meta name="keywords" content="vpn, proxy, free vpn, v2ray, clash, shadowsocks, trojan">
+    <meta name="keywords" content="vpn, proxy, free vpn, v2ray, clash, shadowsocks, trojan, singbox">
     <title>ConfigStream - Free VPN Configuration Aggregator</title>
 
     <!-- Favicon -->
@@ -13,49 +13,40 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
 
     <!-- Stylesheet -->
     <link rel="stylesheet" href="assets/css/style.css">
 
     <!-- Icons -->
-    <script src="https://unpkg.com/feather-icons" integrity="sha384-uO3SXW5IuS1ZpFPKugNNWqTZRRglnUJK6UAZ/gxOX80nxEkN9NcGZTftn6RzhGWE" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <div class="header-content">
-                <img src="src/configstream/logo.svg" alt="ConfigStream Logo" class="logo">
-                <h1>ConfigStream</h1>
-                <p class="subtitle">Automated Free VPN Configuration Aggregator</p>
-            </div>
+            <img src="src/configstream/logo.svg" alt="ConfigStream Logo" class="logo" id="logo">
+            <h1>ConfigStream</h1>
+            <p class="subtitle">Automated Free VPN Configuration Aggregator</p>
         </header>
 
         <!-- Navigation -->
-        <nav class="nav">
-            <a href="index.html" class="nav-link active">
-                <i data-feather="home"></i>
-                Home
-            </a>
-            <a href="proxies.html" class="nav-link">
-                <i data-feather="list"></i>
-                Proxies
-            </a>
-            <a href="statistics.html" class="nav-link">
-                <i data-feather="bar-chart-2"></i>
-                Statistics
-            </a>
-            <a href="about.html" class="nav-link">
-                <i data-feather="info"></i>
-                About
-            </a>
-        </nav>
+        <div class="nav-container">
+            <nav class="nav">
+                <a href="index.html" class="nav-link active"><i data-feather="home"></i>Home</a>
+                <a href="proxies.html" class="nav-link"><i data-feather="list"></i>Proxies</a>
+                <a href="statistics.html" class="nav-link"><i data-feather="bar-chart-2"></i>Statistics</a>
+                <a href="about.html" class="nav-link"><i data-feather="info"></i>About</a>
+                <button class="theme-switcher" id="theme-switcher" aria-label="Toggle theme" title="Toggle theme">
+                    <i data-feather="moon" class="theme-icon-moon"></i>
+                    <i data-feather="sun" class="theme-icon-sun" style="display:none;"></i>
+                </button>
+            </nav>
+        </div>
 
         <!-- Content -->
         <main class="content">
-            <!-- Statistics -->
-            <section class="card">
+            <section class="card" id="stats-card">
                 <div class="stats-grid">
                     <div class="stat-card">
                         <span class="stat-number">3h</span>
@@ -69,260 +60,54 @@
                         <span class="stat-number loading" id="workingConfigs">...</span>
                         <span class="stat-label">Working</span>
                     </div>
-                    <div class="stat-card">
-                        <span class="stat-number loading" id="avgLatency">...</span>
-                        <span class="stat-label">Avg Latency</span>
-                    </div>
                 </div>
             </section>
 
-            <!-- Download Cards -->
-            <section class="card">
+            <section class="card" id="downloads-card">
                 <div class="downloads-grid">
                     <div class="download-card">
                         <div class="download-icon">📄</div>
-                        <div class="download-title">Base64 Subscription</div>
-                        <div class="download-desc">Universal format for V2RayNG, V2Box, and similar clients</div>
+                        <h3 class="download-title">Base64 Subscription</h3>
+                        <p class="download-desc">Universal format for V2RayNG, V2Box, and similar clients.</p>
                         <div class="download-actions">
-                            <a href="output/vpn_subscription_base64.txt" class="btn btn-primary" download>
-                                <i data-feather="download"></i>
-                                Download
-                            </a>
-                            <button class="btn btn-secondary copy-btn" data-file="output/vpn_subscription_base64.txt">
-                                <i data-feather="copy"></i>
-                                Copy Link
-                            </button>
+                            <a href="output/vpn_subscription_base64.txt" class="btn btn-primary" download><i data-feather="download"></i>Download</a>
+                            <button class="btn btn-secondary copy-btn" data-file="output/vpn_subscription_base64.txt"><i data-feather="copy"></i>Copy Link</button>
                         </div>
                     </div>
                     <div class="download-card">
                         <div class="download-icon">⚙️</div>
-                        <div class="download-title">Clash Config</div>
-                        <div class="download-desc">Ready-to-use YAML for Clash and Clash Meta clients</div>
+                        <h3 class="download-title">Clash Config</h3>
+                        <p class="download-desc">Ready-to-use YAML for Clash and Clash Meta clients.</p>
                         <div class="download-actions">
-                            <a href="output/clash.yaml" class="btn btn-primary" download>
-                                <i data-feather="download"></i>
-                                Download
-                            </a>
-                            <button class="btn btn-secondary copy-btn" data-file="output/clash.yaml">
-                                <i data-feather="copy"></i>
-                                Copy Link
-                            </button>
+                            <a href="output/clash.yaml" class="btn btn-primary" download><i data-feather="download"></i>Download</a>
+                            <button class="btn btn-secondary copy-btn" data-file="output/clash.yaml"><i data-feather="copy"></i>Copy Link</button>
                         </div>
                     </div>
                     <div class="download-card">
                         <div class="download-icon">📋</div>
-                        <div class="download-title">Raw Configs</div>
-                        <div class="download-desc">Unencoded configuration links for manual import</div>
+                        <h3 class="download-title">Raw Configs</h3>
+                        <p class="download-desc">Unencoded links for manual import or other clients.</p>
                         <div class="download-actions">
-                            <a href="output/configs_raw.txt" class="btn btn-primary" download>
-                                <i data-feather="download"></i>
-                                Download
-                            </a>
-                            <button class="btn btn-secondary copy-btn" data-file="output/configs_raw.txt">
-                                <i data-feather="copy"></i>
-                                Copy Link
-                            </button>
+                            <a href="output/configs_raw.txt" class="btn btn-primary" download><i data-feather="download"></i>Download</a>
+                            <button class="btn btn-secondary copy-btn" data-file="output/configs_raw.txt"><i data-feather="copy"></i>Copy Link</button>
                         </div>
                     </div>
                 </div>
             </section>
-
-            <div style="text-align: center; margin-bottom: 50px;">
-                <a href="proxies.html" class="btn btn-primary" style="padding: 15px 30px; font-size: 1.1em;">
-                    <i data-feather="server"></i>
-                    View All Proxies
-                </a>
-            </div>
-
-            <!-- Features -->
-            <div class="info-section">
-                <h2>
-                    <i data-feather="star"></i>
-                    Features
-                </h2>
-                <ul>
-                    <li>Automatically updated every 3 hours via GitHub Actions</li>
-                    <li>All configurations tested for connectivity and performance</li>
-                    <li>Security checks to filter out malicious nodes</li>
-                    <li>Geolocation data for each proxy (country, city, ASN)</li>
-                    <li>Multiple output formats (Base64, Clash, Raw)</li>
-                    <li>Sorted by latency for optimal performance</li>
-                    <li>100% open source and transparent</li>
-                    <li>No registration or sign-up required</li>
-                </ul>
-            </div>
-
-            <!-- How to Use -->
-            <div class="info-section">
-                <h2>
-                    <i data-feather="book"></i>
-                    How to Use
-                </h2>
-                <ul>
-                    <li>Download your preferred configuration format above</li>
-                    <li>For V2RayNG/V2Box: Use the subscription link or Base64 file</li>
-                    <li>For Clash clients: Download the Clash YAML file</li>
-                    <li>Import into your VPN client</li>
-                    <li>Bookmark this page for fresh configs every 3 hours</li>
-                    <li>Check the Proxies page for detailed information</li>
-                </ul>
-            </div>
-
-            <!-- Security Warning -->
-            <div class="info-section warning-section">
-                <h2>
-                    <i data-feather="alert-triangle"></i>
-                    Important Security Notice
-                </h2>
-                <ul>
-                    <li>These are FREE public VPN nodes from unknown operators</li>
-                    <li>Traffic may be logged, monitored, or modified</li>
-                    <li>NOT suitable for banking, sensitive data, or private activities</li>
-                    <li>Best for casual browsing and bypassing geo-restrictions</li>
-                    <li>Always prefer HTTPS websites when using these proxies</li>
-                    <li>We perform security tests, but cannot guarantee 100% safety</li>
-                    <li>Use at your own risk - no warranties provided</li>
-                </ul>
-            </div>
-
-            <!-- Supported Clients -->
-            <div class="info-section">
-                <h2>
-                    <i data-feather="smartphone"></i>
-                    Supported Clients
-                </h2>
-                <ul>
-                    <li>V2RayNG (Android) - Use Base64 subscription</li>
-                    <li>V2Box / Shadowrocket (iOS) - Use Base64 subscription</li>
-                    <li>Clash for Windows / ClashX - Use Clash config</li>
-                    <li>Clash Meta / Clash Verge - Use Clash config</li>
-                    <li>Hiddify / NekoBox / SagerNet - All formats supported</li>
-                    <li>Sing-Box - Use raw configs</li>
-                </ul>
-            </div>
-        </div>
+        </main>
 
         <!-- Footer -->
-        <div class="footer">
-            <p style="font-size: 1.2em; font-weight: 600; margin-bottom: 10px;">
-                ConfigStream - Open Source VPN Configuration Aggregator
-            </p>
-            <p style="margin-bottom: 20px;">
-                View source code, contribute, or report issues on
-                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank">GitHub</a>
-            </p>
-
+        <footer class="footer">
+            <p>Source code & contributions on <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank">GitHub</a></p>
             <div class="social-links">
-                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" title="GitHub">
-                    <i data-feather="github"></i>
-                </a>
-                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" title="Issues">
-                    <i data-feather="alert-circle"></i>
-                </a>
-                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/stargazers" target="_blank" title="Star">
-                    <i data-feather="star"></i>
-                </a>
+                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" title="GitHub"><i data-feather="github"></i></a>
+                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" title="Issues"><i data-feather="alert-circle"></i></a>
+                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/stargazers" target="_blank" title="Star"><i data-feather="star"></i></a>
             </div>
-
-            <p style="margin-top: 20px; font-size: 0.9em; opacity: 0.7;">
-                Made with ❤️ for internet freedom | Educational purposes only
-            </p>
-            <p style="margin-top: 10px; font-size: 0.85em; opacity: 0.6;">
-                Version 1.0.0 | Last updated: <span id="footerUpdate">Loading...</span>
-            </p>
-        </div>
+            <p style="margin-top: 1rem; font-size: 0.9em; opacity: 0.7;">Last updated: <span id="footerUpdate" class="loading">...</span></p>
+        </footer>
     </div>
 
-    <script>
-        // Initialize Feather Icons
-        feather.replace();
-
-        // Fetch metadata with cache busting
-        async function fetchMetadata() {
-            const cacheBust = new Date().getTime();
-            try {
-                const response = await fetch(`output/metadata.json?_=${cacheBust}`);
-                const metadata = await response.json();
-
-                const date = new Date(metadata.generated_at);
-                const formatted = date.toLocaleString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    timeZone: 'UTC',
-                    timeZoneName: 'short'
-                });
-
-                document.getElementById('lastUpdate').textContent = formatted;
-                document.getElementById('lastUpdate').classList.remove('loading');
-                document.getElementById('footerUpdate').textContent = formatted;
-            } catch (error) {
-                document.getElementById('lastUpdate').textContent = 'Recently';
-                document.getElementById('lastUpdate').classList.remove('loading');
-                document.getElementById('footerUpdate').textContent = 'Recently';
-            }
-        }
-
-        // Fetch statistics
-        async function fetchStatistics() {
-            const cacheBust = new Date().getTime();
-            try {
-                const response = await fetch(`output/statistics.json?_=${cacheBust}`);
-                const stats = await response.json();
-
-                document.getElementById('totalConfigs').textContent = stats.total_tested || 0;
-                document.getElementById('workingConfigs').textContent = stats.working || 0;
-                document.getElementById('avgLatency').textContent = stats.average_latency ? `${stats.average_latency}ms` : 'N/A';
-
-                document.querySelectorAll('.stat-number').forEach(el => el.classList.remove('loading'));
-            } catch (error) {
-                console.error('Error fetching statistics:', error);
-                document.querySelectorAll('.stat-number').forEach(el => el.classList.remove('loading'));
-            }
-        }
-
-        // Copy button functionality
-        function setupCopyButtons() {
-            document.querySelectorAll('.copy-btn').forEach(button => {
-                button.addEventListener('click', async () => {
-                    const file = button.dataset.file;
-                    const fullUrl = `${window.location.origin}${window.location.pathname.replace(/\/$/, '')}/${file}`;
-
-                    try {
-                        await navigator.clipboard.writeText(fullUrl);
-
-                        const originalHTML = button.innerHTML;
-                        button.innerHTML = '<i data-feather="check"></i>Copied!';
-                        button.classList.add('copied');
-                        feather.replace();
-
-                        setTimeout(() => {
-                            button.innerHTML = originalHTML;
-                            button.classList.remove('copied');
-                            feather.replace();
-                        }, 2000);
-                    } catch (err) {
-                        console.error('Failed to copy:', err);
-                        alert('Failed to copy link. Please copy manually.');
-                    }
-                });
-            });
-        }
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchMetadata();
-            fetchStatistics();
-            setupCopyButtons();
-
-            // Auto-refresh every 5 minutes
-            setInterval(() => {
-                fetchMetadata();
-                fetchStatistics();
-            }, 300000);
-        });
-    </script>
+    <script src="assets/js/main.js"></script>
 </body>
 </html>

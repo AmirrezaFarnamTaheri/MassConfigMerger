@@ -4,274 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About - ConfigStream</title>
-
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Stylesheet -->
+    <link rel="icon" type="image/svg+xml" href="src/configstream/logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
-
-    <!-- Icons -->
-    <script src="https://unpkg.com/feather-icons" integrity="sha384-uO3SXW5IuS1ZpFPKugNNWqTZRRglnUJK6UAZ/gxOX80nxEkN9NcGZTftn6RzhGWE" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body>
     <div class="container">
         <header class="header">
+            <a href="index.html"><img src="src/configstream/logo.svg" alt="ConfigStream Logo" class="logo" id="logo"></a>
             <h1>About ConfigStream</h1>
-            <p class="subtitle">Learn more about the project</p>
+            <p class="subtitle">Our mission, methods, and the technology behind this project</p>
         </header>
 
-        <nav class="nav">
-            <a href="index.html" class="nav-link">
-                <i data-feather="home"></i>
-                Home
-            </a>
-            <a href="proxies.html" class="nav-link">
-                <i data-feather="list"></i>
-                Proxies
-            </a>
-            <a href="statistics.html" class="nav-link">
-                <i data-feather="bar-chart-2"></i>
-                Statistics
-            </a>
-            <a href="about.html" class="nav-link active">
-                <i data-feather="info"></i>
-                About
-            </a>
-        </nav>
+        <div class="nav-container">
+            <nav class="nav">
+                <a href="index.html" class="nav-link"><i data-feather="home"></i>Home</a>
+                <a href="proxies.html" class="nav-link"><i data-feather="list"></i>Proxies</a>
+                <a href="statistics.html" class="nav-link"><i data-feather="bar-chart-2"></i>Statistics</a>
+                <a href="about.html" class="nav-link active"><i data-feather="info"></i>About</a>
+                <button class="theme-switcher" id="theme-switcher" aria-label="Toggle theme">
+                    <i data-feather="moon" class="theme-icon-moon"></i>
+                    <i data-feather="sun" class="theme-icon-sun" style="display:none;"></i>
+                </button>
+            </nav>
+        </div>
 
         <main class="content">
-            <h2>
-                <i data-feather="zap"></i>
-                What is ConfigStream?
-            </h2>
-            <p>
-                ConfigStream is an <strong>automated VPN configuration aggregator</strong> that collects, tests, and publishes free VPN configurations from public sources. The entire process is automated through GitHub Actions and runs every 6 hours to ensure fresh, working configurations are always available.
-            </p>
+            <section class="card" id="about-card">
+                <h2><i data-feather="star"></i> What is ConfigStream?</h2>
+                <p>ConfigStream is an open-source project that automatically aggregates, tests, and provides free VPN and proxy configurations. Our system runs every three hours, gathering configs from public sources, testing them for connectivity and performance, and making the best ones available for easy download.</p>
 
-            <h2>
-                <i data-feather="trending-up"></i>
-                Key Features
-            </h2>
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">🤖</div>
-                    <div class="feature-title">Fully Automated</div>
-                    <div class="feature-desc">Runs every 6 hours via GitHub Actions</div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🔒</div>
-                    <div class="feature-title">Security Tested</div>
-                    <div class="feature-desc">Filters out malicious nodes</div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">⚡</div>
-                    <div class="feature-title">Performance Sorted</div>
-                    <div class="feature-desc">Ordered by latency</div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🌍</div>
-                    <div class="feature-title">Geolocation Data</div>
-                    <div class="feature-desc">Country, city, and ASN info</div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📦</div>
-                    <div class="feature-title">Multiple Formats</div>
-                    <div class="feature-desc">Base64, Clash, Raw configs</div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">💯</div>
-                    <div class="feature-title">Open Source</div>
-                    <div class="feature-desc">Fully transparent process</div>
-                </div>
-            </div>
+                <h2 style="margin-top: 2rem;"><i data-feather="shield"></i> Security & Privacy</h2>
+                <p><strong>Use with caution.</strong> These are public proxies from unknown operators. While we perform basic security checks (like filtering nodes that inject ads or malicious scripts), we cannot guarantee their safety. They are best suited for bypassing geo-restrictions, not for handling sensitive data. Always prioritize using HTTPS.</p>
 
-            <h2>
-                <i data-feather="git-branch"></i>
-                How It Works
-            </h2>
-            <p>ConfigStream follows a simple but effective pipeline:</p>
-            <ol>
-                <li><strong>Fetch:</strong> Collects VPN configurations from multiple public sources</li>
-                <li><strong>Parse:</strong> Extracts and validates configuration details</li>
-                <li><strong>Test:</strong> Tests each configuration for:
-                    <ul>
-                        <li>Connectivity (can it connect?)</li>
-                        <li>Latency (how fast is it?)</li>
-                        <li>Security (is it safe?)</li>
-                    </ul>
-                </li>
-                <li><strong>Geolocate:</strong> Determines country, city, and network provider</li>
-                <li><strong>Filter:</strong> Removes non-working and insecure proxies</li>
-                <li><strong>Sort:</strong> Orders by performance (latency)</li>
-                <li><strong>Generate:</strong> Creates output files in multiple formats</li>
-                <li><strong>Publish:</strong> Commits to GitHub and deploys to GitHub Pages</li>
-            </ol>
-
-            <h2>
-                <i data-feather="shield"></i>
-                Security Tests
-            </h2>
-            <p>ConfigStream performs several security checks on each proxy:</p>
-            <ul>
-                <li><strong>Redirect Handling:</strong> Ensures proxies handle HTTP redirects properly</li>
-                <li><strong>Header Preservation:</strong> Verifies that HTTP headers are not stripped</li>
-                <li><strong>Content Injection:</strong> Detects if the proxy modifies page content</li>
-                <li><strong>SSL/TLS Check:</strong> Tests the security of HTTPS connections</li>
-            </ul>
-            <p>Proxies that fail these tests are marked as insecure and not included in the final output.</p>
-
-            <div class="warning-box">
-                <h3>⚠️ Important Security Disclaimer</h3>
-                <p><strong>These are FREE public VPN nodes from unknown operators.</strong></p>
+                <h2 style="margin-top: 2rem;"><i data-feather="cpu"></i> Technology Stack</h2>
+                <p>This project is powered by Python and a suite of open-source tools:</p>
                 <ul>
-                    <li>Traffic may be logged, monitored, or modified</li>
-                    <li>NOT suitable for banking, sensitive data, or private activities</li>
-                    <li>Best for casual browsing and bypassing geo-restrictions</li>
-                    <li>Always prefer HTTPS websites</li>
-                    <li>Use at your own risk - no warranties provided</li>
+                    <li><strong>Python:</strong> The core logic for fetching and processing configs.</li>
+                    <li><strong>sing-box:</strong> For testing proxy connectivity and latency.</li>
+                    <li><strong>GitHub Actions:</strong> For automating the update process every 3 hours.</li>
+                    <li><strong>Chart.js:</strong> For rendering the beautiful charts on the statistics page.</li>
+                    <li><strong>Feather Icons:</strong> For the clean and simple icons used throughout the site.</li>
                 </ul>
+            </section>
+        </main>
+
+        <footer class="footer">
+             <p>Source code & contributions on <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank">GitHub</a></p>
+            <div class="social-links">
+                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" title="GitHub"><i data-feather="github"></i></a>
+                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" title="Issues"><i data-feather="alert-circle"></i></a>
+                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/stargazers" target="_blank" title="Star"><i data-feather="star"></i></a>
             </div>
-
-            <h2>
-                <i data-feather="code"></i>
-                Supported Protocols
-            </h2>
-            <p>ConfigStream supports a wide range of VPN protocols:</p>
-            <ul>
-                <li><strong>VMess</strong> - Popular V2Ray protocol</li>
-                <li><strong>VLESS</strong> - Lightweight V2Ray protocol (including REALITY)</li>
-                <li><strong>Shadowsocks</strong> - Fast and secure proxy</li>
-                <li><strong>Trojan</strong> - TLS-based proxy protocol</li>
-                <li><strong>Hysteria / Hysteria2</strong> - UDP-based high-performance protocol</li>
-                <li><strong>TUIC</strong> - QUIC-based proxy protocol</li>
-                <li><strong>WireGuard</strong> - Modern, fast VPN protocol</li>
-                <li><strong>Naive</strong> - Censorship-resistant proxy</li>
-                <li><strong>HTTP/HTTPS/SOCKS</strong> - Traditional proxy protocols</li>
-            </ul>
-
-            <h2>
-                <i data-feather="download"></i>
-                Output Formats
-            </h2>
-            <p>ConfigStream generates several output formats:</p>
-
-            <h3>1. Base64 Subscription</h3>
-            <p>Universal format compatible with most V2Ray clients (V2RayNG, V2Box, etc.). Simply paste the subscription link into your client.</p>
-            <pre>output/vpn_subscription_base64.txt</pre>
-
-            <h3>2. Clash Configuration</h3>
-            <p>Ready-to-use YAML file for Clash and Clash Meta clients. Download and import directly.</p>
-
-            <h3>3. Raw Configs</h3>
-            <p>Unencoded configuration links for manual import or advanced users.</p>
-
-            <h3>4. JSON Data</h3>
-            <p>Detailed proxy information in JSON format, including:</p>
-            <ul>
-                <li>Protocol, country, city, ASN</li>
-                <li>Latency and performance metrics</li>
-                <li>Security test results</li>
-                <li>Full configuration strings</li>
-            </ul>
-
-            <h2>
-                <i data-feather="smartphone"></i>
-                Supported Clients
-            </h2>
-            <p>ConfigStream works with most popular VPN clients:</p>
-            <ul>
-                <li><strong>V2RayNG</strong> (Android) - Use Base64 subscription</li>
-                <li><strong>V2Box / Shadowrocket</strong> (iOS) - Use Base64 subscription</li>
-                <li><strong>Clash for Windows</strong> - Use Clash YAML file</li>
-                <li><strong>ClashX</strong> (macOS) - Use Clash YAML file</li>
-                <li><strong>Clash Meta / Clash Verge</strong> - Use Clash YAML file</li>
-                <li><strong>Hiddify / NekoBox / SagerNet</strong> - All formats supported</li>
-                <li><strong>Sing-Box</strong> - Use raw configs</li>
-            </ul>
-
-            <div class="info-box">
-                <h3>💡 Pro Tip</h3>
-                <p>For the best experience, we recommend using the <strong>Base64 subscription link</strong>. This allows your client to automatically update configurations whenever we publish new ones (every 6 hours).</p>
-            </div>
-
-            <h2>
-                <i data-feather="github"></i>
-                Open Source
-            </h2>
-            <p>ConfigStream is completely open source and hosted on GitHub:</p>
-            <ul>
-                <li><strong>Repository:</strong> <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank">github.com/AmirrezaFarnamTaheri/ConfigStream</a></li>
-                <li><strong>License:</strong> GPL-3.0</li>
-                <li><strong>Contributions:</strong> Welcome! Feel free to submit issues or pull requests</li>
-            </ul>
-
-            <h2>
-                <i data-feather="book"></i>
-                Technical Details
-            </h2>
-
-            <h3>Technologies Used</h3>
-            <ul>
-                <li><strong>Python 3.11</strong> - Core application</li>
-                <li><strong>GitHub Actions</strong> - Automation and CI/CD</li>
-                <li><strong>GitHub Pages</strong> - Static site hosting</li>
-                <li><strong>Sing-Box</strong> - Proxy testing backend</li>
-                <li><strong>GeoIP2</strong> - Geolocation data</li>
-                <li><strong>DataTables</strong> - Interactive proxy viewer</li>
-                <li><strong>Chart.js</strong> - Statistics visualization</li>
-            </ul>
-
-            <h3>Update Frequency</h3>
-            <p>The automation runs <strong>every 6 hours</strong> (00:00, 06:00, 12:00, 18:00 UTC) to ensure you always have fresh configurations.</p>
-
-            <h3>Performance</h3>
-            <ul>
-                <li>Tests 1000+ configurations in under 30 minutes</li>
-                <li>Concurrent testing with 10-20 workers</li>
-                <li>Efficient caching to avoid redundant tests</li>
-                <li>Automatic failover for unreachable sources</li>
-            </ul>
-
-            <h2>
-                <i data-feather="help-circle"></i>
-                FAQ
-            </h2>
-
-            <h3>Q: Are these VPNs safe to use?</h3>
-            <p>A: They are tested for security issues, but since they're from unknown operators, we cannot guarantee complete safety. Never use them for sensitive activities like banking.</p>
-
-            <h3>Q: Do I need to update the configurations manually?</h3>
-            <p>A: No! If you use a subscription link, your client will automatically fetch updates.</p>
-
-            <h3>Q: Why do some proxies stop working?</h3>
-            <p>A: Free public proxies are often temporary. They may go offline, change configuration, or become overloaded. That's why we update every 6 hours.</p>
-
-            <h3>Q: Can I contribute my own proxy sources?</h3>
-            <p>A: Yes! Fork the repository, add your sources to <code>sources.txt</code>, and submit a pull request.</p>
-
-            <h3>Q: How can I run this locally?</h3>
-            <p>A: Clone the repository and follow the installation instructions in the README. You'll need Python 3.8+ and the required dependencies.</p>
-
-            <h2>
-                <i data-feather="heart"></i>
-                Support & Contact
-            </h2>
-            <ul>
-                <li><strong>Report Bugs:</strong> <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank">GitHub Issues</a></li>
-                <li><strong>Request Features:</strong> <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank">GitHub Issues</a></li>
-                <li><strong>Contribute:</strong> <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/pulls" target="_blank">Pull Requests</a></li>
-                <li><strong>Star the Project:</strong> <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank">GitHub Repository</a></li>
-            </ul>
-
-            <div class="info-box" style="text-align: center; margin-top: 50px;">
-                <h3 style="margin: 0 0 15px 0;">Thank You!</h3>
-                <p style="margin-bottom: 0;">ConfigStream is made possible by the open-source community and free public VPN providers. If you find this project useful, please consider starring it on GitHub!</p>
-            </div>
-        </div>
+            <p style="margin-top: 1rem; font-size: 0.9em; opacity: 0.7;">Last updated: <span id="footerUpdate" class="loading">...</span></p>
+        </footer>
     </div>
 
-    <script>
-        feather.replace();
-    </script>
+    <script src="assets/js/main.js"></script>
 </body>
 </html>
