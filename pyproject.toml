@@ -46,6 +46,7 @@ dev = [
     "pytest-cov",
     "pyfakefs",
     "types-PyYAML",
+    "types-requests",
     "flake8",
     "mypy",
     "pre-commit",
@@ -80,6 +81,13 @@ line-length = 100
 target-version = ['py38', 'py39', 'py310', 'py311']
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "aiohttp_proxy",
+    "singbox2proxy"
+]
+ignore_missing_imports = true
