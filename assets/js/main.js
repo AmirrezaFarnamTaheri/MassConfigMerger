@@ -100,8 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const locFilter = locationFilter.value.toLowerCase();
 
             const filteredProxies = allProxies.filter(p => {
-                const protocol = p.protocol.toLowerCase();
-                const location = `${p.location.city}, ${p.location.country}`.toLowerCase();
+                const protocol = (p.protocol ?? '').toLowerCase();
+                const location = (`${p.location?.city ?? ''}, ${p.location?.country ?? ''}`).toLowerCase();
                 return protocol.includes(protoFilter) && location.includes(locFilter);
             });
 
@@ -109,11 +109,11 @@ document.addEventListener('DOMContentLoaded', () => {
             filteredProxies.sort((a, b) => {
                 let valA, valB;
                 if (currentSort.key === 'location') {
-                    valA = `${a.location.city}, ${a.location.country}`;
-                    valB = `${b.location.city}, ${b.location.country}`;
+                    valA = `${a.location?.city}, ${a.location?.country}`;
+                    valB = `${b.location?.city}, ${b.location?.country}`;
                 } else if (currentSort.key === 'asn') {
-                    valA = a.location.asn.name;
-                    valB = b.location.asn.name;
+                    valA = a.location?.asn?.name;
+                    valB = b.location?.asn?.name;
                 } else {
                     valA = a[currentSort.key];
                     valB = b[currentSort.key];
@@ -126,11 +126,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             tableBody.innerHTML = filteredProxies.map(p => `
                 <tr>
-                    <td>${p.protocol}</td>
-                    <td>${p.location.city}, ${p.location.country}</td>
+                    <td>${p.protocol ?? 'N/A'}</td>
+                    <td>${p.location?.city ?? 'N/A'}, ${p.location?.country ?? 'N/A'}</td>
                     <td>${p.latency}ms</td>
-                    <td>${p.location.asn.name}</td>
-                    <td><button class="btn btn-secondary copy-btn" data-config="${p.config}"><i data-feather="copy"></i></button></td>
+                    <td>${p.location?.asn?.name ?? 'N/A'}</td>
+                    <td><button class="btn btn-secondary copy-btn" data-config="${p.config.replace(/"/g, '&quot;')}"><i data-feather="copy"></i></button></td>
                 </tr>
             `).join('');
             feather.replace();
