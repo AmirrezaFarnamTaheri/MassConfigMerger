@@ -74,7 +74,7 @@ async def run_pipeline(sources: list[str], output_dir: str):
         )
 
         # Step 2: Test all fetched configurations
-        tested_proxies = await tester.test_configs(fetched_configs, progress)
+        tested_proxies = await tester.process_and_test_proxies(fetched_configs, progress)
         working_proxies = [p for p in tested_proxies if p.is_working]
         progress.console.print(
             f"[bold green]Testing complete. Found {len(working_proxies)} working proxies.[/bold green]"

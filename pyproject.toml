@@ -35,6 +35,7 @@ dependencies = [
     "pydantic-settings",
     "rich",
     "click",
+    "aiohttp-proxy",
 ]
 
 [project.optional-dependencies]

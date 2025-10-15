@@ -2,10 +2,15 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import json
+import random
 from dataclasses import dataclass, field
 from typing import ClassVar
 
 import aiohttp
+import yaml
+from aiohttp_proxy import ProxyConnector
+from aiohttp_proxy.errors import SocksConnectionError
 from rich.progress import Progress
 
 # The URL to test proxies against.
@@ -18,44 +23,102 @@ TEST_TIMEOUT = 5
 
 @dataclass
 class Proxy:
-    """Represents a proxy configuration with its test results."""
+    """Represents a parsed and testable proxy configuration."""
 
     config: str
+    protocol: str = "unknown"
     is_working: bool = False
     latency: float | None = None  # in milliseconds
+
+    # Parsed fields
+    remarks: str = ""
+    address: str = ""
+    port: int = 0
+    uuid: str = ""
+    security: str = "auto"
+    # Add other protocol-specific fields as needed
+    _details: dict = field(default_factory=dict)
 
     # A simple cache to avoid re-testing the same proxy config multiple times
     _test_cache: ClassVar[dict[str, "Proxy"]] = {}
 
     @classmethod
-    async def test(cls, config: str) -> "Proxy":
+    def from_config(cls, config: str) -> "Proxy" | None:
+        """
+        Parses a raw proxy configuration string (e.g., vmess://, ss://)
+        and returns a Proxy instance.
+        """
+        if config.startswith("vmess://"):
+            return cls._parse_vmess(config)
+        # Add parsers for other protocols like vless, ss, trojan here
+        # elif config.startswith("ss://"):
+        #     return cls._parse_ss(config)
+        return None  # Return None for unsupported protocols
+
+    @staticmethod
+    def _parse_vmess(config: str) -> "Proxy" | None:
+        """Parses a vmess:// URI."""
+        try:
+            encoded_json = config[len("vmess://"):]
+            # Add padding if required for correct Base64 decoding
+            padded_encoded_json = encoded_json + '=' * (-len(encoded_json) % 4)
+            decoded_json = base64.b64decode(padded_encoded_json).decode("utf-8")
+            details = json.loads(decoded_json)
+
+            return Proxy(
+                config=config,
+                protocol="vmess",
+                remarks=details.get("ps", "N/A"),
+                address=details.get("add", ""),
+                port=int(details.get("port", 0)),
+                uuid=details.get("id", ""),
+                security=details.get("scy", "auto"),
+                _details=details,
+            )
+        except (json.JSONDecodeError, base64.binascii.Error, TypeError, ValueError) as e:
+            # Failed to parse, return None
+            # print(f"Failed to parse VMess config: {e}") # Optional: for debugging
+            return None
+
+    @classmethod
+    async def test(cls, proxy_instance: "Proxy") -> "Proxy":
         """
         Tests a single proxy configuration to see if it's working and measures latency.
         Uses a simple cache to avoid re-testing.
         """
-        if config in cls._test_cache:
-            return cls._test_cache[config]
+        if proxy_instance.config in cls._test_cache:
+            return cls._test_cache[proxy_instance.config]
 
-        instance = cls(config=config)
+        # Only VMess is supported for now. In a real app, you'd have different
+        # connectors for ss, trojan, etc.
+        if proxy_instance.protocol != "vmess":
+            proxy_instance.is_working = False
+            cls._test_cache[proxy_instance.config] = proxy_instance
+            return proxy_instance
+
+        # Construct the proxy URL for aiohttp-proxy.
+        # This is a simplified example; a real implementation would need to
+        # handle different proxy types and authentication schemes.
+        proxy_url = f"http://{proxy_instance.address}:{proxy_instance.port}"
+
+        connector = ProxyConnector.from_url(proxy_url)
+
         try:
-            # Note: This is a simplified test. A real-world implementation
-            # would need to parse the proxy URL (e.g., vmess://, ss://) and
-            # configure the aiohttp connector accordingly.
-            # For this example, we'll simulate a test with a simple request.
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(connector=connector) as session:
                 start_time = asyncio.get_event_loop().time()
-                async with session.get(
-                    TEST_URL, timeout=TEST_TIMEOUT  # proxy=config would be used here
-                ) as response:
+                async with session.get(TEST_URL, timeout=TEST_TIMEOUT) as response:
                     if response.status == 204:
                         end_time = asyncio.get_event_loop().time()
-                        instance.is_working = True
-                        instance.latency = (end_time - start_time) * 1000
-        except (aiohttp.ClientError, asyncio.TimeoutError):
-            instance.is_working = False
+                        proxy_instance.is_working = True
+                        proxy_instance.latency = (end_time - start_time) * 1000
+                    else:
+                        proxy_instance.is_working = False
+        except (aiohttp.ClientError, asyncio.TimeoutError, SocksConnectionError) as e:
+            proxy_instance.is_working = False
+            # print(f"Test failed for {proxy_instance.remarks}: {e}") # Optional: for debugging
 
-        cls._test_cache[config] = instance
-        return instance
+        cls._test_cache[proxy_instance.config] = proxy_instance
+        return proxy_instance
 
 
 async def fetch_from_source(session: aiohttp.ClientSession, source: str) -> list[str]:
@@ -75,20 +138,30 @@ async def fetch_from_source(session: aiohttp.ClientSession, source: str) -> list
         return []
 
 
-async def test_all_proxies(
+async def process_and_test_proxies(
     configs: list[str], progress: Progress
 ) -> list[Proxy]:
-    """Tests a list of proxy configurations concurrently."""
-    task = progress.add_task("[cyan]Testing proxies...", total=len(configs))
+    """
+    Parses and tests a list of proxy configurations concurrently.
+    """
+    # Step 1: Parse all raw configs into Proxy objects
+    parsed_proxies = [Proxy.from_config(c) for c in configs]
+    valid_proxies = [p for p in parsed_proxies if p is not None]
+
+    if not valid_proxies:
+        return []
+
+    # Step 2: Test all valid proxies
+    task = progress.add_task("[cyan]Testing proxies...", total=len(valid_proxies))
     results: list[Proxy] = []
 
-    async def _test_and_update(config: str):
-        proxy = await Proxy.test(config)
-        results.append(proxy)
+    async def _test_and_update(proxy: Proxy):
+        tested_proxy = await Proxy.test(proxy)
+        results.append(tested_proxy)
         progress.update(task, advance=1)
 
     # Run tests concurrently
-    await asyncio.gather(*[_test_and_update(c) for c in configs])
+    await asyncio.gather(*[_test_and_update(p) for p in valid_proxies])
 
     # Sort working proxies by latency (lower is better)
     working_proxies = sorted(
@@ -113,21 +186,39 @@ def generate_base64_subscription(proxies: list[Proxy]) -> str:
 
 def generate_clash_config(proxies: list[Proxy]) -> str:
     """Generates a Clash-compatible YAML configuration file."""
-    # This is still a simplified placeholder. A real implementation would
-    # need to parse each proxy type and generate a valid Clash proxy entry.
-    header = "proxies:\n"
-    proxy_entries = []
-    for i, proxy in enumerate(p for p in proxies if p.is_working):
-        proxy_entries.append(
-            f"  - name: 'Proxy-{i+1}'\n"
-            f"    type: vmess  # Placeholder\n"
-            f"    server: server.address  # Placeholder\n"
-            f"    port: 12345  # Placeholder\n"
-            f"    uuid: 00000000-0000-0000-0000-000000000000  # Placeholder\n"
-            f"    alterId: 0  # Placeholder\n"
-            f"    cipher: auto\n"
-        )
-    return header + "".join(proxy_entries)
+    proxy_list = []
+    for proxy in (p for p in proxies if p.is_working and p.protocol == "vmess"):
+        clash_proxy = {
+            "name": proxy.remarks,
+            "type": "vmess",
+            "server": proxy.address,
+            "port": proxy.port,
+            "uuid": proxy.uuid,
+            "alterId": proxy._details.get("aid", 0),
+            "cipher": proxy.security,
+            "tls": proxy._details.get("tls", "none") != "none",
+            "network": proxy._details.get("net", "tcp"),
+        }
+        proxy_list.append(clash_proxy)
+
+    if not proxy_list:
+        return ""
+
+    # Basic Clash config structure
+    clash_config = {
+        "proxies": proxy_list,
+        "proxy-groups": [
+            {
+                "name": "ConfigStream-Proxies",
+                "type": "select",
+                "proxies": [p["name"] for p in proxy_list],
+            }
+        ],
+        "rules": ["MATCH,ConfigStream-Proxies"],
+    }
+
+    # Use yaml.dump for proper formatting
+    return yaml.dump(clash_config, sort_keys=False, indent=2)
 
 
 def generate_raw_configs(proxies: list[Proxy]) -> str:

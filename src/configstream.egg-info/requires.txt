@@ -6,9 +6,9 @@ PyYAML
 geoip2
 pydantic>=2
 pydantic-settings
-tqdm
-aiosqlite
 rich
+click
+aiohttp-proxy
 
 [dev]
 pytest
@@ -16,7 +16,6 @@ pytest-asyncio
 pytest-cov
 pyfakefs
 types-PyYAML
-types-requests
 flake8
 mypy
 pre-commit
