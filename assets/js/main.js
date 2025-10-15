@@ -176,14 +176,27 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await fetchWithCacheBust('output/statistics.json');
                 const stats = await response.json();
+                const style = getComputedStyle(body);
 
                 const commonOptions = {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: style.getPropertyValue('--text-secondary-dark')
+                            }
+                        }
+                    },
                     scales: {
-                        x: { ticks: { color: getComputedStyle(body).getPropertyValue('--text-secondary-light') } },
-                        y: { ticks: { color: getComputedStyle(body).getPropertyValue('--text-secondary-light') } }
+                        x: {
+                            ticks: { color: style.getPropertyValue('--text-secondary-dark') },
+                            grid: { color: style.getPropertyValue('--border-dark') }
+                        },
+                        y: {
+                            ticks: { color: style.getPropertyValue('--text-secondary-dark') },
+                            grid: { color: style.getPropertyValue('--border-dark') }
+                        }
                     }
                 };
 
@@ -194,10 +207,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         labels: Object.keys(stats.protocols),
                         datasets: [{
                             data: Object.values(stats.protocols),
-                            backgroundColor: ['#825ee4', '#5e72e4', '#2dce89', '#fb6340', '#f5365c'],
+                            backgroundColor: [
+                                'rgba(23, 162, 184, 0.7)',
+                                'rgba(102, 16, 242, 0.7)',
+                                'rgba(0, 123, 255, 0.7)',
+                                'rgba(0, 198, 255, 0.7)',
+                                'rgba(245, 54, 92, 0.7)'
+                            ],
+                            borderColor: style.getPropertyValue('--bg-dark'),
                         }]
                     },
-                    options: { ...commonOptions, plugins: { legend: { display: true, position: 'bottom' } } }
+                    options: { ...commonOptions, plugins: { legend: { ...commonOptions.plugins.legend, display: true, position: 'bottom' } } }
                 });
 
                 // Country Chart
@@ -209,7 +229,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         datasets: [{
                             label: 'Proxy Count',
                             data: topCountries.map(c => c[1]),
-                            backgroundColor: '#5e72e4',
+                            backgroundColor: 'rgba(23, 162, 184, 0.6)',
+                            borderColor: 'rgba(23, 162, 184, 1)',
+                            borderWidth: 1
                         }]
                     },
                     options: commonOptions

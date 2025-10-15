@@ -5,36 +5,52 @@
             <stop offset="100%" class="stop2" />
         </linearGradient>
         <style>
+            /*
+                Modern Logo Refresh
+                - Iconic, balanced 'S' shape for "Stream".
+                - Colors synchronized with UI's brand gradients.
+                - Softer, more modern shadow for depth.
+            */
             .logo-svg {
-                --color1: #5E72E4;
-                --color2: #825EE4;
-                --bg: #FFFFFF;
-                --shadow: rgba(0, 0, 0, 0.1);
+                /* Light Theme - Synced with style.css */
+                --color1: #007BFF;
+                --color2: #00C6FF;
+                --bg: rgba(255, 255, 255, 0.7); /* Match --bg-glass-light */
+                --shadow: rgba(0, 0, 0, 0.08);
+
             }
             .logo-svg.dark {
-                --color1: #7928CA;
-                --color2: #FF0080;
-                --bg: #171923;
-                --shadow: rgba(0, 0, 0, 0.3);
+                /* Dark Theme - Synced with style.css */
+                --color1: #17A2B8;
+                --color2: #6610F2;
+                --bg: rgba(28, 30, 40, 0.7); /* Match --bg-glass-dark */
+                --shadow: rgba(0, 0, 0, 0.25);
             }
-            .stop1 { stop-color: var(--color1); }
-            .stop2 { stop-color: var(--color2); }
-            .bg-rect { fill: var(--bg); }
+            .stop1 { stop-color: var(--color1); transition: stop-color 0.3s ease; }
+            .stop2 { stop-color: var(--color2); transition: stop-color 0.3s ease; }
+            .bg-rect {
+                fill: var(--bg);
+                transition: fill 0.3s ease;
+            }
             .shape {
                 stroke: url(#logoGradient);
-                stroke-width: 12;
+                stroke-width: 11;
                 fill: none;
                 stroke-linecap: round;
                 stroke-linejoin: round;
-                transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                transform-origin: center;
+                transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             }
         </style>
     </defs>
-    <g filter="url(#drop-shadow)">
-        <rect class="bg-rect" width="100" height="100" rx="28" ry="28"/>
-        <path d="M 65,25 C 40,25 40,50 50,50 C 60,50 60,75 35,75" class="shape" />
-    </g>
-    <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
-        <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="var(--shadow)" flood-opacity="1" />
+    <!-- A softer, more modern drop shadow that fits the glassmorphism style. -->
+    <filter id="drop-shadow" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="var(--shadow)" flood-opacity="1" />
     </filter>
+    <g filter="url(#drop-shadow)">
+        <!-- Container with modern squircle shape -->
+        <rect class="bg-rect" width="100" height="100" rx="28" ry="28"/>
+        <!-- A more balanced, iconic 'S' shape representing a continuous stream. -->
+        <path d="M 30,70 C 40,90 60,10 70,30" class="shape" />
+    </g>
 </svg>

@@ -1,10 +1,9 @@
 /*
-    MODERN UI/UX REDESIGN
-    ---------------------
-    - Glassmorphism & Glow Effects
-    - Light & Dark Mode Theming
-    - Advanced Typography & Spacing
-    - Microinteractions & Animations
+    MODERN UI/UX REDESIGN - V2 (PERFECTION PASS)
+    -------------------------------------------
+    - Enhanced Glassmorphism with Backdrop Filter
+    - Refined Typography, Spacing, and Color
+    - Fluid Microinteractions and Animations
 */
 
 /* 1. Root Variables & Theming */
@@ -12,27 +11,27 @@
     /* Font & Sizing */
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-    --border-radius-sm: 0.5rem;
-    --border-radius-md: 1rem;
-    --border-radius-lg: 1.5rem;
+    --border-radius-sm: 0.5rem;  /* 8px */
+    --border-radius-md: 1rem;   /* 16px */
+    --border-radius-lg: 1.5rem; /* 24px */
 
     /* Light Theme */
-    --bg-light: #F8F9FA;
-    --bg-glass-light: rgba(255, 255, 255, 0.7);
-    --border-light: #E9ECEF;
-    --text-primary-light: #212529;
-    --text-secondary-light: #6C757D;
+    --bg-light: #fcfcfd;
+    --bg-glass-light: rgba(255, 255, 255, 0.6);
+    --border-light: rgba(0, 0, 0, 0.08);
+    --text-primary-light: #1a1a1a;
+    --text-secondary-light: #6b7280;
     --shadow-light: rgba(0, 0, 0, 0.05);
     --glow-light: #007BFF;
     --brand-gradient-light: linear-gradient(135deg, #007BFF 0%, #00C6FF 100%);
 
     /* Dark Theme */
-    --bg-dark: #0B0C10;
-    --bg-glass-dark: rgba(28, 30, 40, 0.7);
-    --border-dark: #1C1E28;
-    --text-primary-dark: #F8F9FA;
-    --text-secondary-dark: #ADB5BD;
-    --shadow-dark: rgba(0, 0, 0, 0.15);
+    --bg-dark: #0a0a0a;
+    --bg-glass-dark: rgba(20, 20, 20, 0.5);
+    --border-dark: rgba(255, 255, 255, 0.1);
+    --text-primary-dark: #f0f0f0;
+    --text-secondary-dark: #a0a0a0;
+    --shadow-dark: rgba(0, 0, 0, 0.2);
     --glow-dark: #17A2B8;
     --brand-gradient-dark: linear-gradient(135deg, #17A2B8 0%, #6610F2 100%);
 }
@@ -48,10 +47,12 @@ body {
     font-family: var(--font-sans);
     background-color: var(--bg-light);
     color: var(--text-primary-light);
-    line-height: 1.7;
+    line-height: 1.6;
     min-height: 100vh;
     padding: 0;
     transition: background-color 0.3s ease, color 0.3s ease;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 body.dark {
@@ -71,8 +72,8 @@ body.dark {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.5rem 0;
-    margin-bottom: 4rem;
+    padding: 1.5rem 0; /* 24px */
+    margin-bottom: 4rem; /* 64px */
 }
 
 .logo {
@@ -85,37 +86,11 @@ body.dark {
     transform: rotate(10deg) scale(1.1);
 }
 
-.header h1 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    background: var(--brand-gradient-light);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-}
-
-body.dark .header h1 {
-    background: var(--brand-gradient-dark);
-    -webkit-background-clip: text;
-    background-clip: text;
-}
-
-.header .subtitle {
-    display: none;
-}
-
 /* 5. Navigation & Theme Switcher */
 .nav {
     display: flex;
     align-items: center;
-    gap: 1rem;
-}
-
-body.dark .nav {
-    background: var(--bg-glass-dark);
-    border-color: var(--border-dark);
-    box-shadow: 0 8px 32px 0 var(--shadow-dark);
+    gap: 1.5rem; /* 24px */
 }
 
 .nav-link {
@@ -127,6 +102,7 @@ body.dark .nav {
     position: relative;
     background: none;
     border: none;
+    font-size: 1rem; /* 16px */
 }
 
 body.dark .nav-link {
@@ -158,7 +134,8 @@ body.dark .nav-link.active {
     height: 2px;
     background: var(--glow-light);
     transform: scaleX(0);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+    transform-origin: center;
 }
 
 body.dark .nav-link::after {
@@ -170,12 +147,14 @@ body.dark .nav-link::after {
 }
 
 .theme-switcher {
-    background: none;
+    background: transparent;
     border: none;
     cursor: pointer;
-    padding: 0;
+    padding: 0.5rem; /* 8px */
+    border-radius: var(--border-radius-sm);
     color: var(--text-secondary-light);
     margin-left: 1rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 body.dark .theme-switcher {
@@ -184,10 +163,12 @@ body.dark .theme-switcher {
 
 .theme-switcher:hover {
     background: rgba(0, 0, 0, 0.05);
+    color: var(--text-primary-light);
 }
 
 body.dark .theme-switcher:hover {
     background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary-dark);
 }
 
 /* 6. Hero Section */
@@ -198,7 +179,7 @@ body.dark .theme-switcher:hover {
 }
 
 .hero h1 {
-    font-size: clamp(3rem, 10vw, 5.5rem);
+    font-size: clamp(3.5rem, 10vw, 6rem);
     font-weight: 800;
     letter-spacing: -0.05em;
     line-height: 1.1;
@@ -216,9 +197,10 @@ body.dark .hero h1 {
 }
 
 .hero p {
-    max-width: 600px;
+    max-width: 650px;
     margin: 0 auto 2.5rem;
-    font-size: 1.2rem;
+    font-size: 1.25rem; /* 20px */
+    line-height: 1.7;
     color: var(--text-secondary-light);
 }
 
@@ -226,15 +208,17 @@ body.dark .hero p {
     color: var(--text-secondary-dark);
 }
 
-/* 7. Cards & Sections */
+/* 7. Cards & Sections (Glassmorphism Perfected) */
 .card {
     background: var(--bg-glass-light);
     border: 1px solid var(--border-light);
     border-radius: var(--border-radius-lg);
-    padding: 2.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 6px var(--shadow-light);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    padding: 2.5rem; /* 40px */
+    margin-bottom: 2rem; /* 32px */
+    box-shadow: 0 8px 32px 0 var(--shadow-light);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 body.dark .card {
@@ -244,9 +228,9 @@ body.dark .card {
 }
 
 .card {
-    animation: card-enter 0.5s ease-out forwards;
+    animation: card-enter 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px);
 }
 
 .card:nth-child(1) { animation-delay: 0.1s; }
@@ -271,11 +255,11 @@ body.dark .card:hover {
 
 /* 8. Buttons */
 .btn {
-    padding: 0.75rem 1.5rem;
+    padding: 0.875rem 1.75rem; /* 14px 28px */
     border-radius: var(--border-radius-sm);
     text-decoration: none;
     font-weight: 600;
-    transition: all 0.2s ease-in-out;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -305,7 +289,7 @@ body.dark .btn-primary {
 }
 
 .btn-primary:hover {
-    transform: translateY(-3px);
+    transform: translateY(-4px) scale(1.02);
     box-shadow: 0 7px 20px -5px var(--shadow-light);
 }
 
@@ -314,28 +298,31 @@ body.dark .btn-primary:hover {
 }
 
 .btn-secondary {
-    background: rgba(0, 0, 0, 0.03);
+    background-color: var(--bg-glass-light);
+    border: 1px solid var(--border-light);
     color: var(--text-primary-light);
 }
 
 body.dark .btn-secondary {
-    background: rgba(255, 255, 255, 0.08);
+    background-color: var(--bg-glass-dark);
+    border: 1px solid var(--border-dark);
     color: var(--text-primary-dark);
 }
 
 .btn-secondary:hover {
-    background: rgba(0, 0, 0, 0.06);
+    background-color: rgba(0,0,0,0.05);
+    transform: translateY(-2px);
 }
 
 body.dark .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background-color: rgba(255,255,255,0.1);
 }
 
-/* 8. Content Specific Styles */
+/* 9. Content Specific Styles */
 .stats-grid, .downloads-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 2.5rem;
+    gap: 2rem; /* 32px */
 }
 
 .stat-card, .download-card {
@@ -353,12 +340,12 @@ body.dark .stat-card, body.dark .download-card {
 }
 
 .stat-card:hover, .download-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px var(--shadow-light);
+    transform: translateY(-6px);
+    box-shadow: 0 12px 24px var(--shadow-light);
 }
 
 body.dark .stat-card:hover, body.dark .download-card:hover {
-    box-shadow: 0 10px 20px var(--shadow-dark);
+    box-shadow: 0 12px 24px var(--shadow-dark);
 }
 
 .stat-number {
@@ -382,6 +369,8 @@ body.dark .stat-number {
 .stat-label {
     font-size: 1rem;
     color: var(--text-secondary-light);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 body.dark .stat-label {
@@ -414,7 +403,7 @@ body.dark .download-icon {
     font-size: 1rem;
     color: var(--text-secondary-light);
     margin-bottom: 2rem;
-    min-height: 3.4rem;
+    min-height: 3.2rem;
 }
 
 body.dark .download-desc {
@@ -427,7 +416,7 @@ body.dark .download-desc {
     gap: 1rem;
 }
 
-/* 9. Footer */
+/* 10. Footer */
 .footer {
     text-align: center;
     padding: 4rem 1rem 2rem;
@@ -438,6 +427,7 @@ body.dark .download-desc {
 
 body.dark .footer {
     color: var(--text-secondary-dark);
+    border-top-color: var(--border-dark);
 }
 
 .footer a {
@@ -450,10 +440,15 @@ body.dark .footer a {
     color: var(--text-primary-dark);
 }
 
+.footer .social-links {
+    margin-bottom: 1rem;
+}
+
 .footer .social-links a {
     color: var(--text-secondary-light);
     margin: 0 0.75rem;
-    transition: color 0.3s;
+    transition: color 0.3s, transform 0.3s;
+    display: inline-block;
 }
 
 body.dark .footer .social-links a {
@@ -462,13 +457,14 @@ body.dark .footer .social-links a {
 
 .footer .social-links a:hover {
     color: var(--glow-light);
+    transform: scale(1.1);
 }
 
 body.dark .footer .social-links a:hover {
     color: var(--glow-dark);
 }
 
-/* 10. Table Styles */
+/* 11. Table Styles */
 #proxiesTable {
     width: 100%;
     border-collapse: separate;
@@ -476,14 +472,16 @@ body.dark .footer .social-links a:hover {
 }
 
 #proxiesTable th, #proxiesTable td {
-    padding: 1rem 1.5rem;
+    padding: 1.25rem 1.5rem;
     text-align: left;
+    vertical-align: middle;
 }
 
 #proxiesTable th {
     font-weight: 600;
     text-transform: uppercase;
     font-size: 0.8rem;
+    letter-spacing: 0.05em;
     color: var(--text-secondary-light);
 }
 
@@ -492,11 +490,14 @@ body.dark #proxiesTable th {
 }
 
 #proxiesTable tbody tr {
-    transition: background-color 0.2s ease;
+    background-color: transparent;
+    border-radius: var(--border-radius-md);
+    transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 #proxiesTable tbody tr:hover {
     background-color: rgba(0, 0, 0, 0.02);
+    transform: scale(1.01);
 }
 
 body.dark #proxiesTable tbody tr:hover {
@@ -507,11 +508,18 @@ body.dark #proxiesTable tbody tr:hover {
     border-bottom: 1px solid var(--border-light);
 }
 
+#proxiesTable tbody tr:first-child td:first-child { border-top-left-radius: var(--border-radius-md); }
+#proxiesTable tbody tr:first-child td:last-child { border-top-right-radius: var(--border-radius-md); }
+#proxiesTable tbody tr:last-child td:first-child { border-bottom-left-radius: var(--border-radius-md); }
+#proxiesTable tbody tr:last-child td:last-child { border-bottom-right-radius: var(--border-radius-md); }
+#proxiesTable tbody tr:last-child td { border-bottom: none; }
+
+
 body.dark #proxiesTable td {
     border-color: var(--border-dark);
 }
 
-/* 11. Utility & Animations */
+/* 12. Utility & Animations */
 .loading {
     animation: pulse-opacity 1.5s ease-in-out infinite;
 }
@@ -523,35 +531,57 @@ body.dark #proxiesTable td {
 
 /* Responsive */
 @media (max-width: 768px) {
-    .nav-link {
-        padding: 0.5rem 1rem;
+    .nav {
+        gap: 1rem;
     }
     .stats-grid, .downloads-grid {
         grid-template-columns: 1fr;
+    }
+    .hero h1 {
+        font-size: clamp(2.5rem, 12vw, 3.5rem);
+    }
+    .hero p {
+        font-size: 1.1rem;
     }
 }
 
 /* Table Controls */
 .table-controls {
     display: flex;
+    flex-wrap: wrap;
     gap: 1rem;
     margin-bottom: 1.5rem;
 }
 
 .filter-input {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: var(--bg-glass-light);
     border: 1px solid var(--border-light);
     color: var(--text-primary-light);
     border-radius: var(--border-radius-sm);
     padding: 0.75rem 1rem;
     width: 100%;
+    max-width: 300px;
+    font-size: 1rem;
+    transition: background-color 0.2s, border-color 0.2s;
 }
 
 body.dark .filter-input {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--bg-glass-dark);
     border-color: var(--border-dark);
     color: var(--text-primary-dark);
 }
+
+.filter-input:focus {
+    outline: none;
+    border-color: var(--glow-light);
+    box-shadow: 0 0 0 3px var(--glow-light);
+}
+
+body.dark .filter-input:focus {
+    border-color: var(--glow-dark);
+    box-shadow: 0 0 0 3px var(--glow-dark);
+}
+
 
 #proxiesTable th[data-sort] {
     cursor: pointer;
@@ -577,7 +607,7 @@ body.dark .filter-input {
     width: 40px;
     height: 40px;
     animation: spin 1s linear infinite;
-    margin: 0 auto;
+    margin: 2rem auto;
 }
 
 body.dark .loader {
