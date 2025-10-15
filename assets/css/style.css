@@ -2,18 +2,18 @@
 
 /* 1. Gradients & Color Palette */
 :root {
-    --primary-start: #6a82fb;
-    --primary-end: #fc5c7d;
-    --background-start: #f8f9fe;
-    --background-end: #eef2f7;
-    --text-dark: #2c3e50;
-    --text-light: #8e9eab;
-    --card-background: rgba(255, 255, 255, 0.6);
-    --card-border: rgba(255, 255, 255, 0.9);
-    --shadow-color: rgba(106, 130, 251, 0.15);
-    --success: #28a745;
-    --warning: #ffc107;
-    --danger: #dc3545;
+    --primary-start: #5e72e4;
+    --primary-end: #825ee4;
+    --background-start: #f6f9fc;
+    --background-end: #e9ecef;
+    --text-dark: #32325d;
+    --text-light: #8898aa;
+    --card-background: rgba(255, 255, 255, 0.75);
+    --card-border: rgba(255, 255, 255, 1);
+    --shadow-color: rgba(0, 0, 0, 0.05);
+    --success: #2dce89;
+    --warning: #fb6340;
+    --danger: #f5365c;
     --white: #ffffff;
 }
 
@@ -44,63 +44,57 @@ body {
 .nav {
     display: flex;
     justify-content: center;
-    gap: 10px;
-    padding: 20px 40px;
-    /* Fallback for no backdrop-filter support */
-    background: rgba(255, 255, 255, 0.95);
-    color: var(--text-dark);
-    /* Prefer glass effect when supported */
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 16px;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
-    margin-bottom: 40px;
-}
-
-@supports (-webkit-backdrop-filter: blur(10px)) or (backdrop-filter: blur(10px)) {
-    .nav {
-        background: rgba(255, 255, 255, 0.3);
-    }
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.6);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 50px; /* Pill shape */
+    box-shadow: 0 8px 32px 0 var(--shadow-color);
+    margin: 0 auto 2.5rem;
+    max-width: max-content;
 }
 
 .nav-link {
-    padding: 12px 24px;
+    padding: 0.75rem 1.5rem;
     text-decoration: none;
     color: var(--text-light);
-    font-weight: 600;
-    border-radius: 12px;
+    font-weight: 500;
+    border-radius: 50px;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
+    border: 1px solid transparent;
 }
 
 .nav-link:hover {
-    background: rgba(255, 255, 255, 0.5);
     color: var(--text-dark);
+    background: rgba(255, 255, 255, 0.5);
 }
 
 .nav-link.active {
-    background: linear-gradient(90deg, var(--primary-start), var(--primary-end));
-    color: var(--white);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    background: var(--white);
+    color: var(--text-dark);
+    border-color: rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
 }
 
 /* 3. Cards & Layers */
 .card {
     background: var(--card-background);
     border: 1px solid var(--card-border);
-    border-radius: 20px;
-    padding: 30px;
-    margin-bottom: 30px;
-    box-shadow: 0 10px 40px var(--shadow-color);
+    border-radius: 24px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 20px 25px -5px var(--shadow-color), 0 10px 10px -5px var(--shadow-color);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 50px var(--shadow-color);
+    transform: translateY(-5px);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
 }
 
 /* Header */
@@ -114,16 +108,17 @@ body {
 }
 
 .header h1 {
-    font-size: 3.5em;
-    font-weight: 800;
-    margin-bottom: 20px;
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
     text-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
 .header .subtitle {
-    font-size: 1.4em;
-    opacity: 0.9;
-    font-weight: 500;
+    font-size: 1.125rem;
+    opacity: 0.8;
+    font-weight: 400;
 }
 
 /* Content specific styles */
@@ -143,46 +138,46 @@ body {
 }
 
 .download-card .download-title {
-    font-size: 1.5em;
-    font-weight: 700;
-    margin-bottom: 10px;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
 }
 
 .download-card .download-desc {
-    font-size: 1em;
+    font-size: 0.9rem;
     color: var(--text-light);
-    margin-bottom: 20px;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
 }
 
 .btn {
-    padding: 12px 24px;
-    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
     text-decoration: none;
     font-weight: 600;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease-in-out;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
     cursor: pointer;
-    border: none;
-    font-size: 1em;
+    border: 1px solid transparent;
+    font-size: 0.9rem;
     outline: none;
 }
 
 .btn:focus-visible {
-    outline: 3px solid rgba(106, 130, 251, 0.6);
-    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(94, 114, 228, 0.4);
 }
 
 .btn-primary {
-    background: linear-gradient(90deg, var(--primary-start), var(--primary-end));
+    background: linear-gradient(87deg, var(--primary-start) 0, var(--primary-end) 100%);
     color: var(--white);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .btn-primary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
 }
 
 /* Footer */
@@ -246,14 +241,17 @@ body {
 }
 
 .stat-number {
-    font-size: 3em;
-    font-weight: 800;
+    font-size: 2.5rem;
+    font-weight: 700;
     color: var(--primary-start);
+    line-height: 1.2;
 }
 
 .stat-label {
     color: var(--text-light);
-    font-size: 1.1em;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .loading {
