@@ -25,7 +25,9 @@
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <a href="index.html"><img src="src/configstream/logo.svg" alt="ConfigStream Logo" class="logo" id="logo"></a>
+            <a href="index.html" aria-label="Homepage">
+                <img src="src/configstream/logo.svg" alt="ConfigStream Logo" class="logo" id="logo">
+            </a>
             <nav class="nav">
                 <a href="index.html" class="nav-link active">Home</a>
                 <a href="proxies.html" class="nav-link">Proxies</a>
@@ -43,8 +45,12 @@
             <h1>Access the Open Internet</h1>
             <p>ConfigStream is an open-source project that automatically aggregates, tests, and provides free, high-quality VPN and proxy configurations.</p>
             <div class="hero-actions">
-                <a href="proxies.html" class="btn btn-primary">Get Proxies</a>
-                <a href="about.html" class="btn btn-secondary">Learn More</a>
+                <a href="proxies.html" class="btn btn-primary">
+                    <i data-feather="shield"></i>Get Proxies
+                </a>
+                <a href="about.html" class="btn btn-secondary">
+                    <i data-feather="info"></i>Learn More
+                </a>
             </div>
         </section>
 
@@ -68,6 +74,7 @@
             </section>
 
             <section class="card" id="downloads-card">
+                <h2>Downloads</h2>
                 <div class="downloads-grid">
                     <div class="download-card">
                         <div class="download-icon">📄</div>
@@ -102,12 +109,12 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>Source code & contributions on <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank">GitHub</a></p>
             <div class="social-links">
                 <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" title="GitHub"><i data-feather="github"></i></a>
                 <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" title="Issues"><i data-feather="alert-circle"></i></a>
                 <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/stargazers" target="_blank" title="Star"><i data-feather="star"></i></a>
             </div>
+            <p>Source code & contributions on <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank">GitHub</a></p>
             <p style="margin-top: 1rem; font-size: 0.9em; opacity: 0.7;">Last updated: <span id="footerUpdate" class="loading">...</span></p>
         </footer>
     </div>
