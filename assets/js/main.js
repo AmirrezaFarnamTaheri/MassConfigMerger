@@ -133,8 +133,6 @@ document.addEventListener('DOMContentLoaded', () => {
               .replace(/>/g, '>')
               .replace(/"/g, '"')
               .replace(/'/g, ''');
-
-            const escapeHtml = (s) => String(s)
               .replace(/&/g, '&')
               .replace(/</g, '<')
               .replace(/>/g, '>')
