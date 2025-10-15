@@ -134,30 +134,43 @@ document.addEventListener('DOMContentLoaded', () => {
               .replace(/"/g, '"')
               .replace(/'/g, ''');
 
+            const escapeHtml = (s) => String(s)
+              .replace(/&/g, '&')
+              .replace(/</g, '<')
+              .replace(/>/g, '>')
+              .replace(/"/g, '"')
+              .replace(/'/g, ''');
+
+            const escapeAttr = (s) => String(s)
+              .replace(/&/g, '&')
+              .replace(/"/g, '"')
+              .replace(/</g, '<')
+              .replace(/>/g, '>');
+
             tableBody.innerHTML = filteredProxies.map((p, index) => {
-                const cityRaw = p.location?.city ?? '—';
-                const countryRaw = p.location?.country ?? '—';
-                const asnNameRaw = p.location?.asn?.name ?? '—';
-                const latencyRaw = (p.latency ?? '') !== '' ? `${p.latency}ms` : '—';
-                const protocolRaw = p.protocol ?? '—';
-                const configRaw = p.config ?? '';
+              const cityRaw = p.location?.city ?? '—';
+              const countryRaw = p.location?.country ?? '—';
+              const asnNameRaw = p.location?.asn?.name ?? '—';
+              const latencyRaw = (p.latency ?? '') !== '' ? `${p.latency}ms` : '—';
+              const protocolRaw = p.protocol ?? '—';
+              const configRaw = p.config ?? '';
 
-                const city = escapeHtml(cityRaw);
-                const country = escapeHtml(countryRaw);
-                const asnName = escapeHtml(asnNameRaw);
-                const latency = escapeHtml(latencyRaw);
-                const protocol = escapeHtml(protocolRaw);
-                const config = escapeHtml(configRaw);
+              const city = escapeHtml(cityRaw);
+              const country = escapeHtml(countryRaw);
+              const asnName = escapeHtml(asnNameRaw);
+              const latency = escapeHtml(latencyRaw);
+              const protocol = escapeHtml(protocolRaw);
+              const configAttr = escapeAttr(configRaw);
 
-                return `
-                    <tr style="animation-delay: ${index * 0.03}s">
-                        <td>${protocol}</td>
-                        <td>${city}${city !== '—' && country !== '—' ? ', ' : ''}${country}</td>
-                        <td>${latency}</td>
-                        <td>${asnName}</td>
-                        <td><button class="btn btn-secondary copy-btn" data-config="${config}"><i data-feather="copy"></i></button></td>
-                    </tr>
-                `;
+              return `
+                <tr style="animation-delay: ${index * 0.03}s">
+                  <td>${protocol}</td>
+                  <td>${city}${city !== '—' && country !== '—' ? ', ' : ''}${country}</td>
+                  <td>${latency}</td>
+                  <td>${asnName}</td>
+                  <td><button class="btn btn-secondary copy-btn" data-config="${configAttr}"><i data-feather="copy"></i></button></td>
+                </tr>
+              `;
             }).join('');
             feather.replace();
 
