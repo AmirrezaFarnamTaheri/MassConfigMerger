@@ -1,48 +1,71 @@
-# 🚀 ConfigStream
+# ConfigStream
 
-**Automated Free VPN Configuration Aggregator**
+🚀 **Automated Free VPN Configuration Aggregator**
 
-ConfigStream is an automated system that collects, tests, and publishes working VPN configurations from various free sources. All configurations are automatically updated every 2 hours via GitHub Actions.
+[![Merge Subscriptions](https://github.com/AmirrezaFarnamTaheri/ConfigStream/actions/workflows/merge.yml/badge.svg)](https://github.com/AmirrezaFarnamTaheri/ConfigStream/actions/workflows/merge.yml)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-[![Generate Configurations](https://github.com/AmirrezaFarnamTaheri/ConfigStream/actions/workflows/generate-configs.yml/badge.svg)](https://github.com/AmirrezaFarnamTaheri/ConfigStream/actions/workflows/generate-configs.yml)
+ConfigStream automatically collects, tests, and publishes working VPN configurations from free public sources. All configurations are automatically updated every 6 hours via GitHub Actions.
 
 ## 🌐 Get Fresh Configurations
 
 Visit our GitHub Pages site to download the latest tested configurations:
 
-**👉 [https://amirrezafarnamtaheri.github.io/ConfigStream/](https://amirrezafarnamtaheri.github.io/ConfigStream/)**
+### **👉 [https://amirrezafarnamtaheri.github.io/ConfigStream/](https://amirrezafarnamtaheri.github.io/ConfigStream/)**
 
 ## 📥 Available Formats
 
-- **base64.txt** - Universal Base64 encoded format
-- **clash.yaml** - Clash configuration file
-- **report.csv** - Detailed performance metrics
+- **Base64 Subscription** - Universal format compatible with V2RayNG, V2Box, and similar clients
+- **Clash YAML** - Ready-to-use configuration for Clash and Clash Meta
+- **Raw Configs** - Plain text configuration links
 
 ## ✨ Features
 
-- ✅ **Automatic Updates** - Fresh configurations every 2 hours
+- ✅ **Automatic Updates** - Fresh configurations every 6 hours
 - ✅ **Performance Testing** - All configs tested before publishing
 - ✅ **Multiple Formats** - Support for various VPN clients
-- ✅ **Detailed Metrics** - Performance reports included
+- ✅ **Latency Sorting** - Configs sorted by performance
 - ✅ **Open Source** - Fully transparent and auditable
+- ✅ **Zero Setup** - Just grab the subscription link and go
 
 ## 🔧 How It Works
 
-1. **GitHub Actions Workflow** runs every 2 hours
-2. **Fetches** VPN configurations from multiple sources
-3. **Tests** each configuration for:
-   - Connection stability
-   - Response time
-   - Reliability
-4. **Generates** output files in multiple formats
-5. **Commits** updated configurations automatically
-6. **Publishes** to GitHub Pages for easy access
+```mermaid
+graph LR
+    A[GitHub Actions] -->|Every 6h| B[Fetch Sources]
+    B --> C[Test Configs]
+    C --> D[Filter & Sort]
+    D --> E[Generate Outputs]
+    E --> F[Commit to Repo]
+    F --> G[GitHub Pages]
+```
+
+1. **GitHub Actions** triggers every 6 hours
+2. **Fetches** VPN configurations from multiple public sources
+3. **Tests** each configuration for connectivity and latency
+4. **Filters** out non-working configs
+5. **Sorts** by performance (ping time)
+6. **Generates** multiple output formats
+7. **Commits** to repository automatically
+8. **Publishes** via GitHub Pages
+
+## ⚠️ Security Disclaimer
+
+**IMPORTANT:** These are free public VPN nodes from unknown operators.
+
+- ❌ **NOT for banking** or sensitive activities
+- ❌ **Traffic may be logged** or modified
+- ❌ **No privacy guarantees**
+- ✅ **Good for casual browsing** and bypassing geo-restrictions
+- ✅ **Use HTTPS** websites when possible
+
+**Use at your own risk. Read our [full disclaimer](docs/tutorial.md#-important-security--privacy-disclaimer).**
 
 ## 💻 Local Development
 
 ### Prerequisites
 
-- Python 3.9 or higher
+- Python 3.8 or higher
 - pip
 
 ### Installation
@@ -53,26 +76,26 @@ git clone https://github.com/AmirrezaFarnamTaheri/ConfigStream.git
 cd ConfigStream
 
 # Install in development mode
-pip install -e ".[dev]"
+pip install -e .
 ```
 
 ### Usage
 
 ```bash
-# Generate all configurations
-configstream full
+# Fetch and merge configurations
+configstream merge --sources sources.txt --output output/
 
-# Fetch configurations only
-configstream fetch
+# Fetch only (no testing)
+configstream fetch --sources sources.txt --output fetched.txt
 
-# Test existing configurations
-configstream test
+# Retest existing configs
+configstream retest --input configs.txt --output tested.txt
 
-# Generate output files
-configstream generate
+# Add a new source
+configstream sources add https://example.com/configs.txt
 
-# Show help
-configstream --help
+# List all sources
+configstream sources list
 ```
 
 ## 📁 Project Structure
@@ -81,35 +104,49 @@ configstream --help
 ConfigStream/
 ├── .github/
 │   └── workflows/
-│       └── generate-configs.yml    # Automated workflow
+│       └── merge.yml              # Automated workflow
 ├── src/
 │   └── configstream/
-│       ├── cli.py                  # Command-line interface
-│       ├── fetcher.py              # Configuration fetcher
-│       ├── tester.py               # Performance tester
-│       ├── generator.py            # Output generator
-│       └── config.py               # Configuration management
-├── tests/                          # Test suite
-├── output/                         # Generated configurations
-├── index.html                      # GitHub Pages landing page
-├── pyproject.toml                  # Project configuration
-└── README.md                       # This file
+│       ├── cli.py                 # Command-line interface
+│       ├── commands.py            # CLI command handlers
+│       ├── vpn_merger.py          # Main merge logic
+│       ├── tester.py              # Connection tester
+│       ├── output_writer.py       # Output generator
+│       └── core/                  # Core modules
+├── tests/                         # Test suite
+├── output/                        # Generated configs (auto-updated)
+├── sources.txt                    # Source URLs
+├── index.html                     # GitHub Pages landing
+└── README.md
 ```
 
 ## 🛠️ Configuration
 
-Create a `.env` file or set environment variables:
+Create `config.yaml` for custom settings:
 
-```env
-# Sources to fetch from (comma-separated URLs)
-CONFIG_SOURCES=https://example.com/configs.txt,https://another.com/vpn.yaml
+```yaml
+sources:
+  sources_file: sources.txt
 
-# Testing parameters
-TEST_TIMEOUT=5
-TEST_MAX_WORKERS=10
+testing:
+  timeout: 5
+  max_workers: 20
+  test_url: "http://www.gstatic.com/generate_204"
 
-# Output directory
-OUTPUT_DIR=output
+output:
+  output_dir: output
+  base64_file: vpn_subscription_base64.txt
+  clash_file: clash.yaml
+  raw_file: configs_raw.txt
+
+filtering:
+  include_protocols:
+    - vmess
+    - vless
+    - trojan
+    - shadowsocks
+  min_ping_ms: null
+  max_ping_ms: 2000
 ```
 
 ## 🧪 Testing
@@ -121,56 +158,47 @@ pytest
 # Run with coverage
 pytest --cov=configstream
 
-# Run specific test file
-pytest tests/test_fetcher.py
+# Run specific test
+pytest tests/test_vpn_merger.py
 ```
 
-## 📊 Output Files
+## 📊 Supported Protocols
 
-### base64.txt
-Universal format containing Base64 encoded configurations. Compatible with most VPN clients.
-
-### clash.yaml
-Ready-to-use Clash configuration file with all proxies pre-configured.
-
-### report.csv
-Detailed CSV report with performance metrics for each configuration:
-- Protocol type
-- Server location
-- Response time
-- Success rate
-- Timestamp
+- ✅ VMess
+- ✅ VLESS (including REALITY)
+- ✅ Trojan
+- ✅ Shadowsocks
+- ✅ SSR (ShadowsocksR)
+- ✅ Hysteria / Hysteria2
+- ✅ TUIC
+- ✅ Naive
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please:
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## ⚠️ Disclaimer
+## 📝 License
 
-This project is for educational purposes only. Users are responsible for complying with their local laws and regulations regarding VPN usage. The authors assume no liability for misuse of this tool.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Thanks to all the free VPN providers
+- Thanks to all free VPN providers
 - Built with Python and GitHub Actions
-- Powered by open source
+- Powered by the open-source community
 
 ## 📞 Support
 
 - 🐛 [Report a Bug](https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues)
 - 💡 [Request a Feature](https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues)
-- ⭐ Star this repository if you find it useful!
+- ⭐ Star this repo if you find it useful!
 
 ---
 
-Made with ❤️ by the ConfigStream Team
+**Made with ❤️ for internet freedom** | **Educational purposes only**

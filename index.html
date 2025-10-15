@@ -181,7 +181,7 @@
         }
 
         .info-section li:before {
-            content: "✓";
+            content: "•";
             position: absolute;
             left: 0;
             color: #667eea;
@@ -195,7 +195,7 @@
         }
 
         .warning-section li:before {
-            content: "⚠";
+            content: "!";
             color: #ff6b6b;
         }
 
@@ -311,16 +311,16 @@
 </head>
 <body>
     <div class="container">
-        <h1>🚀 ConfigStream</h1>
+        <h1>ConfigStream</h1>
         <p class="subtitle">
             Automated Free VPN Configuration Aggregator
             <br>
-            <span class="status-badge">✓ Active</span>
-            <span class="status-badge">🤖 Auto-Updated</span>
+            <span class="status-badge">Active</span>
+            <span class="status-badge">Auto-Updated</span>
         </p>
 
         <div class="update-info">
-            <strong>📅 Last Updated:</strong>
+            <strong>Last Updated:</strong>
             <span class="update-time loading" id="lastUpdate">Checking...</span>
         </div>
 
@@ -341,26 +341,26 @@
 
         <div class="downloads">
             <a href="output/vpn_subscription_base64.txt" class="download-card" download>
-                <div class="download-icon">📄</div>
+                <div class="download-icon">[File]</div>
                 <div class="download-title">Base64 Subscription</div>
                 <div class="download-desc">Universal format for most VPN clients</div>
             </a>
 
             <a href="output/clash.yaml" class="download-card" download>
-                <div class="download-icon">⚙️</div>
+                <div class="download-icon">[Gear]</div>
                 <div class="download-title">Clash Config</div>
                 <div class="download-desc">For Clash and Clash Meta clients</div>
             </a>
 
             <a href="output/configs_raw.txt" class="download-card" download>
-                <div class="download-icon">📋</div>
+                <div class="download-icon">[List]</div>
                 <div class="download-title">Raw Configs</div>
                 <div class="download-desc">Unencoded configuration links</div>
             </a>
         </div>
 
         <div class="info-section">
-            <h2>✨ Features</h2>
+            <h2>Features</h2>
             <ul>
                 <li>Automatically updated every 6 hours via GitHub Actions</li>
                 <li>All configurations tested for connectivity and performance</li>
@@ -372,7 +372,7 @@
         </div>
 
         <div class="info-section">
-            <h2>🔧 How to Use</h2>
+            <h2>How to Use</h2>
             <ul>
                 <li>Download your preferred configuration format above</li>
                 <li>Import the file or subscription link into your VPN client</li>
@@ -383,7 +383,7 @@
         </div>
 
         <div class="info-section warning-section">
-            <h2>⚠️ Important Security Notice</h2>
+            <h2>Important Security Notice</h2>
             <ul>
                 <li>These are FREE public VPN nodes from unknown operators</li>
                 <li>Traffic may be logged, monitored, or modified</li>
@@ -395,7 +395,7 @@
         </div>
 
         <div class="info-section">
-            <h2>📱 Supported Clients</h2>
+            <h2>Supported Clients</h2>
             <ul>
                 <li>V2RayNG (Android) - Use Base64 subscription</li>
                 <li>V2Box / Shadowrocket (iOS) - Use Base64 subscription</li>
@@ -419,7 +419,7 @@
                 </a>
             </div>
             <p style="margin-top: 20px; font-size: 0.85em; color: #aaa;">
-                Made with ❤️ for internet freedom | Educational purposes only
+                Made with love for internet freedom | Educational purposes only
             </p>
         </div>
     </div>
