@@ -31,7 +31,6 @@ def _download_file(url: str, dest_path: Path, expected_hash: str | None = None) 
     """
     try:
         click.echo(f"Downloading from {url}...")
-        dest_path.parent.mkdir(parents=True, exist_ok=True)
 
         with requests.get(url, stream=True, timeout=60) as r:
             r.raise_for_status()
@@ -102,7 +101,7 @@ def download_geoip_dbs():
             sys.exit(1)
 
     # Download City DB
-    if not GEOIP_CITY_DB_PATH.exists():
+    if not os.path.exists(GEOIP_CITY_DB_PATH):
         click.echo("GeoIP City database not found, downloading...")
         gz_path = DATA_DIR / "GeoLite2-City.mmdb.gz"
         tmp_city_path = DATA_DIR / "GeoLite2-City.mmdb.tmp"
@@ -111,18 +110,20 @@ def download_geoip_dbs():
             try:
                 with gzip.open(gz_path, "rb") as f_in, open(tmp_city_path, "wb") as f_out:
                     f_out.write(f_in.read())
-                tmp_city_path.replace(GEOIP_CITY_DB_PATH)
+                os.rename(tmp_city_path, GEOIP_CITY_DB_PATH)
                 click.echo("✓ GeoIP City database extracted successfully")
             except gzip.BadGzipFile as e:
                 click.echo(f"✗ Error decompressing City database: {e}", err=True)
                 click.echo("⚠ Warning: City database decompression failed; proceeding without City DB.")
-                tmp_city_path.unlink(missing_ok=True)
+                if os.path.exists(tmp_city_path):
+                    os.remove(tmp_city_path)
             except Exception as e:
                 click.echo(f"✗ Error writing City database: {e}", err=True)
-                tmp_city_path.unlink(missing_ok=True)
+                if os.path.exists(tmp_city_path):
+                    os.remove(tmp_city_path)
             finally:
-                if gz_path.exists():
-                    gz_path.unlink()
+                if os.path.exists(gz_path):
+                    os.remove(gz_path)
         else:
             click.echo("⚠ Warning: City database download failed; proceeding without City DB.")
 
