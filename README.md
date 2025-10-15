@@ -4,9 +4,9 @@
 
 [![Merge Subscriptions](https://github.com/AmirrezaFarnamTaheri/ConfigStream/actions/workflows/merge.yml/badge.svg)](https://github.com/AmirrezaFarnamTaheri/ConfigStream/actions/workflows/merge.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
-ConfigStream automatically collects, tests, and publishes working VPN configurations from free public sources. All configurations are automatically updated every 6 hours via GitHub Actions with comprehensive security testing and geolocation data.
+ConfigStream automatically collects, tests, and publishes working VPN configurations from free public sources. All configurations are automatically updated every 3 hours via GitHub Actions with comprehensive security testing and geolocation data.
 
 ## 🌐 Get Fresh Configurations
 
@@ -17,7 +17,7 @@ Visit our GitHub Pages site to download the latest tested configurations:
 ## ✨ Features
 
 ### 🤖 Fully Automated
-- **Auto-updates every 6 hours** via GitHub Actions
+- **Auto-updates every 3 hours** via GitHub Actions
 - **Zero manual intervention** required
 - **Cache-busting** ensures clients always get fresh data
 
@@ -58,7 +58,7 @@ Visit our GitHub Pages site to download the latest tested configurations:
 
 ```mermaid
 graph LR
-    A[GitHub Actions<br/>Every 6h] -->|Trigger| B[Fetch Sources]
+    A[GitHub Actions<br/>Every 3h] -->|Trigger| B[Fetch Sources]
     B --> C[Parse Configs]
     C --> D[Test Connectivity]
     D --> E[Security Tests]
@@ -147,7 +147,7 @@ Detailed information including:
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.10 or higher
 - pip
 - Git
 
@@ -264,7 +264,7 @@ pytest -v
 ### GitHub Actions Workflow
 
 The automation workflow (`merge.yml`) runs:
-- **Every 6 hours** (00:00, 06:00, 12:00, 18:00 UTC)
+- **Every 3 hours** (00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00 UTC)
 - **On manual trigger** via workflow_dispatch
 - **On source file changes**
 
