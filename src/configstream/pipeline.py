@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
+import json
 
 import aiohttp
 from rich.progress import Progress
@@ -13,59 +14,83 @@ from .core import (
     generate_base64_subscription,
     generate_clash_config,
     generate_raw_configs,
+    generate_proxies_json,
+    generate_statistics_json,
 )
 
 
-async def run_full_pipeline(sources: list[str], output_dir: str, progress: Progress, max_proxies: int | None = None, country: str | None = None):
+async def run_full_pipeline(
+    sources: list[str],
+    output_dir: str,
+    progress: Progress,
+    max_proxies: int | None = None,
+    country: str | None = None,
+    min_latency: float | None = None,
+    max_latency: float | None = None,
+):
     """
-    The main asynchronous pipeline for fetching, testing, and generating.
+    Main asynchronous pipeline for fetching, testing, and generating.
     """
-    # Step 1: Fetch configurations from all sources
+    # Step 1: Fetch configurations
     fetched_configs = await _fetch_all_sources(sources, progress)
+
     if not fetched_configs:
-        progress.console.print("[bold red]No configurations were fetched. Exiting.[/bold red]")
+        progress.console.print("[bold red]No configurations fetched. Exiting.[/bold red]")
         return
 
+    progress.console.print(
+        f"[bold green]Fetched {len(fetched_configs)} unique configurations.[/bold green]"
+    )
+
+    # Limit if requested
     if max_proxies is not None:
         fetched_configs = fetched_configs[:max_proxies]
 
-    progress.console.print(
-        f"[bold green]Successfully fetched {len(fetched_configs)} unique configurations.[/bold green]"
-    )
-
-    # Step 2: Test all fetched configurations
+    # Step 2: Test configurations
     tested_proxies = await process_and_test_proxies(fetched_configs, progress)
-    working_proxies = [p for p in tested_proxies if p.is_working]
+    working_proxies = [p for p in tested_proxies if p.is_working and p.is_secure]
+
     progress.console.print(
-        f"[bold green]Testing complete. Found {len(working_proxies)} working proxies.[/bold green]"
+        f"[bold green]Testing complete. Found {len(working_proxies)} working and secure proxies.[/bold green]"
     )
 
+    # Step 3: Apply filters
     if country:
-        working_proxies = [p for p in working_proxies if p.country == country.upper()]
+        working_proxies = [p for p in working_proxies if p.country_code.upper() == country.upper()]
         progress.console.print(
-            f"[bold blue]Filtered for country: {country.upper()}. Found {len(working_proxies)} working proxies.[/bold blue]"
+            f"[bold blue]Filtered by country {country.upper()}: {len(working_proxies)} proxies.[/bold blue]"
+        )
+
+    if min_latency is not None:
+        working_proxies = [p for p in working_proxies if p.latency and p.latency >= min_latency]
+        progress.console.print(
+            f"[bold blue]Filtered by min latency {min_latency}ms: {len(working_proxies)} proxies.[/bold blue]"
+        )
+
+    if max_latency is not None:
+        working_proxies = [p for p in working_proxies if p.latency and p.latency <= max_latency]
+        progress.console.print(
+            f"[bold blue]Filtered by max latency {max_latency}ms: {len(working_proxies)} proxies.[/bold blue]"
         )
 
     if not working_proxies:
-        progress.console.print("[bold yellow]No working proxies found. No files will be generated.[/bold yellow]")
+        progress.console.print("[bold yellow]No working proxies after filtering.[/bold yellow]")
         return
 
-    # Step 3: Generate the output files
-    _generate_output_files(working_proxies, output_dir, progress)
+    # Step 4: Generate outputs
+    _generate_output_files(working_proxies, tested_proxies, output_dir, progress)
+
     progress.console.print(
-        f"[bold blue]Output files have been generated in '{output_dir}'.[/bold blue]"
+        f"[bold blue]All output files generated in '{output_dir}'.[/bold blue]"
     )
 
 
 async def _fetch_all_sources(sources: list[str], progress: Progress) -> list[str]:
-    """
-    Fetches all configurations from the given sources concurrently.
-    """
+    """Fetch all configurations from sources concurrently."""
     task = progress.add_task("[green]Fetching sources...", total=len(sources))
     all_configs: list[str] = []
 
     async with aiohttp.ClientSession() as session:
-
         async def _fetch_and_update(source: str):
             configs = await fetch_from_source(session, source)
             all_configs.extend(configs)
@@ -73,34 +98,61 @@ async def _fetch_all_sources(sources: list[str], progress: Progress) -> list[str
 
         await asyncio.gather(*[_fetch_and_update(s) for s in sources])
 
-    # Remove duplicate configurations
+    # Remove duplicates
     return list(dict.fromkeys(all_configs))
 
 
-def _generate_output_files(proxies: list[Proxy], output_dir: str, progress: Progress):
-    """
-    Generates all output files from the tested proxies.
-    """
+def _generate_output_files(
+    working_proxies: list[Proxy],
+    all_proxies: list[Proxy],
+    output_dir: str,
+    progress: Progress
+):
+    """Generate all output files."""
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
-    task = progress.add_task("[blue]Generating output files...", total=3)
 
-    # Generate Base64 subscription file (for V2Ray, etc.)
-    base64_content = generate_base64_subscription(proxies)
+    task = progress.add_task("[blue]Generating output files...", total=6)
+
+    # 1. Base64 subscription
+    base64_content = generate_base64_subscription(working_proxies)
     if base64_content:
         (output_path / "vpn_subscription_base64.txt").write_text(
             base64_content, encoding="utf-8"
         )
     progress.update(task, advance=1)
 
-    # Generate Clash configuration file
-    clash_content = generate_clash_config(proxies)
+    # 2. Clash configuration
+    clash_content = generate_clash_config(working_proxies)
     if clash_content:
         (output_path / "clash.yaml").write_text(clash_content, encoding="utf-8")
     progress.update(task, advance=1)
 
-    # Generate raw configs file
-    raw_content = generate_raw_configs(proxies)
+    # 3. Raw configs
+    raw_content = generate_raw_configs(working_proxies)
     if raw_content:
         (output_path / "configs_raw.txt").write_text(raw_content, encoding="utf-8")
+    progress.update(task, advance=1)
+
+    # 4. Detailed proxies JSON
+    proxies_json = generate_proxies_json(working_proxies)
+    (output_path / "proxies.json").write_text(proxies_json, encoding="utf-8")
+    progress.update(task, advance=1)
+
+    # 5. Statistics JSON
+    stats_json = generate_statistics_json(all_proxies)
+    (output_path / "statistics.json").write_text(stats_json, encoding="utf-8")
+    progress.update(task, advance=1)
+
+    # 6. Metadata with cache-busting
+    from datetime import datetime
+    metadata = {
+        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "total_proxies": len(all_proxies),
+        "working_proxies": len(working_proxies),
+        "version": "1.0.0"
+    }
+    (output_path / "metadata.json").write_text(
+        json.dumps(metadata, indent=2), encoding="utf-8"
+    )
     progress.update(task, advance=1)

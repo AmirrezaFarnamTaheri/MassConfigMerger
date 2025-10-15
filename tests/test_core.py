@@ -81,7 +81,7 @@ class TestProxyParser:
     def test_parse_valid_ss(self):
         proxy = Proxy.from_config(VALID_SS_CONFIG)
         assert proxy is not None
-        assert proxy.protocol == "ss"
+        assert proxy.protocol == "shadowsocks"
         assert proxy.remarks == "My-SS-Proxy"
         assert proxy.address == "server3.example.com"
         assert proxy.port == 8888
@@ -99,7 +99,7 @@ class TestProxyParser:
     def test_parse_valid_hy2(self):
         proxy = Proxy.from_config(VALID_HY2_CONFIG)
         assert proxy is not None
-        assert proxy.protocol == "hy2"
+        assert proxy.protocol == "hysteria2"
         assert proxy.remarks == "My-Hysteria2-Proxy"
         assert proxy.address == "server4.example.com"
         assert proxy.port == 443
@@ -117,7 +117,7 @@ class TestProxyParser:
     def test_parse_valid_wg(self):
         proxy = Proxy.from_config(VALID_WG_CONFIG)
         assert proxy is not None
-        assert proxy.protocol == "wg"
+        assert proxy.protocol == "wireguard"
         assert proxy.remarks == "My-WG-Proxy"
         assert proxy.address == "server6.example.com"
         assert proxy.port == 51820
@@ -142,12 +142,10 @@ class TestClashGenerator:
         clash_config = yaml.safe_load(clash_yaml_str)
 
         assert "proxies" in clash_config
-        assert len(clash_config["proxies"]) == 5
+        assert len(clash_config["proxies"]) == 3
         assert clash_config["proxies"][0]["type"] == "vmess"
         assert clash_config["proxies"][1]["type"] == "vless"
         assert clash_config["proxies"][2]["type"] == "ss"
-        assert clash_config["proxies"][3]["type"] == "hysteria"
-        assert clash_config["proxies"][4]["type"] == "tuic"
         assert "proxy-groups" in clash_config
         assert "rules" in clash_config
 

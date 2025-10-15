@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistics - ConfigStream</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --gray: #6b7280;
+            --light-gray: #f3f4f6;
+            --white: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: var(--white);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: var(--white);
+            padding: 40px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+            background: var(--light-gray);
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .nav-link {
+            padding: 12px 24px;
+            text-decoration: none;
+            color: var(--gray);
+            font-weight: 600;
+            border-radius: 10px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--light-gray) 0%, var(--white) 100%);
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            border: 2px solid #e5e7eb;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary);
+        }
+
+        .stat-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+        }
+
+        .stat-number {
+            font-size: 2.8em;
+            font-weight: 800;
+            color: var(--primary);
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: var(--gray);
+            font-size: 1em;
+            font-weight: 600;
+        }
+
+        .chart-container {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            border: 2px solid #e5e7eb;
+        }
+
+        .chart-title {
+            font-size: 1.4em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            font-size: 1.2em;
+            color: var(--gray);
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--light-gray);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Statistics</h1>
+            <p class="subtitle">Detailed analytics and insights</p>
+        </div>
+
+        <div class="nav">
+            <a href="index.html" class="nav-link">
+                <i data-feather="home"></i>
+                Home
+            </a>
+            <a href="proxies.html" class="nav-link">
+                <i data-feather="list"></i>
+                Proxies
+            </a>
+            <a href="statistics.html" class="nav-link active">
+                <i data-feather="bar-chart-2"></i>
+                Statistics
+            </a>
+            <a href="about.html" class="nav-link">
+                <i data-feather="info"></i>
+                About
+            </a>
+        </div>
+
+        <div class="content">
+            <div id="loadingIndicator" class="loading">
+                <div class="loading-spinner"></div>
+                <div>Loading statistics...</div>
+            </div>
+
+            <div id="statsContent" style="display: none;">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <span class="stat-number" id="totalTested">0</span>
+                        <span class="stat-label">Total Tested</span>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <span class="stat-number" id="totalWorking">0</span>
+                        <span class="stat-label">Working</span>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">❌</div>
+                        <span class="stat-number" id="totalFailed">0</span>
+                        <span class="stat-label">Failed</span>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📈</div>
+                        <span class="stat-number" id="successRate">0%</span>
+                        <span class="stat-label">Success Rate</span>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⚡</div>
+                        <span class="stat-number" id="avgLatency">0ms</span>
+                        <span class="stat-label">Avg Latency</span>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🕐</div>
+                        <span class="stat-number" id="lastUpdate">--</span>
+                        <span class="stat-label">Last Updated</span>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <div class="chart-title">
+                            <i data-feather="pie-chart"></i>
+                            Protocol Distribution
+                        </div>
+                        <canvas id="protocolChart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-title">
+                            <i data-feather="globe"></i>
+                            Country Distribution
+                        </div>
+                        <canvas id="countryChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <i data-feather="activity"></i>
+                        Top 10 Countries
+                    </div>
+                    <canvas id="topCountriesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        feather.replace();
+
+        let statsData = null;
+
+        async function fetchStatistics() {
+            const cacheBust = new Date().getTime();
+            try {
+                const response = await fetch(`output/statistics.json?_=${cacheBust}`);
+                statsData = await response.json();
+
+                displayStatistics();
+                createCharts();
+
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('statsContent').style.display = 'block';
+            } catch (error) {
+                console.error('Error fetching statistics:', error);
+                document.getElementById('loadingIndicator').innerHTML =
+                    '<div style="color: var(--danger);">Failed to load statistics. Please try again later.</div>';
+            }
+        }
+
+        function displayStatistics() {
+            document.getElementById('totalTested').textContent = statsData.total_tested || 0;
+            document.getElementById('totalWorking').textContent = statsData.working || 0;
+            document.getElementById('totalFailed').textContent = statsData.failed || 0;
+            document.getElementById('successRate').textContent = (statsData.success_rate || 0).toFixed(1) + '%';
+            document.getElementById('avgLatency').textContent = (statsData.average_latency || 0).toFixed(0) + 'ms';
+
+            const date = new Date(statsData.updated_at);
+            const hours = Math.floor((new Date() - date) / 3600000);
+            document.getElementById('lastUpdate').textContent = hours === 0 ? 'Just now' : `${hours}h ago`;
+        }
+
+        function createCharts() {
+            // Protocol Chart
+            const protocolData = statsData.protocols || {};
+            new Chart(document.getElementById('protocolChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(protocolData).map(p => p.toUpperCase()),
+                    datasets: [{
+                        data: Object.values(protocolData),
+                        backgroundColor: [
+                            '#667eea',
+                            '#764ba2',
+                            '#10b981',
+                            '#f59e0b',
+                            '#ef4444',
+                            '#3b82f6',
+                            '#8b5cf6',
+                            '#ec4899'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Country Distribution (Pie)
+            const countryData = statsData.countries || {};
+            const topCountries = Object.entries(countryData)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 8);
+
+            new Chart(document.getElementById('countryChart'), {
+                type: 'pie',
+                data: {
+                    labels: topCountries.map(c => c[0]),
+                    datasets: [{
+                        data: topCountries.map(c => c[1]),
+                        backgroundColor: [
+                            '#667eea',
+                            '#764ba2',
+                            '#10b981',
+                            '#f59e0b',
+                            '#ef4444',
+                            '#3b82f6',
+                            '#8b5cf6',
+                            '#ec4899'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Top Countries (Bar)
+            const top10Countries = Object.entries(countryData)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            new Chart(document.getElementById('topCountriesChart'), {
+                type: 'bar',
+                data: {
+                    labels: top10Countries.map(c => c[0]),
+                    datasets: [{
+                        label: 'Number of Proxies',
+                        data: top10Countries.map(c => c[1]),
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchStatistics();
+        });
+    </script>
+</body>
+</html>
