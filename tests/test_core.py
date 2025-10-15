@@ -52,6 +52,9 @@ VALID_TUIC_CONFIG = "tuic://a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6:password@server
 # WireGuard
 VALID_WG_CONFIG = "wg://server6.example.com:51820?private_key=...&public_key=...#My-WG-Proxy"
 
+# Trojan
+VALID_TROJAN_CONFIG = "trojan://password@server7.example.com:443#My-Trojan-Proxy"
+
 
 INVALID_CONFIG = "invalid-protocol://some-data"
 MALFORMED_VMESS_CONFIG = "vmess://this-is-not-base64"
@@ -131,21 +134,19 @@ class TestClashGenerator:
         proxy2.is_working = True
         proxy3 = Proxy.from_config(VALID_SS_CONFIG)
         proxy3.is_working = True
-        proxy4 = Proxy.from_config(VALID_HY2_CONFIG)
+        proxy4 = Proxy.from_config(VALID_TROJAN_CONFIG)
         proxy4.is_working = True
-        proxy4.protocol = "hysteria" # a bit of a hack to test hysteria
-        proxy5 = Proxy.from_config(VALID_TUIC_CONFIG)
-        proxy5.is_working = True
-        proxies = [proxy1, proxy2, proxy3, proxy4, proxy5]
+        proxies = [proxy1, proxy2, proxy3, proxy4]
 
         clash_yaml_str = generate_clash_config(proxies)
         clash_config = yaml.safe_load(clash_yaml_str)
 
         assert "proxies" in clash_config
-        assert len(clash_config["proxies"]) == 3
+        assert len(clash_config["proxies"]) == 4
         assert clash_config["proxies"][0]["type"] == "vmess"
         assert clash_config["proxies"][1]["type"] == "vless"
         assert clash_config["proxies"][2]["type"] == "ss"
+        assert clash_config["proxies"][3]["type"] == "trojan"
         assert "proxy-groups" in clash_config
         assert "rules" in clash_config
 

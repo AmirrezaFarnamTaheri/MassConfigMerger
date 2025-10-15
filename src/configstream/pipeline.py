@@ -136,12 +136,14 @@ def _generate_output_files(
 
     # 4. Detailed proxies JSON
     proxies_json = generate_proxies_json(working_proxies)
-    (output_path / "proxies.json").write_text(proxies_json, encoding="utf-8")
+    if proxies_json:
+        (output_path / "proxies.json").write_text(proxies_json, encoding="utf-8")
     progress.update(task, advance=1)
 
     # 5. Statistics JSON
     stats_json = generate_statistics_json(all_proxies)
-    (output_path / "statistics.json").write_text(stats_json, encoding="utf-8")
+    if stats_json:
+        (output_path / "statistics.json").write_text(stats_json, encoding="utf-8")
     progress.update(task, advance=1)
 
     # 6. Metadata with cache-busting

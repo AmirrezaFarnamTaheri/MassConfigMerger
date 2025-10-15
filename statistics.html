@@ -313,14 +313,43 @@
 
         function displayStatistics() {
             document.getElementById('totalTested').textContent = statsData.total_tested || 0;
-            document.getElementById('totalWorking').textContent = statsData.working || 0;
-            document.getElementById('totalFailed').textContent = statsData.failed || 0;
-            document.getElementById('successRate').textContent = (statsData.success_rate || 0).toFixed(1) + '%';
-            document.getElementById('avgLatency').textContent = (statsData.average_latency || 0).toFixed(0) + 'ms';
+            const totalTestedEl = document.getElementById('totalTested');
+            if (totalTestedEl) {
+                totalTestedEl.textContent = statsData.total_tested || 0;
+                totalTestedEl.closest('.stat-card').title = `Total proxies tested: ${statsData.total_tested || 0}`;
+            }
 
-            const date = new Date(statsData.updated_at);
-            const hours = Math.floor((new Date() - date) / 3600000);
-            document.getElementById('lastUpdate').textContent = hours === 0 ? 'Just now' : `${hours}h ago`;
+            const totalWorkingEl = document.getElementById('totalWorking');
+            if (totalWorkingEl) {
+                totalWorkingEl.textContent = statsData.working || 0;
+                totalWorkingEl.closest('.stat-card').title = `Working proxies: ${statsData.working || 0}`;
+            }
+
+            const totalFailedEl = document.getElementById('totalFailed');
+            if (totalFailedEl) {
+                totalFailedEl.textContent = statsData.failed || 0;
+                totalFailedEl.closest('.stat-card').title = `Failed proxies: ${statsData.failed || 0}`;
+            }
+
+            const successRateEl = document.getElementById('successRate');
+            if (successRateEl) {
+                successRateEl.textContent = (statsData.success_rate || 0).toFixed(1) + '%';
+                successRateEl.closest('.stat-card').title = `Success rate: ${(statsData.success_rate || 0).toFixed(1)}%`;
+            }
+
+            const avgLatencyEl = document.getElementById('avgLatency');
+            if (avgLatencyEl) {
+                avgLatencyEl.textContent = (statsData.average_latency || 0).toFixed(0) + 'ms';
+                avgLatencyEl.closest('.stat-card').title = `Average latency: ${(statsData.average_latency || 0).toFixed(0)}ms`;
+            }
+
+            const lastUpdateEl = document.getElementById('lastUpdate');
+            if (lastUpdateEl) {
+                const date = new Date(statsData.updated_at);
+                const hours = Math.floor((new Date() - date) / 3600000);
+                lastUpdateEl.textContent = hours === 0 ? 'Just now' : `${hours}h ago`;
+                lastUpdateEl.closest('.stat-card').title = `Last updated: ${date.toLocaleString()}`;
+            }
         }
 
         function createCharts() {

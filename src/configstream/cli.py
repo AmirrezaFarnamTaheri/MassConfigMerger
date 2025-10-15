@@ -15,7 +15,7 @@ from .config import settings
 
 # GeoIP Database URLs
 GEOIP_COUNTRY_URL = "https://cdn.jsdelivr.net/npm/geolite2-country/GeoLite2-Country.mmdb.gz"
-GEOIP_CITY_URL = "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb.gz"
+GEOIP_CITY_URL = "https://cdn.jsdelivr.net/gh/wp-statistics/GeoLite2-City@master/GeoLite2-City.mmdb.gz"
 GEOIP_ASN_URL = "https://github.com/iplocate/ip-address-databases/raw/main/ip-to-asn/ip-to-asn.mmdb"
 
 DATA_DIR = Path("data")
@@ -115,7 +115,7 @@ def download_geoip_dbs():
                 click.echo("✓ GeoIP City database extracted successfully")
             except gzip.BadGzipFile as e:
                 click.echo(f"✗ Error decompressing City database: {e}", err=True)
-                sys.exit(1)
+                click.echo("⚠ Warning: City database decompression failed, continuing without it...")
             finally:
                 if gz_path.exists():
                     gz_path.unlink()
