@@ -3,9 +3,6 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
-import hashlib
-import socket
-import ssl
 from dataclasses import dataclass, field
 from typing import ClassVar
 from urllib.parse import parse_qs, unquote, urlparse

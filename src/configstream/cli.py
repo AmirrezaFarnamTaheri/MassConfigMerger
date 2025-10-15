@@ -245,7 +245,7 @@ def merge(
                 )
             )
 
-        click.echo(f"\n✓ Pipeline completed successfully!")
+        click.echo("\n✓ Pipeline completed successfully!")
         click.echo(f"✓ Output files saved to: {output_dir}")
 
     except FileNotFoundError:
