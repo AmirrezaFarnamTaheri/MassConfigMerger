@@ -1,0 +1,23 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Gradient Definition -->
+    <defs>
+        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#818cf8;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#c084fc;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+
+    <!-- Outer Circle -->
+    <circle cx="100" cy="100" r="90" fill="url(#logoGradient)"/>
+
+    <!-- Inner Wave/Stream Shape -->
+    <path d="M50 100 C80 70, 120 130, 150 100"
+          stroke="white"
+          stroke-width="18"
+          stroke-linecap="round"
+          fill="none"
+          stroke-dasharray="200"
+          stroke-dashoffset="200">
+        <animate attributeName="stroke-dashoffset" from="400" to="0" dur="3s" begin="0.5s" fill="freeze" />
+    </path>
+</svg>

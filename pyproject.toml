@@ -5,59 +5,62 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "configstream"
 version = "1.0.0"
-description = "Automated VPN configuration aggregator and tester"
+description = "VPN configuration aggregator and merger"
 readme = "README.md"
-requires-python = ">=3.9"
-license = {text = "MIT"}
+requires-python = ">=3.8"
+license = {text = "GPL-3.0"}
 authors = [
-    {name = "Amirreza Farnam Taheri"}
+    {name = "Amirreza 'Farnam' Taheri", email = "taherifarnam@gmail.com"}
 ]
-keywords = ["vpn", "v2ray", "clash", "proxy", "configuration"]
+keywords = ["vpn", "v2ray", "clash", "proxy", "configuration", "aggregator"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
 ]
 
 dependencies = [
-    "requests>=2.31.0",
-    "pyyaml>=6.0",
-    "pydantic>=2.0.0",
-    "pydantic-settings>=2.0.0",
-    "click>=8.1.0",
+    "aiohttp",
+    "aiodns",
+    "nest-asyncio",
+    "telethon",
+    "PyYAML",
+    "geoip2",
+    "pydantic>=2",
+    "pydantic-settings",
+    "rich",
+    "click",
+    "aiohttp-proxy",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.4.0",
-    "pytest-cov>=4.1.0",
-    "pytest-asyncio>=0.21.0",
-    "black>=23.0.0",
-    "isort>=5.12.0",
-    "mypy>=1.5.0",
-    "types-requests>=2.31.0",
-    "types-pyyaml>=6.0.0",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pyfakefs",
+    "types-PyYAML",
+    "flake8",
+    "mypy",
+    "pre-commit",
+    "pip-audit",
 ]
 
-[project.scripts]
-configstream = "configstream.cli:cli"
-
 [project.urls]
-Homepage = "https://github.com/AmirrezaFarnamTaheri/ConfigStream"
-Documentation = "https://github.com/AmirrezaFarnamTaheri/ConfigStream#readme"
+Homepage = "https://amirrezafarnamtaheri.github.io/ConfigStream/"
 Repository = "https://github.com/AmirrezaFarnamTaheri/ConfigStream"
 Issues = "https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues"
 
+[project.scripts]
+configstream = "configstream.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["configstream*"]
-
-[tool.setuptools.package-data]
-configstream = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -69,21 +72,13 @@ addopts = [
     "--strict-markers",
     "--cov=configstream",
     "--cov-report=term-missing",
-    "--cov-report=html",
 ]
 
 [tool.black]
 line-length = 100
-target-version = ['py39', 'py310', 'py311']
-include = '\.pyi?$'
-
-[tool.isort]
-profile = "black"
-line_length = 100
-multi_line_output = 3
+target-version = ['py38', 'py39', 'py310', 'py311']
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.8"
 warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = true
