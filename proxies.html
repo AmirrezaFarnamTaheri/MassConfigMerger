@@ -12,316 +12,20 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
 
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="assets/css/style.css">
+
     <!-- Icons -->
-    <script src="https://unpkg.com/feather-icons"></script>
-
-    <style>
-        :root {
-            --primary: #667eea;
-            --primary-dark: #5a67d8;
-            --secondary: #764ba2;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --dark: #1f2937;
-            --gray: #6b7280;
-            --light-gray: #f3f4f6;
-            --white: #ffffff;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: var(--white);
-            border-radius: 24px;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-        }
-
-        .header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: var(--white);
-            padding: 40px;
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 2.5em;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            font-size: 1.1em;
-            opacity: 0.95;
-        }
-
-        .nav {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            padding: 20px;
-            background: var(--light-gray);
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .nav-link {
-            padding: 12px 24px;
-            text-decoration: none;
-            color: var(--gray);
-            font-weight: 600;
-            border-radius: 10px;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .nav-link:hover, .nav-link.active {
-            background: var(--primary);
-            color: var(--white);
-        }
-
-        .content {
-            padding: 40px;
-        }
-
-        .filters {
-            background: var(--light-gray);
-            padding: 25px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .filter-group label {
-            font-weight: 600;
-            color: var(--dark);
-            font-size: 0.9em;
-        }
-
-        .filter-group select,
-        .filter-group input {
-            padding: 10px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 0.95em;
-            font-family: inherit;
-            transition: border-color 0.3s;
-        }
-
-        .filter-group select:focus,
-        .filter-group input:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-family: inherit;
-            font-size: 0.95em;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: var(--white);
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-        }
-
-        .btn-success {
-            background: var(--success);
-            color: var(--white);
-        }
-
-        .btn-success:hover {
-            background: #059669;
-        }
-
-        .info-box {
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .info-box .icon {
-            font-size: 2em;
-        }
-
-        /* DataTables Customization */
-        .dataTables_wrapper {
-            font-family: inherit;
-        }
-
-        table.dataTable {
-            border-collapse: collapse;
-            width: 100%;
-            margin-top: 20px;
-        }
-
-        table.dataTable thead th {
-            background: var(--primary);
-            color: var(--white);
-            font-weight: 600;
-            padding: 15px 10px;
-            text-align: left;
-            border-bottom: none;
-        }
-
-        table.dataTable tbody td {
-            padding: 12px 10px;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        table.dataTable tbody tr:hover {
-            background: var(--light-gray);
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.85em;
-            font-weight: 600;
-        }
-
-        .badge-success {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .badge-warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .badge-danger {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .badge-info {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        .latency-good {
-            color: var(--success);
-            font-weight: 600;
-        }
-
-        .latency-medium {
-            color: var(--warning);
-            font-weight: 600;
-        }
-
-        .latency-bad {
-            color: var(--danger);
-            font-weight: 600;
-        }
-
-        .copy-config {
-            cursor: pointer;
-            color: var(--primary);
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-
-        .copy-config:hover {
-            color: var(--primary-dark);
-            text-decoration: underline;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 60px;
-            font-size: 1.2em;
-            color: var(--gray);
-        }
-
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid var(--light-gray);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 768px) {
-            .content {
-                padding: 20px;
-            }
-
-            .filters {
-                grid-template-columns: 1fr;
-            }
-
-            .actions {
-                flex-direction: column;
-                align-items: stretch;
-            }
-        }
-    </style>
+    <script src="https://unpkg.com/feather-icons" integrity="sha384-uO3SXW5IuS1ZpFPKugNNWqTZRRglnUJK6UAZ/gxOX80nxEkN9NcGZTftn6RzhGWE" crossorigin="anonymous"></script>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🔍 Proxy List</h1>
+        <header class="header">
+            <h1>Proxy List</h1>
             <p class="subtitle">Detailed information about all available proxies</p>
-        </div>
+        </header>
 
-        <div class="nav">
+        <nav class="nav">
             <a href="index.html" class="nav-link">
                 <i data-feather="home"></i>
                 Home
@@ -338,69 +42,57 @@
                 <i data-feather="info"></i>
                 About
             </a>
-        </div>
+        </nav>
 
-        <div class="content">
-            <div class="info-box">
-                <div class="icon">ℹ️</div>
-                <div>
-                    <strong>Total Proxies:</strong> <span id="totalProxies">Loading...</span><br>
-                    <strong>Last Updated:</strong> <span id="lastUpdate">Loading...</span>
+        <main class="content">
+            <section class="card">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Protocol</label>
+                        <select id="filterProtocol">
+                            <option value="">All Protocols</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Country</label>
+                        <select id="filterCountry">
+                            <option value="">All Countries</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Max Latency (ms)</label>
+                        <input type="number" id="filterLatency" placeholder="e.g., 500">
+                    </div>
+                    <div class="filter-group">
+                        <label>Security</label>
+                        <select id="filterSecurity">
+                            <option value="">All</option>
+                            <option value="secure">Secure Only</option>
+                            <option value="issues">With Issues</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
+            </section>
 
-            <div class="filters">
-                <div class="filter-group">
-                    <label>Protocol</label>
-                    <select id="filterProtocol">
-                        <option value="">All Protocols</option>
-                    </select>
+            <section class="card">
+                <div class="actions">
+                    <div>
+                        <button class="btn btn-primary" id="exportCSV">Export CSV</button>
+                        <button class="btn btn-primary" id="exportJSON">Export JSON</button>
+                    </div>
+                    <div>
+                        <button class="btn" id="refreshData">Refresh</button>
+                    </div>
                 </div>
-                <div class="filter-group">
-                    <label>Country</label>
-                    <select id="filterCountry">
-                        <option value="">All Countries</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>Max Latency (ms)</label>
-                    <input type="number" id="filterLatency" placeholder="e.g., 500">
-                </div>
-                <div class="filter-group">
-                    <label>Security</label>
-                    <select id="filterSecurity">
-                        <option value="">All</option>
-                        <option value="secure">Secure Only</option>
-                        <option value="issues">With Issues</option>
-                    </select>
-                </div>
-            </div>
+            </section>
 
-            <div class="actions">
-                <div>
-                    <button class="btn btn-primary" id="exportCSV">
-                        <i data-feather="download"></i>
-                        Export CSV
-                    </button>
-                    <button class="btn btn-primary" id="exportJSON">
-                        <i data-feather="download"></i>
-                        Export JSON
-                    </button>
+            <section class="card">
+                <div id="loadingIndicator" class="loading">
+                    <div class="loading-spinner"></div>
+                    <div>Loading proxy data...</div>
                 </div>
-                <div>
-                    <button class="btn btn-success" id="refreshData">
-                        <i data-feather="refresh-cw"></i>
-                        Refresh
-                    </button>
-                </div>
-            </div>
 
-            <div id="loadingIndicator" class="loading">
-                <div class="loading-spinner"></div>
-                <div>Loading proxy data...</div>
-            </div>
-
-            <table id="proxiesTable" class="display responsive nowrap" style="width:100%; display:none;">
+                <table id="proxiesTable" class="display responsive nowrap" style="width:100%; display:none;">
                 <thead>
                     <tr>
                         <th>Protocol</th>
