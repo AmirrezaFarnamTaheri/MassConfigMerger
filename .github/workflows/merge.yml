@@ -36,29 +36,8 @@ jobs:
         run: |
           configstream merge \
             --sources sources.txt \
-            --output output/vpn_subscription_base64.txt \
-            --output-format base64 \
-            --test-before-merge \
-            --sort-by ping
+            --output output/
         continue-on-error: false
-
-      - name: Generate additional formats
-        run: |
-          # Generate Clash format
-          if [ -f output/vpn_subscription_base64.txt ]; then
-            configstream merge \
-              --sources sources.txt \
-              --output output/clash.yaml \
-              --output-format clash \
-              --test-before-merge
-          fi
-
-          # Generate raw format
-          configstream merge \
-            --sources sources.txt \
-            --output output/configs_raw.txt \
-            --output-format raw \
-            --test-before-merge
 
       - name: Generate timestamp
         run: |

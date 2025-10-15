@@ -17,7 +17,7 @@
           stroke-linecap="round"
           fill="none"
           stroke-dasharray="200"
-          stroke-dashoffset="0">
-        <animate attributeName="stroke-dashoffset" from="400" to="0" dur="2s" repeatCount="indefinite" />
+          stroke-dashoffset="200">
+        <animate attributeName="stroke-dashoffset" from="400" to="0" dur="3s" begin="0.5s" fill="freeze" />
     </path>
 </svg>
