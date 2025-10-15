@@ -16,7 +16,7 @@ from .core import (
 )
 
 
-async def run_full_pipeline(sources: list[str], output_dir: str, progress: Progress):
+async def run_full_pipeline(sources: list[str], output_dir: str, progress: Progress, max_proxies: int | None = None, country: str | None = None):
     """
     The main asynchronous pipeline for fetching, testing, and generating.
     """
@@ -25,6 +25,9 @@ async def run_full_pipeline(sources: list[str], output_dir: str, progress: Progr
     if not fetched_configs:
         progress.console.print("[bold red]No configurations were fetched. Exiting.[/bold red]")
         return
+
+    if max_proxies is not None:
+        fetched_configs = fetched_configs[:max_proxies]
 
     progress.console.print(
         f"[bold green]Successfully fetched {len(fetched_configs)} unique configurations.[/bold green]"
@@ -37,12 +40,18 @@ async def run_full_pipeline(sources: list[str], output_dir: str, progress: Progr
         f"[bold green]Testing complete. Found {len(working_proxies)} working proxies.[/bold green]"
     )
 
+    if country:
+        working_proxies = [p for p in working_proxies if p.country == country.upper()]
+        progress.console.print(
+            f"[bold blue]Filtered for country: {country.upper()}. Found {len(working_proxies)} working proxies.[/bold blue]"
+        )
+
     if not working_proxies:
         progress.console.print("[bold yellow]No working proxies found. No files will be generated.[/bold yellow]")
         return
 
     # Step 3: Generate the output files
-    _generate_output_files(tested_proxies, output_dir, progress)
+    _generate_output_files(working_proxies, output_dir, progress)
     progress.console.print(
         f"[bold blue]Output files have been generated in '{output_dir}'.[/bold blue]"
     )

@@ -36,6 +36,7 @@ dependencies = [
     "rich",
     "click",
     "aiohttp-proxy",
+    "v2ray2proxy",
 ]
 
 [project.optional-dependencies]

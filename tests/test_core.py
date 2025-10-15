@@ -88,6 +88,40 @@ class TestProxyParser:
         assert proxy is None
 
 
+class TestProxyTester:
+    @pytest.mark.asyncio
+    @patch("v2ray2proxy.AsyncV2RayProxy.create")
+    async def test_proxy_test_working(self, mock_create):
+        # Mock the v2ray2proxy library
+        mock_proxy = AsyncMock()
+        mock_proxy.test.return_value = {"success": True}
+        mock_create.return_value = mock_proxy
+
+        proxy = Proxy.from_config(VALID_VMESS_CONFIG)
+        tested_proxy = await Proxy.test(proxy)
+
+        assert tested_proxy.is_working is True
+        mock_create.assert_called_once_with(VALID_VMESS_CONFIG)
+        mock_proxy.test.assert_called_once()
+        mock_proxy.stop.assert_called_once()
+
+    @pytest.mark.asyncio
+    @patch("v2ray2proxy.AsyncV2RayProxy.create")
+    async def test_proxy_test_not_working(self, mock_create):
+        # Mock the v2ray2proxy library
+        mock_proxy = AsyncMock()
+        mock_proxy.test.return_value = {"success": False}
+        mock_create.return_value = mock_proxy
+
+        proxy = Proxy.from_config(VALID_VLESS_CONFIG)
+        tested_proxy = await Proxy.test(proxy)
+
+        assert tested_proxy.is_working is False
+        mock_create.assert_called_once_with(VALID_VLESS_CONFIG)
+        mock_proxy.test.assert_called_once()
+        mock_proxy.stop.assert_called_once()
+
+
 class TestClashGenerator:
     def test_generate_clash_with_all_protocols(self):
         proxy1 = Proxy.from_config(VALID_VMESS_CONFIG)

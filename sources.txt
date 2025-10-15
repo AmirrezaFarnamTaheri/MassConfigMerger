@@ -1,7 +1,1 @@
-# This is an example sources file.
-# Add your subscription links here, one per line.
-# Lines starting with # are ignored.
-
-https://raw.githubusercontent.com/freefq/free/master/v2
-https://raw.githubusercontent.com/mfuu/v2ray/master/v2ray
-https://raw.githubusercontent.com/peasoft/NoMoreWalls/master/list_raw.txt
+https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt
