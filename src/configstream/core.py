@@ -14,6 +14,7 @@ from aiohttp_proxy import ProxyConnector
 from aiohttp_proxy.errors import SocksConnectionError
 from rich.progress import Progress
 import geoip2.database
+from v2ray2proxy import V2RayProxy
 
 # The URL to test proxies against.
 # Using a URL that returns a 204 No Content response is efficient.
@@ -182,7 +183,6 @@ class Proxy:
         except (geoip2.errors.AddressNotFoundError, FileNotFoundError):
             pass  # Keep country as "Unknown"
 
-        from v2ray2proxy import V2RayProxy
         proxy = None
         try:
             # This part is blocking
@@ -221,7 +221,6 @@ async def security_test(proxy: Proxy) -> bool:
         return False
 
     try:
-        from v2ray2proxy import V2RayProxy
         v2ray_proxy = None
         try:
             # This part is blocking

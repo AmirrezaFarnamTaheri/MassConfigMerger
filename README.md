@@ -67,6 +67,12 @@ graph LR
 
 - Python 3.8 or higher
 - pip
+- **V2Ray Executable**: The core testing functionality of ConfigStream depends on the V2Ray executable. You must install it on your system and ensure it's available in your system's `PATH`.
+
+  You can install it using the official script:
+  ```bash
+  bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh)
+  ```
 
 ### Installation
 
