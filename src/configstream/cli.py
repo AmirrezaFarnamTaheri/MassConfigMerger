@@ -23,7 +23,7 @@ def main():
 @click.option(
     "--sources",
     "sources_file",
-    default=settings.sources_file,
+    required=True,
     help="Path to the file containing source URLs.",
     type=click.Path(exists=True, dir_okay=False),
 )
@@ -34,7 +34,21 @@ def main():
     help="Directory to save the generated files.",
     type=click.Path(file_okay=False),
 )
-def merge(sources_file: str, output_dir: str):
+@click.option(
+    "--max-proxies",
+    "max_proxies",
+    default=None,
+    help="The maximum number of proxies to test.",
+    type=int,
+)
+@click.option(
+    "--country",
+    "country",
+    default=None,
+    help="Filter proxies by country code (e.g., US, DE).",
+    type=str,
+)
+def merge(sources_file: str, output_dir: str, max_proxies: int | None, country: str | None):
     """
     Run the full pipeline: fetch from sources, test proxies, and generate outputs.
     """
@@ -49,7 +63,7 @@ def merge(sources_file: str, output_dir: str):
             return
 
         with Progress() as progress:
-            asyncio.run(pipeline.run_full_pipeline(sources, output_dir, progress))
+            asyncio.run(pipeline.run_full_pipeline(sources, output_dir, progress, max_proxies=max_proxies, country=country))
 
     except FileNotFoundError:
         click.echo(f"Error: The sources file was not found at '{sources_file}'", err=True)

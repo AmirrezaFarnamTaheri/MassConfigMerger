@@ -9,6 +9,7 @@ pydantic-settings
 rich
 click
 aiohttp-proxy
+v2ray2proxy
 
 [dev]
 pytest

@@ -7,6 +7,7 @@ src/configstream/config.py
 src/configstream/core.py
 src/configstream/fetcher.py
 src/configstream/generator.py
+src/configstream/pipeline.py
 src/configstream/py.typed
 src/configstream/tester.py
 src/configstream.egg-info/PKG-INFO

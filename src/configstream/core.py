@@ -13,6 +13,8 @@ import yaml
 from aiohttp_proxy import ProxyConnector
 from aiohttp_proxy.errors import SocksConnectionError
 from rich.progress import Progress
+import geoip2.database
+from v2ray2proxy import V2RayProxy
 
 # The URL to test proxies against.
 # Using a URL that returns a 204 No Content response is efficient.
@@ -30,6 +32,7 @@ class Proxy:
     protocol: str = "unknown"
     is_working: bool = False
     latency: float | None = None  # in milliseconds
+    country: str = "Unknown"
 
     # Parsed fields
     remarks: str = ""
@@ -55,8 +58,31 @@ class Proxy:
             return cls._parse_vless(config)
         elif config.startswith("ss://"):
             return cls._parse_ss(config)
+        elif config.startswith("trojan://"):
+            return cls._parse_trojan(config)
         # Add parsers for other protocols like trojan here
         return None  # Return None for unsupported protocols
+
+    @staticmethod
+    def _parse_trojan(config: str) -> "Proxy" | None:
+        """Parses a trojan:// URI."""
+        try:
+            parsed_url = urlparse(config)
+            query_params = parse_qs(parsed_url.query)
+
+            return Proxy(
+                config=config,
+                protocol="trojan",
+                remarks=unquote(parsed_url.fragment),
+                address=parsed_url.hostname,
+                port=parsed_url.port,
+                uuid=parsed_url.username,
+                _details={
+                    key: value[0] for key, value in query_params.items()
+                },
+            )
+        except (TypeError, ValueError):
+            return None
 
     @staticmethod
     def _parse_ss(config: str) -> "Proxy" | None:
@@ -145,19 +171,85 @@ class Proxy:
         if proxy_instance.config in cls._test_cache:
             return cls._test_cache[proxy_instance.config]
 
-        # These protocols are not plain HTTP proxies; avoid false negatives from incorrect testing.
-        if proxy_instance.protocol in ["vmess", "vless", "ss"]:
+        if proxy_instance.protocol not in ["vmess", "vless", "ss", "trojan"]:
             proxy_instance.is_working = False
-            proxy_instance.latency = None
             cls._test_cache[proxy_instance.config] = proxy_instance
             return proxy_instance
 
-        # Unsupported protocols explicitly marked non-working
-        proxy_instance.is_working = False
-        proxy_instance.latency = None
+        try:
+            with geoip2.database.Reader("data/GeoLite2-Country.mmdb") as reader:
+                response = reader.country(proxy_instance.address)
+                proxy_instance.country = response.country.iso_code
+        except (geoip2.errors.AddressNotFoundError, FileNotFoundError):
+            pass  # Keep country as "Unknown"
+
+        proxy = None
+        try:
+            # This part is blocking
+            def start_proxy():
+                return V2RayProxy(proxy_instance.config)
+
+            proxy = await asyncio.to_thread(start_proxy)
+
+            connector = ProxyConnector.from_url(proxy.http_proxy_url)
+            async with aiohttp.ClientSession(connector=connector) as session:
+                start_time = asyncio.get_event_loop().time()
+                async with session.get(TEST_URL, timeout=TEST_TIMEOUT) as response:
+                    if response.status == 204:
+                        end_time = asyncio.get_event_loop().time()
+                        proxy_instance.latency = (end_time - start_time) * 1000
+                        proxy_instance.is_working = True
+                    else:
+                        proxy_instance.is_working = False
+        except Exception:
+            proxy_instance.is_working = False
+        finally:
+            if proxy:
+                # This is also blocking
+                await asyncio.to_thread(proxy.stop)
 
         cls._test_cache[proxy_instance.config] = proxy_instance
         return proxy_instance
+
+
+async def security_test(proxy: Proxy) -> bool:
+    """
+    Performs a security test on a working proxy to detect malicious behavior.
+    Returns True if the proxy is safe, False otherwise.
+    """
+    if not proxy.is_working:
+        return False
+
+    try:
+        v2ray_proxy = None
+        try:
+            # This part is blocking
+            def start_proxy():
+                return V2RayProxy(proxy.config)
+
+            v2ray_proxy = await asyncio.to_thread(start_proxy)
+
+            connector = ProxyConnector.from_url(v2ray_proxy.http_proxy_url)
+            async with aiohttp.ClientSession(connector=connector) as session:
+                # Test for redirects
+                async with session.get("http://httpbin.org/redirect/1", timeout=TEST_TIMEOUT, allow_redirects=False) as response:
+                    if response.status not in [301, 302, 307, 308]:
+                        return False # Not a redirect, something is wrong
+
+                # Test for malicious code injection
+                async with session.get("http://example.com", timeout=TEST_TIMEOUT) as response:
+                    text = await response.text()
+                    if "eval(" in text or "atob(" in text:
+                        return False
+
+            return True
+        except Exception:
+            return False
+        finally:
+            if v2ray_proxy:
+                await asyncio.to_thread(v2ray_proxy.stop)
+    except Exception:
+        return False
 
 
 async def fetch_from_source(session: aiohttp.ClientSession, source: str) -> list[str]:
@@ -194,9 +286,16 @@ async def process_and_test_proxies(
     task = progress.add_task("[cyan]Testing proxies...", total=len(valid_proxies))
     results: list[Proxy] = []
 
+    semaphore = asyncio.Semaphore(10)
+
     async def _test_and_update(proxy: Proxy):
-        tested_proxy = await Proxy.test(proxy)
-        results.append(tested_proxy)
+        async with semaphore:
+            tested_proxy = await Proxy.test(proxy)
+            if tested_proxy.is_working:
+                is_safe = await security_test(tested_proxy)
+                if not is_safe:
+                    tested_proxy.is_working = False
+            results.append(tested_proxy)
         progress.update(task, advance=1)
 
     # Run tests concurrently
@@ -258,6 +357,16 @@ def generate_clash_config(proxies: list[Proxy]) -> str:
                 "port": proxy.port,
                 "cipher": proxy._details.get("method"),
                 "password": proxy._details.get("password"),
+            }
+        elif proxy.protocol == "trojan":
+            clash_proxy = {
+                "name": proxy.remarks,
+                "type": "trojan",
+                "server": proxy.address,
+                "port": proxy.port,
+                "password": proxy.uuid,
+                "tls": proxy._details.get("security", "none") == "tls",
+                "network": proxy._details.get("type", "tcp"),
             }
 
         if clash_proxy:
