@@ -1,56 +1,19 @@
 <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" class="logo-svg">
     <defs>
         <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <!-- Gradients will be controlled by CSS -->
             <stop offset="0%" class="stop1" />
             <stop offset="100%" class="stop2" />
         </linearGradient>
-        <style>
-            /*
-                Modern Logo Refresh
-                - Iconic, balanced 'S' shape for "Stream".
-                - Colors synchronized with UI's brand gradients.
-                - Softer, more modern shadow for depth.
-            */
-            .logo-svg {
-                /* Light Theme - Synced with style.css */
-                --color1: #007BFF;
-                --color2: #00C6FF;
-                --bg: rgba(255, 255, 255, 0.7); /* Match --bg-glass-light */
-                --shadow: rgba(0, 0, 0, 0.08);
-
-            }
-            .logo-svg.dark {
-                /* Dark Theme - Synced with style.css */
-                --color1: #17A2B8;
-                --color2: #6610F2;
-                --bg: rgba(28, 30, 40, 0.7); /* Match --bg-glass-dark */
-                --shadow: rgba(0, 0, 0, 0.25);
-            }
-            .stop1 { stop-color: var(--color1); transition: stop-color 0.3s ease; }
-            .stop2 { stop-color: var(--color2); transition: stop-color 0.3s ease; }
-            .bg-rect {
-                fill: var(--bg);
-                transition: fill 0.3s ease;
-            }
-            .shape {
-                stroke: url(#logoGradient);
-                stroke-width: 11;
-                fill: none;
-                stroke-linecap: round;
-                stroke-linejoin: round;
-                transform-origin: center;
-                transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            }
-        </style>
     </defs>
     <!-- A softer, more modern drop shadow that fits the glassmorphism style. -->
     <filter id="drop-shadow" x="-30%" y="-30%" width="160%" height="160%">
-        <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="var(--shadow)" flood-opacity="1" />
+        <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="var(--logo-shadow-color)" flood-opacity="1" />
     </filter>
     <g filter="url(#drop-shadow)">
-        <!-- Container with modern squircle shape -->
-        <rect class="bg-rect" width="100" height="100" rx="28" ry="28"/>
-        <!-- A more balanced, iconic 'S' shape representing a continuous stream. -->
-        <path d="M 30,70 C 40,90 60,10 70,30" class="shape" />
+        <!-- Container with a refined squircle shape -->
+        <rect class="bg-rect" width="100" height="100" rx="24" ry="24"/>
+        <!-- A perfectly balanced, iconic 'S' shape representing a continuous stream. -->
+        <path d="M 65,25 C 75,35 75,65 65,75 L 35,75 C 25,65 25,35 35,25 L 65,25 Z" class="shape" />
     </g>
 </svg>

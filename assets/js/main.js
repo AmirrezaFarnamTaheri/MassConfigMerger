@@ -96,6 +96,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const loadingContainer = document.getElementById('loading-container');
 
         const renderTable = () => {
+            // Re-trigger animation by resetting the class
+            tableBody.classList.remove('visible');
+
             const protoFilter = protocolFilter.value.toLowerCase();
             const locFilter = locationFilter.value.toLowerCase();
 
@@ -124,8 +127,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return 0;
             });
 
-            tableBody.innerHTML = filteredProxies.map(p => `
-                <tr>
+            tableBody.innerHTML = filteredProxies.map((p, index) => `
+                <tr style="animation-delay: ${index * 0.03}s">
                     <td>${p.protocol}</td>
                     <td>${p.location.city}, ${p.location.country}</td>
                     <td>${p.latency}ms</td>
@@ -134,6 +137,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tr>
             `).join('');
             feather.replace();
+
+            // Add class to trigger animation
+            setTimeout(() => tableBody.classList.add('visible'), 50);
         };
 
         protocolFilter.addEventListener('input', renderTable);
