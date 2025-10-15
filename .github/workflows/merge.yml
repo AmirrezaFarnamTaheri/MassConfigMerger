@@ -2,29 +2,86 @@ name: Merge VPN Subscriptions
 
 on:
   schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  contents: write
 
 jobs:
-  merge:
+  merge-configs:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-python@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
           python-version: '3.11'
           cache: 'pip'
-          cache-dependency-path: requirements.txt
+
       - name: Install dependencies
-        run: pip install -r requirements.txt
-      - name: Run vpn_merger.py
-        run: python vpn_merger.py
-      - name: Set timestamp
-        id: timestamp
-        run: echo "time=$(date -u)" >> "$GITHUB_OUTPUT"
-      - uses: stefanzweifel/git-auto-commit-action@v5
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Create output directory
+        run: mkdir -p output
+
+      - name: Run merge command
+        run: |
+          configstream merge \
+            --sources sources.txt \
+            --output output/vpn_subscription_base64.txt \
+            --output-format base64 \
+            --test-before-merge \
+            --sort-by ping
+        continue-on-error: false
+
+      - name: Generate additional formats
+        run: |
+          # Generate Clash format
+          if [ -f output/vpn_subscription_base64.txt ]; then
+            configstream merge \
+              --sources sources.txt \
+              --output output/clash.yaml \
+              --output-format clash \
+              --test-before-merge
+          fi
+
+          # Generate raw format
+          configstream merge \
+            --sources sources.txt \
+            --output output/configs_raw.txt \
+            --output-format raw \
+            --test-before-merge
+
+      - name: Generate timestamp
+        run: |
+          echo "Last updated: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" > output/LAST_UPDATE.txt
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git add output/
+
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "🤖 Auto-update VPN configs - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            git push
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
         with:
-          commit_message: "feat: Auto-update subscription files [${{ steps.timestamp.outputs.time }}]"
-          file_pattern: output/**
+          name: vpn-configs
+          path: output/
+          retention-days: 7
