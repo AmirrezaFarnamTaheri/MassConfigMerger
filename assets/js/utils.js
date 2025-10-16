@@ -170,26 +170,79 @@ function getTimeAgo(date) {
 function initTheme() {
     const themeToggle = document.getElementById('theme-switcher');
     if (!themeToggle) return;
-    
+
     const body = document.body;
+    const sunIcon = themeToggle.querySelector('[data-feather="sun"]');
+    const moonIcon = themeToggle.querySelector('[data-feather="moon"]');
+
     const savedTheme = localStorage.getItem('theme') || 
         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    
-    if (savedTheme === 'dark') {
-        body.classList.add('dark');
-    }
-    
-    themeToggle.addEventListener('click', () => {
-        body.classList.toggle('dark');
-        const theme = body.classList.contains('dark') ? 'dark' : 'light';
-        localStorage.setItem('theme', theme);
-        
-        // Trigger theme change event for charts
-        window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
-        
-        // Re-initialize feather icons if available
+
+    const applyTheme = (theme) => {
+        if (theme === 'dark') {
+            body.classList.add('dark');
+            sunIcon.style.display = 'none';
+            moonIcon.style.display = 'inline-block';
+        } else {
+            body.classList.remove('dark');
+            sunIcon.style.display = 'inline-block';
+            moonIcon.style.display = 'none';
+        }
+        // Re-initialize feather icons to ensure they are rendered correctly.
         if (typeof feather !== 'undefined') {
             feather.replace();
+        }
+    };
+
+    applyTheme(savedTheme);
+
+    themeToggle.addEventListener('click', () => {
+        const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
+        localStorage.setItem('theme', newTheme);
+
+        // Add animation class
+        themeToggle.classList.add('theme-changing');
+
+        applyTheme(newTheme);
+
+        // Remove animation class after animation completes
+        setTimeout(() => {
+            themeToggle.classList.remove('theme-changing');
+        }, 500);
+
+        // Trigger theme change event for charts
+        window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }));
+    });
+}
+
+// ============================================
+// MOBILE NAVIGATION
+// ============================================
+
+function initMobileNav() {
+    const toggleButton = document.getElementById('mobile-nav-toggle');
+    const navMenu = document.getElementById('main-nav');
+
+    if (!toggleButton || !navMenu) return;
+
+    toggleButton.addEventListener('click', () => {
+        console.log("Toggle button clicked!");
+        const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
+        toggleButton.setAttribute('aria-expanded', !isExpanded);
+        navMenu.classList.toggle('active');
+        document.body.classList.toggle('no-scroll');
+
+        // Change icon to 'x' when menu is open
+        const icon = toggleButton.querySelector('i');
+        if (navMenu.classList.contains('active')) {
+            icon.setAttribute('data-feather', 'x');
+        } else {
+            icon.setAttribute('data-feather', 'menu');
+        }
+        try {
+            feather.replace();
+        } catch (e) {
+            console.error("Feather icons could not be replaced:", e);
         }
     });
 }

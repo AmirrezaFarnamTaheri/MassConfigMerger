@@ -5,6 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize copy buttons
     initCopyButtons();
 
+    // Initialize mobile navigation
+    initMobileNav();
+
     // Initialize feather icons
     if (typeof feather !== 'undefined') {
         feather.replace();
@@ -29,4 +32,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INITIALIZE ---
     updateStats();
+    initHeroParallax();
 });
+
+function initHeroParallax() {
+    const hero = document.querySelector('.hero');
+    if (!hero) return;
+
+    window.addEventListener('scroll', () => {
+        const scrollY = window.scrollY;
+        hero.style.transform = `translateY(${scrollY * 0.1}px)`;
+    });
+}

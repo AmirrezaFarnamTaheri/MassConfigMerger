@@ -1,29 +1,10 @@
-<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
-        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" class="stop1" />
-            <stop offset="100%" class="stop2" />
+        <linearGradient id="logoGradient" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#6A82FB"/>
+            <stop offset="100%" stop-color="#FC5C7D"/>
         </linearGradient>
     </defs>
-    <style>
-        .stop1 { stop-color: #007bff; }
-        .stop2 { stop-color: #00c6ff; }
-        .bg-rect { fill: rgba(255, 255, 255, 0.8); }
-        .shape {
-            stroke: url(#logoGradient);
-            stroke-width: 12;
-            fill: none;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-        @media (prefers-color-scheme: dark) {
-            .stop1 { stop-color: #17a2b8; }
-            .stop2 { stop-color: #6610f2; }
-            .bg-rect { fill: rgba(33, 37, 41, 0.8); }
-        }
-    </style>
-    <path class="shape" d="M68,15 A40,40 0 1 0 85,68" />
-    <path class="shape" d="M32,85 A40,40 0 1 1 15,32" />
-    <path class="shape" d="M50,50 L75,25" />
-    <path class="shape" d="M25,75 L50,50" />
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M32 0C14.327 0 0 14.327 0 32C0 49.673 14.327 64 32 64C49.673 64 64 49.673 64 32C64 14.327 49.673 0 32 0ZM32 56C18.745 56 8 45.255 8 32C8 18.745 18.745 8 32 8C45.255 8 56 18.745 56 32C56 45.255 45.255 56 32 56Z" fill="url(#logoGradient)"/>
+    <path d="M44 32C44 38.627 38.627 44 32 44C25.373 44 20 38.627 20 32C20 25.373 25.373 20 32 20C38.627 20 44 25.373 44 32Z" fill="white" fill-opacity="0.1"/>
 </svg>

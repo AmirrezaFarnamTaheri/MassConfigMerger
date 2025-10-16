@@ -4,15 +4,20 @@
             <img src="src/configstream/logo.svg" alt="ConfigStream Logo">
             <span>ConfigStream</span>
         </a>
-        <nav class="nav">
-            <a href="index.html" class="nav-link">Home</a>
+        <nav class="nav" id="main-nav" aria-label="Main navigation">
+            <a href="index.html" class="nav-link" aria-current="page">Home</a>
             <a href="proxies.html" class="nav-link">Proxies</a>
             <a href="statistics.html" class="nav-link">Statistics</a>
             <a href="about.html" class="nav-link">About</a>
-            <button class="theme-switcher" id="theme-switcher" aria-label="Toggle theme">
-                <i class="feather-sun"></i>
-                <i class="feather-moon"></i>
-            </button>
         </nav>
+        <div class="header-actions">
+            <button class="theme-switcher" id="theme-switcher" aria-label="Toggle theme" title="Toggle theme">
+                <i data-feather="sun"></i>
+                <i data-feather="moon" style="display: none;"></i>
+            </button>
+            <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Toggle navigation" aria-controls="main-nav" aria-expanded="false" title="Toggle navigation">
+                <i data-feather="menu"></i>
+            </button>
+        </div>
     </div>
 </header>
