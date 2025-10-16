@@ -65,15 +65,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const setNA = () => updateElement('clash-filesize', 'N/A');
         try {
             const url = getFullUrl('output/clash.yaml');
-            // Try HEAD first
-            let response = await fetch(url, { method: 'HEAD' });
+            const sameOrigin = new URL(url, window.location.href).origin === window.location.origin;
+
+            // Try HEAD first (avoid CORS failures by allowing opaque, then guard)
+            let response = await fetch(url, { method: 'HEAD', mode: sameOrigin ? 'cors' : 'no-cors' });
             let sizeNum = NaN;
-            if (response.ok) {
+
+            if (response && response.ok && response.type !== 'opaque') {
                 const sizeHeader = response.headers.get('Content-Length');
                 sizeNum = sizeHeader ? parseInt(sizeHeader, 10) : NaN;
             }
+
             // If HEAD didn't provide a size, try a safe ranged GET only if same-origin
-            const sameOrigin = new URL(url, window.location.href).origin === window.location.origin;
             if ((!Number.isFinite(sizeNum) || sizeNum < 0) && sameOrigin) {
                 response = await fetch(url, { method: 'GET', headers: { Range: 'bytes=0-0' } });
                 if (response.status === 206) {
@@ -82,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     sizeNum = totalMatch ? parseInt(totalMatch[1], 10) : NaN;
                 }
             }
+
             if (Number.isFinite(sizeNum) && sizeNum >= 0) {
                 updateElement('clash-filesize', formatSize(sizeNum));
             } else {
