@@ -66,6 +66,10 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
+body.no-scroll {
+    overflow: hidden;
+}
+
 body.dark {
     background-color: var(--bg-primary-dark);
     color: var(--text-primary-dark);
@@ -217,6 +221,55 @@ body.dark .theme-switcher:hover {
     opacity: 0;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-unit);
+}
+
+.mobile-nav-toggle {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--text-primary-light);
+    cursor: pointer;
+    padding: calc(var(--space-unit) * 0.5);
+    border-radius: var(--radius-md);
+}
+body.dark .mobile-nav-toggle {
+    color: var(--text-primary-dark);
+}
+
+@media (max-width: 768px) {
+    .nav {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--bg-primary-light);
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: calc(var(--space-unit) * 2);
+        z-index: 1000;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-in-out;
+    }
+    body.dark .nav {
+        background: var(--bg-primary-dark);
+    }
+    .nav.active {
+        display: flex;
+        transform: translateX(0);
+    }
+    .mobile-nav-toggle {
+        display: block;
+        z-index: 1001;
+    }
+}
+
 /* 5. Main Content & Cards */
 main {
     padding: calc(var(--space-unit) * 3) 0;
@@ -236,6 +289,19 @@ body.dark .card {
     border-color: var(--border-dark);
     box-shadow: 0 1px 2px 0 var(--shadow-dark);
 }
+.card {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: card-entry 0.6s forwards;
+}
+
+@keyframes card-entry {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .card:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 25px -5px var(--shadow-light), 0 4px 6px -4px var(--shadow-light);
@@ -322,7 +388,9 @@ body.dark .footer .social-links a:hover {
     color: #818CF8;
 }
 
-/* 8. Utility & Animations */
+/* 8. Utilities */
+/* ============================================ */
+
 .skeleton {
     background-color: rgba(0, 0, 0, 0.1);
     border-radius: var(--radius-sm);
@@ -337,7 +405,10 @@ body.dark .skeleton {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Page specific styles */
+/* 9. Components */
+/* ============================================ */
+
+/* Hero Section */
 .hero {
     text-align: center;
     padding: calc(var(--space-unit) * 5) 0;
@@ -363,6 +434,7 @@ body.dark .hero p {
     color: var(--text-secondary-dark);
 }
 
+/* Stats Grid */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -380,10 +452,10 @@ body.dark .stat-item {
 .stat-value {
     font-size: 2.5rem;
     font-weight: 700;
-    color: #4F46E5;
+    color: var(--brand-primary);
 }
 body.dark .stat-value {
-    color: #818CF8;
+    color: var(--brand-primary-dark);
 }
 .stat-label {
     font-size: 0.875rem;
@@ -394,6 +466,7 @@ body.dark .stat-label {
     color: var(--text-secondary-dark);
 }
 
+/* Tables */
 .table-container {
     overflow-x: auto;
 }
@@ -419,6 +492,7 @@ body.dark tbody tr:hover {
     background-color: rgba(255, 255, 255, 0.03);
 }
 
+/* Charts */
 .chart-container {
     height: 350px;
 }

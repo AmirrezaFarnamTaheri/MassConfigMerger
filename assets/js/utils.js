@@ -216,6 +216,38 @@ function initTheme() {
 }
 
 // ============================================
+// MOBILE NAVIGATION
+// ============================================
+
+function initMobileNav() {
+    const toggleButton = document.getElementById('mobile-nav-toggle');
+    const navMenu = document.getElementById('main-nav');
+
+    if (!toggleButton || !navMenu) return;
+
+    toggleButton.addEventListener('click', () => {
+        console.log("Toggle button clicked!");
+        const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
+        toggleButton.setAttribute('aria-expanded', !isExpanded);
+        navMenu.classList.toggle('active');
+        document.body.classList.toggle('no-scroll');
+
+        // Change icon to 'x' when menu is open
+        const icon = toggleButton.querySelector('i');
+        if (navMenu.classList.contains('active')) {
+            icon.setAttribute('data-feather', 'x');
+        } else {
+            icon.setAttribute('data-feather', 'menu');
+        }
+        try {
+            feather.replace();
+        } catch (e) {
+            console.error("Feather icons could not be replaced:", e);
+        }
+    });
+}
+
+// ============================================
 // CLIPBOARD UTILITIES
 // ============================================
 

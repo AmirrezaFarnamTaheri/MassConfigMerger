@@ -17,16 +17,21 @@
             <img src="src/configstream/logo.svg" alt="ConfigStream Logo">
             <span>ConfigStream</span>
         </a>
-        <nav class="nav">
-            <a href="index.html" class="nav-link">Home</a>
+        <nav class="nav" id="main-nav" aria-label="Main navigation">
+            <a href="index.html" class="nav-link" aria-current="page">Home</a>
             <a href="proxies.html" class="nav-link">Proxies</a>
             <a href="statistics.html" class="nav-link">Statistics</a>
             <a href="about.html" class="nav-link">About</a>
-            <button class="theme-switcher" id="theme-switcher" aria-label="Toggle theme">
+        </nav>
+        <div class="header-actions">
+            <button class="theme-switcher" id="theme-switcher" aria-label="Toggle theme" title="Toggle theme">
                 <i data-feather="sun"></i>
                 <i data-feather="moon" style="display: none;"></i>
             </button>
-        </nav>
+            <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Toggle navigation" aria-controls="main-nav" aria-expanded="false" title="Toggle navigation">
+                <i data-feather="menu"></i>
+            </button>
+        </div>
     </div>
 </header>
 
@@ -57,35 +62,35 @@
             </div>
         </section>
 
-        <section id="downloads-card" class="card">
-            <h2>Downloads</h2>
+        <section id="downloads-card" class="card" aria-labelledby="downloads-heading">
+            <h2 id="downloads-heading">Downloads</h2>
             <p>Choose your preferred format and start browsing freely.</p>
             <div class="downloads-grid">
                 <div class="download-card">
-                    <div class="download-icon"><i data-feather="file-text"></i></div>
+                    <div class="download-icon" aria-hidden="true"><i data-feather="file-text"></i></div>
                     <h3 class="download-title">Base64 Subscription</h3>
                     <p class="download-desc">Universal format for V2RayNG, V2Box, and similar clients.</p>
                     <div class="download-actions">
-                        <a href="output/vpn_subscription_base64.txt" class="btn btn-primary" download>Download</a>
-                        <button class="btn btn-secondary copy-btn" data-file="output/vpn_subscription_base64.txt">Copy Link</button>
+                        <a href="output/vpn_subscription_base64.txt" class="btn btn-primary" download aria-label="Download Base64 Subscription">Download</a>
+                        <button class="btn btn-secondary copy-btn" data-file="output/vpn_subscription_base64.txt" aria-label="Copy Base64 Subscription Link">Copy Link</button>
                     </div>
                 </div>
                 <div class="download-card">
-                    <div class="download-icon"><i data-feather="settings"></i></div>
+                    <div class="download-icon" aria-hidden="true"><i data-feather="settings"></i></div>
                     <h3 class="download-title">Clash Config</h3>
                     <p class="download-desc">Ready-to-use YAML for Clash and Clash Meta clients.</p>
                     <div class="download-actions">
-                        <a href="output/clash.yaml" class="btn btn-primary" download>Download</a>
-                        <button class="btn btn-secondary copy-btn" data-file="output/clash.yaml">Copy Link</button>
+                        <a href="output/clash.yaml" class="btn btn-primary" download aria-label="Download Clash Config">Download</a>
+                        <button class="btn btn-secondary copy-btn" data-file="output/clash.yaml" aria-label="Copy Clash Config Link">Copy Link</button>
                     </div>
                 </div>
                 <div class="download-card">
-                    <div class="download-icon"><i data-feather="align-left"></i></div>
+                    <div class="download-icon" aria-hidden="true"><i data-feather="align-left"></i></div>
                     <h3 class="download-title">Raw Configs</h3>
                     <p class="download-desc">Unencoded configuration links for manual import.</p>
                     <div class="download-actions">
-                        <a href="output/configs_raw.txt" class="btn btn-primary" download>Download</a>
-                        <button class="btn btn-secondary copy-btn" data-file="output/configs_raw.txt">Copy Link</button>
+                        <a href="output/configs_raw.txt" class="btn btn-primary" download aria-label="Download Raw Configs">Download</a>
+                        <button class="btn btn-secondary copy-btn" data-file="output/configs_raw.txt" aria-label="Copy Raw Configs Link">Copy Link</button>
                     </div>
                 </div>
             </div>

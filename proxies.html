@@ -36,19 +36,21 @@
             <p>Browse and filter tested proxy configurations with detailed information.</p>
             
             <div class="table-controls">
-                <input type="text" id="filterProtocol" class="filter-input" placeholder="Filter by protocol...">
-                <input type="text" id="filterLocation" class="filter-input" placeholder="Filter by location...">
+                <input type="text" id="filterProtocol" class="filter-input" placeholder="Filter by protocol..." aria-label="Filter by protocol">
+                <input type="text" id="filterLocation" class="filter-input" placeholder="Filter by location..." aria-label="Filter by location">
             </div>
 
             <div class="table-container">
-                <div id="loadingContainer" class="loader"></div>
-                <table id="proxiesTable">
+                <div id="loadingContainer" class="loader" role="status" aria-live="polite">
+                    <p>Loading proxies...</p>
+                </div>
+                <table id="proxiesTable" aria-live="polite">
                     <thead>
                         <tr>
-                            <th class="sortable" data-sort="protocol">Protocol <i data-feather="chevron-down"></i></th>
-                            <th class="sortable" data-sort="location">Location <i data-feather="chevron-down"></i></th>
-                            <th class="sortable" data-sort="latency">Latency <i data-feather="chevron-down"></i></th>
-                            <th class="sortable" data-sort="asn">ASN <i data-feather="chevron-down"></i></th>
+                            <th class="sortable" data-sort="protocol" aria-sort="none">Protocol <i data-feather="chevron-down"></i></th>
+                            <th class="sortable" data-sort="location" aria-sort="none">Location <i data-feather="chevron-down"></i></th>
+                            <th class="sortable" data-sort="latency" aria-sort="none">Latency <i data-feather="chevron-down"></i></th>
+                            <th class="sortable" data-sort="asn" aria-sort="none">ASN <i data-feather="chevron-down"></i></th>
                             <th>Copy</th>
                         </tr>
                     </thead>
