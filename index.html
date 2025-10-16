@@ -42,19 +42,19 @@
 
     <main>
         <div class="container">
-            <section class="hero">
-                <h1 style="--delay: 0.1s;">Stream Freedom</h1>
+            <section class="hero text-center">
+                <h1 style="--delay: 0.1s;">Unlock the Internet</h1>
                 <p class="subtitle" style="--delay: 0.2s;">
-                    Your gateway to a secure and open internet. We provide reliable, auto-updating VPN configurations, tested around the clock.
+                    Access a world of information with our free, auto-updating VPN configurations. We continuously test and provide reliable proxies to ensure your connection to a free and open internet.
                 </p>
                 <div class="hero-actions" style="--delay: 0.3s;">
                     <a href="proxies.html" class="btn btn-primary">
                         <i data-feather="zap"></i>
-                        <span>Get Proxies</span>
+                        <span>Browse Proxies</span>
                     </a>
                     <a href="#downloads" class="btn btn-secondary">
                         <i data-feather="download"></i>
-                        <span>Downloads</span>
+                        <span>Get Configs</span>
                     </a>
                 </div>
             </section>
@@ -86,34 +86,43 @@
             </section>
 
             <section id="downloads" class="card" style="--delay: 0.5s;" aria-labelledby="downloads-heading">
-                <div class="card-header">
-                    <h2 id="downloads-heading">Downloads</h2>
-                    <p>Choose your preferred format. All links provide the complete, tested set of configurations.</p>
+                <div class="card-header text-center">
+                    <h2 id="downloads-heading">Get Your Configs</h2>
+                    <p class="subtitle">Choose your preferred format below. All downloads contain the complete set of our latest tested proxies.</p>
                 </div>
                 <div class="downloads-grid">
                     <div class="download-card" style="--delay: 0.6s;">
-                        <div class="download-icon"><i data-feather="file-text"></i></div>
+                        <div class="download-icon"><i data-feather="copy"></i></div>
                         <div class="download-info">
                             <h3 class="download-title">Base64 Subscription</h3>
-                            <p class="download-desc">Universal format for most V2Ray clients.</p>
+                            <p class="download-desc">A single link for easy import into V2Ray, Xray, and other compatible clients.</p>
                         </div>
-                        <button class="btn btn-secondary copy-btn" data-file="output/vpn_subscription_base64.txt">Copy Link</button>
+                        <button class="btn btn-primary copy-btn" data-file="output/vpn_subscription_base64.txt">
+                            <i data-feather="copy"></i>
+                            <span>Copy Link</span>
+                        </button>
                     </div>
                     <div class="download-card" style="--delay: 0.7s;">
-                        <div class="download-icon"><i data-feather="settings"></i></div>
+                        <div class="download-icon"><i data-feather="download"></i></div>
                         <div class="download-info">
                             <h3 class="download-title">Clash Config</h3>
-                            <p class="download-desc">Ready-to-use YAML for Clash clients.</p>
+                            <p class="download-desc">A ready-to-use YAML file, perfect for users of Clash, ClashX, or Clash for Windows.</p>
                         </div>
-                        <a href="output/clash.yaml" class="btn btn-secondary" download>Download</a>
+                        <a href="output/clash.yaml" class="btn btn-primary" download>
+                            <i data-feather="download"></i>
+                            <span>Download</span>
+                        </a>
                     </div>
                     <div class="download-card" style="--delay: 0.8s;">
-                        <div class="download-icon"><i data-feather="link"></i></div>
+                        <div class="download-icon"><i data-feather="file-text"></i></div>
                         <div class="download-info">
-                            <h3 class="download-title">Raw Links</h3>
-                            <p class="download-desc">Unencoded links for manual import.</p>
+                            <h3 class="download-title">Raw Proxy Links</h3>
+                            <p class="download-desc">A simple text file with one proxy per line, ideal for manual configuration or custom scripts.</p>
                         </div>
-                        <button class="btn btn-secondary copy-btn" data-file="output/configs_raw.txt">Copy Link</button>
+                        <button class="btn btn-primary copy-btn" data-file="output/configs_raw.txt">
+                            <i data-feather="copy"></i>
+                            <span>Copy Links</span>
+                        </button>
                     </div>
                 </div>
             </section>

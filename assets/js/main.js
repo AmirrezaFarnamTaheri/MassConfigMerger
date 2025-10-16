@@ -5,6 +5,7 @@ function initPreloader() {
     window.addEventListener('load', () => {
         setTimeout(() => {
             preloader.classList.add('hidden');
+            document.body.classList.add('loaded');
         }, 200); // Small delay to ensure content is rendered
     });
 }
