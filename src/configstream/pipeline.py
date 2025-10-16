@@ -9,14 +9,15 @@ from rich.progress import Progress
 
 from .core import (
     Proxy,
-    fetch_from_source,
-    process_and_test_proxies,
     generate_base64_subscription,
     generate_clash_config,
     generate_raw_configs,
     generate_proxies_json,
     generate_statistics_json,
 )
+from .fetcher import fetch_from_source
+from .parsers import parse_config
+from .testing import process_and_test_proxies
 
 
 async def run_full_pipeline(
@@ -46,8 +47,11 @@ async def run_full_pipeline(
     if max_proxies is not None:
         fetched_configs = fetched_configs[:max_proxies]
 
-    # Step 2: Test configurations
-    tested_proxies = await process_and_test_proxies(fetched_configs, progress)
+    # Step 2: Parse and Test configurations
+    parsed_proxies = [parse_config(c) for c in fetched_configs]
+    valid_proxies = [p for p in parsed_proxies if p is not None]
+
+    tested_proxies = await process_and_test_proxies(valid_proxies, progress)
     working_proxies = [p for p in tested_proxies if p.is_working and p.is_secure]
 
     progress.console.print(
@@ -147,9 +151,9 @@ def _generate_output_files(
     progress.update(task, advance=1)
 
     # 6. Metadata with cache-busting
-    from datetime import datetime
+    from datetime import datetime, timezone
     metadata = {
-        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "total_proxies": len(all_proxies),
         "working_proxies": len(working_proxies),
         "version": "1.0.0"
