@@ -27,7 +27,7 @@ class PluginManager:
             module = importlib.import_module(module_name)
 
             for name, obj in inspect.getmembers(module):
-                if inspect.isclass(obj) and issubclass(obj, Plugin) and obj != Plugin:
+                if inspect.isclass(obj) and issubclass(obj, Plugin) and not inspect.isabstract(obj):
                     self.register_plugin(obj)
 
     def register_plugin(self, plugin_class: Type[Plugin]) -> None:

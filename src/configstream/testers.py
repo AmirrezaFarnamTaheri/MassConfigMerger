@@ -11,6 +11,20 @@ from .core import Proxy
 from .services import IProxyTester
 
 
+# Configuration
+TEST_URL = "https://www.google.com/generate_204"
+TEST_TIMEOUT = 10
+SECURITY_CHECK_TIMEOUT = 5
+
+# Security test endpoints
+SECURITY_TESTS = {
+    "redirect": "http://httpbin.org/redirect/1",
+    "headers": "http://httpbin.org/headers",
+    "content": "http://example.com",
+    "ssl": "https://www.howsmyssl.com/a/check",
+}
+
+
 class SingBoxTester(IProxyTester):
     """Concrete implementation of IProxyTester using SingBox."""
 
@@ -24,7 +38,7 @@ class SingBoxTester(IProxyTester):
             connector = ProxyConnector.from_url(sb_proxy.http_proxy_url)
             async with aiohttp.ClientSession(connector=connector) as session:
                 start_time = asyncio.get_event_loop().time()
-                async with session.get("https://www.google.com/generate_204", timeout=aiohttp.ClientTimeout(total=10)) as response:
+                async with session.get(TEST_URL, timeout=aiohttp.ClientTimeout(total=TEST_TIMEOUT)) as response:
                     if response.status == 204:
                         end_time = asyncio.get_event_loop().time()
                         proxy.latency = round((end_time - start_time) * 1000, 2)
