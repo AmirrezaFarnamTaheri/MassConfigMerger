@@ -123,7 +123,6 @@ test_local_files() {
     check_file "index.html"
     check_file "proxies.html"
     check_file "statistics.html"
-    check_file "about.html"
     
     print_test "Checking asset files..."
     check_file "assets/css/framework.css"
@@ -212,7 +211,6 @@ test_github_pages() {
     check_url "$BASE_URL/" "Home page"
     check_url "$BASE_URL/proxies.html" "Proxies page"
     check_url "$BASE_URL/statistics.html" "Statistics page"
-    check_url "$BASE_URL/about.html" "About page"
     
     print_test "Checking assets..."
     check_url "$BASE_URL/assets/css/framework.css" "CSS framework"

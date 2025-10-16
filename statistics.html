@@ -25,7 +25,6 @@
                 <a href="index.html" class="nav-link">Home</a>
                 <a href="proxies.html" class="nav-link">Proxy List</a>
                 <a href="statistics.html" class="nav-link">Analytics</a>
-                <a href="about.html" class="nav-link">About</a>
             </nav>
             <div class="header-actions">
                 <button id="theme-switcher" class="theme-btn" aria-label="Toggle theme">
@@ -60,9 +59,15 @@
                     </div>
                 </div>
                 <div id="chartsEmptyState" class="empty-state hidden">
-                    <i data-feather="bar-chart-2"></i>
-                    <h3>Not Enough Data</h3>
-                    <p>There isn't enough data to generate analytics charts yet. Please check back later.</p>
+                    <div class="empty-state-icon">
+                        <i data-feather="server-off"></i>
+                    </div>
+                    <h3>No Data to Display</h3>
+                    <p>We're currently gathering data to generate analytics. Please check back in a few hours for a full report.</p>
+                    <a href="index.html" class="btn btn-secondary">
+                        <i data-feather="home"></i>
+                        <span>Return Home</span>
+                    </a>
                 </div>
             </section>
         </div>
