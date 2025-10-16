@@ -123,19 +123,15 @@ function initHeroParallax() {
 function initCardGlow() {
     const cards = document.querySelectorAll('.card');
     if (!cards.length) return;
-    // If VanillaTilt is available, initialize subtle tilt to simulate glow via glare
-    if (window.VanillaTilt && typeof window.VanillaTilt.init === 'function') {
-        window.VanillaTilt.init(cards, {
-            max: 5,
-            speed: 400,
-            glare: true,
-            'max-glare': 0.1
-        });
+    if (typeof window.VanillaTilt === 'undefined' || typeof window.VanillaTilt.init !== 'function') {
+        return;
     }
-}
-
-function initTilt() {
-    const cards = document.querySelectorAll('.card');
+    window.VanillaTilt.init(cards, {
+        max: 5,
+        speed: 400,
+        glare: true,
+        "max-glare": 0.1
+    });
     VanillaTilt.init(cards, {
         max: 5,
         speed: 400,
