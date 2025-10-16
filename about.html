@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Manrope:wght@800&display=swap">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://unpkg.com/feather-icons"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@lottiefiles/lottie-player@2.0.12/dist/lottie-player.js" async></script>
+    <script src="https://cdn.jsdelivr.net/npm/@lottiefiles/lottie-player@2.0.12/dist/lottie-player.js"></script>
 </head>
 <body>
     <div class="nav-overlay"></div>
@@ -32,8 +32,8 @@
                 <span>GitHub</span>
             </a>
             <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Toggle navigation" aria-controls="main-nav" aria-expanded="false">
-                <i data-feather="menu"></i>
-                <i data-feather="x" style="display: none;"></i>
+                <i data-feather="menu" class="menu-icon"></i>
+                <i data-feather="x" class="x-icon hidden"></i>
             </button>
         </div>
     </div>
@@ -41,7 +41,7 @@
 
     <main>
         <div class="container">
-            <section id="about-card" class="card fade-in-up">
+            <section id="about-card" class="card">
                 <div class="card-header">
                     <header class="page-header">
                         <h2>About ConfigStream</h2>

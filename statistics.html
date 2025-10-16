@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://unpkg.com/feather-icons"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@lottiefiles/lottie-player@2.0.12/dist/lottie-player.js" async></script>
+    <script src="https://cdn.jsdelivr.net/npm/@lottiefiles/lottie-player@2.0.12/dist/lottie-player.js"></script>
 </head>
 <body>
     <div class="nav-overlay"></div>
@@ -33,8 +33,8 @@
                 <span>GitHub</span>
             </a>
             <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Toggle navigation" aria-controls="main-nav" aria-expanded="false">
-                <i data-feather="menu"></i>
-                <i data-feather="x" style="display: none;"></i>
+                <i data-feather="menu" class="menu-icon"></i>
+                <i data-feather="x" class="x-icon hidden"></i>
             </button>
         </div>
     </div>
@@ -42,7 +42,7 @@
 
     <main>
         <div class="container">
-            <section id="charts-card" class="card fade-in-up">
+            <section id="charts-card" class="card">
                 <div class="card-header">
                     <header class="page-header">
                         <h2>Analytics</h2>
@@ -52,7 +52,7 @@
 
                 <div id="chartsContainer" class="charts-grid">
                     <div class="chart-container">
-                        <h3>Protocol Distribution</h3>
+                        <h3>Protocol Distribution <span id="fastest-protocol-badge" class="badge hidden"></span></h3>
                         <canvas id="protocolChart" role="img" aria-label="A doughnut chart showing the distribution of proxy protocols."></canvas>
                         <div id="protocolChartEmpty" class="empty-state hidden">
                             <i data-feather="pie-chart"></i>

@@ -46,6 +46,30 @@ document.addEventListener('DOMContentLoaded', () => {
             const protocolChartCanvas = document.getElementById('protocolChart');
             const protocolChartEmpty = document.getElementById('protocolChartEmpty');
             if (stats.protocols && Object.keys(stats.protocols).length > 0) {
+                // Calculate fastest protocol
+                const proxies = await fetchProxies();
+                const protocolLatencies = {};
+                proxies.forEach(p => {
+                    if (p.latency) {
+                        if (!protocolLatencies[p.protocol]) {
+                            protocolLatencies[p.protocol] = [];
+                        }
+                        protocolLatencies[p.protocol].push(p.latency);
+                    }
+                });
+
+                const avgLatencies = Object.entries(protocolLatencies).map(([protocol, latencies]) => {
+                    const avg = latencies.reduce((a, b) => a + b, 0) / latencies.length;
+                    return { protocol, avg };
+                });
+
+                if (avgLatencies.length > 0) {
+                    const fastest = avgLatencies.reduce((prev, current) => (prev.avg < current.avg) ? prev : current);
+                    const badge = document.getElementById('fastest-protocol-badge');
+                    badge.textContent = `Fastest: ${fastest.protocol}`;
+                    badge.classList.remove('hidden');
+                }
+
                 new Chart(protocolChartCanvas, {
                     type: 'doughnut',
                     data: {

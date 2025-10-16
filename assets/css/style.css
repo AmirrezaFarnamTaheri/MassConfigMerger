@@ -225,11 +225,11 @@ body.dark .theme-switcher:hover {
 
 @media (max-width: 768px) {
     .nav {
-        display: none;
+        display: flex;
         position: fixed;
         top: 0;
-        left: 0;
-        width: 100%;
+        right: -100%;
+        width: 80%;
         height: 100%;
         background: var(--bg-glass-light);
         backdrop-filter: blur(20px) saturate(180%);
@@ -239,13 +239,13 @@ body.dark .theme-switcher:hover {
         align-items: center;
         gap: var(--space-unit) * 3;
         z-index: 1500;
-        transform: translateY(-100%);
-        transition: transform var(--transition-base);
+        transition: right var(--transition-base);
+        pointer-events: none;
     }
 
     .nav.active {
-        display: flex;
-        transform: translateY(0);
+        right: 0;
+        pointer-events: auto;
     }
 
     .nav-link {
@@ -332,23 +332,19 @@ body.dark .card-header {
 .card::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
     border-radius: var(--radius-xl);
-    background-image: radial-gradient(circle at var(--x) var(--y), hsla(var(--shadow-color-light), 0.2), transparent 25%);
+    background: var(--brand-gradient);
+    z-index: -1;
     opacity: 0;
-    transition: opacity 0.5s;
-    pointer-events: none;
-}
-
-body.dark .card::before {
-    background-image: radial-gradient(circle at var(--x) var(--y), hsla(var(--shadow-color-dark), 0.3), transparent 25%);
+    transition: opacity var(--transition-base);
 }
 
 .card:hover::before {
-    opacity: 1;
+    opacity: 0.5;
 }
 
 /* 6. Buttons */
@@ -388,6 +384,16 @@ body.dark .btn-secondary {
     background-color: #f9fafb;
     border-color: #d1d5db;
     transform: translateY(-2px);
+}
+
+.btn.copied {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.btn.error {
+    background-color: var(--danger-color);
+    color: white;
 }
 body.dark .btn-secondary:hover {
     background-color: #374151;
@@ -456,18 +462,6 @@ body.dark .hero .subtitle { color: var(--text-secondary-dark); }
 }
 
 /* Animation Utilities */
-.fade-in-up {
-    opacity: 0;
-    transform: translateY(30px);
-    animation: fadeInUp var(--transition-slow) forwards;
-}
-
-@keyframes fadeInUp {
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
 
 .table-controls {
     display: flex;
@@ -752,6 +746,44 @@ body::before {
     font-size: 0.85rem;
 }
 
+.hidden {
+    display: none;
+}
+
+.btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    transform: scale(0);
+    animation: ripple 600ms linear;
+    background-color: rgba(255, 255, 255, 0.7);
+}
+
+@keyframes ripple {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25em 0.6em;
+    font-size: 75%;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: var(--radius-full);
+    background-color: var(--brand-primary);
+    color: white;
+}
+
 @keyframes slide-in-up {
     from {
         opacity: 0;
@@ -761,12 +793,6 @@ body::before {
         opacity: 1;
         transform: translateY(0);
     }
-}
-
-.card, .download-card, #proxiesTableBody tr {
-    animation: slide-in-up 0.5s ease-out forwards;
-    opacity: 0;
-    animation-delay: var(--delay, 0s);
 }
 
 .card, .download-card, #proxiesTableBody tr {
@@ -798,4 +824,10 @@ body::before {
                 radial-gradient(circle at 80% 80%, hsla(var(--brand-secondary), 0.1), transparent 30%);
     animation: drift 50s linear infinite;
     z-index: -1;
+}
+
+.card, .download-card, #proxiesTableBody tr {
+    animation: slide-in-up 0.5s ease-out forwards;
+    opacity: 0;
+    animation-delay: var(--delay, 0s);
 }

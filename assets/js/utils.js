@@ -226,13 +226,15 @@ function initMobileNav() {
         document.body.classList.toggle('no-scroll');
 
         // Change icon to 'x' when menu is open
-        const icon = toggleButton.querySelector('i');
+        const menuIcon = toggleButton.querySelector('.menu-icon');
+        const xIcon = toggleButton.querySelector('.x-icon');
         if (navMenu.classList.contains('active')) {
-            icon.setAttribute('data-feather', 'x');
+            menuIcon.classList.add('hidden');
+            xIcon.classList.remove('hidden');
         } else {
-            icon.setAttribute('data-feather', 'menu');
+            menuIcon.classList.remove('hidden');
+            xIcon.classList.add('hidden');
         }
-        feather.replace();
     });
 
     overlay.addEventListener('click', () => {

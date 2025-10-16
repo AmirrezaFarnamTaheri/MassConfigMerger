@@ -55,12 +55,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function updateClashFileSize() {
+        try {
+            const response = await fetchWithPath('output/clash.yaml', { method: 'HEAD' });
+            const size = response.headers.get('Content-Length');
+            if (size) {
+                const i = Math.floor(Math.log(size) / Math.log(1024));
+                const fileSize = (size / Math.pow(1024, i)).toFixed(2) * 1 + ' ' + ['B', 'KB', 'MB', 'GB', 'TB'][i];
+                updateElement('clash-filesize', fileSize);
+            }
+        } catch (error) {
+            console.error('Could not fetch Clash file size:', error);
+            updateElement('clash-filesize', 'N/A');
+        }
+    }
+
     // --- INITIALIZE ---
     updateStats();
+    updateClashFileSize();
     initHeroParallax();
     initCardGlow();
     initTilt();
     initColorSwitcher();
+    initRippleEffect();
 });
 
 function initHeroParallax() {
@@ -128,5 +145,31 @@ function initColorSwitcher() {
         if (savedPrimary === swatch.dataset.colorPrimary) {
             swatch.classList.add('active');
         }
+    });
+}
+
+function initRippleEffect() {
+    const buttons = document.querySelectorAll('.btn');
+
+    buttons.forEach(button => {
+        button.addEventListener('click', function (e) {
+            const x = e.clientX;
+            const y = e.clientY;
+
+            const buttonTop = e.target.offsetTop;
+            const buttonLeft = e.target.offsetLeft;
+
+            const xInside = x - buttonLeft;
+            const yInside = y - buttonTop;
+
+            const circle = document.createElement('span');
+            circle.classList.add('ripple');
+            circle.style.top = yInside + 'px';
+            circle.style.left = xInside + 'px';
+
+            this.appendChild(circle);
+
+            setTimeout(() => circle.remove(), 600);
+        });
     });
 }

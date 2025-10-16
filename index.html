@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Manrope:wght@800&display=swap">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://unpkg.com/feather-icons"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@lottiefiles/lottie-player@2.0.12/dist/lottie-player.js" async></script>
+    <script src="https://cdn.jsdelivr.net/npm/@lottiefiles/lottie-player@2.0.12/dist/lottie-player.js"></script>
 </head>
 <body>
     <div class="nav-overlay"></div>
@@ -32,8 +32,8 @@
                 <span>GitHub</span>
             </a>
             <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Toggle navigation" aria-controls="main-nav" aria-expanded="false">
-                <i data-feather="menu"></i>
-                <i data-feather="x" style="display: none;"></i>
+                <i data-feather="menu" class="menu-icon"></i>
+                <i data-feather="x" class="x-icon hidden"></i>
             </button>
         </div>
     </div>
@@ -95,7 +95,7 @@
                         <div class="download-icon"><i data-feather="settings"></i></div>
                         <div class="download-info">
                             <h3 class="download-title">Clash Config</h3>
-                            <p class="download-desc">A ready-to-use YAML file for Clash, ClashX, and Clash Meta.</p>
+                            <p class="download-desc">A ready-to-use YAML file for Clash, ClashX, and Clash Meta. (<span id="clash-filesize">...</span>)</p>
                         </div>
                         <div class="download-actions">
                             <a href="output/clash.yaml" class="btn btn-secondary" download aria-label="Download Clash Config">Download File</a>
@@ -114,7 +114,7 @@
                 </div>
             </section>
 
-            <section class="card fade-in-up" style="animation-delay: 1s;">
+            <section class="card" style="--delay: 0.6s;">
                 <div class="card-header">
                     <h2>Personalize</h2>
                     <p>Choose an accent color that suits your style.</p>
