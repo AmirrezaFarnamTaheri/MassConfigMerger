@@ -56,21 +56,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function updateClashFileSize() {
+        const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const formatSize = (n) => {
+            const i = n > 0 ? Math.floor(Math.log(n) / Math.log(1024)) : 0;
+            return `${(n / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
+        };
+        const setNA = () => updateElement('clash-filesize', 'N/A');
         try {
-            const response = await fetchWithPath('output/clash.yaml', { method: 'HEAD' });
-            const sizeHeader = response.headers.get('Content-Length');
-            const sizeNum = sizeHeader ? parseInt(sizeHeader, 10) : NaN;
+            let response = await fetchWithPath('output/clash.yaml', { method: 'HEAD' });
+            let sizeHeader = response.headers.get('Content-Length');
+            let sizeNum = sizeHeader ? parseInt(sizeHeader, 10) : NaN;
+            if (!Number.isFinite(sizeNum) || sizeNum < 0) {
+                // Fallback: try a ranged GET to infer size from Content-Range
+                response = await fetchWithPath('output/clash.yaml', { method: 'GET', headers: { Range: 'bytes=0-0' } });
+                const contentRange = response.headers.get('Content-Range'); // e.g., "bytes 0-0/12345"
+                const totalMatch = contentRange && contentRange.match(/\/(\d+)$/);
+                sizeNum = totalMatch ? parseInt(totalMatch[1], 10) : NaN;
+            }
             if (Number.isFinite(sizeNum) && sizeNum >= 0) {
-                const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-                const i = sizeNum > 0 ? Math.floor(Math.log(sizeNum) / Math.log(1024)) : 0;
-                const fileSize = (sizeNum / Math.pow(1024, i)).toFixed(2) + ' ' + units[i];
-                updateElement('clash-filesize', fileSize);
+                updateElement('clash-filesize', formatSize(sizeNum));
             } else {
-                updateElement('clash-filesize', 'N/A');
+                setNA();
             }
         } catch (error) {
             console.error('Could not fetch Clash file size:', error);
-            updateElement('clash-filesize', 'N/A');
+            setNA();
         }
     }
 
