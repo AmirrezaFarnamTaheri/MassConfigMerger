@@ -135,15 +135,32 @@ function formatDate(date) {
 }
 
 // ============================================
-// CLIPBOARD UTILITIES
+// UI UTILITIES
 // ============================================
 
 /**
- * Copy text to clipboard with visual feedback
- * @param {string} text - Text to copy
- * @param {HTMLElement} button - Button element to show feedback
- * @returns {Promise<boolean>}
+ * Update element with loading state
+ * @param {string} elementId - Element ID
+ * @param {string|number} value - Value to display
+ * @param {Object} options - Options
  */
+function updateElement(elementId, value, options = {}) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    el.textContent = value;
+    el.classList.remove('skeleton', 'loading');
+
+    if (options.removeStyles) {
+        el.style.width = 'auto';
+        el.style.height = 'auto';
+    }
+
+    if (options.addClass) {
+        el.classList.add(options.addClass);
+    }
+}
+
 async function copyToClipboard(text, button = null) {
     try {
         await navigator.clipboard.writeText(text);
@@ -193,9 +210,6 @@ async function copyToClipboard(text, button = null) {
     }
 }
 
-/**
- * Setup copy buttons for elements with data-copy attribute
- */
 function initCopyButtons() {
     document.addEventListener('click', async (e) => {
         const button = e.target.closest('.copy-btn');
@@ -217,34 +231,3 @@ function initCopyButtons() {
         await copyToClipboard(textToCopy, button);
     });
 }
-
-// ============================================
-// UI UTILITIES
-// ============================================
-
-/**
- * Update element with loading state
- * @param {string} elementId - Element ID
- * @param {string|number} value - Value to display
- * @param {Object} options - Options
- */
-function updateElement(elementId, value, options = {}) {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-    
-    el.textContent = value;
-    el.classList.remove('skeleton', 'loading');
-    
-    if (options.removeStyles) {
-        el.style.width = 'auto';
-        el.style.height = 'auto';
-    }
-    
-    if (options.addClass) {
-        el.classList.add(options.addClass);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    initCopyButtons();
-});

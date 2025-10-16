@@ -2,8 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize theme
     initTheme();
 
-    // Initialize mobile navigation
-    initMobileNav();
+    // Initialize copy buttons
+    initCopyButtons();
 
     // Initialize feather icons
     if (typeof feather !== 'undefined') {
@@ -87,9 +87,7 @@ function initTheme() {
     let currentTheme = localStorage.getItem('theme');
 
     const setTheme = (theme) => {
-        console.log(`Setting theme to: ${theme}`);
         document.body.classList.toggle('dark', theme === 'dark');
-        console.log(`Body class list after toggle: ${document.body.classList}`);
         moonIcon.classList.toggle('hidden', theme === 'dark');
         sunIcon.classList.toggle('hidden', theme !== 'dark');
         localStorage.setItem('theme', theme);
@@ -102,7 +100,6 @@ function initTheme() {
     setTheme(currentTheme);
 
     themeSwitcher.addEventListener('click', () => {
-        console.log('Theme switcher clicked');
         const newTheme = document.body.classList.contains('dark') ? 'light' : 'dark';
         setTheme(newTheme);
     });
@@ -112,29 +109,24 @@ function initTheme() {
     });
 }
 
-function initMobileNav() {
-    const toggleBtn = document.getElementById('mobile-nav-toggle');
-    const nav = document.getElementById('main-nav');
-    const overlay = document.querySelector('.nav-overlay');
+function initCopyButtons() {
+    document.addEventListener('click', async (e) => {
+        const button = e.target.closest('.copy-btn');
+        if (!button) return;
 
-    if (!toggleBtn || !nav || !overlay) return;
+        const config = button.dataset.config;
+        const file = button.dataset.file;
 
-    toggleBtn.addEventListener('click', () => {
-        const isActive = nav.classList.toggle('active');
-        toggleBtn.setAttribute('aria-expanded', isActive);
-        overlay.classList.toggle('active', isActive);
-        document.body.style.overflow = isActive ? 'hidden' : '';
+        let textToCopy;
 
-        toggleBtn.querySelector('.menu-icon').classList.toggle('hidden', isActive);
-        toggleBtn.querySelector('.x-icon').classList.toggle('hidden', !isActive);
-    });
+        if (config) {
+            textToCopy = decodeURIComponent(config);
+        } else if (file) {
+            textToCopy = getFullUrl(file);
+        } else {
+            return;
+        }
 
-    overlay.addEventListener('click', () => {
-        nav.classList.remove('active');
-        toggleBtn.setAttribute('aria-expanded', 'false');
-        overlay.classList.remove('active');
-        document.body.style.overflow = '';
-        toggleBtn.querySelector('.menu-icon').classList.remove('hidden');
-        toggleBtn.querySelector('.x-icon').classList.add('hidden');
+        await copyToClipboard(textToCopy, button);
     });
 }
