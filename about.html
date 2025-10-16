@@ -6,7 +6,7 @@
     <meta name="description" content="Learn about ConfigStream - an open-source VPN configuration aggregator.">
     <title>About - ConfigStream</title>
     <link rel="icon" type="image/svg+xml" href="src/configstream/logo.svg">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Manrope:wght@600;700;800&display=swap">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://unpkg.com/feather-icons"></script>
 </head>
@@ -23,8 +23,8 @@
             <a href="statistics.html" class="nav-link">Statistics</a>
             <a href="about.html" class="nav-link">About</a>
             <button class="theme-switcher" id="theme-switcher" aria-label="Toggle theme">
-                <i class="feather-sun"></i>
-                <i class="feather-moon"></i>
+                <i data-feather="sun"></i>
+                <i data-feather="moon" style="display: none;"></i>
             </button>
         </nav>
     </div>
@@ -55,11 +55,11 @@
     <footer class="footer">
     <div class="container">
         <div class="social-links">
-            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" aria-label="GitHub"><i data-feather="github"></i></a>
-            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" aria-label="Issues"><i data-feather="alert-circle"></i></a>
+            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i data-feather="github"></i></a>
+            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" rel="noopener noreferrer" aria-label="Issues"><i data-feather="alert-circle"></i></a>
         </div>
-        <p>Made with ❤️ for internet freedom.</p>
-        <p>Last updated: <span id="footerUpdate" class="loading">...</span></p>
+        <p>Made with <span class="heart">❤️</span> for internet freedom.</p>
+        <p class="last-updated">Last updated: <span id="footerUpdate" class="loading">...</span></p>
     </div>
 </footer>
 

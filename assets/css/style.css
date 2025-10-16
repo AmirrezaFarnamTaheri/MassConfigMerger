@@ -11,7 +11,7 @@
 :root {
     /* Fonts */
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --font-headings: 'Poppins', var(--font-sans);
+    --font-headings: 'Manrope', var(--font-sans);
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
     /* Sizing & Spacing */
@@ -27,23 +27,25 @@
     --transition-base: 400ms cubic-bezier(0.25, 0.8, 0.25, 1);
 
     /* Light Theme */
-    --bg-primary-light: #F4F7FC;
+    --bg-primary-light: #F9FAFB;
     --bg-secondary-light: #FFFFFF;
-    --bg-glass-light: rgba(255, 255, 255, 0.6);
-    --border-light: rgba(0, 0, 0, 0.08);
-    --text-primary-light: #1A202C;
-    --text-secondary-light: #718096;
+    --bg-glass-light: rgba(255, 255, 255, 0.7);
+    --border-light: #E5E7EB;
+    --text-primary-light: #111827;
+    --text-secondary-light: #6B7280;
     --shadow-light: rgba(0, 0, 0, 0.05);
-    --brand-gradient: linear-gradient(45deg, #4F46E5 0%, #818CF8 100%);
+    --brand-gradient: linear-gradient(45deg, #6A82FB 0%, #FC5C7D 100%);
+    --brand-primary: #6A82FB;
 
     /* Dark Theme */
-    --bg-primary-dark: #121212;
-    --bg-secondary-dark: #1A1A1A;
-    --bg-glass-dark: rgba(26, 26, 26, 0.6);
-    --border-dark: rgba(255, 255, 255, 0.1);
-    --text-primary-dark: #F7FAFC;
-    --text-secondary-dark: #A0AEC0;
-    --shadow-dark: rgba(0, 0, 0, 0.3);
+    --bg-primary-dark: #0D1117;
+    --bg-secondary-dark: #161B22;
+    --bg-glass-dark: rgba(22, 27, 34, 0.7);
+    --border-dark: #30363D;
+    --text-primary-dark: #E6EDF3;
+    --text-secondary-dark: #8B949E;
+    --shadow-dark: rgba(0, 0, 0, 0.4);
+    --brand-primary-dark: #8294ff;
 }
 
 /* 2. Base Styles */
@@ -99,13 +101,13 @@ a:hover {
 
 /* 4. Header & Navigation */
 .header {
-    padding: calc(var(--space-unit) * 1.5) 0;
+    padding: calc(var(--space-unit) * 1.25) 0;
     position: sticky;
     top: 0;
     z-index: 100;
     background: var(--bg-glass-light);
-    backdrop-filter: blur(10px) saturate(180%);
-    -webkit-backdrop-filter: blur(10px) saturate(180%);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
     border-bottom: 1px solid var(--border-light);
     transition: background var(--transition-fast), border-color var(--transition-fast);
 }
@@ -125,7 +127,8 @@ body.dark .header {
     align-items: center;
     gap: calc(var(--space-unit) * 0.75);
     font-size: 1.5rem;
-    font-weight: 700;
+    font-weight: 800;
+    font-family: var(--font-headings);
     color: var(--text-primary-light);
 }
 body.dark .logo {
@@ -133,56 +136,45 @@ body.dark .logo {
 }
 
 .logo img {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     transition: transform var(--transition-base);
 }
 .logo:hover img {
-    transform: rotate(15deg) scale(1.1);
+    transform: rotate(10deg) scale(1.1);
 }
 
 .nav {
     display: flex;
     align-items: center;
-    gap: calc(var(--space-unit) * 1.5);
+    gap: var(--space-unit);
 }
 
 .nav-link {
-    padding: calc(var(--space-unit) * 0.5) 0;
+    padding: calc(var(--space-unit) * 0.5) calc(var(--space-unit) * 0.75);
     color: var(--text-secondary-light);
     font-weight: 600;
-    position: relative;
+    border-radius: var(--radius-md);
+    transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 body.dark .nav-link {
     color: var(--text-secondary-dark);
 }
 .nav-link:hover {
     color: var(--text-primary-light);
+    background-color: rgba(0,0,0,0.05);
 }
 body.dark .nav-link:hover {
     color: var(--text-primary-dark);
+    background-color: rgba(255,255,255,0.1);
 }
 .nav-link.active {
     color: var(--text-primary-light);
+    background-color: rgba(0,0,0,0.08);
 }
 body.dark .nav-link.active {
     color: var(--text-primary-dark);
-}
-
-.nav-link::after {
-    content: '';
-    position: absolute;
-    bottom: -4px;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: var(--brand-gradient);
-    transform: scaleX(0);
-    transition: transform var(--transition-fast);
-    transform-origin: center;
-}
-.nav-link.active::after, .nav-link:hover::after {
-    transform: scaleX(1);
+    background-color: rgba(255,255,255,0.15);
 }
 
 .theme-switcher {
@@ -190,6 +182,9 @@ body.dark .nav-link.active {
     border: none;
     cursor: pointer;
     color: var(--text-secondary-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin-left: var(--space-unit);
     padding: calc(var(--space-unit) * 0.5);
     border-radius: var(--radius-md);
@@ -207,6 +202,21 @@ body.dark .theme-switcher:hover {
     color: var(--text-primary-dark);
 }
 
+.theme-switcher .feather-sun,
+.theme-switcher .feather-moon {
+    transition: transform 0.4s ease-in-out, opacity 0.3s ease;
+}
+
+.theme-changing .feather-sun {
+    transform: rotate(90deg) scale(0);
+    opacity: 0;
+}
+
+.theme-changing .feather-moon {
+    transform: rotate(-90deg) scale(0);
+    opacity: 0;
+}
+
 /* 5. Main Content & Cards */
 main {
     padding: calc(var(--space-unit) * 3) 0;
@@ -217,28 +227,28 @@ main {
     border: 1px solid var(--border-light);
     border-radius: var(--radius-xl);
     padding: calc(var(--space-unit) * 2);
-    box-shadow: 0 4px 6px -1px var(--shadow-light), 0 2px 4px -1px var(--shadow-light);
+    box-shadow: 0 1px 2px 0 var(--shadow-light);
     transition: transform var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
     margin-bottom: calc(var(--space-unit) * 2);
 }
 body.dark .card {
     background: var(--bg-secondary-dark);
     border-color: var(--border-dark);
-    box-shadow: 0 10px 15px -3px var(--shadow-dark), 0 4px 6px -2px var(--shadow-dark);
+    box-shadow: 0 1px 2px 0 var(--shadow-dark);
 }
 .card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 10px 15px -3px var(--shadow-light), 0 4px 6px -2px var(--shadow-light);
+    box-shadow: 0 8px 25px -5px var(--shadow-light), 0 4px 6px -4px var(--shadow-light);
 }
 body.dark .card:hover {
-    box-shadow: 0 20px 25px -5px var(--shadow-dark), 0 10px 10px -5px var(--shadow-dark);
+    box-shadow: 0 8px 25px -5px var(--shadow-dark), 0 4px 6px -4px var(--shadow-dark);
 }
 
 /* 6. Buttons */
 .btn {
     padding: calc(var(--space-unit) * 0.75) calc(var(--space-unit) * 1.5);
-    border-radius: var(--radius-md);
-    font-weight: 600;
+    border-radius: var(--radius-lg);
+    font-weight: 700;
     transition: all var(--transition-fast);
     display: inline-flex;
     align-items: center;
@@ -248,12 +258,20 @@ body.dark .card:hover {
     font-size: 1rem;
 }
 .btn-primary {
-    background: var(--brand-gradient);
+    background: var(--brand-primary);
     color: white;
+    box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+}
+body.dark .btn-primary {
+    background: var(--brand-primary-dark);
+    color: var(--bg-primary-dark);
 }
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px -5px rgba(79, 70, 229, 0.4);
+    box-shadow: 0 6px 12px -4px var(--brand-primary), 0 0 15px -5px var(--brand-primary);
+}
+body.dark .btn-primary:hover {
+    box-shadow: 0 6px 12px -4px var(--brand-primary-dark), 0 0 15px -5px var(--brand-primary-dark);
 }
 .btn-secondary {
     background-color: var(--bg-secondary-light);
@@ -266,10 +284,12 @@ body.dark .btn-secondary {
     color: var(--text-primary-dark);
 }
 .btn-secondary:hover {
-    background-color: rgba(0, 0, 0, 0.02);
+    background-color: #F3F4F6;
+    border-color: #D1D5DB;
 }
 body.dark .btn-secondary:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: #1F2937;
+    border-color: #4B5563;
 }
 
 /* 7. Footer */
@@ -320,12 +340,13 @@ body.dark .skeleton {
 /* Page specific styles */
 .hero {
     text-align: center;
-    padding: calc(var(--space-unit) * 4) 0;
+    padding: calc(var(--space-unit) * 5) 0;
 }
 .hero h1 {
-    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-size: clamp(3rem, 6vw, 5rem);
     font-weight: 800;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
     background: var(--brand-gradient);
     -webkit-background-clip: text;
     background-clip: text;
@@ -333,9 +354,9 @@ body.dark .skeleton {
     margin-bottom: var(--space-unit);
 }
 .hero p {
-    max-width: 600px;
-    margin: 0 auto calc(var(--space-unit) * 2);
-    font-size: 1.125rem;
+    max-width: 650px;
+    margin: 0 auto calc(var(--space-unit) * 2.5);
+    font-size: 1.25rem;
     color: var(--text-secondary-light);
 }
 body.dark .hero p {
