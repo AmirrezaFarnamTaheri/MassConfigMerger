@@ -58,37 +58,30 @@ document.addEventListener('DOMContentLoaded', () => {
     async function updateClashFileSize() {
         const units = ['B', 'KB', 'MB', 'GB', 'TB'];
         const formatSize = (n) => {
-            const i = n > 0 ? Math.floor(Math.log(n) / Math.log(1024)) : 0;
+            if (!Number.isFinite(n) || n < 0) return 'N/A';
+            const i = n > 0 ? Math.min(units.length - 1, Math.floor(Math.log(n) / Math.log(1024))) : 0;
             return `${(n / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
         };
         const setNA = () => updateElement('clash-filesize', 'N/A');
         try {
             const url = getFullUrl('output/clash.yaml');
+            // Try HEAD first
             let response = await fetch(url, { method: 'HEAD' });
-
             let sizeNum = NaN;
             if (response.ok) {
                 const sizeHeader = response.headers.get('Content-Length');
                 sizeNum = sizeHeader ? parseInt(sizeHeader, 10) : NaN;
             }
-
-            if (!Number.isFinite(sizeNum) || sizeNum < 0) {
-                // Fallback to a ranged GET; some servers may not support HEAD
+            // If HEAD didn't provide a size, try a safe ranged GET only if same-origin
+            const sameOrigin = new URL(url, window.location.href).origin === window.location.origin;
+            if ((!Number.isFinite(sizeNum) || sizeNum < 0) && sameOrigin) {
                 response = await fetch(url, { method: 'GET', headers: { Range: 'bytes=0-0' } });
                 if (response.status === 206) {
-                    const contentRange = response.headers.get('Content-Range'); // e.g., "bytes 0-0/12345"
+                    const contentRange = response.headers.get('Content-Range'); // "bytes 0-0/12345"
                     const totalMatch = contentRange && contentRange.match(/\/(\d+)$/);
                     sizeNum = totalMatch ? parseInt(totalMatch[1], 10) : NaN;
-                } else if (response.ok) {
-                    // Range not honored; as a last resort try Content-Length from full GET
-                    const len = response.headers.get('Content-Length');
-                    sizeNum = len ? parseInt(len, 10) : NaN;
-                } else {
-                    setNA();
-                    return;
                 }
             }
-
             if (Number.isFinite(sizeNum) && sizeNum >= 0) {
                 updateElement('clash-filesize', formatSize(sizeNum));
             } else {
