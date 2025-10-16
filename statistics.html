@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="no-js">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Detailed statistics and analytics for ConfigStream proxy configurations.">
-    <title>Statistics - ConfigStream</title>
+    <meta name="description" content="View detailed analytics and trends for our free VPN configurations, including protocol distribution and geographic data.">
+    <title>Analytics - ConfigStream</title>
     <link rel="icon" type="image/svg+xml" href="src/configstream/logo.svg">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Manrope:wght@600;700;800&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Manrope:wght@700;800&display=swap">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://unpkg.com/feather-icons"></script>
@@ -14,49 +14,59 @@
 <body>
     <header class="header">
     <div class="container">
-        <a href="index.html" class="logo">
+        <a href="index.html" class="logo" aria-label="ConfigStream Home">
             <img src="src/configstream/logo.svg" alt="ConfigStream Logo">
             <span>ConfigStream</span>
         </a>
-        <nav class="nav">
+        <nav class="nav" id="main-nav" aria-label="Main navigation">
             <a href="index.html" class="nav-link">Home</a>
-            <a href="proxies.html" class="nav-link">Proxies</a>
-            <a href="statistics.html" class="nav-link">Statistics</a>
+            <a href="proxies.html" class="nav-link">Proxy List</a>
+            <a href="statistics.html" class="nav-link">Analytics</a>
             <a href="about.html" class="nav-link">About</a>
-            <button class="theme-switcher" id="theme-switcher" aria-label="Toggle theme">
+        </nav>
+        <div class="header-actions">
+            <button class="theme-switcher" id="theme-switcher" aria-label="Toggle color theme" title="Toggle color theme">
                 <i data-feather="sun"></i>
                 <i data-feather="moon" style="display: none;"></i>
             </button>
-        </nav>
+            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
+                <i data-feather="github"></i>
+                <span>GitHub</span>
+            </a>
+        </div>
     </div>
 </header>
 
-    <main class="container">
-        <section id="charts-card" class="card">
-            <h2>Statistics & Analytics</h2>
-            <p>Detailed insights into proxy configurations and performance metrics.</p>
-            
-            <div class="charts-grid">
-                <div class="chart-container">
-                    <h3>Protocol Distribution</h3>
-                    <canvas id="protocolChart" role="img" aria-label="A doughnut chart showing the distribution of proxy protocols."></canvas>
+    <main>
+        <div class="container">
+            <section id="charts-card" class="card fade-in-up">
+                <header class="page-header">
+                    <h2>Analytics</h2>
+                    <p>Discover trends in our proxy data. These charts visualize the distribution of protocols and the top countries in our network.</p>
+                </header>
+
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>Protocol Distribution</h3>
+                        <canvas id="protocolChart" role="img" aria-label="A doughnut chart showing the distribution of proxy protocols."></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Top 10 Countries</h3>
+                        <canvas id="countryChart" role="img" aria-label="A bar chart showing the top 10 countries with the most proxies."></canvas>
+                    </div>
                 </div>
-                <div class="chart-container">
-                    <h3>Top 10 Countries</h3>
-                    <canvas id="countryChart" role="img" aria-label="A bar chart showing the top 10 countries with the most proxies."></canvas>
-                </div>
-            </div>
-        </section>
+            </section>
+        </div>
     </main>
 
     <footer class="footer">
     <div class="container">
         <div class="social-links">
-            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i data-feather="github"></i></a>
-            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" rel="noopener noreferrer" aria-label="Issues"><i data-feather="alert-circle"></i></a>
+            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" rel="noopener noreferrer" aria-label="Visit our GitHub page"><i data-feather="github"></i></a>
+            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" rel="noopener noreferrer" aria-label="Report an issue"><i data-feather="alert-circle"></i></a>
         </div>
-        <p>Made with <span class="heart">❤️</span> for internet freedom.</p>
-        <p class="last-updated">Last updated: <span id="footerUpdate" class="loading">...</span></p>
+        <p>A project for a free and open internet. <span class="heart">♥</span></p>
+        <p class="last-updated">Last updated: <span id="footerUpdate" class="loading">checking...</span></p>
     </div>
 </footer>
 

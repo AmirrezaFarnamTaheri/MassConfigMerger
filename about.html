@@ -1,76 +1,79 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="no-js">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Learn about ConfigStream - an open-source VPN configuration aggregator.">
+    <meta name="description" content="Learn about ConfigStream, an open-source project dedicated to providing free, reliable, and auto-updating VPN configurations.">
     <title>About - ConfigStream</title>
     <link rel="icon" type="image/svg+xml" href="src/configstream/logo.svg">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Manrope:wght@600;700;800&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Manrope:wght@700;800&display=swap">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body>
     <header class="header">
     <div class="container">
-        <a href="index.html" class="logo">
+        <a href="index.html" class="logo" aria-label="ConfigStream Home">
             <img src="src/configstream/logo.svg" alt="ConfigStream Logo">
             <span>ConfigStream</span>
         </a>
-        <nav class="nav">
+        <nav class="nav" id="main-nav" aria-label="Main navigation">
             <a href="index.html" class="nav-link">Home</a>
-            <a href="proxies.html" class="nav-link">Proxies</a>
-            <a href="statistics.html" class="nav-link">Statistics</a>
+            <a href="proxies.html" class="nav-link">Proxy List</a>
+            <a href="statistics.html" class="nav-link">Analytics</a>
             <a href="about.html" class="nav-link">About</a>
-            <button class="theme-switcher" id="theme-switcher" aria-label="Toggle theme">
+        </nav>
+        <div class="header-actions">
+            <button class="theme-switcher" id="theme-switcher" aria-label="Toggle color theme" title="Toggle color theme">
                 <i data-feather="sun"></i>
                 <i data-feather="moon" style="display: none;"></i>
             </button>
-        </nav>
+            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
+                <i data-feather="github"></i>
+                <span>GitHub</span>
+            </a>
+        </div>
     </div>
 </header>
 
-    <main class="container">
-        <section id="about-card" class="card">
-            <h2>About ConfigStream</h2>
-            <p>An open-source project dedicated to internet freedom through automated VPN configuration aggregation.</p>
+    <main>
+        <div class="container">
+            <section id="about-card" class="card fade-in-up">
+                <header class="page-header">
+                    <h2>About ConfigStream</h2>
+                    <p>Our mission is to make the internet more open and accessible for everyone.</p>
+                </header>
 
-            <div class="about-section" role="region" aria-labelledby="about-heading">
-                <h3 id="about-heading"><i data-feather="star" aria-hidden="true"></i> What is ConfigStream?</h3>
-                <p>ConfigStream is an open-source VPN configuration aggregator that automatically collects, tests, and publishes free VPN configurations from public sources. Our mission is to provide reliable, tested, and accessible proxy configurations to help users bypass censorship and access the open internet.</p>
-            </div>
+                <div class="about-section" role="region" aria-labelledby="mission-heading">
+                    <h3 id="mission-heading"><i data-feather="globe" aria-hidden="true"></i> Our Mission</h3>
+                    <p>ConfigStream is an automated system that finds, tests, and shares free VPN configurations. We believe that everyone deserves secure and unrestricted access to information, and this project is our contribution to that cause.</p>
+                </div>
 
-            <div class="about-section" role="region" aria-labelledby="how-it-works-heading">
-                <h3 id="how-it-works-heading"><i data-feather="cpu" aria-hidden="true"></i> How It Works</h3>
-                <p>The project runs entirely through GitHub Actions, updating configurations every few hours. Each configuration is rigorously tested for connectivity, latency, and security before being made available. This ensures you always have access to fresh, working proxies without manual intervention.</p>
-            </div>
+                <div class="about-section" role="region" aria-labelledby="how-it-works-heading">
+                    <h3 id="how-it-works-heading"><i data-feather="activity" aria-hidden="true"></i> How It Works</h3>
+                    <p>Using GitHub Actions, our system runs around the clock to fetch fresh proxy lists from public sources. Each proxy undergoes rigorous automated testing for speed, reliability, and security. Only the best, fully-vetted proxies are included in our configurations, which are updated every three hours.</p>
+                </div>
 
-            <div class="about-section" role="region" aria-labelledby="security-heading">
-                <h3 id="security-heading"><i data-feather="alert-triangle" aria-hidden="true"></i> Security & Privacy</h3>
-                <p><strong>These are FREE public VPN nodes from unknown operators.</strong> While we perform basic security checks, we cannot guarantee complete safety. Never use them for sensitive activities like banking. They're best for casual browsing and bypassing geo-restrictions. Use at your own risk.</p>
-            </div>
-        </section>
+                <div class="about-section" role="region" aria-labelledby="important-notice-heading">
+                    <h3 id="important-notice-heading"><i data-feather="alert-triangle" aria-hidden="true"></i> Important Notice</h3>
+                    <p><strong>These are free, public proxies.</strong> While we filter out malicious nodes, we cannot guarantee your privacy. Please avoid using these proxies for sensitive activities like online banking or handling personal data. For casual browsing and bypassing geo-restrictions, they are an excellent free resource. <strong>Use at your own risk.</strong></p>
+                </div>
+            </section>
+        </div>
     </main>
 
     <footer class="footer">
     <div class="container">
         <div class="social-links">
-            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i data-feather="github"></i></a>
-            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" rel="noopener noreferrer" aria-label="Issues"><i data-feather="alert-circle"></i></a>
+            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" rel="noopener noreferrer" aria-label="Visit our GitHub page"><i data-feather="github"></i></a>
+            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" rel="noopener noreferrer" aria-label="Report an issue"><i data-feather="alert-circle"></i></a>
         </div>
-        <p>Made with <span class="heart">❤️</span> for internet freedom.</p>
-        <p class="last-updated">Last updated: <span id="footerUpdate" class="loading">...</span></p>
+        <p>A project for a free and open internet. <span class="heart">♥</span></p>
+        <p class="last-updated">Last updated: <span id="footerUpdate" class="loading">checking...</span></p>
     </div>
 </footer>
 
     <script src="assets/js/utils.js"></script>
     <script src="assets/js/main.js"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        if (window.feather && typeof window.feather.replace === 'function') {
-          window.feather.replace();
-        }
-      });
-    </script>
 </body>
 </html>
