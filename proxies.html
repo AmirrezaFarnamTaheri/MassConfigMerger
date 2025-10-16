@@ -44,23 +44,23 @@
         <div class="container">
             <section id="proxies-card" class="card">
                 <div class="card-header">
-                    <h2>Proxy List</h2>
-                    <p>Here are all working proxies from our latest test. Sort and filter to find the best connection for you.</p>
+                    <h2>Live Proxy List</h2>
+                    <p>Explore our complete list of vetted proxies. Search, sort, and find the perfect connection for your needs.</p>
                 </div>
 
                 <div class="table-controls">
-                    <input type="text" id="filterProtocol" class="filter-input" placeholder="Filter by protocol...">
-                    <input type="text" id="filterLocation" class="filter-input" placeholder="Filter by country...">
+                    <input type="text" id="filterProtocol" class="filter-input" placeholder="Filter by protocol (e.g., vmess)...">
+                    <input type="text" id="filterLocation" class="filter-input" placeholder="Filter by country (e.g., US)...">
                 </div>
 
                 <div class="table-container">
                     <div id="loadingContainer" class="loader" role="status" aria-live="polite">
-                        <p>Loading and testing proxies...</p>
+                        <p>Loading and testing live proxies...</p>
                     </div>
                     <div id="emptyState" class="empty-state hidden">
-                        <i data-feather="search"></i>
-                        <h3>No Proxies Found</h3>
-                        <p>Your filter criteria did not match any proxies. Try a different search.</p>
+                        <i data-feather="frown"></i>
+                        <h3>No Matches Found</h3>
+                        <p>Your search for proxies didn't return any results. Please try adjusting your filters.</p>
                     </div>
                     <table id="proxiesTable" class="proxies-table hidden" aria-live="polite">
                         <thead>
