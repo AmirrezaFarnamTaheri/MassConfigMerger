@@ -279,7 +279,7 @@ async function copyToClipboard(text, button = null) {
         console.error('Failed to copy:', err);
 
         if (button) {
-            const originalText = button.querySelector('span').textContent;
+            const originalHTML = button.innerHTML;
             button.innerHTML = '<i data-feather="x"></i><span>Failed</span>';
             button.classList.add('error');
 
@@ -288,7 +288,7 @@ async function copyToClipboard(text, button = null) {
             }
 
             setTimeout(() => {
-                button.innerHTML = `<i data-feather="copy"></i><span>${originalText}</span>`;
+                button.innerHTML = originalHTML;
                 button.classList.remove('error');
                 if (typeof feather !== 'undefined') {
                     feather.replace();
