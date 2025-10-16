@@ -63,18 +63,30 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         const setNA = () => updateElement('clash-filesize', 'N/A');
         try {
-            // Prefer direct fetch with full URL to ensure init options are honored
             const url = getFullUrl('output/clash.yaml');
             let response = await fetch(url, { method: 'HEAD' });
-            let sizeHeader = response.headers.get('Content-Length');
-            let sizeNum = sizeHeader ? parseInt(sizeHeader, 10) : NaN;
+
+            let sizeNum = NaN;
+            if (response.ok) {
+                const sizeHeader = response.headers.get('Content-Length');
+                sizeNum = sizeHeader ? parseInt(sizeHeader, 10) : NaN;
+            }
 
             if (!Number.isFinite(sizeNum) || sizeNum < 0) {
                 // Fallback to a ranged GET; some servers may not support HEAD
                 response = await fetch(url, { method: 'GET', headers: { Range: 'bytes=0-0' } });
-                const contentRange = response.headers.get('Content-Range'); // e.g., "bytes 0-0/12345"
-                const totalMatch = contentRange && contentRange.match(/\/(\d+)$/);
-                sizeNum = totalMatch ? parseInt(totalMatch[1], 10) : NaN;
+                if (response.status === 206) {
+                    const contentRange = response.headers.get('Content-Range'); // e.g., "bytes 0-0/12345"
+                    const totalMatch = contentRange && contentRange.match(/\/(\d+)$/);
+                    sizeNum = totalMatch ? parseInt(totalMatch[1], 10) : NaN;
+                } else if (response.ok) {
+                    // Range not honored; as a last resort try Content-Length from full GET
+                    const len = response.headers.get('Content-Length');
+                    sizeNum = len ? parseInt(len, 10) : NaN;
+                } else {
+                    setNA();
+                    return;
+                }
             }
 
             if (Number.isFinite(sizeNum) && sizeNum >= 0) {
