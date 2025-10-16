@@ -5,57 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Explore and filter our full list of tested VPN configurations. Find the best proxy by location, protocol, and latency.">
     <title>Proxy List - ConfigStream</title>
-<link rel="icon" type="image/svg+xml" href="src/configstream/logo.svg">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Manrope:wght@800&display=swap">
+    <link rel="icon" type="image/svg+xml" href="src/configstream/logo.svg">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://unpkg.com/feather-icons"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@lottiefiles/lottie-player@2.0.12/dist/lottie-player.js"></script>
 </head>
 <body>
     <div class="nav-overlay"></div>
     <header class="header">
-    <div class="container">
-        <a href="index.html" class="logo" aria-label="ConfigStream Home">
-            <img src="src/configstream/logo.svg" alt="ConfigStream Logo">
-            <span>ConfigStream</span>
-        </a>
-        <nav class="nav" id="main-nav" aria-label="Main navigation">
-            <a href="index.html" class="nav-link">Home</a>
-            <a href="proxies.html" class="nav-link">Proxy List</a>
-            <a href="statistics.html" class="nav-link">Analytics</a>
-            <a href="about.html" class="nav-link">About</a>
-        </nav>
-        <div class="header-actions">
-            <lottie-player id="theme-switcher-animation" src="https://assets2.lottiefiles.com/packages/lf20_gof1xmfq.json" background="transparent" speed="1" style="width: 50px; height: 50px; cursor: pointer;" hover loop></lottie-player>
-            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" class="btn btn-secondary github-btn" target="_blank" rel="noopener noreferrer">
-                <i data-feather="github"></i>
-                <span>GitHub</span>
+        <div class="container">
+            <a href="index.html" class="logo" aria-label="ConfigStream Home">
+                <img src="src/configstream/logo.svg" alt="ConfigStream Logo">
+                <span>ConfigStream</span>
             </a>
-            <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Toggle navigation" aria-controls="main-nav" aria-expanded="false">
-                <i data-feather="menu" class="menu-icon"></i>
-                <i data-feather="x" class="x-icon hidden"></i>
-            </button>
+            <nav class="nav" id="main-nav" aria-label="Main navigation">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="proxies.html" class="nav-link">Proxy List</a>
+                <a href="statistics.html" class="nav-link">Analytics</a>
+                <a href="about.html" class="nav-link">About</a>
+            </nav>
+            <div class="header-actions">
+                <button id="theme-switcher" class="btn-icon" aria-label="Toggle theme">
+                    <i data-feather="moon" class="moon-icon"></i>
+                    <i data-feather="sun" class="sun-icon hidden"></i>
+                </button>
+                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" class="btn btn-secondary github-btn" target="_blank" rel="noopener noreferrer">
+                    <i data-feather="github"></i>
+                    <span>GitHub</span>
+                </a>
+                <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Toggle navigation" aria-controls="main-nav" aria-expanded="false">
+                    <i data-feather="menu" class="menu-icon"></i>
+                    <i data-feather="x" class="x-icon hidden"></i>
+                </button>
+            </div>
         </div>
-    </div>
-</header>
+    </header>
 
     <main>
         <div class="container">
             <section id="proxies-card" class="card">
                 <div class="card-header">
-                    <header class="page-header">
-                        <h2>Proxy List</h2>
-                        <p>Here are all the working proxies from our latest test. Sort and filter to find the best connection for you.</p>
-                    </header>
+                    <h2>Proxy List</h2>
+                    <p>Here are all working proxies from our latest test. Sort and filter to find the best connection for you.</p>
                 </div>
 
                 <div class="table-controls">
-                    <input type="text" id="filterProtocol" class="filter-input" placeholder="Filter by protocol..." aria-label="Filter by protocol">
-                    <input type="text" id="filterLocation" class="filter-input" placeholder="Filter by country..." aria-label="Filter by location">
-                    <div class="view-toggle">
-                        <label for="compact-view-toggle">Compact View</label>
-                        <input type="checkbox" id="compact-view-toggle" class="toggle-switch">
-                    </div>
+                    <input type="text" id="filterProtocol" class="filter-input" placeholder="Filter by protocol...">
+                    <input type="text" id="filterLocation" class="filter-input" placeholder="Filter by country...">
                 </div>
 
                 <div class="table-container">
@@ -65,7 +60,7 @@
                     <div id="emptyState" class="empty-state hidden">
                         <i data-feather="search"></i>
                         <h3>No Proxies Found</h3>
-                        <p>Your search or filter criteria did not match any proxies. Try broadening your search.</p>
+                        <p>Your filter criteria did not match any proxies. Try a different search.</p>
                     </div>
                     <table id="proxiesTable" class="proxies-table hidden" aria-live="polite">
                         <thead>
@@ -73,7 +68,6 @@
                                 <th class="sortable" data-sort="protocol" aria-sort="none">Protocol <i data-feather="chevron-down"></i></th>
                                 <th class="sortable" data-sort="location" aria-sort="none">Location <i data-feather="chevron-down"></i></th>
                                 <th class="sortable" data-sort="latency" aria-sort="ascending">Latency <i data-feather="chevron-down"></i></th>
-                                <th class="sortable" data-sort="asn" aria-sort="none">Network <i data-feather="chevron-down"></i></th>
                                 <th>Copy Link</th>
                             </tr>
                         </thead>
@@ -85,19 +79,18 @@
     </main>
 
     <footer class="footer">
-    <div class="container">
-        <div class="social-links">
-            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" rel="noopener noreferrer" aria-label="Visit our GitHub page"><i data-feather="github"></i></a>
-            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" rel="noopener noreferrer" aria-label="Report an issue"><i data-feather="alert-circle"></i></a>
+        <div class="container">
+            <div class="social-links">
+                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" rel="noopener noreferrer" aria-label="Visit our GitHub page"><i data-feather="github"></i></a>
+                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" rel="noopener noreferrer" aria-label="Report an issue"><i data-feather="alert-circle"></i></a>
+            </div>
+            <p>A passion project for a free and open internet. ✨</p>
+            <p class="last-updated">Last updated: <span id="footerUpdate" class="loading">checking...</span></p>
         </div>
-        <p>A passion project for a free and open internet. ✨</p>
-        <p class="last-updated">Last updated: <span id="footerUpdate" class="loading">checking...</span></p>
-    </div>
-</footer>
+    </footer>
 
-    <script src="assets/js/utils.js"></script>
-    <script src="assets/js/main.js"></script>
-    <script src="assets/js/proxies.js"></script>
-    <script src="assets/js/vanilla-tilt.min.js"></script>
+    <script src="assets/js/utils.js" defer></script>
+    <script src="assets/js/main.js" defer></script>
+    <script src="assets/js/proxies.js" defer></script>
 </body>
 </html>

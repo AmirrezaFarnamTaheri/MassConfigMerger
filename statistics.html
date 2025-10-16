@@ -5,94 +5,82 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="View detailed analytics and trends for our free VPN configurations, including protocol distribution and geographic data.">
     <title>Analytics - ConfigStream</title>
-<link rel="icon" type="image/svg+xml" href="src/configstream/logo.svg">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Manrope:wght@800&display=swap">
+    <link rel="icon" type="image/svg+xml" href="src/configstream/logo.svg">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://unpkg.com/feather-icons"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@lottiefiles/lottie-player@2.0.12/dist/lottie-player.js"></script>
 </head>
 <body>
     <div class="nav-overlay"></div>
     <header class="header">
-    <div class="container">
-        <a href="index.html" class="logo" aria-label="ConfigStream Home">
-            <img src="src/configstream/logo.svg" alt="ConfigStream Logo">
-            <span>ConfigStream</span>
-        </a>
-        <nav class="nav" id="main-nav" aria-label="Main navigation">
-            <a href="index.html" class="nav-link">Home</a>
-            <a href="proxies.html" class="nav-link">Proxy List</a>
-            <a href="statistics.html" class="nav-link">Analytics</a>
-            <a href="about.html" class="nav-link">About</a>
-        </nav>
-        <div class="header-actions">
-            <lottie-player id="theme-switcher-animation" src="https://assets2.lottiefiles.com/packages/lf20_gof1xmfq.json" background="transparent" speed="1" style="width: 50px; height: 50px; cursor: pointer;" hover loop></lottie-player>
-            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" class="btn btn-secondary github-btn" target="_blank" rel="noopener noreferrer">
-                <i data-feather="github"></i>
-                <span>GitHub</span>
+        <div class="container">
+            <a href="index.html" class="logo" aria-label="ConfigStream Home">
+                <img src="src/configstream/logo.svg" alt="ConfigStream Logo">
+                <span>ConfigStream</span>
             </a>
-            <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Toggle navigation" aria-controls="main-nav" aria-expanded="false">
-                <i data-feather="menu" class="menu-icon"></i>
-                <i data-feather="x" class="x-icon hidden"></i>
-            </button>
+            <nav class="nav" id="main-nav" aria-label="Main navigation">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="proxies.html" class="nav-link">Proxy List</a>
+                <a href="statistics.html" class="nav-link">Analytics</a>
+                <a href="about.html" class="nav-link">About</a>
+            </nav>
+            <div class="header-actions">
+                <button id="theme-switcher" class="btn-icon" aria-label="Toggle theme">
+                    <i data-feather="moon" class="moon-icon"></i>
+                    <i data-feather="sun" class="sun-icon hidden"></i>
+                </button>
+                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" class="btn btn-secondary github-btn" target="_blank" rel="noopener noreferrer">
+                    <i data-feather="github"></i>
+                    <span>GitHub</span>
+                </a>
+                <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Toggle navigation" aria-controls="main-nav" aria-expanded="false">
+                    <i data-feather="menu" class="menu-icon"></i>
+                    <i data-feather="x" class="x-icon hidden"></i>
+                </button>
+            </div>
         </div>
-    </div>
-</header>
+    </header>
 
     <main>
         <div class="container">
             <section id="charts-card" class="card">
                 <div class="card-header">
-                    <header class="page-header">
-                        <h2>Analytics</h2>
-                        <p>Discover trends in our proxy data. These charts visualize the distribution of protocols and the top countries in our network.</p>
-                    </header>
+                    <h2>Analytics</h2>
+                    <p>Discover trends in our proxy data, from protocol distribution to the top countries in our network.</p>
                 </div>
 
                 <div id="chartsContainer" class="charts-grid">
                     <div class="chart-container">
-                        <h3>Protocol Distribution <span id="fastest-protocol-badge" class="badge hidden"></span></h3>
-                        <canvas id="protocolChart" role="img" aria-label="A doughnut chart showing the distribution of proxy protocols."></canvas>
-                        <div id="protocolChartEmpty" class="empty-state hidden">
-                            <i data-feather="pie-chart"></i>
-                            <h3>No Data Available</h3>
-                            <p>Protocol data is currently unavailable.</p>
-                        </div>
+                        <h3>Protocol Distribution</h3>
+                        <canvas id="protocolChart" role="img" aria-label="Doughnut chart showing proxy protocol distribution."></canvas>
                     </div>
                     <div class="chart-container">
                         <h3>Top 10 Countries</h3>
-                        <canvas id="countryChart" role="img" aria-label="A bar chart showing the top 10 countries with the most proxies."></canvas>
-                        <div id="countryChartEmpty" class="empty-state hidden">
-                            <i data-feather="map"></i>
-                            <h3>No Data Available</h3>
-                            <p>Country data is currently unavailable.</p>
-                        </div>
+                        <canvas id="countryChart" role="img" aria-label="Bar chart showing top 10 countries with the most proxies."></canvas>
                     </div>
                 </div>
                 <div id="chartsEmptyState" class="empty-state hidden">
                     <i data-feather="bar-chart-2"></i>
                     <h3>Not Enough Data</h3>
-                    <p>There isn't enough data to generate analytics charts yet. Please check back after the next proxy scan.</p>
+                    <p>There isn't enough data to generate analytics charts yet. Please check back later.</p>
                 </div>
             </section>
         </div>
     </main>
 
     <footer class="footer">
-    <div class="container">
-        <div class="social-links">
-            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" rel="noopener noreferrer" aria-label="Visit our GitHub page"><i data-feather="github"></i></a>
-            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" rel="noopener noreferrer" aria-label="Report an issue"><i data-feather="alert-circle"></i></a>
+        <div class="container">
+            <div class="social-links">
+                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" rel="noopener noreferrer" aria-label="Visit our GitHub page"><i data-feather="github"></i></a>
+                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" rel="noopener noreferrer" aria-label="Report an issue"><i data-feather="alert-circle"></i></a>
+            </div>
+            <p>A passion project for a free and open internet. ✨</p>
+            <p class="last-updated">Last updated: <span id="footerUpdate" class="loading">checking...</span></p>
         </div>
-        <p>A passion project for a free and open internet. ✨</p>
-        <p class="last-updated">Last updated: <span id="footerUpdate" class="loading">checking...</span></p>
-    </div>
-</footer>
+    </footer>
 
-    <script src="assets/js/utils.js"></script>
-    <script src="assets/js/main.js"></script>
-    <script src="assets/js/statistics.js"></script>
-    <script src="assets/js/vanilla-tilt.min.js"></script>
+    <script src="assets/js/utils.js" defer></script>
+    <script src="assets/js/main.js" defer></script>
+    <script src="assets/js/statistics.js" defer></script>
 </body>
 </html>

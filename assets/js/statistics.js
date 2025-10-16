@@ -19,6 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
             chartsEmptyState.classList.add('hidden');
 
             const style = getComputedStyle(document.body);
+            const textColor = style.getPropertyValue('--text-primary-dark');
+            const gridColor = style.getPropertyValue('--border-dark');
 
             const commonOptions = {
                 responsive: true,
@@ -26,50 +28,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 plugins: {
                     legend: {
                         labels: {
-                            color: style.getPropertyValue('--text-secondary-dark')
+                            color: textColor
                         }
                     }
                 },
                 scales: {
                     x: {
-                        ticks: { color: style.getPropertyValue('--text-secondary-dark') },
-                        grid: { color: style.getPropertyValue('--border-dark') }
+                        ticks: { color: textColor },
+                        grid: { color: gridColor }
                     },
                     y: {
-                        ticks: { color: style.getPropertyValue('--text-secondary-dark') },
-                        grid: { color: style.getPropertyValue('--border-dark') }
+                        ticks: { color: textColor },
+                        grid: { color: gridColor }
                     }
                 }
             };
 
             // Protocol Chart
             const protocolChartCanvas = document.getElementById('protocolChart');
-            const protocolChartEmpty = document.getElementById('protocolChartEmpty');
             if (stats.protocols && Object.keys(stats.protocols).length > 0) {
-                // Calculate fastest protocol
-                const proxies = await fetchProxies();
-                const protocolLatencies = {};
-                proxies.forEach(p => {
-                    if (p.latency) {
-                        if (!protocolLatencies[p.protocol]) {
-                            protocolLatencies[p.protocol] = [];
-                        }
-                        protocolLatencies[p.protocol].push(p.latency);
-                    }
-                });
-
-                const avgLatencies = Object.entries(protocolLatencies).map(([protocol, latencies]) => {
-                    const avg = latencies.reduce((a, b) => a + b, 0) / latencies.length;
-                    return { protocol, avg };
-                });
-
-                if (avgLatencies.length > 0) {
-                    const fastest = avgLatencies.reduce((prev, current) => (prev.avg < current.avg) ? prev : current);
-                    const badge = document.getElementById('fastest-protocol-badge');
-                    badge.textContent = `Fastest: ${fastest.protocol}`;
-                    badge.classList.remove('hidden');
-                }
-
                 new Chart(protocolChartCanvas, {
                     type: 'doughnut',
                     data: {
@@ -77,28 +54,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         datasets: [{
                             data: Object.values(stats.protocols),
                             backgroundColor: [
-                                'rgba(255, 99, 132, 0.7)',
-                                'rgba(54, 162, 235, 0.7)',
-                                'rgba(255, 206, 86, 0.7)',
-                                'rgba(75, 192, 192, 0.7)',
-                                'rgba(153, 102, 255, 0.7)',
-                                'rgba(255, 159, 64, 0.7)'
+                                'rgba(76, 154, 255, 0.8)',
+                                'rgba(255, 86, 48, 0.8)',
+                                'rgba(54, 210, 153, 0.8)',
+                                'rgba(255, 206, 86, 0.8)',
+                                'rgba(153, 102, 255, 0.8)',
                             ],
                             borderColor: style.getPropertyValue('--bg-secondary-dark'),
                         }]
                     },
-                    options: { ...commonOptions, plugins: { legend: { ...commonOptions.plugins.legend, display: true, position: 'bottom' } } }
+                    options: { ...commonOptions, plugins: { legend: { ...commonOptions.plugins.legend, position: 'bottom' } } }
                 });
-                protocolChartCanvas.classList.remove('hidden');
-                protocolChartEmpty.classList.add('hidden');
-            } else {
-                protocolChartCanvas.classList.add('hidden');
-                protocolChartEmpty.classList.remove('hidden');
             }
 
             // Country Chart
             const countryChartCanvas = document.getElementById('countryChart');
-            const countryChartEmpty = document.getElementById('countryChartEmpty');
             const topCountries = Object.entries(stats.countries || {}).sort((a, b) => b[1] - a[1]).slice(0, 10);
             if (topCountries.length > 0) {
                 new Chart(countryChartCanvas, {
@@ -108,18 +78,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         datasets: [{
                             label: 'Proxy Count',
                             data: topCountries.map(c => c[1]),
-                            backgroundColor: 'rgba(23, 162, 184, 0.6)',
-                            borderColor: 'rgba(23, 162, 184, 1)',
+                            backgroundColor: 'rgba(76, 154, 255, 0.7)',
+                            borderColor: 'rgba(76, 154, 255, 1)',
                             borderWidth: 1
                         }]
                     },
                     options: commonOptions
                 });
-                countryChartCanvas.classList.remove('hidden');
-                countryChartEmpty.classList.add('hidden');
-            } else {
-                countryChartCanvas.classList.add('hidden');
-                countryChartEmpty.classList.remove('hidden');
             }
 
         } catch (error) {
