@@ -36,9 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentSort.key === 'location') {
                 valA = [a.location?.city, a.location?.country].filter(Boolean).join(', ');
                 valB = [b.location?.city, b.location?.country].filter(Boolean).join(', ');
-            } else if (currentSort.key === 'asn') {
-                valA = a.location.asn.name;
-                valB = b.location.asn.name;
             } else {
                 valA = a[currentSort.key];
                 valB = b[currentSort.key];
@@ -52,7 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
         tableBody.innerHTML = filteredProxies.map((p, index) => {
             const city = p.location?.city || '—';
             const country = p.location?.country || '—';
-            const asnName = p.location?.asn?.name || '—';
             const latency = (p.latency ?? '') !== '' ? `${p.latency}ms` : '—';
             const protocol = p.protocol || '—';
             const config = p.config || '';
@@ -61,12 +57,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${protocol}</td>
                     <td>${city}${city !== '—' && country !== '—' ? ', ' : ''}${country}</td>
                     <td>${latency}</td>
-                    <td>${asnName}</td>
                     <td><button class="btn btn-secondary copy-btn" data-config="${config}"><i data-feather="copy"></i></button></td>
                 </tr>
             `;
         }).join('');
         feather.replace();
+        initCopyButtons(); // Re-initialize copy buttons for the new rows
     };
 
     protocolFilter.addEventListener('input', renderTable);
@@ -82,8 +78,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentSort.asc = true;
             }
 
-            document.querySelectorAll('#proxiesTable th[data-sort]').forEach(header => header.classList.remove('asc', 'desc'));
-            th.classList.add(currentSort.asc ? 'asc' : 'desc');
+            document.querySelectorAll('#proxiesTable th[data-sort]').forEach(header => {
+                if (header !== th) {
+                    header.removeAttribute('aria-sort');
+                }
+            });
+            th.setAttribute('aria-sort', currentSort.asc ? 'ascending' : 'descending');
 
             renderTable();
         });
@@ -100,28 +100,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function initCompactViewToggle() {
-        const toggle = document.getElementById('compact-view-toggle');
-        const table = document.getElementById('proxiesTable');
-        if (!toggle || !table) return;
-
-        const isCompact = localStorage.getItem('compactView') === 'true';
-        toggle.checked = isCompact;
-        if (isCompact) {
-            table.classList.add('compact-view');
-        }
-
-        toggle.addEventListener('change', () => {
-            if (toggle.checked) {
-                table.classList.add('compact-view');
-                localStorage.setItem('compactView', 'true');
-            } else {
-                table.classList.remove('compact-view');
-                localStorage.setItem('compactView', 'false');
-            }
-        });
-    }
-
     fetchAndRenderProxies();
-    initCompactViewToggle();
 });
