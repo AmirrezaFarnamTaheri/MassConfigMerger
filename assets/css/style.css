@@ -191,7 +191,7 @@ body.dark .nav-link:hover, body.dark .nav-link[aria-current="page"] {
 .header-actions {
     display: flex;
     align-items: center;
-    gap: var(--space-unit) * 1.5;
+    gap: calc(var(--space-unit) * 1.5);
 }
 
 .theme-switcher {
