@@ -10,11 +10,14 @@
     <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body>
+    <div id="preloader">
+        <div class="loader-logo"></div>
+    </div>
     <div class="nav-overlay"></div>
     <header class="header">
         <div class="container">
             <a href="index.html" class="logo" aria-label="ConfigStream Home">
-                <img src="src/configstream/logo.svg" alt="ConfigStream Logo">
+                <img src="src/configstream/logo.svg" alt="ConfigStream Logo" class="logo-svg">
                 <span>ConfigStream</span>
             </a>
             <nav class="nav" id="main-nav" aria-label="Main navigation">
@@ -24,13 +27,14 @@
                 <a href="about.html" class="nav-link">About</a>
             </nav>
             <div class="header-actions">
-                <button id="theme-switcher" class="btn-icon" aria-label="Toggle theme">
-                    <i data-feather="moon" class="moon-icon"></i>
-                    <i data-feather="sun" class="sun-icon hidden"></i>
+                <button id="theme-switcher" class="theme-btn" aria-label="Toggle theme">
+                    <div class="theme-btn-inner">
+                        <i data-feather="moon" class="moon-icon"></i>
+                        <i data-feather="sun" class="sun-icon"></i>
+                    </div>
                 </button>
-                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" class="btn btn-secondary github-btn" target="_blank" rel="noopener noreferrer">
+                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" class="github-btn" target="_blank" rel="noopener noreferrer" aria-label="View on GitHub">
                     <i data-feather="github"></i>
-                    <span>GitHub</span>
                 </a>
             </div>
         </div>
@@ -55,19 +59,28 @@
                 </div>
             </section>
 
-            <section class="card" style="--delay: 0.4s;">
-                <div class="stats-grid">
+            <section class="stats-card" style="--delay: 0.4s;">
+                <div class="stats-card-inner">
                     <div class="stat-item">
-                        <div id="totalConfigs" class="stat-value loading">0</div>
-                        <div class="stat-label">Proxies Tested</div>
+                        <div class="stat-icon"><i data-feather="bar-chart-2"></i></div>
+                        <div class="stat-value-wrapper">
+                            <div id="totalConfigs" class="stat-value loading">0</div>
+                            <div class="stat-label">Proxies Tested</div>
+                        </div>
                     </div>
                     <div class="stat-item">
-                        <div id="workingConfigs" class="stat-value loading">0</div>
-                        <div class="stat-label">Currently Online</div>
+                        <div class="stat-icon"><i data-feather="check-circle"></i></div>
+                        <div class="stat-value-wrapper">
+                            <div id="workingConfigs" class="stat-value loading">0</div>
+                            <div class="stat-label">Currently Online</div>
+                        </div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value">3 hours</div>
-                        <div class="stat-label">Update Frequency</div>
+                        <div class="stat-icon"><i data-feather="clock"></i></div>
+                        <div class="stat-value-wrapper">
+                            <div class="stat-value">3 hrs</div>
+                            <div class="stat-label">Update Frequency</div>
+                        </div>
                     </div>
                 </div>
             </section>
