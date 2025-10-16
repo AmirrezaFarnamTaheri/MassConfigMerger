@@ -1,12 +1,11 @@
-<svg class="themeable-logo" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <style>
-        .themeable-logo .logo-shape {
-            stroke: #4F46E5;
-        }
-        html.dark .themeable-logo .logo-shape {
-            stroke: #818CF8;
-        }
-    </style>
-    <path class="logo-shape" d="M48 16C32 16 32 48 16 48" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
-    <path class="logo-shape" d="M16 16C32 16 32 48 48 48" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="logoGradient" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#6366F1"/>
+            <stop offset="1" stop-color="#EC4899"/>
+        </linearGradient>
+    </defs>
+    <path d="M32 58C46.3594 58 58 46.3594 58 32C58 17.6406 46.3594 6 32 6C17.6406 6 6 17.6406 6 32C6 46.3594 17.6406 58 32 58Z" fill="url(#logoGradient)"/>
+    <path d="M24 24C28 24 32 28 32 32C32 36 28 40 24 40" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M40 24C36 24 32 28 32 32C32 36 36 40 40 40" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
