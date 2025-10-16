@@ -27,36 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- HTML INCLUDES ---
-    const loadIncludes = async () => {
-        const headerPlaceholder = document.getElementById('header-placeholder');
-        if (headerPlaceholder) {
-            const response = await fetch('_includes/header.html');
-            const data = await response.text();
-            headerPlaceholder.innerHTML = data;
-        }
-
-        const footerPlaceholder = document.getElementById('footer-placeholder');
-        if (footerPlaceholder) {
-            const response = await fetch('_includes/footer.html');
-            const data = await response.text();
-            footerPlaceholder.innerHTML = data;
-        }
-
-        if (typeof feather !== 'undefined') {
-            feather.replace();
-        }
-    };
-
-
     // --- INITIALIZE ---
-    const init = async () => {
-        await loadIncludes();
-        // Re-initialize theme after header is loaded
-        initTheme();
-        initCopyButtons();
-        updateStats();
-    };
-
-    init();
+    updateStats();
 });

@@ -11,7 +11,24 @@
     <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body>
-    <div id="header-placeholder"></div>
+    <header class="header">
+    <div class="container">
+        <a href="index.html" class="logo">
+            <img src="src/configstream/logo.svg" alt="ConfigStream Logo">
+            <span>ConfigStream</span>
+        </a>
+        <nav class="nav">
+            <a href="index.html" class="nav-link">Home</a>
+            <a href="proxies.html" class="nav-link">Proxies</a>
+            <a href="statistics.html" class="nav-link">Statistics</a>
+            <a href="about.html" class="nav-link">About</a>
+            <button class="theme-switcher" id="theme-switcher" aria-label="Toggle theme">
+                <i class="feather-sun"></i>
+                <i class="feather-moon"></i>
+            </button>
+        </nav>
+    </div>
+</header>
 
     <main class="container">
         <section id="about-card" class="card">
@@ -35,7 +52,16 @@
         </section>
     </main>
 
-    <div id="footer-placeholder"></div>
+    <footer class="footer">
+    <div class="container">
+        <div class="social-links">
+            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" aria-label="GitHub"><i data-feather="github"></i></a>
+            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" aria-label="Issues"><i data-feather="alert-circle"></i></a>
+        </div>
+        <p>Made with ❤️ for internet freedom.</p>
+        <p>Last updated: <span id="footerUpdate" class="loading">...</span></p>
+    </div>
+</footer>
 
     <script src="assets/js/utils.js"></script>
     <script src="assets/js/main.js"></script>
