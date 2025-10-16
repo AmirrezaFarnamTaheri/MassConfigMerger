@@ -1,10 +1,11 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
-        <linearGradient id="logoGradient" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="#6A82FB"/>
-            <stop offset="100%" stop-color="#FC5C7D"/>
+        <linearGradient id="logoGradient" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#6366F1"/>
+            <stop offset="1" stop-color="#EC4899"/>
         </linearGradient>
     </defs>
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M32 0C14.327 0 0 14.327 0 32C0 49.673 14.327 64 32 64C49.673 64 64 49.673 64 32C64 14.327 49.673 0 32 0ZM32 56C18.745 56 8 45.255 8 32C8 18.745 18.745 8 32 8C45.255 8 56 18.745 56 32C56 45.255 45.255 56 32 56Z" fill="url(#logoGradient)"/>
-    <path d="M44 32C44 38.627 38.627 44 32 44C25.373 44 20 38.627 20 32C20 25.373 25.373 20 32 20C38.627 20 44 25.373 44 32Z" fill="white" fill-opacity="0.1"/>
+    <path d="M32 58C46.3594 58 58 46.3594 58 32C58 17.6406 46.3594 6 32 6C17.6406 6 6 17.6406 6 32C6 46.3594 17.6406 58 32 58Z" fill="url(#logoGradient)"/>
+    <path d="M24 24C28 24 32 28 32 32C32 36 28 40 24 40" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M40 24C36 24 32 28 32 32C32 36 36 40 40 40" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

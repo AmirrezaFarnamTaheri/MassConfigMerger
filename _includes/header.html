@@ -1,22 +1,27 @@
 <header class="header">
     <div class="container">
-        <a href="index.html" class="logo">
+        <a href="index.html" class="logo" aria-label="ConfigStream Home">
             <img src="src/configstream/logo.svg" alt="ConfigStream Logo">
             <span>ConfigStream</span>
         </a>
         <nav class="nav" id="main-nav" aria-label="Main navigation">
-            <a href="index.html" class="nav-link" aria-current="page">Home</a>
-            <a href="proxies.html" class="nav-link">Proxies</a>
-            <a href="statistics.html" class="nav-link">Statistics</a>
+            <a href="index.html" class="nav-link">Home</a>
+            <a href="proxies.html" class="nav-link">Proxy List</a>
+            <a href="statistics.html" class="nav-link">Analytics</a>
             <a href="about.html" class="nav-link">About</a>
         </nav>
         <div class="header-actions">
-            <button class="theme-switcher" id="theme-switcher" aria-label="Toggle theme" title="Toggle theme">
+            <button class="theme-switcher" id="theme-switcher" aria-label="Toggle color theme" title="Toggle color theme">
                 <i data-feather="sun"></i>
                 <i data-feather="moon" style="display: none;"></i>
             </button>
-            <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Toggle navigation" aria-controls="main-nav" aria-expanded="false" title="Toggle navigation">
+            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" class="btn btn-secondary github-btn" target="_blank" rel="noopener noreferrer">
+                <i data-feather="github"></i>
+                <span>GitHub</span>
+            </a>
+            <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Toggle navigation" aria-controls="main-nav" aria-expanded="false">
                 <i data-feather="menu"></i>
+                <i data-feather="x" style="display: none;"></i>
             </button>
         </div>
     </div>

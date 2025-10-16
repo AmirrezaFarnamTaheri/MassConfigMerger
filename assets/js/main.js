@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         feather.replace();
     }
 
+
     // --- DATA FETCHING ---
     async function updateStats() {
         const metadata = await fetchMetadata();
