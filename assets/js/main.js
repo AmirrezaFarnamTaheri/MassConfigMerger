@@ -122,9 +122,14 @@ function initHeroParallax() {
 
 function initCardGlow() {
     const cards = document.querySelectorAll('.card');
-    cards.forEach(card => {
-        card.addEventListener('mousemove', e => {
-            const rect = card.getBoundingClientRect();
+        const cards = document.querySelectorAll('.card');
+        if (!cards.length) return;
+        if (typeof window.VanillaTilt === 'undefined' || typeof window.VanillaTilt.init !== 'function') {
+            // Fail gracefully if the library isn't loaded
+            return;
+        }
+        window.VanillaTilt.init(cards, {
+            max: 5,
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
             card.style.setProperty('--x', `${x}px`);
