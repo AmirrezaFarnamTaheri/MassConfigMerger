@@ -168,50 +168,42 @@ function getTimeAgo(date) {
  * Initialize theme system
  */
 function initTheme() {
-    const themeToggle = document.getElementById('theme-switcher');
+    const themeToggle = document.getElementById('theme-switcher-animation');
     if (!themeToggle) return;
 
     const body = document.body;
-    const sunIcon = themeToggle.querySelector('[data-feather="sun"]');
-    const moonIcon = themeToggle.querySelector('[data-feather="moon"]');
+    let isDark = localStorage.getItem('theme') === 'dark' ||
+                 (localStorage.getItem('theme') === null && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-    const savedTheme = localStorage.getItem('theme') || 
-        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-
-    const applyTheme = (theme) => {
-        if (theme === 'dark') {
+    const applyTheme = (instant = false) => {
+        if (isDark) {
             body.classList.add('dark');
-            sunIcon.style.display = 'none';
-            moonIcon.style.display = 'inline-block';
+            if (instant) {
+                themeToggle.seek('100%');
+            } else {
+                themeToggle.setDirection(1);
+                themeToggle.play();
+            }
         } else {
             body.classList.remove('dark');
-            sunIcon.style.display = 'inline-block';
-            moonIcon.style.display = 'none';
+            if (instant) {
+                themeToggle.seek('0%');
+            } else {
+                themeToggle.setDirection(-1);
+                themeToggle.play();
+            }
         }
-        // Re-initialize feather icons to ensure they are rendered correctly.
-        if (typeof feather !== 'undefined') {
-            feather.replace();
-        }
+        // Trigger theme change event for charts
+        window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: isDark ? 'dark' : 'light' } }));
     };
 
-    applyTheme(savedTheme);
+    // Set initial state without animation
+    applyTheme(true);
 
     themeToggle.addEventListener('click', () => {
-        const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
-        localStorage.setItem('theme', newTheme);
-
-        // Add animation class
-        themeToggle.classList.add('theme-changing');
-
-        applyTheme(newTheme);
-
-        // Remove animation class after animation completes
-        setTimeout(() => {
-            themeToggle.classList.remove('theme-changing');
-        }, 500);
-
-        // Trigger theme change event for charts
-        window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }));
+        isDark = !isDark;
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        applyTheme();
     });
 }
 
@@ -222,14 +214,15 @@ function initTheme() {
 function initMobileNav() {
     const toggleButton = document.getElementById('mobile-nav-toggle');
     const navMenu = document.getElementById('main-nav');
+    const overlay = document.querySelector('.nav-overlay');
 
-    if (!toggleButton || !navMenu) return;
+    if (!toggleButton || !navMenu || !overlay) return;
 
     toggleButton.addEventListener('click', () => {
-        console.log("Toggle button clicked!");
         const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
         toggleButton.setAttribute('aria-expanded', !isExpanded);
         navMenu.classList.toggle('active');
+        overlay.classList.toggle('active');
         document.body.classList.toggle('no-scroll');
 
         // Change icon to 'x' when menu is open
@@ -239,11 +232,11 @@ function initMobileNav() {
         } else {
             icon.setAttribute('data-feather', 'menu');
         }
-        try {
-            feather.replace();
-        } catch (e) {
-            console.error("Feather icons could not be replaced:", e);
-        }
+        feather.replace();
+    });
+
+    overlay.addEventListener('click', () => {
+        toggleButton.click();
     });
 }
 
@@ -262,7 +255,7 @@ async function copyToClipboard(text, button = null) {
         await navigator.clipboard.writeText(text);
         
         if (button) {
-            const originalHTML = button.innerHTML;
+            const originalText = button.querySelector('span').textContent;
             button.innerHTML = '<i data-feather="check"></i><span>Copied!</span>';
             button.classList.add('copied');
             
@@ -271,7 +264,7 @@ async function copyToClipboard(text, button = null) {
             }
             
             setTimeout(() => {
-                button.innerHTML = originalHTML;
+                button.innerHTML = `<i data-feather="copy"></i><span>${originalText}</span>`;
                 button.classList.remove('copied');
                 if (typeof feather !== 'undefined') {
                     feather.replace();
@@ -282,7 +275,26 @@ async function copyToClipboard(text, button = null) {
         return true;
     } catch (err) {
         console.error('Failed to copy:', err);
-        alert('Failed to copy. Please try again.');
+
+        if (button) {
+            const originalText = button.querySelector('span').textContent;
+            button.innerHTML = '<i data-feather="x"></i><span>Failed</span>';
+            button.classList.add('error');
+
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            }
+
+            setTimeout(() => {
+                button.innerHTML = `<i data-feather="copy"></i><span>${originalText}</span>`;
+                button.classList.remove('error');
+                if (typeof feather !== 'undefined') {
+                    feather.replace();
+                }
+            }, 2000);
+        } else {
+            alert('Failed to copy. Please try again.');
+        }
         return false;
     }
 }

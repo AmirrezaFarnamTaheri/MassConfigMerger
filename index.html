@@ -9,8 +9,10 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Manrope:wght@800&display=swap">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@lottiefiles/lottie-player@2.0.12/dist/lottie-player.js" async></script>
 </head>
 <body>
+    <div class="nav-overlay"></div>
     <header class="header">
     <div class="container">
         <a href="index.html" class="logo" aria-label="ConfigStream Home">
@@ -24,10 +26,7 @@
             <a href="about.html" class="nav-link">About</a>
         </nav>
         <div class="header-actions">
-            <button class="theme-switcher" id="theme-switcher" aria-label="Toggle color theme" title="Toggle color theme">
-                <i data-feather="sun"></i>
-                <i data-feather="moon" style="display: none;"></i>
-            </button>
+            <lottie-player id="theme-switcher-animation" src="https://assets2.lottiefiles.com/packages/lf20_gof1xmfq.json" background="transparent" speed="1" style="width: 50px; height: 50px; cursor: pointer;" hover loop></lottie-player>
             <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" class="btn btn-secondary github-btn" target="_blank" rel="noopener noreferrer">
                 <i data-feather="github"></i>
                 <span>GitHub</span>
@@ -43,11 +42,11 @@
     <main>
         <div class="container">
             <section class="hero">
-                <h1 class="fade-in-up">Your Gateway to the Open Internet</h1>
-                <p class="subtitle fade-in-up" style="animation-delay: 0.2s;">
+                <h1>Your Gateway to the Open Internet</h1>
+                <p class="subtitle">
                     Reliable, fast, and secure. We aggregate and test free VPN configurations, updating them every three hours so you can browse with confidence.
                 </p>
-                <div class="hero-actions fade-in-up" style="animation-delay: 0.4s;">
+                <div class="hero-actions">
                     <a href="proxies.html" class="btn btn-primary">
                         <i data-feather="zap"></i>
                         <span>Get Started</span>
@@ -59,7 +58,7 @@
                 </div>
             </section>
 
-            <section class="card fade-in-up" style="animation-delay: 0.6s;">
+            <section class="card" style="--delay: 0.2s;">
                 <div class="stats-grid">
                     <div class="stat-item">
                         <div id="totalConfigs" class="stat-value loading">0</div>
@@ -67,7 +66,7 @@
                     </div>
                     <div class="stat-item">
                         <div id="workingConfigs" class="stat-value loading">0</div>
-                        <div class="stat-label">Currently Online</div>
+                        <div class="stat-label">Currently Online <span id="workingConfigsChange"></span></div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-value">3 hours</div>
@@ -76,34 +75,55 @@
                 </div>
             </section>
 
-            <section id="downloads" class="card fade-in-up" style="animation-delay: 0.8s;" aria-labelledby="downloads-heading">
-                <h2 id="downloads-heading">Downloads</h2>
-                <p>Choose your preferred format. All links provide the complete, tested set of configurations.</p>
+            <section id="downloads" class="card" style="--delay: 0.4s;" aria-labelledby="downloads-heading">
+                <div class="card-header">
+                    <h2 id="downloads-heading">Downloads</h2>
+                    <p>Choose your preferred format. All links provide the complete, tested set of configurations.</p>
+                </div>
                 <div class="downloads-grid">
-                    <div class="download-card">
+                    <div class="download-card" style="--delay: 0.1s">
                         <div class="download-icon"><i data-feather="file-text"></i></div>
-                        <h3 class="download-title">Base64 Subscription</h3>
-                        <p class="download-desc">The universal format for most V2Ray clients (V2RayNG, V2Box).</p>
+                        <div class="download-info">
+                            <h3 class="download-title">Base64 Subscription</h3>
+                            <p class="download-desc">The universal format for most V2Ray clients (V2RayNG, V2Box).</p>
+                        </div>
                         <div class="download-actions">
                             <button class="btn btn-secondary copy-btn" data-file="output/vpn_subscription_base64.txt" aria-label="Copy Base64 Subscription Link">Copy Link</button>
                         </div>
                     </div>
-                    <div class="download-card">
+                    <div class="download-card" style="--delay: 0.2s">
                         <div class="download-icon"><i data-feather="settings"></i></div>
-                        <h3 class="download-title">Clash Config</h3>
-                        <p class="download-desc">A ready-to-use YAML file for Clash, ClashX, and Clash Meta.</p>
+                        <div class="download-info">
+                            <h3 class="download-title">Clash Config</h3>
+                            <p class="download-desc">A ready-to-use YAML file for Clash, ClashX, and Clash Meta.</p>
+                        </div>
                         <div class="download-actions">
                             <a href="output/clash.yaml" class="btn btn-secondary" download aria-label="Download Clash Config">Download File</a>
                         </div>
                     </div>
-                    <div class="download-card">
+                    <div class="download-card" style="--delay: 0.3s">
                         <div class="download-icon"><i data-feather="link"></i></div>
-                        <h3 class="download-title">Raw Links</h3>
-                        <p class="download-desc">Unencoded configuration links for manual import or custom scripts.</p>
+                        <div class="download-info">
+                            <h3 class="download-title">Raw Links</h3>
+                            <p class="download-desc">Unencoded configuration links for manual import or custom scripts.</p>
+                        </div>
                          <div class="download-actions">
                             <button class="btn btn-secondary copy-btn" data-file="output/configs_raw.txt" aria-label="Copy Raw Configs Link">Copy Link</button>
                         </div>
                     </div>
+                </div>
+            </section>
+
+            <section class="card fade-in-up" style="animation-delay: 1s;">
+                <div class="card-header">
+                    <h2>Personalize</h2>
+                    <p>Choose an accent color that suits your style.</p>
+                </div>
+                <div class="color-palette">
+                    <button class="color-swatch" data-color-primary="#4338ca" data-color-secondary="#be185d" style="background: linear-gradient(45deg, #4338ca, #be185d);"></button>
+                    <button class="color-swatch" data-color-primary="#059669" data-color-secondary="#a16207" style="background: linear-gradient(45deg, #059669, #a16207);"></button>
+                    <button class="color-swatch" data-color-primary="#db2777" data-color-secondary="#f59e0b" style="background: linear-gradient(45deg, #db2777, #f59e0b);"></button>
+                    <button class="color-swatch" data-color-primary="#4f46e5" data-color-secondary="#22d3ee" style="background: linear-gradient(45deg, #4f46e5, #22d3ee);"></button>
                 </div>
             </section>
         </div>
@@ -122,5 +142,6 @@
 
     <script src="assets/js/utils.js"></script>
     <script src="assets/js/main.js"></script>
+    <script src="assets/js/vanilla-tilt.min.js"></script>
 </body>
 </html>

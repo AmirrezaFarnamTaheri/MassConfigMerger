@@ -51,6 +51,8 @@
     --shadow-color-dark: 220 30% 5%;
     --brand-primary-dark: #7c66ff;
     --brand-secondary-dark: #f9a8d4;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
 }
 
 /* 2. Base Styles */
@@ -260,6 +262,24 @@ body.dark .theme-switcher:hover {
     .github-btn {
         display: none;
     }
+
+    .nav-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1400;
+        opacity: 0;
+        transition: opacity var(--transition-base);
+        pointer-events: none;
+    }
+
+    .nav-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
 }
 
 /* 5. Main Content & Cards */
@@ -291,6 +311,22 @@ body.dark .card {
 }
 body.dark .card:hover {
     box-shadow: 0 12px 40px -4px hsla(var(--shadow-color-dark), 0.25);
+}
+
+.card-header {
+    padding-bottom: calc(var(--space-unit) * 2);
+    margin-bottom: calc(var(--space-unit) * 3);
+    border-bottom: 1px solid var(--border-light);
+    background-color: hsla(var(--shadow-color-light), 0.05);
+    margin: calc(var(--space-unit) * -5) calc(var(--space-unit) * -5) calc(var(--space-unit) * 3);
+    padding: calc(var(--space-unit) * 3) calc(var(--space-unit) * 5);
+    border-top-left-radius: var(--radius-xl);
+    border-top-right-radius: var(--radius-xl);
+}
+
+body.dark .card-header {
+    border-bottom-color: var(--border-dark);
+    background-color: hsla(var(--shadow-color-dark), 0.2);
 }
 
 .card::before {
@@ -546,4 +582,220 @@ body.dark .chart-container {
 
 body.dark .about-section .feather {
     color: var(--brand-primary-dark);
+}
+
+.downloads-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: calc(var(--space-unit) * 3);
+}
+
+.download-card {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--space-unit) * 2);
+    background-color: var(--bg-secondary-light);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: calc(var(--space-unit) * 3);
+    text-align: center;
+}
+
+body.dark .download-card {
+    background-color: var(--bg-secondary-dark);
+    border-color: var(--border-dark);
+}
+
+.download-icon {
+    font-size: 2rem;
+    color: var(--brand-primary);
+}
+
+body.dark .download-icon {
+    color: var(--brand-primary-dark);
+}
+
+.download-info {
+    flex-grow: 1;
+}
+
+.download-title {
+    font-size: 1.25rem;
+    margin-bottom: var(--space-unit);
+}
+
+.download-desc {
+    color: var(--text-secondary-light);
+    font-size: 0.9rem;
+}
+
+body.dark .download-desc {
+    color: var(--text-secondary-dark);
+}
+
+.download-actions {
+    margin-top: auto;
+}
+
+.empty-state {
+    text-align: center;
+    padding: calc(var(--space-unit) * 10) 0;
+    color: var(--text-secondary-light);
+}
+
+body.dark .empty-state {
+    color: var(--text-secondary-dark);
+}
+
+.empty-state .feather {
+    width: 64px;
+    height: 64px;
+    margin-bottom: calc(var(--space-unit) * 2);
+    stroke-width: 1.5;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    margin-bottom: var(--space-unit);
+}
+
+@keyframes drift {
+    0% {
+        transform: translate(-10%, -10%) rotate(0deg);
+    }
+    50% {
+        transform: translate(10%, 10%) rotate(180deg);
+    }
+    100% {
+        transform: translate(-10%, -10%) rotate(360deg);
+    }
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 20% 20%, hsla(var(--brand-primary), 0.1), transparent 30%),
+                radial-gradient(circle at 80% 80%, hsla(var(--brand-secondary), 0.1), transparent 30%);
+    animation: drift 50s linear infinite;
+    z-index: -1;
+}
+
+.color-palette {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-unit) * 2;
+}
+
+.color-swatch {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid var(--border-light);
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+}
+
+.color-swatch:hover {
+    transform: scale(1.1);
+}
+
+.color-swatch.active {
+    border-color: var(--brand-primary);
+    transform: scale(1.2);
+}
+
+.view-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-unit);
+    margin-left: auto;
+}
+
+.toggle-switch {
+    appearance: none;
+    width: 40px;
+    height: 22px;
+    background-color: var(--border-light);
+    border-radius: var(--radius-full);
+    position: relative;
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.toggle-switch::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background-color: white;
+    top: 2px;
+    left: 2px;
+    transition: transform var(--transition-fast);
+}
+
+.toggle-switch:checked {
+    background-color: var(--brand-primary);
+}
+
+.toggle-switch:checked::before {
+    transform: translateX(18px);
+}
+
+.proxies-table.compact-view td,
+.proxies-table.compact-view th {
+    padding: calc(var(--space-unit) * 1) calc(var(--space-unit) * 1.5);
+    font-size: 0.85rem;
+}
+
+@keyframes slide-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card, .download-card, #proxiesTableBody tr {
+    animation: slide-in-up 0.5s ease-out forwards;
+    opacity: 0;
+    animation-delay: var(--delay, 0s);
+}
+
+.card, .download-card, #proxiesTableBody tr {
+    animation: slide-in-up 0.5s ease-out forwards;
+    opacity: 0;
+    animation-delay: var(--delay, 0s);
+}
+
+@keyframes drift {
+    0% {
+        transform: translate(-10%, -10%) rotate(0deg);
+    }
+    50% {
+        transform: translate(10%, 10%) rotate(180deg);
+    }
+    100% {
+        transform: translate(-10%, -10%) rotate(360deg);
+    }
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 20% 20%, hsla(var(--brand-primary), 0.1), transparent 30%),
+                radial-gradient(circle at 80% 80%, hsla(var(--brand-secondary), 0.1), transparent 30%);
+    animation: drift 50s linear infinite;
+    z-index: -1;
 }
