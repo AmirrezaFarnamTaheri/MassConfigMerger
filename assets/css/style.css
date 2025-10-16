@@ -801,33 +801,4 @@ body::before {
     animation-delay: var(--delay, 0s);
 }
 
-@keyframes drift {
-    0% {
-        transform: translate(-10%, -10%) rotate(0deg);
-    }
-    50% {
-        transform: translate(10%, 10%) rotate(180deg);
-    }
-    100% {
-        transform: translate(-10%, -10%) rotate(360deg);
-    }
-}
-
-body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle at 20% 20%, hsla(var(--brand-primary), 0.1), transparent 30%),
-                radial-gradient(circle at 80% 80%, hsla(var(--brand-secondary), 0.1), transparent 30%);
-    animation: drift 50s linear infinite;
-    z-index: -1;
-}
-
-.card, .download-card, #proxiesTableBody tr {
-    animation: slide-in-up 0.5s ease-out forwards;
-    opacity: 0;
-    animation-delay: var(--delay, 0s);
-}
+/* These duplicated blocks should be removed. */
