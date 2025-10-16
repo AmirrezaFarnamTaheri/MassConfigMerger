@@ -5,16 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About - ConfigStream</title>
     <link rel="icon" type="image/svg+xml" href="src/configstream/logo.svg">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/fonts.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.2/dist/feather.min.js" integrity="sha384-qEqAs1VsN9WH2myXDbiP2wGGIttL9bMRZBKCl54ZnzpDlVqbYANP9vMaoT/wvQcf" crossorigin="anonymous"></script>
 </head>
 <body>
     <div class="container">
         <header class="header">
-            <a href="index.html" aria-label="Homepage">
+            <a href="index.html" class="logo-link" aria-label="Homepage">
                 <img src="src/configstream/logo.svg" alt="ConfigStream Logo" class="logo" id="logo">
             </a>
             <nav class="nav">
@@ -31,21 +29,32 @@
 
         <main class="content">
             <section class="card" id="about-card">
-                <h2><i data-feather="star"></i> What is ConfigStream?</h2>
-                <p>ConfigStream is an open-source project that automatically aggregates, tests, and provides free VPN and proxy configurations. Our system runs every three hours, gathering configs from public sources, testing them for connectivity and performance, and making the best ones available for easy download.</p>
+                <div class="card-header">
+                    <h2>About ConfigStream</h2>
+                    <p>An open-source project for a free and open internet.</p>
+                </div>
 
-                <h2 style="margin-top: 2rem;"><i data-feather="shield"></i> Security & Privacy</h2>
-                <p><strong>Use with caution.</strong> These are public proxies from unknown operators. While we perform basic security checks (like filtering nodes that inject ads or malicious scripts), we cannot guarantee their safety. They are best suited for bypassing geo-restrictions, not for handling sensitive data. Always prioritize using HTTPS.</p>
+                <div class="about-section">
+                    <h3><i data-feather="star"></i>What is ConfigStream?</h3>
+                    <p>ConfigStream is an open-source project that automatically aggregates, tests, and provides free VPN and proxy configurations. Our system runs every three hours, gathering configs from public sources, testing them for connectivity and performance, and making the best ones available for easy download.</p>
+                </div>
 
-                <h2 style="margin-top: 2rem;"><i data-feather="cpu"></i> Technology Stack</h2>
-                <p>This project is powered by Python and a suite of open-source tools:</p>
-                <ul>
-                    <li><strong>Python:</strong> The core logic for fetching and processing configs.</li>
-                    <li><strong>sing-box:</strong> For testing proxy connectivity and latency.</li>
-                    <li><strong>GitHub Actions:</strong> For automating the update process every 3 hours.</li>
-                    <li><strong>Chart.js:</strong> For rendering the beautiful charts on the statistics page.</li>
-                    <li><strong>Feather Icons:</strong> For the clean and simple icons used throughout the site.</li>
-                </ul>
+                <div class="about-section">
+                    <h3><i data-feather="shield"></i>Security & Privacy</h3>
+                    <p><strong>Use with caution.</strong> These are public proxies from unknown operators. While we perform basic security checks (like filtering nodes that inject ads or malicious scripts), we cannot guarantee their safety. They are best suited for bypassing geo-restrictions, not for handling sensitive data. Always prioritize using HTTPS.</p>
+                </div>
+
+                <div class="about-section">
+                    <h3><i data-feather="cpu"></i>Technology Stack</h3>
+                    <p>This project is powered by Python and a suite of open-source tools:</p>
+                    <ul>
+                        <li><strong>Python:</strong> The core logic for fetching and processing configs.</li>
+                        <li><strong>sing-box:</strong> For testing proxy connectivity and latency.</li>
+                        <li><strong>GitHub Actions:</strong> For automating the update process every 3 hours.</li>
+                        <li><strong>Chart.js:</strong> For rendering the beautiful charts on the statistics page.</li>
+                        <li><strong>Feather Icons:</strong> For the clean and simple icons used throughout the site.</li>
+                    </ul>
+                </div>
             </section>
         </main>
 

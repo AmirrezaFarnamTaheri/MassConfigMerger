@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     feather.replace();
 
     // --- CARD GLOW EFFECT ---
-    document.querySelectorAll('.card').forEach(card => {
+    document.querySelectorAll('.card, .feature-card').forEach(card => {
         card.addEventListener('mousemove', e => {
             const rect = card.getBoundingClientRect();
             const x = e.clientX - rect.left;
@@ -42,6 +42,22 @@ document.addEventListener('DOMContentLoaded', () => {
             card.style.setProperty('--mouse-x', `${x}px`);
             card.style.setProperty('--mouse-y', `${y}px`);
         });
+    });
+
+    // --- INTERSECTION OBSERVER FOR ANIMATIONS ---
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, {
+        threshold: 0.1
+    });
+
+    document.querySelectorAll('.feature-card').forEach(card => {
+        observer.observe(card);
     });
 
     // --- DATA FETCHING ---
@@ -135,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const protocol = p.protocol || '—';
                 const config = p.config || '';
                 return `
-                    <tr style="animation-delay: ${index * 0.03}s">
+                    <tr style="--delay: ${index * 0.03}s">
                         <td>${protocol}</td>
                         <td>${city}${city !== '—' && country !== '—' ? ', ' : ''}${country}</td>
                         <td>${latency}</td>
@@ -222,13 +238,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         datasets: [{
                             data: Object.values(stats.protocols),
                             backgroundColor: [
-                                'rgba(23, 162, 184, 0.7)',
-                                'rgba(102, 16, 242, 0.7)',
-                                'rgba(0, 123, 255, 0.7)',
-                                'rgba(0, 198, 255, 0.7)',
-                                'rgba(245, 54, 92, 0.7)'
+                                style.getPropertyValue('--glow-light'),
+                                style.getPropertyValue('--glow-dark'),
+                                '#00c6ff',
+                                '#6610f2',
+                                '#fd7e14'
                             ],
-                            borderColor: style.getPropertyValue('--bg-dark'),
+                            borderColor: body.classList.contains('dark') ? style.getPropertyValue('--bg-dark') : style.getPropertyValue('--bg-light'),
                         }]
                     },
                     options: { ...commonOptions, plugins: { legend: { ...commonOptions.plugins.legend, display: true, position: 'bottom' } } }
