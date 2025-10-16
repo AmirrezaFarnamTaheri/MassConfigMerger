@@ -45,14 +45,14 @@
                 <table id="proxiesTable">
                     <thead>
                         <tr>
-                            <th data-sort="protocol">Protocol <i data-feather="chevron-down"></i></th>
-                            <th data-sort="location">Location <i data-feather="chevron-down"></i></th>
-                            <th data-sort="latency">Latency <i data-feather="chevron-down"></i></th>
-                            <th data-sort="asn">ASN <i data-feather="chevron-down"></i></th>
+                            <th class="sortable" data-sort="protocol">Protocol <i data-feather="chevron-down"></i></th>
+                            <th class="sortable" data-sort="location">Location <i data-feather="chevron-down"></i></th>
+                            <th class="sortable" data-sort="latency">Latency <i data-feather="chevron-down"></i></th>
+                            <th class="sortable" data-sort="asn">ASN <i data-feather="chevron-down"></i></th>
                             <th>Copy</th>
                         </tr>
                     </thead>
-                    <tbody id="proxiesTBody"></tbody>
+                    <tbody id="proxiesTableBody"></tbody>
                 </table>
             </div>
         </section>
@@ -61,8 +61,8 @@
     <footer class="footer">
     <div class="container">
         <div class="social-links">
-            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" aria-label="GitHub"><i data-feather="github"></i></a>
-            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" aria-label="Issues"><i data-feather="alert-circle"></i></a>
+            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i data-feather="github"></i></a>
+            <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" rel="noopener noreferrer" aria-label="Issues"><i data-feather="alert-circle"></i></a>
         </div>
         <p>Made with ❤️ for internet freedom.</p>
         <p>Last updated: <span id="footerUpdate" class="loading">...</span></p>

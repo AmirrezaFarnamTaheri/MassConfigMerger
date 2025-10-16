@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import aiohttp
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def fetch_from_source(session: aiohttp.ClientSession, source: str, timeout: int = 30) -> list[str]:
@@ -15,5 +18,5 @@ async def fetch_from_source(session: aiohttp.ClientSession, source: str, timeout
                 if line.strip() and not line.strip().startswith("#")
             ]
     except Exception as e:
-        print(f"Error fetching {source}: {e}")
+        logger.error("Error fetching source", extra={"source": source, "error": e})
         return []

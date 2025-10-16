@@ -70,8 +70,10 @@ async def run_full_pipeline(
 
     proxy_service = container.resolve(ProxyService)
 
+    semaphore = asyncio.Semaphore(50) # Limit concurrent processing
     async def process_proxy_task(proxy):
-        await proxy_service.process_proxy(proxy)
+        async with semaphore:
+            await proxy_service.process_proxy(proxy)
 
     await asyncio.gather(*[process_proxy_task(p) for p in valid_proxies])
 

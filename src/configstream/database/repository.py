@@ -19,7 +19,7 @@ class ProxyRepository:
         """Generate hash for config"""
         return hashlib.sha256(config.encode()).hexdigest()
 
-    async def save_proxy(self, proxy_data: dict) -> Proxy:
+    def save_proxy(self, proxy_data: dict) -> Proxy:
         """Save or update proxy"""
         session: Session = self.SessionLocal()
         try:
@@ -50,7 +50,7 @@ class ProxyRepository:
         finally:
             session.close()
 
-    async def get_active_proxies(
+    def get_active_proxies(
         self,
         protocol: str = None,
         country: str = None,
@@ -78,7 +78,7 @@ class ProxyRepository:
         finally:
             session.close()
 
-    async def record_test_result(
+    def record_test_result(
         self,
         proxy_id: int,
         success: bool,
@@ -119,7 +119,7 @@ class ProxyRepository:
         finally:
             session.close()
 
-    async def cleanup_old_proxies(self, days: int = 7) -> int:
+    def cleanup_old_proxies(self, days: int = 7) -> int:
         """Remove proxies not seen in N days"""
         session: Session = self.SessionLocal()
         try:
@@ -132,7 +132,7 @@ class ProxyRepository:
         finally:
             session.close()
 
-    async def get_statistics_summary(self) -> dict:
+    def get_statistics_summary(self) -> dict:
         """Get current statistics"""
         session: Session = self.SessionLocal()
         try:
