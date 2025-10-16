@@ -3,73 +3,1498 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Proxies - ConfigStream</title>
+    <meta name="description" content="Browse and filter tested VPN proxy configurations with detailed information">
+    <meta name="keywords" content="proxy list, vpn proxies, free vpn, working proxies">
+    
+    <title>Proxy List - ConfigStream</title>
+    
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="src/configstream/logo.svg">
-    <link rel="stylesheet" href="assets/css/fonts.css">
-    <link rel="stylesheet" href="assets/css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.2/dist/feather.min.js" integrity="sha384-qEqAs1VsN9WH2myXDbiP2wGGIttL9bMRZBKCl54ZnzpDlVqbYANP9vMaoT/wvQcf" crossorigin="anonymous"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Design System -->
+    <link rel="stylesheet" href="assets/css/framework.css">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    
+    <style>
+        body {
+            background: var(--bg-secondary);
+        }
+        
+        .page-wrapper {
+            min-height: 100vh;
+            padding: var(--space-4);
+        }
+        
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: var(--bg-primary);
+            border-radius: var(--radius-2xl);
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+        }
+        
+        /* Navigation */
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-6);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+        
+        .logo {
+            width: 48px;
+            height: 48px;
+            transition: transform var(--transition-base);
+        }
+        
+        .logo:hover {
+            transform: rotate(10deg) scale(1.1);
+        }
+        
+        .brand-name {
+            font-size: var(--text-2xl);
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .nav-link {
+            padding: var(--space-2) var(--space-4);
+            color: var(--text-secondary);
+            font-weight: 600;
+            border-radius: var(--radius-lg);
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--text-primary);
+            background: var(--bg-primary);
+        }
+        
+        .theme-toggle {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-lg);
+            border: 2px solid var(--border);
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+            margin-left: var(--space-4);
+        }
+        
+        .theme-toggle:hover {
+            background: var(--bg-primary);
+            border-color: var(--primary-500);
+            transform: scale(1.05);
+        }
+        
+        /* Page Header */
+        .page-header {
+            padding: var(--space-10) var(--space-8);
+            background: linear-gradient(135deg, 
+                rgba(102, 126, 234, 0.05) 0%, 
+                rgba(118, 75, 162, 0.05) 100%);
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .page-title {
+            font-size: clamp(2rem, 4vw, 3rem);
+            margin-bottom: var(--space-3);
+        }
+        
+        .page-subtitle {
+            font-size: var(--text-lg);
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        /* Info Banner */
+        .info-banner {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            padding: var(--space-6);
+            margin: var(--space-6) var(--space-8);
+            background: linear-gradient(135deg, var(--info-light) 0%, var(--primary-50) 100%);
+            border-left: 4px solid var(--primary-500);
+            border-radius: var(--radius-xl);
+        }
+        
+        .info-icon {
+            font-size: 2.5rem;
+            flex-shrink: 0;
+        }
+        
+        .info-stats {
+            display: flex;
+            gap: var(--space-6);
+            flex-wrap: wrap;
+        }
+        
+        .info-stat {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-stat-label {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        
+        .info-stat-value {
+            font-size: var(--text-2xl);
+            font-weight: 800;
+            color: var(--primary-600);
+        }
+        
+        /* Content */
+        .content {
+            padding: var(--space-8);
+        }
+        
+        /* Filters Section */
+        .filters-section {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            margin-bottom: var(--space-8);
+        }
+        
+        .filters-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-6);
+        }
+        
+        .filters-title {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: var(--text-xl);
+            font-weight: 700;
+        }
+        
+        .filters-reset {
+            padding: var(--space-2) var(--space-4);
+            background: transparent;
+            color: var(--danger);
+            border: 2px solid var(--danger);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .filters-reset:hover {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-4);
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+        
+        .filter-label {
+            font-weight: 600;
+            font-size: var(--text-sm);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .filter-input,
+        .filter-select {
+            width: 100%;
+            padding: var(--space-3);
+            background: var(--bg-primary);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-lg);
+            font-size: var(--text-base);
+            font-family: inherit;
+            color: var(--text-primary);
+            transition: all var(--transition-fast);
+        }
+        
+        .filter-input:focus,
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        /* Actions Bar */
+        .actions-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-6);
+            flex-wrap: wrap;
+            gap: var(--space-4);
+        }
+        
+        .results-count {
+            font-size: var(--text-lg);
+            color: var(--text-secondary);
+        }
+        
+        .results-number {
+            font-weight: 800;
+            color: var(--primary-500);
+            font-size: var(--text-2xl);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: var(--space-3);
+        }
+        
+        /* Table Container */
+        .table-container {
+            background: var(--bg-primary);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        
+        /* Table */
+        .proxies-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .proxies-table thead {
+            background: var(--bg-secondary);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .proxies-table th {
+            padding: var(--space-4);
+            text-align: left;
+            font-weight: 700;
+            font-size: var(--text-sm);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+            transition: all var(--transition-fast);
+        }
+        
+        .proxies-table th:hover {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+        
+        .proxies-table th.sortable {
+            position: relative;
+            padding-right: var(--space-8);
+        }
+        
+        .sort-icon {
+            position: absolute;
+            right: var(--space-3);
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.3;
+            transition: all var(--transition-fast);
+        }
+        
+        .proxies-table th.sort-asc .sort-icon,
+        .proxies-table th.sort-desc .sort-icon {
+            opacity: 1;
+            color: var(--primary-500);
+        }
+        
+        .proxies-table th.sort-desc .sort-icon {
+            transform: translateY(-50%) rotate(180deg);
+        }
+        
+        .proxies-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: all var(--transition-fast);
+            opacity: 0;
+            animation: fadeInRow 0.3s ease-out forwards;
+        }
+        
+        @keyframes fadeInRow {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .proxies-table tbody tr:hover {
+            background: var(--bg-secondary);
+        }
+        
+        .proxies-table td {
+            padding: var(--space-4);
+            font-size: var(--text-base);
+            color: var(--text-primary);
+        }
+        
+        /* Table Cell Styles */
+        .protocol-badge {
+            display: inline-flex;
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-full);
+            font-size: var(--text-sm);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .location-cell {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .country-flag {
+            font-size: 1.5rem;
+        }
+        
+        .latency-good {
+            color: var(--success);
+            font-weight: 700;
+        }
+        
+        .latency-medium {
+            color: var(--warning);
+            font-weight: 700;
+        }
+        
+        .latency-bad {
+            color: var(--danger);
+            font-weight: 700;
+        }
+        
+        .security-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-1);
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-full);
+            font-size: var(--text-sm);
+            font-weight: 600;
+        }
+        
+        .security-secure {
+            background: var(--success-light);
+            color: var(--success-dark);
+        }
+        
+        .security-warning {
+            background: var(--warning-light);
+            color: var(--warning-dark);
+        }
+        
+        .copy-btn {
+            padding: var(--space-2) var(--space-4);
+            background: var(--primary-500);
+            color: white;
+            border: none;
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .copy-btn:hover {
+            background: var(--primary-600);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .copy-btn.copied {
+            background: var(--success);
+            pointer-events: none;
+        }
+        
+        /* Loading State */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-20);
+            gap: var(--space-6);
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid var(--border);
+            border-top-color: var(--primary-500);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: var(--text-lg);
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: var(--space-20);
+        }
+        
+        .empty-icon {
+            font-size: 5rem;
+            margin-bottom: var(--space-6);
+            opacity: 0.3;
+        }
+        
+        .empty-title {
+            font-size: var(--text-2xl);
+            font-weight: 700;
+            margin-bottom: var(--space-3);
+        }
+        
+        .empty-description {
+            color: var(--text-secondary);
+            font-size: var(--text-lg);
+            margin-bottom: var(--space-6);
+        }
+        
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: var(--space-3);
+            margin-top: var(--space-8);
+            padding: var(--space-6);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-xl);
+        }
+        
+        .pagination-btn {
+            padding: var(--space-2) var(--space-4);
+            background: var(--bg-primary);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .pagination-btn:hover:not(:disabled) {
+            border-color: var(--primary-500);
+            background: var(--primary-50);
+        }
+        
+        .pagination-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .pagination-info {
+            padding: var(--space-2) var(--space-4);
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        
+        .pagination-pages {
+            display: flex;
+            gap: var(--space-2);
+        }
+        
+        .page-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-lg);
+            background: var(--bg-primary);
+            border: 2px solid var(--border);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all var(--transition-fast);
+        }
+        
+        .page-btn:hover {
+            border-color: var(--primary-500);
+            background: var(--primary-50);
+        }
+        
+        .page-btn.active {
+            background: var(--primary-500);
+            color: white;
+            border-color: var(--primary-500);
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: var(--space-8);
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        
+        /* Dark mode */
+        body.dark .theme-icon-light {
+            display: none;
+        }
+        
+        body:not(.dark) .theme-icon-dark {
+            display: none;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .filters-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: var(--space-4);
+            }
+            
+            .nav-links {
+                width: 100%;
+                flex-direction: column;
+            }
+            
+            .nav-link {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .info-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .info-stats {
+                justify-content: center;
+            }
+            
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .actions-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .action-buttons {
+                width: 100%;
+                flex-direction: column;
+            }
+            
+            .action-buttons .btn {
+                width: 100%;
+            }
+            
+            .table-wrapper {
+                border-radius: 0;
+            }
+            
+            .proxies-table {
+                font-size: var(--text-sm);
+            }
+            
+            .proxies-table th,
+            .proxies-table td {
+                padding: var(--space-2);
+            }
+            
+            .pagination {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <a href="index.html" class="logo-link" aria-label="Homepage">
-                <img src="src/configstream/logo.svg" alt="ConfigStream Logo" class="logo" id="logo">
-            </a>
-            <nav class="nav">
-                <a href="index.html" class="nav-link">Home</a>
-                <a href="proxies.html" class="nav-link active">Proxies</a>
-                <a href="statistics.html" class="nav-link">Statistics</a>
-                <a href="about.html" class="nav-link">About</a>
-                <button class="theme-switcher" id="theme-switcher" aria-label="Toggle theme">
-                    <i data-feather="moon" class="theme-icon-moon"></i>
-                    <i data-feather="sun" class="theme-icon-sun" style="display:none;"></i>
-                </button>
+    <div class="page-wrapper">
+        <div class="main-container">
+            <!-- Navigation -->
+            <nav class="navbar">
+                <div class="logo-section">
+                    <img src="src/configstream/logo.svg" alt="ConfigStream Logo" class="logo">
+                    <span class="brand-name">ConfigStream</span>
+                </div>
+                
+                <div class="nav-links">
+                    <a href="index.html" class="nav-link">
+                        <i data-feather="home"></i>
+                        <span>Home</span>
+                    </a>
+                    <a href="proxies.html" class="nav-link active">
+                        <i data-feather="list"></i>
+                        <span>Proxies</span>
+                    </a>
+                    <a href="statistics.html" class="nav-link">
+                        <i data-feather="bar-chart-2"></i>
+                        <span>Statistics</span>
+                    </a>
+                    <a href="about.html" class="nav-link">
+                        <i data-feather="info"></i>
+                        <span>About</span>
+                    </a>
+                    
+                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                        <i data-feather="sun" class="theme-icon-light"></i>
+                        <i data-feather="moon" class="theme-icon-dark"></i>
+                    </button>
+                </div>
             </nav>
-        </header>
-
-        <main class="content">
-            <section class="card" id="proxies-card">
-                <div class="card-header">
-                    <h2>Available Proxies</h2>
-                    <p>A live list of tested and working proxy configurations.</p>
+            
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Available Proxies</h1>
+                <p class="page-subtitle">
+                    Browse and filter tested proxy configurations with detailed information
+                </p>
+            </header>
+            
+            <!-- Info Banner -->
+            <div class="info-banner">
+                <div class="info-icon">📊</div>
+                <div class="info-stats">
+                    <div class="info-stat">
+                        <span class="info-stat-label">Total Proxies</span>
+                        <span class="info-stat-value skeleton" id="totalProxies" style="width: 60px; height: 32px;"></span>
+                    </div>
+                    <div class="info-stat">
+                        <span class="info-stat-label">Working</span>
+                        <span class="info-stat-value skeleton" id="workingProxies" style="width: 60px; height: 32px;"></span>
+                    </div>
+                    <div class="info-stat">
+                        <span class="info-stat-label">Last Updated</span>
+                        <span class="info-stat-value skeleton" id="lastUpdated" style="width: 120px; height: 32px;"></span>
+                    </div>
                 </div>
-                <div class="table-controls">
-                    <input type="text" id="filterProtocol" placeholder="Filter by protocol..." class="filter-input" aria-label="Filter by protocol">
-                    <input type="text" id="filterLocation" placeholder="Filter by location..." class="filter-input" aria-label="Filter by location">
-                </div>
-                <div class="table-container">
-                    <table id="proxiesTable">
-                        <thead>
-                            <tr>
-                                <th scope="col" data-sort="protocol" title="Sort by Protocol">Protocol <i data-feather="chevron-down"></i></th>
-                                <th scope="col" data-sort="location" title="Sort by Location">Location <i data-feather="chevron-down"></i></th>
-                                <th scope="col" data-sort="latency" title="Sort by Latency">Latency <i data-feather="chevron-down"></i></th>
-                                <th scope="col" data-sort="asn" title="Sort by ASN">ASN <i data-feather="chevron-down"></i></th>
-                                <th scope="col">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="proxiesTBody">
-                            <!-- Rows will be injected by script -->
-                        </tbody>
-                    </table>
-                </div>
-                <div id="loading-container" style="text-align:center; padding: 2rem;">
-                    <div class="loader"></div>
-                </div>
-            </section>
-        </main>
-
-        <footer class="footer">
-            <div class="social-links">
-                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" title="GitHub"><i data-feather="github"></i></a>
-                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" title="Issues"><i data-feather="alert-circle"></i></a>
-                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/stargazers" target="_blank" title="Star"><i data-feather="star"></i></a>
             </div>
-            <p>Source code & contributions on <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank">GitHub</a></p>
-            <p style="margin-top: 1rem; font-size: 0.9em; opacity: 0.7;" aria-live="polite">Last updated: <span id="footerUpdate" class="loading">...</span></p>
-        </footer>
+            
+            <!-- Content -->
+            <div class="content">
+                <!-- Filters -->
+                <div class="filters-section">
+                    <div class="filters-header">
+                        <h2 class="filters-title">
+                            <i data-feather="filter"></i>
+                            <span>Filters</span>
+                        </h2>
+                        <button class="filters-reset" id="resetFilters">
+                            <i data-feather="x-circle"></i>
+                            <span>Reset All</span>
+                        </button>
+                    </div>
+                    
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label class="filter-label" for="filterProtocol">
+                                <i data-feather="code"></i>
+                                Protocol
+                            </label>
+                            <select class="filter-select" id="filterProtocol">
+                                <option value="">All Protocols</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="filterCountry">
+                                <i data-feather="globe"></i>
+                                Country
+                            </label>
+                            <select class="filter-select" id="filterCountry">
+                                <option value="">All Countries</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="filterCity">
+                                <i data-feather="map-pin"></i>
+                                City
+                            </label>
+                            <input 
+                                type="text" 
+                                class="filter-input" 
+                                id="filterCity" 
+                                placeholder="Enter city name..."
+                            >
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="filterMaxLatency">
+                                <i data-feather="zap"></i>
+                                Max Latency (ms)
+                            </label>
+                            <input 
+                                type="number" 
+                                class="filter-input" 
+                                id="filterMaxLatency" 
+                                placeholder="e.g., 500"
+                                min="0"
+                            >
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="filterSecurity">
+                                <i data-feather="shield"></i>
+                                Security
+                            </label>
+                            <select class="filter-select" id="filterSecurity">
+                                <option value="">All</option>
+                                <option value="secure">Secure Only</option>
+                                <option value="issues">With Issues</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="filterSearch">
+                                <i data-feather="search"></i>
+                                Search
+                            </label>
+                            <input 
+                                type="text" 
+                                class="filter-input" 
+                                id="filterSearch" 
+                                placeholder="Search by remarks, ASN..."
+                            >
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions Bar -->
+                <div class="actions-bar">
+                    <div class="results-count">
+                        Showing <span class="results-number" id="resultsCount">0</span> proxies
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary btn-sm" id="exportCSV">
+                            <i data-feather="download"></i>
+                            <span>Export CSV</span>
+                        </button>
+                        <button class="btn btn-secondary btn-sm" id="exportJSON">
+                            <i data-feather="download"></i>
+                            <span>Export JSON</span>
+                        </button>
+                        <button class="btn btn-primary btn-sm" id="refreshData">
+                            <i data-feather="refresh-cw"></i>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Loading Container -->
+                <div class="loading-container" id="loadingContainer">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Loading proxy data...</div>
+                </div>
+                
+                <!-- Table Container -->
+                <div class="table-container" id="tableContainer" style="display: none;">
+                    <div class="table-wrapper">
+                        <table class="proxies-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-sort="protocol">
+                                        Protocol
+                                        <i data-feather="chevron-down" class="sort-icon"></i>
+                                    </th>
+                                    <th class="sortable" data-sort="location">
+                                        Location
+                                        <i data-feather="chevron-down" class="sort-icon"></i>
+                                    </th>
+                                    <th class="sortable" data-sort="latency">
+                                        Latency
+                                        <i data-feather="chevron-down" class="sort-icon"></i>
+                                    </th>
+                                    <th class="sortable" data-sort="asn">
+                                        Network (ASN)
+                                        <i data-feather="chevron-down" class="sort-icon"></i>
+                                    </th>
+                                    <th>Remarks</th>
+                                    <th>Security</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="proxiesTableBody">
+                                <!-- Rows will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="pagination" id="pagination">
+                        <button class="pagination-btn" id="prevPage" disabled>
+                            <i data-feather="chevron-left"></i>
+                            <span>Previous</span>
+                        </button>
+                        
+                        <div class="pagination-pages" id="paginationPages">
+                            <!-- Page buttons will be inserted here -->
+                        </div>
+                        
+                        <button class="pagination-btn" id="nextPage">
+                            <span>Next</span>
+                            <i data-feather="chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <div class="empty-icon">🔍</div>
+                    <h2 class="empty-title">No Proxies Found</h2>
+                    <p class="empty-description">
+                        Try adjusting your filters or check back later
+                    </p>
+                    <button class="btn btn-primary" id="resetFiltersEmpty">
+                        <i data-feather="refresh-cw"></i>
+                        <span>Reset Filters</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <footer class="footer">
+                <p>
+                    <strong>ConfigStream</strong> • Open-source VPN configuration aggregator
+                </p>
+                <p style="margin-top: var(--space-2);">
+                    Last updated: <span id="footerUpdate">Loading...</span>
+                </p>
+            </footer>
+        </div>
     </div>
-
-    <script src="assets/js/main.js"></script>
+    
+    <script>
+        // Initialize Feather Icons
+        feather.replace();
+        
+        // Global state
+        let allProxies = [];
+        let filteredProxies = [];
+        let currentPage = 1;
+        const itemsPerPage = 25;
+        let currentSort = { key: 'latency', order: 'asc' };
+        
+        // Path resolver
+        const getBasePath = () => {
+            const pathname = window.location.pathname;
+            if (pathname.includes('/ConfigStream/')) {
+                return '/ConfigStream/';
+            }
+            return pathname.endsWith('/') ? pathname : '/';
+        };
+        
+        const BASE_PATH = getBasePath();
+        
+        // Fetch with path
+        async function fetchWithPath(relativePath) {
+            const cacheBust = `_=${new Date().getTime()}`;
+            const separator = relativePath.includes('?') ? '&' : '?';
+            const fullPath = `${BASE_PATH}${relativePath}${separator}${cacheBust}`;
+            
+            try {
+                const response = await fetch(fullPath);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response;
+            } catch (error) {
+                console.error(`Failed to fetch ${fullPath}:`, error);
+                throw error;
+            }
+        }
+        
+        // Get country flag emoji
+        function getFlag(countryCode) {
+            if (!countryCode || countryCode === 'XX') return '🌐';
+            const codePoints = countryCode
+                .toUpperCase()
+                .split('')
+                .map(char => 127397 + char.charCodeAt());
+            return String.fromCodePoint(...codePoints);
+        }
+        
+        // Format latency with color
+        function formatLatency(latency) {
+            if (!latency) return '<span class="latency-bad">—</span>';
+            
+            const value = Math.round(latency);
+            let className = 'latency-good';
+            if (value > 500) className = 'latency-bad';
+            else if (value > 200) className = 'latency-medium';
+            
+            return `<span class="${className}">${value}ms</span>`;
+        }
+        
+        // Get protocol badge color
+        function getProtocolColor(protocol) {
+            const colors = {
+                'vmess': 'background: #dbeafe; color: #1e40af;',
+                'vless': 'background: #dcfce7; color: #166534;',
+                'shadowsocks': 'background: #fef3c7; color: #92400e;',
+                'trojan': 'background: #fce7f3; color: #9f1239;',
+                'hysteria': 'background: #e9d5ff; color: #6b21a8;',
+                'hysteria2': 'background: #e9d5ff; color: #6b21a8;',
+                'tuic': 'background: #ccfbf1; color: #134e4a;',
+                'wireguard': 'background: #cffafe; color: #164e63;',
+                'naive': 'background: #fecaca; color: #991b1b;',
+            };
+            return colors[protocol.toLowerCase()] || 'background: var(--gray-200); color: var(--gray-700);';
+        }
+        
+        // Fetch metadata
+        async function fetchMetadata() {
+            try {
+                const response = await fetchWithPath('output/metadata.json');
+                const metadata = await response.json();
+                
+                const date = new Date(metadata.generated_at);
+                const formatted = date.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                });
+                
+                const timeAgo = getTimeAgo(date);
+                
+                const lastUpdatedEl = document.getElementById('lastUpdated');
+                lastUpdatedEl.textContent = timeAgo;
+                lastUpdatedEl.classList.remove('skeleton');
+                lastUpdatedEl.style.width = 'auto';
+                lastUpdatedEl.style.height = 'auto';
+                
+                document.getElementById('footerUpdate').textContent = formatted;
+            } catch (error) {
+                console.error('Error fetching metadata:', error);
+                const lastUpdatedEl = document.getElementById('lastUpdated');
+                lastUpdatedEl.textContent = 'Recently';
+                lastUpdatedEl.classList.remove('skeleton');
+                document.getElementById('footerUpdate').textContent = 'Recently';
+            }
+        }
+        
+        // Get time ago
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diff = now - date;
+            const hours = Math.floor(diff / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            
+            if (hours > 24) {
+                const days = Math.floor(hours / 24);
+                return `${days}d ago`;
+            }
+            if (hours > 0) {
+                return `${hours}h ago`;
+            }
+            if (minutes > 0) {
+                return `${minutes}m ago`;
+            }
+            return 'Just now';
+        }
+        
+        // Fetch proxies
+        async function fetchProxies() {
+            const loadingEl = document.getElementById('loadingContainer');
+            const tableEl = document.getElementById('tableContainer');
+            const emptyEl = document.getElementById('emptyState');
+            
+            try {
+                loadingEl.style.display = 'flex';
+                tableEl.style.display = 'none';
+                emptyEl.style.display = 'none';
+                
+                const response = await fetchWithPath('output/proxies.json');
+                allProxies = await response.json();
+                
+                // Validate data
+                if (!Array.isArray(allProxies) || allProxies.length === 0) {
+                    throw new Error('No proxy data available');
+                }
+                
+                // Update stats
+                const totalEl = document.getElementById('totalProxies');
+                totalEl.textContent = allProxies.length;
+                totalEl.classList.remove('skeleton');
+                totalEl.style.width = 'auto';
+                totalEl.style.height = 'auto';
+                
+                const workingEl = document.getElementById('workingProxies');
+                workingEl.textContent = allProxies.length;
+                workingEl.classList.remove('skeleton');
+                workingEl.style.width = 'auto';
+                workingEl.style.height = 'auto';
+                
+                // Populate filters
+                populateFilters();
+                
+                // Initial render
+                applyFilters();
+                
+                loadingEl.style.display = 'none';
+                
+            } catch (error) {
+                console.error('Error fetching proxies:', error);
+                loadingEl.innerHTML = `
+                    <div style="text-align: center;">
+                        <div style="font-size: 3em; margin-bottom: var(--space-4); color: var(--danger);">⚠️</div>
+                        <h3 style="font-size: var(--text-2xl); margin-bottom: var(--space-3);">Failed to Load Proxy Data</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
+                            ${error.message || 'Please try again later or check if the data files exist.'}
+                        </p>
+                        <button class="btn btn-primary" onclick="location.reload()">
+                            <i data-feather="refresh-cw"></i>
+                            <span>Retry</span>
+                        </button>
+                    </div>
+                `;
+                feather.replace();
+            }
+        }
+        
+        // Populate filter dropdowns
+        function populateFilters() {
+            // Protocols
+            const protocols = [...new Set(allProxies.map(p => p.protocol))].sort();
+            const protocolSelect = document.getElementById('filterProtocol');
+            protocols.forEach(protocol => {
+                const option = document.createElement('option');
+                option.value = protocol;
+                option.textContent = protocol.toUpperCase();
+                protocolSelect.appendChild(option);
+            });
+            
+            // Countries
+            const countries = [...new Set(allProxies.map(p => p.location.country))].sort();
+            const countrySelect = document.getElementById('filterCountry');
+            countries.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country;
+                option.textContent = country;
+                countrySelect.appendChild(option);
+            });
+        }
+        
+        // Apply filters
+        function applyFilters() {
+            const protocol = document.getElementById('filterProtocol').value.toLowerCase();
+            const country = document.getElementById('filterCountry').value;
+            const city = document.getElementById('filterCity').value.toLowerCase();
+            const maxLatency = parseFloat(document.getElementById('filterMaxLatency').value);
+            const security = document.getElementById('filterSecurity').value;
+            const search = document.getElementById('filterSearch').value.toLowerCase();
+            
+            filteredProxies = allProxies.filter(proxy => {
+                if (protocol && proxy.protocol.toLowerCase() !== protocol) return false;
+                if (country && proxy.location.country !== country) return false;
+                if (city && !proxy.location.city.toLowerCase().includes(city)) return false;
+                if (maxLatency && proxy.latency > maxLatency) return false;
+                
+                if (security === 'secure' && (!proxy.is_secure || proxy.security_issues.length > 0)) return false;
+                if (security === 'issues' && (proxy.is_secure && proxy.security_issues.length === 0)) return false;
+                
+                if (search) {
+                    const searchableText = [
+                        proxy.remarks,
+                        proxy.location.country,
+                        proxy.location.city,
+                        proxy.location.asn.name,
+                        proxy.protocol
+                    ].join(' ').toLowerCase();
+                    
+                    if (!searchableText.includes(search)) return false;
+                }
+                
+                return true;
+            });
+            
+            // Sort
+            sortProxies();
+            
+            // Reset to first page
+            currentPage = 1;
+            
+            // Render
+            renderTable();
+            renderPagination();
+        }
+        
+        // Sort proxies
+        function sortProxies() {
+            filteredProxies.sort((a, b) => {
+                let valA, valB;
+                
+                switch (currentSort.key) {
+                    case 'protocol':
+                        valA = a.protocol;
+                        valB = b.protocol;
+                        break;
+                    case 'location':
+                        valA = `${a.location.country} ${a.location.city}`;
+                        valB = `${b.location.country} ${b.location.city}`;
+                        break;
+                    case 'latency':
+                        valA = a.latency || Infinity;
+                        valB = b.latency || Infinity;
+                        break;
+                    case 'asn':
+                        valA = a.location.asn.name;
+                        valB = b.location.asn.name;
+                        break;
+                    default:
+                        return 0;
+                }
+                
+                if (valA < valB) return currentSort.order === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSort.order === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        
+        // Render table
+        function renderTable() {
+            const tbody = document.getElementById('proxiesTableBody');
+            const tableContainer = document.getElementById('tableContainer');
+            const emptyState = document.getElementById('emptyState');
+            const resultsCount = document.getElementById('resultsCount');
+            
+            if (filteredProxies.length === 0) {
+                tableContainer.style.display = 'none';
+                emptyState.style.display = 'block';
+                resultsCount.textContent = '0';
+                return;
+            }
+            
+            tableContainer.style.display = 'block';
+            emptyState.style.display = 'none';
+            resultsCount.textContent = filteredProxies.length;
+            
+            // Paginate
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageProxies = filteredProxies.slice(start, end);
+            
+            tbody.innerHTML = pageProxies.map((proxy, index) => `
+                <tr style="animation-delay: ${index * 0.02}s;">
+                    <td>
+                        <span class="protocol-badge" style="${getProtocolColor(proxy.protocol)}">
+                            ${proxy.protocol.toUpperCase()}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="location-cell">
+                            <span class="country-flag">${getFlag(proxy.location.country_code)}</span>
+                            <span>
+                                ${proxy.location.city}, ${proxy.location.country}
+                            </span>
+                        </div>
+                    </td>
+                    <td>${formatLatency(proxy.latency)}</td>
+                    <td title="${proxy.location.asn.name}">
+                        ${proxy.location.asn.name.length > 30 
+                            ? proxy.location.asn.name.substring(0, 30) + '...' 
+                            : proxy.location.asn.name}
+                    </td>
+                    <td>${proxy.remarks || '—'}</td>
+                    <td>
+                        ${proxy.security_issues.length === 0 
+                            ? '<span class="security-badge security-secure"><i data-feather="check-circle"></i> Secure</span>'
+                            : `<span class="security-badge security-warning" title="${proxy.security_issues.join(', ')}"><i data-feather="alert-triangle"></i> ${proxy.security_issues.length} Issue(s)</span>`
+                        }
+                    </td>
+                    <td>
+                        <button class="copy-btn" data-config="${encodeURIComponent(proxy.config)}">
+                            <i data-feather="copy"></i>
+                            <span>Copy</span>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            feather.replace();
+            
+            // Add copy listeners
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', handleCopy);
+            });
+        }
+        
+        // Handle copy
+        async function handleCopy(e) {
+            const btn = e.currentTarget;
+            const config = decodeURIComponent(btn.dataset.config);
+            
+            try {
+                await navigator.clipboard.writeText(config);
+                
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<i data-feather="check"></i><span>Copied!</span>';
+                btn.classList.add('copied');
+                feather.replace();
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove('copied');
+                    feather.replace();
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy. Please try again.');
+            }
+        }
+        
+        // Render pagination
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredProxies.length / itemsPerPage);
+            const pagesContainer = document.getElementById('paginationPages');
+            const prevBtn = document.getElementById('prevPage');
+            const nextBtn = document.getElementById('nextPage');
+            
+            prevBtn.disabled = currentPage === 1;
+            nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+            
+            // Generate page buttons (show max 5 pages)
+            let pages = [];
+            if (totalPages <= 5) {
+                pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+            } else {
+                if (currentPage <= 3) {
+                    pages = [1, 2, 3, 4, '...', totalPages];
+                } else if (currentPage >= totalPages - 2) {
+                    pages = [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+                } else {
+                    pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+                }
+            }
+            
+            pagesContainer.innerHTML = pages.map(page => {
+                if (page === '...') {
+                    return '<span style="padding: var(--space-2);">...</span>';
+                }
+                return `
+                    <button class="page-btn ${page === currentPage ? 'active' : ''}" data-page="${page}">
+                        ${page}
+                    </button>
+                `;
+            }).join('');
+            
+            // Add page button listeners
+            pagesContainer.querySelectorAll('.page-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentPage = parseInt(btn.dataset.page);
+                    renderTable();
+                    renderPagination();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            });
+        }
+        
+        // Handle sort
+        document.querySelectorAll('.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const sortKey = th.dataset.sort;
+                
+                if (currentSort.key === sortKey) {
+                    currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSort.key = sortKey;
+                    currentSort.order = 'asc';
+                }
+                
+                // Update UI
+                document.querySelectorAll('.sortable').forEach(header => {
+                    header.classList.remove('sort-asc', 'sort-desc');
+                });
+                th.classList.add(`sort-${currentSort.order}`);
+                
+                // Re-render
+                applyFilters();
+            });
+        });
+        
+        // Filter listeners
+        ['filterProtocol', 'filterCountry', 'filterCity', 'filterMaxLatency', 'filterSecurity', 'filterSearch'].forEach(id => {
+            const el = document.getElementById(id);
+            el.addEventListener('change', applyFilters);
+            el.addEventListener('input', applyFilters);
+        });
+        
+        // Reset filters
+        function resetFilters() {
+            document.getElementById('filterProtocol').value = '';
+            document.getElementById('filterCountry').value = '';
+            document.getElementById('filterCity').value = '';
+            document.getElementById('filterMaxLatency').value = '';
+            document.getElementById('filterSecurity').value = '';
+            document.getElementById('filterSearch').value = '';
+            applyFilters();
+        }
+        
+        document.getElementById('resetFilters').addEventListener('click', resetFilters);
+        document.getElementById('resetFiltersEmpty').addEventListener('click', resetFilters);
+        
+        // Pagination buttons
+        document.getElementById('prevPage').addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+                renderPagination();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+        
+        document.getElementById('nextPage').addEventListener('click', () => {
+            const totalPages = Math.ceil(filteredProxies.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable();
+                renderPagination();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+        
+        // Export CSV
+        document.getElementById('exportCSV').addEventListener('click', () => {
+            const csv = [
+                ['Protocol', 'Country', 'City', 'ASN', 'Remarks', 'Latency', 'Security', 'Config'].join(','),
+                ...filteredProxies.map(p => [
+                    p.protocol,
+                    p.location.country,
+                    p.location.city,
+                    `"${p.location.asn.name}"`,
+                    `"${p.remarks || 'N/A'}"`,
+                    p.latency || 'N/A',
+                    p.security_issues.length > 0 ? 'Issues' : 'Secure',
+                    `"${p.config}"`
+                ].join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `configstream-proxies-${Date.now()}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+        
+        // Export JSON
+        document.getElementById('exportJSON').addEventListener('click', () => {
+            const json = JSON.stringify(filteredProxies, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `configstream-proxies-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+        
+        // Refresh
+        document.getElementById('refreshData').addEventListener('click', () => {
+            location.reload();
+        });
+        
+        // Dark mode
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        
+        const savedTheme = localStorage.getItem('theme') || 
+            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        
+        if (savedTheme === 'dark') {
+            body.classList.add('dark');
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark');
+            const theme = body.classList.contains('dark') ? 'dark' : 'light';
+            localStorage.setItem('theme', theme);
+            feather.replace();
+        });
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchMetadata();
+            fetchProxies();
+        });
+    </script>
 </body>
 </html>

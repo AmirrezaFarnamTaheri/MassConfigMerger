@@ -3,72 +3,1259 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Learn about ConfigStream - automated VPN configuration aggregator for internet freedom">
+    <meta name="keywords" content="about configstream, vpn documentation, proxy guide">
+    
     <title>About - ConfigStream</title>
+    
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="src/configstream/logo.svg">
-    <link rel="stylesheet" href="assets/css/fonts.css">
-    <link rel="stylesheet" href="assets/css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.2/dist/feather.min.js" integrity="sha384-qEqAs1VsN9WH2myXDbiP2wGGIttL9bMRZBKCl54ZnzpDlVqbYANP9vMaoT/wvQcf" crossorigin="anonymous"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Design System -->
+    <link rel="stylesheet" href="assets/css/framework.css">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    
+    <style>
+        body {
+            background: var(--bg-secondary);
+        }
+        
+        .page-wrapper {
+            min-height: 100vh;
+            padding: var(--space-4);
+        }
+        
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--bg-primary);
+            border-radius: var(--radius-2xl);
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+        }
+        
+        /* Navigation */
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-6);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+        
+        .logo {
+            width: 48px;
+            height: 48px;
+            transition: transform var(--transition-base);
+        }
+        
+        .logo:hover {
+            transform: rotate(10deg) scale(1.1);
+        }
+        
+        .brand-name {
+            font-size: var(--text-2xl);
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .nav-link {
+            padding: var(--space-2) var(--space-4);
+            color: var(--text-secondary);
+            font-weight: 600;
+            border-radius: var(--radius-lg);
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--text-primary);
+            background: var(--bg-primary);
+        }
+        
+        .theme-toggle {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-lg);
+            border: 2px solid var(--border);
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+            margin-left: var(--space-4);
+        }
+        
+        .theme-toggle:hover {
+            background: var(--bg-primary);
+            border-color: var(--primary-500);
+            transform: scale(1.05);
+        }
+        
+        /* Page Header */
+        .page-header {
+            padding: var(--space-12) var(--space-8);
+            background: linear-gradient(135deg, 
+                rgba(102, 126, 234, 0.05) 0%, 
+                rgba(118, 75, 162, 0.05) 100%);
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .page-title {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            margin-bottom: var(--space-4);
+        }
+        
+        .page-subtitle {
+            font-size: var(--text-xl);
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+        
+        /* Content */
+        .content {
+            padding: var(--space-10) var(--space-8);
+        }
+        
+        .doc-section {
+            margin-bottom: var(--space-12);
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-6);
+            padding-bottom: var(--space-4);
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .section-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-primary);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+        
+        .section-title {
+            font-size: var(--text-3xl);
+            font-weight: 700;
+            flex: 1;
+        }
+        
+        .section-content {
+            font-size: var(--text-lg);
+            line-height: 1.8;
+            color: var(--text-secondary);
+        }
+        
+        .section-content p {
+            margin-bottom: var(--space-6);
+        }
+        
+        .section-content strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        /* Feature Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-6);
+            margin: var(--space-8) 0;
+        }
+        
+        .feature-box {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            transition: all var(--transition-base);
+        }
+        
+        .feature-box:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-500);
+        }
+        
+        .feature-box-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--gradient-primary);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.75rem;
+            margin-bottom: var(--space-4);
+        }
+        
+        .feature-box-title {
+            font-size: var(--text-xl);
+            font-weight: 700;
+            margin-bottom: var(--space-3);
+        }
+        
+        .feature-box-desc {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        
+        /* Info Box */
+        .info-box {
+            background: linear-gradient(135deg, var(--info-light) 0%, var(--primary-50) 100%);
+            border-left: 4px solid var(--primary-500);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            margin: var(--space-6) 0;
+        }
+        
+        .warning-box {
+            background: linear-gradient(135deg, var(--warning-light) 0%, #fef3c7 100%);
+            border-left: 4px solid var(--warning);
+        }
+        
+        .success-box {
+            background: linear-gradient(135deg, var(--success-light) 0%, #d1fae5 100%);
+            border-left: 4px solid var(--success);
+        }
+        
+        .info-box-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-4);
+        }
+        
+        .info-box-icon {
+            font-size: 2rem;
+        }
+        
+        .info-box-title {
+            font-size: var(--text-xl);
+            font-weight: 700;
+        }
+        
+        .info-box-content {
+            font-size: var(--text-base);
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+        
+        /* List Styles */
+        .styled-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .styled-list li {
+            padding: var(--space-4);
+            padding-left: var(--space-10);
+            position: relative;
+            margin-bottom: var(--space-3);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            transition: all var(--transition-fast);
+        }
+        
+        .styled-list li:hover {
+            background: var(--bg-tertiary);
+            transform: translateX(4px);
+        }
+        
+        .styled-list li::before {
+            content: "✓";
+            position: absolute;
+            left: var(--space-4);
+            color: var(--success);
+            font-weight: 800;
+            font-size: 1.5rem;
+        }
+        
+        .styled-list.warning-list li::before {
+            content: "⚠";
+            color: var(--warning);
+        }
+        
+        .styled-list.info-list li::before {
+            content: "ℹ";
+            color: var(--info);
+        }
+        
+        /* Code Block */
+        .code-block {
+            background: var(--gray-900);
+            color: var(--gray-100);
+            padding: var(--space-6);
+            border-radius: var(--radius-xl);
+            font-family: var(--font-mono);
+            font-size: var(--text-sm);
+            overflow-x: auto;
+            margin: var(--space-6) 0;
+            position: relative;
+        }
+        
+        .code-block code {
+            display: block;
+            white-space: pre;
+        }
+        
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-4);
+            padding-bottom: var(--space-3);
+            border-bottom: 1px solid var(--gray-700);
+        }
+        
+        .code-language {
+            font-size: var(--text-sm);
+            color: var(--gray-400);
+            font-weight: 600;
+        }
+        
+        .copy-code-btn {
+            padding: var(--space-2) var(--space-3);
+            background: var(--gray-800);
+            border: 1px solid var(--gray-700);
+            border-radius: var(--radius-md);
+            color: var(--gray-300);
+            cursor: pointer;
+            font-size: var(--text-sm);
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .copy-code-btn:hover {
+            background: var(--gray-700);
+            color: white;
+        }
+        
+        /* Protocol Table */
+        .protocol-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: var(--space-6) 0;
+            overflow: hidden;
+            border-radius: var(--radius-xl);
+            border: 2px solid var(--border);
+        }
+        
+        .protocol-table thead {
+            background: var(--bg-secondary);
+        }
+        
+        .protocol-table th {
+            padding: var(--space-4);
+            text-align: left;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: var(--text-sm);
+            letter-spacing: 0.05em;
+        }
+        
+        .protocol-table td {
+            padding: var(--space-4);
+            border-top: 1px solid var(--border);
+        }
+        
+        .protocol-table tbody tr {
+            transition: background var(--transition-fast);
+        }
+        
+        .protocol-table tbody tr:hover {
+            background: var(--bg-secondary);
+        }
+        
+        .protocol-badge {
+            display: inline-block;
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-full);
+            font-size: var(--text-sm);
+            font-weight: 700;
+        }
+        
+        /* FAQ Section */
+        .faq-item {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            margin-bottom: var(--space-4);
+            transition: all var(--transition-fast);
+        }
+        
+        .faq-item:hover {
+            border-color: var(--primary-500);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .faq-question {
+            font-size: var(--text-xl);
+            font-weight: 700;
+            margin-bottom: var(--space-3);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+        
+        .faq-question-icon {
+            color: var(--primary-500);
+        }
+        
+        .faq-answer {
+            font-size: var(--text-base);
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+        
+        /* CTA Section */
+        .cta-section {
+            text-align: center;
+            padding: var(--space-12);
+            margin: var(--space-12) 0;
+            background: var(--gradient-primary);
+            border-radius: var(--radius-2xl);
+            color: white;
+        }
+        
+        .cta-title {
+            font-size: var(--text-4xl);
+            font-weight: 800;
+            margin-bottom: var(--space-4);
+        }
+        
+        .cta-description {
+            font-size: var(--text-xl);
+            margin-bottom: var(--space-8);
+            opacity: 0.95;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: var(--space-4);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn-light {
+            background: white;
+            color: var(--primary-600);
+        }
+        
+        .btn-light:hover {
+            background: var(--gray-100);
+        }
+        
+        .btn-outline-light {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+        
+        .btn-outline-light:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: var(--space-8);
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+        
+        .social-link {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-full);
+            background: var(--bg-primary);
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all var(--transition-fast);
+        }
+        
+        .social-link:hover {
+            background: var(--primary-500);
+            color: white;
+            border-color: var(--primary-500);
+            transform: translateY(-2px);
+        }
+        
+        /* Dark mode */
+        body.dark .theme-icon-light {
+            display: none;
+        }
+        
+        body:not(.dark) .theme-icon-dark {
+            display: none;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: var(--space-4);
+            }
+            
+            .nav-links {
+                width: 100%;
+                flex-direction: column;
+            }
+            
+            .nav-link {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .content {
+                padding: var(--space-6) var(--space-4);
+            }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+            }
+            
+            .cta-buttons .btn {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <a href="index.html" class="logo-link" aria-label="Homepage">
-                <img src="src/configstream/logo.svg" alt="ConfigStream Logo" class="logo" id="logo">
-            </a>
-            <nav class="nav">
-                <a href="index.html" class="nav-link">Home</a>
-                <a href="proxies.html" class="nav-link">Proxies</a>
-                <a href="statistics.html" class="nav-link">Statistics</a>
-                <a href="about.html" class="nav-link active">About</a>
-                <button class="theme-switcher" id="theme-switcher" aria-label="Toggle theme">
-                    <i data-feather="moon" class="theme-icon-moon"></i>
-                    <i data-feather="sun" class="theme-icon-sun" style="display:none;"></i>
-                </button>
+    <div class="page-wrapper">
+        <div class="main-container">
+            <!-- Navigation -->
+            <nav class="navbar">
+                <div class="logo-section">
+                    <img src="src/configstream/logo.svg" alt="ConfigStream Logo" class="logo">
+                    <span class="brand-name">ConfigStream</span>
+                </div>
+                
+                <div class="nav-links">
+                    <a href="index.html" class="nav-link">
+                        <i data-feather="home"></i>
+                        <span>Home</span>
+                    </a>
+                    <a href="proxies.html" class="nav-link">
+                        <i data-feather="list"></i>
+                        <span>Proxies</span>
+                    </a>
+                    <a href="statistics.html" class="nav-link">
+                        <i data-feather="bar-chart-2"></i>
+                        <span>Statistics</span>
+                    </a>
+                    <a href="about.html" class="nav-link active">
+                        <i data-feather="info"></i>
+                        <span>About</span>
+                    </a>
+                    
+                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                        <i data-feather="sun" class="theme-icon-light"></i>
+                        <i data-feather="moon" class="theme-icon-dark"></i>
+                    </button>
+                </div>
             </nav>
-        </header>
-
-        <main class="content">
-            <section class="card" id="about-card">
-                <div class="card-header">
-                    <h2>About ConfigStream</h2>
-                    <p>An open-source project for a free and open internet.</p>
-                </div>
-
-                <div class="about-section">
-                    <h3><i data-feather="star"></i>What is ConfigStream?</h3>
-                    <p>ConfigStream is an open-source project that automatically aggregates, tests, and provides free VPN and proxy configurations. Our system runs every three hours, gathering configs from public sources, testing them for connectivity and performance, and making the best ones available for easy download.</p>
-                </div>
-
-                <div class="about-section">
-                    <h3><i data-feather="shield"></i>Security & Privacy</h3>
-                    <p><strong>Use with caution.</strong> These are public proxies from unknown operators. While we perform basic security checks (like filtering nodes that inject ads or malicious scripts), we cannot guarantee their safety. They are best suited for bypassing geo-restrictions, not for handling sensitive data. Always prioritize using HTTPS.</p>
-                </div>
-
-                <div class="about-section">
-                    <h3><i data-feather="cpu"></i>Technology Stack</h3>
-                    <p>This project is powered by Python and a suite of open-source tools:</p>
-                    <ul>
-                        <li><strong>Python:</strong> The core logic for fetching and processing configs.</li>
-                        <li><strong>sing-box:</strong> For testing proxy connectivity and latency.</li>
-                        <li><strong>GitHub Actions:</strong> For automating the update process every 3 hours.</li>
-                        <li><strong>Chart.js:</strong> For rendering the beautiful charts on the statistics page.</li>
-                        <li><strong>Feather Icons:</strong> For the clean and simple icons used throughout the site.</li>
-                    </ul>
-                </div>
-            </section>
-        </main>
-
-        <footer class="footer">
-            <div class="social-links">
-                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" title="GitHub"><i data-feather="github"></i></a>
-                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" title="Issues"><i data-feather="alert-circle"></i></a>
-                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/stargazers" target="_blank" title="Star"><i data-feather="star"></i></a>
+            
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">About ConfigStream</h1>
+                <p class="page-subtitle">
+                    An open-source project dedicated to internet freedom through automated VPN configuration aggregation
+                </p>
+            </header>
+            
+            <!-- Content -->
+            <div class="content">
+                <!-- What is ConfigStream -->
+                <section class="doc-section">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <i data-feather="star"></i>
+                        </div>
+                        <h2 class="section-title">What is ConfigStream?</h2>
+                    </div>
+                    
+                    <div class="section-content">
+                        <p>
+                            ConfigStream is an <strong>open-source VPN configuration aggregator</strong> that automatically collects, tests, and publishes free VPN configurations from public sources. Our mission is to provide reliable, tested, and accessible proxy configurations to help users bypass censorship and access the open internet.
+                        </p>
+                        
+                        <p>
+                            The project runs entirely through <strong>GitHub Actions</strong>, updating configurations every 6 hours. Each configuration is rigorously tested for connectivity, latency, and security before being made available. This ensures you always have access to fresh, working proxies without manual intervention.
+                        </p>
+                        
+                        <div class="features-grid">
+                            <div class="feature-box">
+                                <div class="feature-box-icon">
+                                    <i data-feather="clock"></i>
+                                </div>
+                                <h3 class="feature-box-title">Auto-Updated</h3>
+                                <p class="feature-box-desc">
+                                    Configurations refresh every 6 hours via automated GitHub Actions workflows
+                                </p>
+                            </div>
+                            
+                            <div class="feature-box">
+                                <div class="feature-box-icon">
+                                    <i data-feather="check-circle"></i>
+                                </div>
+                                <h3 class="feature-box-title">Tested & Verified</h3>
+                                <p class="feature-box-desc">
+                                    Every config is tested for connectivity, latency, and security vulnerabilities
+                                </p>
+                            </div>
+                            
+                            <div class="feature-box">
+                                <div class="feature-box-icon">
+                                    <i data-feather="shield"></i>
+                                </div>
+                                <h3 class="feature-box-title">Security Checked</h3>
+                                <p class="feature-box-desc">
+                                    Advanced security tests filter out malicious nodes and content injection
+                                </p>
+                            </div>
+                            
+                            <div class="feature-box">
+                                <div class="feature-box-icon">
+                                    <i data-feather="globe"></i>
+                                </div>
+                                <h3 class="feature-box-title">Geo Data</h3>
+                                <p class="feature-box-desc">
+                                    Detailed location information including country, city, and network provider
+                                </p>
+                            </div>
+                            
+                            <div class="feature-box">
+                                <div class="feature-box-icon">
+                                    <i data-feather="download"></i>
+                                </div>
+                                <h3 class="feature-box-title">Multiple Formats</h3>
+                                <p class="feature-box-desc">
+                                    Base64, Clash, and raw configs for compatibility with all major clients
+                                </p>
+                            </div>
+                            
+                            <div class="feature-box">
+                                <div class="feature-box-icon">
+                                    <i data-feather="github"></i>
+                                </div>
+                                <h3 class="feature-box-title">Open Source</h3>
+                                <p class="feature-box-desc">
+                                    Fully transparent process with auditable code and community contributions
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- How It Works -->
+                <section class="doc-section">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <i data-feather="cpu"></i>
+                        </div>
+                        <h2 class="section-title">How It Works</h2>
+                    </div>
+                    
+                    <div class="section-content">
+                        <p>
+                            ConfigStream follows an automated pipeline that ensures high-quality, working configurations:
+                        </p>
+                        
+                        <ul class="styled-list info-list">
+                            <li>
+                                <strong>Fetch:</strong> Collects VPN configurations from multiple public sources and aggregators
+                            </li>
+                            <li>
+                                <strong>Parse:</strong> Extracts and validates configuration details for all supported protocols
+                            </li>
+                            <li>
+                                <strong>Test:</strong> Uses sing-box to test connectivity and measure latency for each config
+                            </li>
+                            <li>
+                                <strong>Security Check:</strong> Runs comprehensive security tests including:
+                                <ul style="margin-top: var(--space-2); margin-left: var(--space-4);">
+                                    <li>Content injection detection</li>
+                                    <li>Header preservation verification</li>
+                                    <li>Redirect handling tests</li>
+                                    <li>SSL/TLS validation</li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong>Geolocate:</strong> Determines country, city, and network provider using GeoIP databases
+                            </li>
+                            <li>
+                                <strong>Filter:</strong> Removes non-working and insecure proxies from the final output
+                            </li>
+                            <li>
+                                <strong>Sort:</strong> Orders configurations by performance (latency)
+                            </li>
+                            <li>
+                                <strong>Generate:</strong> Creates output files in multiple formats (Base64, Clash, Raw)
+                            </li>
+                            <li>
+                                <strong>Publish:</strong> Commits changes to GitHub and auto-deploys to GitHub Pages
+                            </li>
+                        </ul>
+                        
+                        <div class="info-box">
+                            <div class="info-box-header">
+                                <div class="info-box-icon">💡</div>
+                                <h3 class="info-box-title">Technology Stack</h3>
+                            </div>
+                            <div class="info-box-content">
+                                <strong>Backend:</strong> Python 3.11+ with asyncio for concurrent testing<br>
+                                <strong>Testing:</strong> Sing-Box proxy testing framework<br>
+                                <strong>Automation:</strong> GitHub Actions (runs every 6 hours)<br>
+                                <strong>Frontend:</strong> Static HTML/CSS/JavaScript with Chart.js<br>
+                                <strong>Hosting:</strong> GitHub Pages (free, fast, reliable)<br>
+                                <strong>Data:</strong> GeoIP2 databases for location information
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Security Notice -->
+                <section class="doc-section">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <i data-feather="alert-triangle"></i>
+                        </div>
+                        <h2 class="section-title">Security & Privacy</h2>
+                    </div>
+                    
+                    <div class="section-content">
+                        <div class="warning-box">
+                            <div class="info-box-header">
+                                <div class="info-box-icon">⚠️</div>
+                                <h3 class="info-box-title">Important Warning</h3>
+                            </div>
+                            <div class="info-box-content">
+                                <strong>These are FREE public VPN nodes from unknown operators.</strong> While we perform comprehensive security checks, we cannot guarantee complete safety.
+                            </div>
+                        </div>
+                        
+                        <p>
+                            <strong>What We Test:</strong>
+                        </p>
+                        
+                        <ul class="styled-list">
+                            <li>
+                                <strong>Content Injection:</strong> Detects if proxies modify page content or inject malicious scripts
+                            </li>
+                            <li>
+                                <strong>Header Preservation:</strong> Ensures HTTP headers are not stripped or modified
+                            </li>
+                            <li>
+                                <strong>Redirect Handling:</strong> Verifies proper HTTP redirect behavior
+                            </li>
+                            <li>
+                                <strong>SSL/TLS Security:</strong> Tests HTTPS connection security and certificate validation
+                            </li>
+                        </ul>
+                        
+                        <p>
+                            <strong>What We Cannot Guarantee:</strong>
+                        </p>
+                        
+                        <ul class="styled-list warning-list">
+                            <li>Traffic logging - Operators may log your activities</li>
+                            <li>Data privacy - Your data may be monitored or stored</li>
+                            <li>Continuous availability - Free proxies often go offline</li>
+                            <li>Bandwidth or speed - Performance can vary significantly</li>
+                            <li>Operator intentions - Unknown providers may have malicious intent</li>
+                        </ul>
+                        
+                        <div class="info-box success-box">
+                            <div class="info-box-header">
+                                <div class="info-box-icon">✅</div>
+                                <h3 class="info-box-title">Best Use Cases</h3>
+                            </div>
+                            <div class="info-box-content">
+                                <strong>Safe for:</strong> Casual web browsing, bypassing geo-restrictions, accessing blocked content, educational purposes<br><br>
+                                <strong>NOT safe for:</strong> Banking, sensitive data, confidential communications, anything requiring guaranteed privacy
+                            </div>
+                        </div>
+                        
+                        <p>
+                            <strong>Security Best Practices:</strong>
+                        </p>
+                        
+                        <ul class="styled-list">
+                            <li>Always use HTTPS websites when possible</li>
+                            <li>Never enter passwords for important accounts</li>
+                            <li>Avoid accessing sensitive information</li>
+                            <li>Use a dedicated browser for proxy connections</li>
+                            <li>Consider these proxies as untrusted networks</li>
+                            <li>For critical activities, use commercial VPN services</li>
+                        </ul>
+                    </div>
+                </section>
+                
+                <!-- Supported Protocols -->
+                <section class="doc-section">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <i data-feather="code"></i>
+                        </div>
+                        <h2 class="section-title">Supported Protocols</h2>
+                    </div>
+                    
+                    <div class="section-content">
+                        <p>
+                            ConfigStream supports all major VPN and proxy protocols:
+                        </p>
+                        
+                        <table class="protocol-table">
+                            <thead>
+                                <tr>
+                                    <th>Protocol</th>
+                                    <th>Description</th>
+                                    <th>Use Case</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="protocol-badge" style="background: #dbeafe; color: #1e40af;">VMESS</span></td>
+                                    <td>V2Ray's original protocol with strong encryption</td>
+                                    <td>General purpose, good balance</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="protocol-badge" style="background: #dcfce7; color: #166534;">VLESS</span></td>
+                                    <td>Lightweight V2Ray protocol (including REALITY)</td>
+                                    <td>High performance, low overhead</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="protocol-badge" style="background: #fef3c7; color: #92400e;">SHADOWSOCKS</span></td>
+                                    <td>Fast and secure SOCKS5 proxy</td>
+                                    <td>Speed-focused, simple setup</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="protocol-badge" style="background: #fce7f3; color: #9f1239;">TROJAN</span></td>
+                                    <td>TLS-based proxy protocol</td>
+                                    <td>Mimics HTTPS traffic</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="protocol-badge" style="background: #e9d5ff; color: #6b21a8;">HYSTERIA</span></td>
+                                    <td>UDP-based high-performance protocol</td>
+                                    <td>Unstable networks, high speed</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="protocol-badge" style="background: #ccfbf1; color: #134e4a;">TUIC</span></td>
+                                    <td>QUIC-based proxy protocol</td>
+                                    <td>Low latency, modern</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="protocol-badge" style="background: #cffafe; color: #164e63;">WIREGUARD</span></td>
+                                    <td>Modern, fast VPN protocol</td>
+                                    <td>Simple, secure, efficient</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="protocol-badge" style="background: #fecaca; color: #991b1b;">NAIVE</span></td>
+                                    <td>Censorship-resistant proxy</td>
+                                    <td>Anti-censorship focused</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                
+                <!-- Usage Guide -->
+                <section class="doc-section">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <i data-feather="book"></i>
+                        </div>
+                        <h2 class="section-title">How to Use</h2>
+                    </div>
+                    
+                    <div class="section-content">
+                        <p>
+                            Getting started with ConfigStream is simple:
+                        </p>
+                        
+                        <h3 style="font-size: var(--text-2xl); font-weight: 700; margin: var(--space-6) 0 var(--space-4);">
+                            📱 For Mobile (V2RayNG, V2Box)
+                        </h3>
+                        
+                        <ul class="styled-list">
+                            <li>Open your VPN client</li>
+                            <li>Go to subscription settings</li>
+                            <li>Copy the Base64 subscription link from our home page</li>
+                            <li>Paste it into your client</li>
+                            <li>Update subscriptions</li>
+                            <li>Select a server and connect</li>
+                        </ul>
+                        
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-language">Subscription URL</span>
+                                <button class="copy-code-btn" onclick="copyCode(this)">
+                                    <i data-feather="copy"></i>
+                                    <span>Copy</span>
+                                </button>
+                            </div>
+                            <code>https://your-username.github.io/ConfigStream/output/vpn_subscription_base64.txt</code>
+                        </div>
+                        
+                        <h3 style="font-size: var(--text-2xl); font-weight: 700; margin: var(--space-8) 0 var(--space-4);">
+                            💻 For Desktop (Clash, Clash Meta)
+                        </h3>
+                        
+                        <ul class="styled-list">
+                            <li>Download the Clash configuration file</li>
+                            <li>Open Clash and go to Profiles</li>
+                            <li>Import the downloaded YAML file</li>
+                            <li>Select ConfigStream profile</li>
+                            <li>Choose a proxy and enable system proxy</li>
+                        </ul>
+                        
+                        <h3 style="font-size: var(--text-2xl); font-weight: 700; margin: var(--space-8) 0 var(--space-4);">
+                            🔧 Advanced: Manual Configuration
+                        </h3>
+                        
+                        <ul class="styled-list">
+                            <li>Browse the proxies page for detailed information</li>
+                            <li>Filter by protocol, country, or latency</li>
+                            <li>Copy individual configuration links</li>
+                            <li>Import manually into your client</li>
+                        </ul>
+                    </div>
+                </section>
+                
+                <!-- FAQ -->
+                <section class="doc-section">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <i data-feather="help-circle"></i>
+                        </div>
+                        <h2 class="section-title">Frequently Asked Questions</h2>
+                    </div>
+                    
+                    <div class="section-content">
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <i data-feather="chevron-right" class="faq-question-icon"></i>
+                                <span>Are these VPNs safe to use?</span>
+                            </div>
+                            <div class="faq-answer">
+                                They are tested for basic security issues, but since they're from unknown operators, we cannot guarantee complete safety. Never use them for sensitive activities like banking. They're best for casual browsing and bypassing geo-restrictions.
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <i data-feather="chevron-right" class="faq-question-icon"></i>
+                                <span>Do I need to update configurations manually?</span>
+                            </div>
+                            <div class="faq-answer">
+                                No! If you use a subscription link, your client will automatically fetch updates when you refresh. We recommend updating your subscriptions every 6-12 hours to get the freshest configs.
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <i data-feather="chevron-right" class="faq-question-icon"></i>
+                                <span>Why do some proxies stop working?</span>
+                            </div>
+                            <div class="faq-answer">
+                                Free public proxies are often temporary. They may go offline, change configuration, or become overloaded. That's why we update every 6 hours - to ensure you always have access to working proxies.
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <i data-feather="chevron-right" class="faq-question-icon"></i>
+                                <span>Can I contribute my own proxy sources?</span>
+                            </div>
+                            <div class="faq-answer">
+                                Yes! Fork the repository, add your sources to <code style="background: var(--gray-200); padding: 2px 6px; border-radius: 4px;">sources.txt</code>, test locally, and submit a pull request. We welcome community contributions!
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <i data-feather="chevron-right" class="faq-question-icon"></i>
+                                <span>How can I run this locally?</span>
+                            </div>
+                            <div class="faq-answer">
+                                Clone the repository, install Python 3.11+, install dependencies with <code style="background: var(--gray-200); padding: 2px 6px; border-radius: 4px;">pip install -e .</code>, and run <code style="background: var(--gray-200); padding: 2px 6px; border-radius: 4px;">configstream merge --sources sources.txt</code>. Full instructions are in the README.
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <i data-feather="chevron-right" class="faq-question-icon"></i>
+                                <span>Which client should I use?</span>
+                            </div>
+                            <div class="faq-answer">
+                                <strong>Android:</strong> V2RayNG, V2Box, or NekoBox<br>
+                                <strong>iOS:</strong> Shadowrocket, V2Box, or Stash<br>
+                                <strong>Windows:</strong> Clash for Windows or V2RayN<br>
+                                <strong>macOS:</strong> ClashX or V2RayX<br>
+                                <strong>Linux:</strong> Clash or v2ray-core
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Contributing -->
+                <section class="doc-section">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <i data-feather="git-pull-request"></i>
+                        </div>
+                        <h2 class="section-title">Contributing</h2>
+                    </div>
+                    
+                    <div class="section-content">
+                        <p>
+                            ConfigStream is an open-source project and we welcome contributions from the community!
+                        </p>
+                        
+                        <h3 style="font-size: var(--text-2xl); font-weight: 700; margin: var(--space-6) 0 var(--space-4);">
+                            Ways to Contribute
+                        </h3>
+                        
+                        <ul class="styled-list">
+                            <li>
+                                <strong>Add Sources:</strong> Submit new proxy sources by editing sources.txt
+                            </li>
+                            <li>
+                                <strong>Report Bugs:</strong> Open issues on GitHub with detailed information
+                            </li>
+                            <li>
+                                <strong>Improve Documentation:</strong> Help make our docs clearer and more comprehensive
+                            </li>
+                            <li>
+                                <strong>Enhance Features:</strong> Submit pull requests for new functionality
+                            </li>
+                            <li>
+                                <strong>Test & Verify:</strong> Help test configurations and report issues
+                            </li>
+                            <li>
+                                <strong>Spread the Word:</strong> Share the project with others who need it
+                            </li>
+                        </ul>
+                        
+                        <div class="info-box">
+                            <div class="info-box-header">
+                                <div class="info-box-icon">📝</div>
+                                <h3 class="info-box-title">Contribution Guidelines</h3>
+                            </div>
+                            <div class="info-box-content">
+                                1. Fork the repository<br>
+                                2. Create a feature branch<br>
+                                3. Make your changes<br>
+                                4. Run tests (<code style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 4px;">pytest</code>)<br>
+                                5. Update CHANGELOG.md<br>
+                                6. Submit a pull request
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- License -->
+                <section class="doc-section">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <i data-feather="file-text"></i>
+                        </div>
+                        <h2 class="section-title">License & Credits</h2>
+                    </div>
+                    
+                    <div class="section-content">
+                        <p>
+                            ConfigStream is licensed under the <strong>GNU General Public License v3.0</strong>. This means:
+                        </p>
+                        
+                        <ul class="styled-list">
+                            <li>You can use, modify, and distribute this software freely</li>
+                            <li>You must include the license and copyright notice</li>
+                            <li>Any modifications must also be GPL-3.0 licensed</li>
+                            <li>Source code must be made available</li>
+                            <li>No warranty is provided</li>
+                        </ul>
+                        
+                        <h3 style="font-size: var(--text-2xl); font-weight: 700; margin: var(--space-8) 0 var(--space-4);">
+                            Acknowledgments
+                        </h3>
+                        
+                        <p>
+                            This project wouldn't be possible without:
+                        </p>
+                        
+                        <ul class="styled-list">
+                            <li><strong>Free VPN Providers</strong> - Thanks to all who share configurations publicly</li>
+                            <li><strong>Sing-Box</strong> - Excellent proxy testing framework</li>
+                            <li><strong>GeoIP2</strong> - Geolocation data</li>
+                            <li><strong>GitHub</strong> - Free hosting and automation</li>
+                            <li><strong>Open Source Community</strong> - For amazing tools and libraries</li>
+                            <li><strong>Contributors</strong> - Everyone who helps improve the project</li>
+                        </ul>
+                    </div>
+                </section>
+                
+                <!-- CTA Section -->
+                <section class="cta-section">
+                    <h2 class="cta-title">Ready to Get Started?</h2>
+                    <p class="cta-description">
+                        Access free, tested VPN configurations updated every 6 hours
+                    </p>
+                    <div class="cta-buttons">
+                        <a href="proxies.html" class="btn btn-light btn-lg">
+                            <i data-feather="list"></i>
+                            <span>Browse Proxies</span>
+                        </a>
+                        <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" class="btn btn-outline-light btn-lg">
+                            <i data-feather="github"></i>
+                            <span>View on GitHub</span>
+                        </a>
+                    </div>
+                </section>
             </div>
-            <p>Source code & contributions on <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank">GitHub</a></p>
-            <p style="margin-top: 1rem; font-size: 0.9em; opacity: 0.7;" aria-live="polite">Last updated: <span id="footerUpdate" class="loading">...</span></p>
-        </footer>
+            
+            <!-- Footer -->
+            <footer class="footer">
+                <div class="social-links">
+                    <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" class="social-link" aria-label="GitHub">
+                        <i data-feather="github"></i>
+                    </a>
+                    <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" class="social-link" aria-label="Issues">
+                        <i data-feather="alert-circle"></i>
+                    </a>
+                    <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/stargazers" target="_blank" class="social-link" aria-label="Star">
+                        <i data-feather="star"></i>
+                    </a>
+                </div>
+                <p>
+                    <strong>ConfigStream</strong> • Made with ❤️ for internet freedom
+                </p>
+                <p style="margin-top: var(--space-2); opacity: 0.7;">
+                    Educational purposes only • Use responsibly • GPL-3.0 License
+                </p>
+            </footer>
+        </div>
     </div>
-
-    <script src="assets/js/main.js"></script>
+    
+    <script>
+        // Initialize Feather Icons
+        feather.replace();
+        
+        // Dark mode toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        
+        const savedTheme = localStorage.getItem('theme') || 
+            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        
+        if (savedTheme === 'dark') {
+            body.classList.add('dark');
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark');
+            const theme = body.classList.contains('dark') ? 'dark' : 'light';
+            localStorage.setItem('theme', theme);
+            feather.replace();
+        });
+        
+        // Copy code functionality
+        function copyCode(button) {
+            const codeBlock = button.closest('.code-block');
+            const code = codeBlock.querySelector('code').textContent;
+            
+            navigator.clipboard.writeText(code).then(() => {
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i data-feather="check"></i><span>Copied!</span>';
+                feather.replace();
+                
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    feather.replace();
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+        
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 </html>
