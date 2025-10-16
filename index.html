@@ -11,9 +11,7 @@
     <link rel="icon" type="image/svg+xml" href="src/configstream/logo.svg">
 
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/fonts.css">
 
     <!-- Stylesheet -->
     <link rel="stylesheet" href="assets/css/style.css">
@@ -25,7 +23,7 @@
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <a href="index.html" aria-label="Homepage">
+            <a href="index.html" class="logo-link" aria-label="Homepage">
                 <img src="src/configstream/logo.svg" alt="ConfigStream Logo" class="logo" id="logo">
             </a>
             <nav class="nav">
@@ -42,37 +40,39 @@
 
         <!-- Hero Section -->
         <section class="hero">
-            <h1>Access the Open Internet</h1>
-            <p>ConfigStream is an open-source project that automatically aggregates, tests, and provides free, high-quality VPN and proxy configurations.</p>
+            <h1>Unlock the Internet</h1>
+            <p class="subtitle">ConfigStream provides free, auto-updating, and rigorously tested VPN and proxy configurations, giving you unrestricted access to the open internet.</p>
             <div class="hero-actions">
                 <a href="proxies.html" class="btn btn-primary">
-                    <i data-feather="shield"></i>Get Proxies
+                    <i data-feather="shield"></i>Get Started
                 </a>
-                <a href="about.html" class="btn btn-secondary">
-                    <i data-feather="info"></i>Learn More
+                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" class="btn btn-secondary">
+                    <i data-feather="github"></i>View on GitHub
                 </a>
             </div>
         </section>
 
-        <!-- Content -->
+        <!-- Features Section -->
         <main class="content">
-            <section class="card" id="stats-card">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <span class="stat-number">3h</span>
-                        <span class="stat-label">Update Interval</span>
-                    </div>
-                    <div class="stat-card" aria-live="polite">
-                        <span class="stat-number loading" id="totalConfigs">...</span>
-                        <span class="stat-label">Total Configs</span>
-                    </div>
-                    <div class="stat-card" aria-live="polite">
-                        <span class="stat-number loading" id="workingConfigs">...</span>
-                        <span class="stat-label">Working</span>
-                    </div>
+            <section class="card-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-feather="clock"></i></div>
+                    <h3 class="feature-title">Always Fresh</h3>
+                    <p class="feature-desc">Configurations are updated every three hours, ensuring you always have access to working proxies.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-feather="check-circle"></i></div>
+                    <h3 class="feature-title">Rigorously Tested</h3>
+                    <p class="feature-desc">Every configuration is tested for latency and connectivity, so you can be sure you're getting a reliable connection.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-feather="download"></i></div>
+                    <h3 class="feature-title">Multiple Formats</h3>
+                    <p class="feature-desc">We provide configurations in multiple formats, including Base64, Clash, and raw, for compatibility with a wide range of clients.</p>
                 </div>
             </section>
 
+            <!-- Downloads Section -->
             <section class="card" id="downloads-card">
                 <h2>Downloads</h2>
                 <div class="downloads-grid">
