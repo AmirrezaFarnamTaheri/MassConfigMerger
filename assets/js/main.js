@@ -58,11 +58,15 @@ document.addEventListener('DOMContentLoaded', () => {
     async function updateClashFileSize() {
         try {
             const response = await fetchWithPath('output/clash.yaml', { method: 'HEAD' });
-            const size = response.headers.get('Content-Length');
-            if (size) {
-                const i = Math.floor(Math.log(size) / Math.log(1024));
-                const fileSize = (size / Math.pow(1024, i)).toFixed(2) * 1 + ' ' + ['B', 'KB', 'MB', 'GB', 'TB'][i];
+            const sizeHeader = response.headers.get('Content-Length');
+            const sizeNum = sizeHeader ? parseInt(sizeHeader, 10) : NaN;
+            if (Number.isFinite(sizeNum) && sizeNum >= 0) {
+                const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+                const i = sizeNum > 0 ? Math.floor(Math.log(sizeNum) / Math.log(1024)) : 0;
+                const fileSize = (sizeNum / Math.pow(1024, i)).toFixed(2) + ' ' + units[i];
                 updateElement('clash-filesize', fileSize);
+            } else {
+                updateElement('clash-filesize', 'N/A');
             }
         } catch (error) {
             console.error('Could not fetch Clash file size:', error);
