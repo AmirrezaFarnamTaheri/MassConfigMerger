@@ -122,20 +122,16 @@ function initHeroParallax() {
 
 function initCardGlow() {
     const cards = document.querySelectorAll('.card');
-        const cards = document.querySelectorAll('.card');
-        if (!cards.length) return;
-        if (typeof window.VanillaTilt === 'undefined' || typeof window.VanillaTilt.init !== 'function') {
-            // Fail gracefully if the library isn't loaded
-            return;
-        }
+    if (!cards.length) return;
+    // If VanillaTilt is available, initialize subtle tilt to simulate glow via glare
+    if (window.VanillaTilt && typeof window.VanillaTilt.init === 'function') {
         window.VanillaTilt.init(cards, {
             max: 5,
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            card.style.setProperty('--x', `${x}px`);
-            card.style.setProperty('--y', `${y}px`);
+            speed: 400,
+            glare: true,
+            'max-glare': 0.1
         });
-    });
+    }
 }
 
 function initTilt() {
