@@ -153,14 +153,9 @@ function initRippleEffect() {
 
     buttons.forEach(button => {
         button.addEventListener('click', function (e) {
-            const x = e.clientX;
-            const y = e.clientY;
-
-            const buttonTop = e.target.offsetTop;
-            const buttonLeft = e.target.offsetLeft;
-
-            const xInside = x - buttonLeft;
-            const yInside = y - buttonTop;
+            const rect = this.getBoundingClientRect();
+            const xInside = e.clientX - rect.left;
+            const yInside = e.clientY - rect.top;
 
             const circle = document.createElement('span');
             circle.classList.add('ripple');
