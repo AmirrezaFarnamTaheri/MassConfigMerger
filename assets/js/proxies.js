@@ -7,13 +7,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const protocolFilter = document.getElementById('filterProtocol');
     const locationFilter = document.getElementById('filterLocation');
-    const tableBody = document.getElementById('proxiesTBody');
-    const loadingContainer = document.getElementById('loading-container');
+    const tableBody = document.getElementById('proxiesTableBody');
+    const loadingContainer = document.getElementById('loadingContainer');
+    const emptyState = document.getElementById('emptyState');
+    const proxiesTable = document.getElementById('proxiesTable');
 
     const renderTable = () => {
-        // Re-trigger animation by resetting the class
-        tableBody.classList.remove('visible');
-
         const protoFilter = protocolFilter.value.toLowerCase();
         const locFilter = locationFilter.value.toLowerCase();
 
@@ -22,6 +21,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const location = [p.location?.city, p.location?.country].filter(Boolean).join(', ').toLowerCase();
             return protocol.includes(protoFilter) && location.includes(locFilter);
         });
+
+        if (filteredProxies.length === 0) {
+            proxiesTable.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+        } else {
+            proxiesTable.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+        }
 
         // Sort
         filteredProxies.sort((a, b) => {
@@ -60,9 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }).join('');
         feather.replace();
-
-        // Add class to trigger animation
-        setTimeout(() => tableBody.classList.add('visible'), 50);
     };
 
     protocolFilter.addEventListener('input', renderTable);
@@ -96,5 +100,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function initCompactViewToggle() {
+        const toggle = document.getElementById('compact-view-toggle');
+        const table = document.getElementById('proxiesTable');
+        if (!toggle || !table) return;
+
+        const isCompact = localStorage.getItem('compactView') === 'true';
+        toggle.checked = isCompact;
+        if (isCompact) {
+            table.classList.add('compact-view');
+        }
+
+        toggle.addEventListener('change', () => {
+            if (toggle.checked) {
+                table.classList.add('compact-view');
+                localStorage.setItem('compactView', 'true');
+            } else {
+                table.classList.remove('compact-view');
+                localStorage.setItem('compactView', 'false');
+            }
+        });
+    }
+
     fetchAndRenderProxies();
+    initCompactViewToggle();
 });

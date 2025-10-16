@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Learn about ConfigStream, an open-source project dedicated to providing free, reliable, and auto-updating VPN configurations.">
     <title>About - ConfigStream</title>
-    <link rel="icon" type="image/svg+xml" href="src/configstream/logo.svg">
+<link rel="icon" type="image/svg+xml" href="src/configstream/logo.svg">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Manrope:wght@800&display=swap">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@lottiefiles/lottie-player@2.0.12/dist/lottie-player.js"></script>
 </head>
 <body>
+    <div class="nav-overlay"></div>
     <header class="header">
     <div class="container">
         <a href="index.html" class="logo" aria-label="ConfigStream Home">
@@ -24,17 +26,14 @@
             <a href="about.html" class="nav-link">About</a>
         </nav>
         <div class="header-actions">
-            <button class="theme-switcher" id="theme-switcher" aria-label="Toggle color theme" title="Toggle color theme">
-                <i data-feather="sun"></i>
-                <i data-feather="moon" style="display: none;"></i>
-            </button>
+            <lottie-player id="theme-switcher-animation" src="https://assets2.lottiefiles.com/packages/lf20_gof1xmfq.json" background="transparent" speed="1" style="width: 50px; height: 50px; cursor: pointer;" hover loop></lottie-player>
             <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" class="btn btn-secondary github-btn" target="_blank" rel="noopener noreferrer">
                 <i data-feather="github"></i>
                 <span>GitHub</span>
             </a>
             <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Toggle navigation" aria-controls="main-nav" aria-expanded="false">
-                <i data-feather="menu"></i>
-                <i data-feather="x" style="display: none;"></i>
+                <i data-feather="menu" class="menu-icon"></i>
+                <i data-feather="x" class="x-icon hidden"></i>
             </button>
         </div>
     </div>
@@ -42,11 +41,13 @@
 
     <main>
         <div class="container">
-            <section id="about-card" class="card fade-in-up">
-                <header class="page-header">
-                    <h2>About ConfigStream</h2>
-                    <p>Our mission is to make the internet more open and accessible for everyone.</p>
-                </header>
+            <section id="about-card" class="card">
+                <div class="card-header">
+                    <header class="page-header">
+                        <h2>About ConfigStream</h2>
+                        <p>Our mission is to make the internet more open and accessible for everyone.</p>
+                    </header>
+                </div>
 
                 <div class="about-section" role="region" aria-labelledby="mission-heading">
                     <h3 id="mission-heading"><i data-feather="globe" aria-hidden="true"></i> Our Mission</h3>
@@ -61,6 +62,17 @@
                 <div class="about-section" role="region" aria-labelledby="important-notice-heading">
                     <h3 id="important-notice-heading"><i data-feather="alert-triangle" aria-hidden="true"></i> Important Notice</h3>
                     <p><strong>These are free, public proxies.</strong> While we filter out malicious nodes, we cannot guarantee your privacy. Please avoid using these proxies for sensitive activities like online banking or handling personal data. For casual browsing and bypassing geo-restrictions, they are an excellent free resource. <strong>Use at your own risk.</strong></p>
+                </div>
+
+                <div class="about-section" role="region" aria-labelledby="tech-stack-heading">
+                    <h3 id="tech-stack-heading"><i data-feather="code" aria-hidden="true"></i> Technology Stack</h3>
+                    <p>This project is built with a variety of open-source technologies, including:</p>
+                    <ul>
+                        <li>Python for the core logic and data processing.</li>
+                        <li>GitHub Actions for automation and continuous integration.</li>
+                        <li>Chart.js for data visualization.</li>
+                        <li>Feather Icons for the user interface.</li>
+                    </ul>
                 </div>
             </section>
         </div>
@@ -79,5 +91,6 @@
 
     <script src="assets/js/utils.js"></script>
     <script src="assets/js/main.js"></script>
+    <script src="assets/js/vanilla-tilt.min.js"></script>
 </body>
 </html>
