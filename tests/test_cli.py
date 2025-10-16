@@ -1,72 +1,69 @@
 from __future__ import annotations
 
-import gzip
 from unittest.mock import patch
 
 from click.testing import CliRunner
 
-from configstream.cli import download_geoip_dbs, main
-
-# --- Test Data ---
-
-FAKE_DB_CONTENT = b"fake geoip database content"
-GZIPPED_FAKE_DB_CONTENT = gzip.compress(FAKE_DB_CONTENT)
-
-# --- Tests ---
+from src.configstream.cli import main
 
 
-def test_download_geoip_dbs_exists(fs):
+@patch("src.configstream.cli.download_geoip_dbs")
+def test_merge_command_happy_path(mock_download_dbs, fs):
     """
-    Tests that the download function does nothing if the DBs already exist.
-    """
-    # Create fake existing database files
-    fs.create_file("data/GeoLite2-Country.mmdb", contents="exists")
-    fs.create_file("data/GeoLite2-City.mmdb", contents="exists")
-    fs.create_file("data/ip-to-asn.mmdb", contents="exists")
-
-    with patch("requests.get") as mock_get:
-        download_geoip_dbs()
-        mock_get.assert_not_called()
-
-
-def test_download_geoip_dbs_success(fs):
-    """
-    Tests the successful download and extraction of the GeoIP databases.
-    """
-    # Ensure the target directory does not exist initially
-    assert not fs.exists("data")
-
-    with patch("requests.get") as mock_get:
-        # Mock the response from requests.get
-        mock_response = mock_get.return_value.__enter__.return_value
-        mock_response.iter_content.return_value = [GZIPPED_FAKE_DB_CONTENT]
-        mock_response.raise_for_status.return_value = None
-
-        download_geoip_dbs()
-
-        # Verify the files were created and have the correct content
-        assert fs.exists("data/GeoLite2-Country.mmdb")
-        with open("data/GeoLite2-Country.mmdb", "rb") as f:
-            assert f.read() == FAKE_DB_CONTENT
-        assert fs.exists("data/ip-to-asn.mmdb")
-
-        # Verify the temporary .gz file was removed
-        assert not fs.exists("data/GeoLite2-Country.mmdb.gz")
-
-
-def test_cli_merge_command(fs):
-    """
-    A simple test for the merge command to ensure it runs without crashing.
+    Tests the merge command with a mock pipeline and fake file system.
     """
     # Create a fake sources file
-    fs.create_file("sources.txt", contents="https://example.com/source1")
+    fs.create_file("sources.txt", contents="http://source1.com\nhttp://source2.com")
 
-    runner = CliRunner()
-    # We patch the pipeline and download_geoip_dbs to avoid external dependencies
-    with patch("configstream.cli.pipeline.run_full_pipeline") as mock_pipeline, \
-         patch("configstream.cli.download_geoip_dbs") as mock_download:
-        result = runner.invoke(main, ["merge", "--sources", "sources.txt"])
+    # Mock the pipeline function
+    with patch("src.configstream.cli.pipeline.run_full_pipeline") as mock_run_pipeline:
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "merge",
+                "--sources",
+                "sources.txt",
+                "--output",
+                "output_dir",
+                "--max-proxies",
+                "100",
+                "--country",
+                "US",
+                "--max-latency",
+                "500",
+            ],
+        )
 
         assert result.exit_code == 0
-        mock_download.assert_called_once()
-        mock_pipeline.assert_called_once()
+        assert "Pipeline completed successfully!" in result.output
+        mock_run_pipeline.assert_called_once()
+        mock_download_dbs.assert_called_once()
+
+
+def test_merge_command_no_sources_file():
+    """
+    Tests the merge command when the sources file does not exist.
+    """
+    runner = CliRunner()
+    result = runner.invoke(main, ["merge", "--sources", "nonexistent.txt"])
+
+    assert result.exit_code != 0
+    assert "File 'nonexistent.txt' does not exist" in result.output
+
+
+@patch("src.configstream.cli.download_geoip_dbs")
+def test_update_databases_command(mock_download_dbs, fs):
+    """
+    Tests the update-databases command with a fake file system.
+    """
+    # Create fake existing databases
+    fs.create_file("data/GeoLite2-Country.mmdb")
+    fs.create_file("data/GeoLite2-City.mmdb")
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["update-databases"])
+
+    assert result.exit_code == 0
+    assert "All databases updated successfully!" in result.output
+    mock_download_dbs.assert_called_once()

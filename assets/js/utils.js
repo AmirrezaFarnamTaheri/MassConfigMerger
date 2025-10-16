@@ -168,7 +168,7 @@ function getTimeAgo(date) {
  * Initialize theme system
  */
 function initTheme() {
-    const themeToggle = document.getElementById('themeToggle');
+    const themeToggle = document.getElementById('theme-switcher');
     if (!themeToggle) return;
     
     const body = document.body;
@@ -511,30 +511,3 @@ window.addEventListener('error', (event) => {
 window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
 });
-
-// Export for ES modules (if needed)
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        getBasePath,
-        fetchWithPath,
-        getFullUrl,
-        fetchMetadata,
-        fetchStatistics,
-        fetchProxies,
-        formatDate,
-        getTimeAgo,
-        initTheme,
-        copyToClipboard,
-        updateElement,
-        setLoading,
-        showError,
-        getCountryFlag,
-        exportJSON,
-        exportCSV,
-        downloadBlob,
-        isValidProxy,
-        sanitizeHTML,
-        debounce,
-        throttle
-    };
-}

@@ -1,18 +1,22 @@
 from __future__ import annotations
 
-import requests
+import aiohttp
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-def fetch_all(sources: list[str]) -> list[str]:
-    """
-    Fetches all configurations from the given sources.
-    """
-    configs = []
-    for source in sources:
-        try:
-            response = requests.get(source, timeout=10)
+async def fetch_from_source(session: aiohttp.ClientSession, source: str, timeout: int = 30) -> list[str]:
+    """Fetch proxy configurations from a source."""
+    try:
+        async with session.get(source, timeout=aiohttp.ClientTimeout(total=timeout)) as response:
             response.raise_for_status()
-            configs.extend(response.text.splitlines())
-        except requests.RequestException as e:
-            print(f"Error fetching {source}: {e}")
-    return configs
+            text = await response.text()
+            return [
+                line.strip()
+                for line in text.splitlines()
+                if line.strip() and not line.strip().startswith("#")
+            ]
+    except Exception as e:
+        logger.error("Error fetching source", extra={"source": source, "error": e})
+        return []
