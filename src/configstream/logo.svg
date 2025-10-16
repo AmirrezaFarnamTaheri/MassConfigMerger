@@ -1,12 +1,15 @@
-<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
         <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:var(--brand-primary)" />
-            <stop offset="100%" style="stop-color:var(--brand-secondary)" />
+            <stop offset="0%" stop-color="var(--brand-primary)"/>
+            <stop offset="100%" stop-color="var(--brand-secondary)"/>
         </linearGradient>
+        <filter id="logo-shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="var(--shadow-color-light)" flood-opacity="0.2"/>
+        </filter>
     </defs>
-    <path d="M32 2C15.432 2 2 15.432 2 32C2 48.568 15.432 62 32 62C48.568 62 62 48.568 62 32C62 15.432 48.568 2 32 2Z" fill="url(#logo-gradient)"/>
-    <path d="M42.6667 16H21.3333C18.3878 16 16 18.3878 16 21.3333V42.6667C16 45.6122 18.3878 48 21.3333 48H42.6667C45.6122 48 48 45.6122 48 42.6667V21.3333C48 18.3878 45.6122 16 42.6667 16Z" fill="#FFFFFF" fill-opacity="0.1"/>
-    <path d="M36.293 25.293C36.6835 24.9025 36.6835 24.2693 36.293 23.8788C35.9025 23.4883 35.2693 23.4883 34.8788 23.8788L27.293 31.4646C26.9025 31.8551 26.9025 32.4883 27.293 32.8788C27.6835 33.2693 28.3167 33.2693 28.7072 32.8788L36.293 25.293Z" fill="white"/>
-    <path d="M28.7072 40.1212C28.3167 40.5117 27.6835 40.5117 27.293 40.1212C26.9025 39.7307 26.9025 39.0975 27.293 38.707L34.8788 31.1212C35.2693 30.7307 35.9025 30.7307 36.293 31.1212C36.6835 31.5117 36.6835 32.1449 36.293 32.5354L28.7072 40.1212Z" fill="white"/>
+    <g filter="url(#logo-shadow)">
+        <path d="M29.5 6C36.4036 6 42 11.5964 42 18.5C42 25.4036 36.4036 31 29.5 31H14.5" stroke="url(#logo-gradient)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M14.5 38C7.59644 38 2 32.4036 2 25.5C2 18.5964 7.59644 13 14.5 13H29.5" stroke="url(#logo-gradient)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
 </svg>

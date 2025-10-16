@@ -1,4 +1,18 @@
+function initPreloader() {
+    const preloader = document.getElementById('preloader');
+    if (!preloader) return;
+
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            preloader.classList.add('hidden');
+        }, 200); // Small delay to ensure content is rendered
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize preloader
+    initPreloader();
+
     // Initialize theme
     initTheme();
 
@@ -81,16 +95,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initTheme() {
     const themeSwitcher = document.getElementById('theme-switcher');
-    const moonIcon = document.querySelector('.moon-icon');
-    const sunIcon = document.querySelector('.sun-icon');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
     let currentTheme = localStorage.getItem('theme');
 
-    const setTheme = (theme) => {
+    const setTheme = (theme, animate = false) => {
+        if (animate) {
+            document.body.style.transition = 'background-color var(--transition-base), color var(--transition-base)';
+        } else {
+            document.body.style.transition = 'none';
+        }
         document.body.classList.toggle('dark', theme === 'dark');
-        moonIcon.classList.toggle('hidden', theme === 'dark');
-        sunIcon.classList.toggle('hidden', theme !== 'dark');
         localStorage.setItem('theme', theme);
+
+        // Dispatch a custom event to notify other components (like charts)
+        window.dispatchEvent(new CustomEvent('themechanged', { detail: { theme } }));
+
+        if (!animate) {
+            // Force a reflow to apply the initial state without transition
+            void document.body.offsetWidth;
+            document.body.style.transition = '';
+        }
     };
 
     if (!currentTheme) {
@@ -101,11 +125,11 @@ function initTheme() {
 
     themeSwitcher.addEventListener('click', () => {
         const newTheme = document.body.classList.contains('dark') ? 'light' : 'dark';
-        setTheme(newTheme);
+        setTheme(newTheme, true);
     });
 
     prefersDark.addEventListener('change', (e) => {
-        setTheme(e.matches ? 'dark' : 'light');
+        setTheme(e.matches ? 'dark' : 'light', true);
     });
 }
 
