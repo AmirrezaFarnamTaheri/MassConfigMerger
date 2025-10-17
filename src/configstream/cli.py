@@ -10,11 +10,13 @@ from rich.progress import Progress
 from rich.console import Console
 
 from . import pipeline
-from .config import settings
+from .config import ProxyConfig
 from .core import Proxy
 from .geoip import download_geoip_dbs
+from .logging_config import setup_logging
 
 console = Console()
+config = ProxyConfig()
 
 @click.group()
 @click.version_option(version="1.0.0")
@@ -22,7 +24,7 @@ def main():
     """
     ConfigStream: Automated VPN Configuration Aggregator.
     """
-    pass
+    setup_logging(config.LOG_LEVEL, config.MASK_SENSITIVE_DATA)
 
 
 @main.command()
@@ -36,7 +38,7 @@ def main():
 @click.option(
     "--output",
     "output_dir",
-    default=settings.output_dir,
+    default="output",
     help="Directory to save generated files.",
     type=click.Path(file_okay=False),
 )
@@ -68,20 +70,6 @@ def main():
     help="Maximum latency in milliseconds.",
     type=float,
 )
-@click.option(
-    "--max-workers",
-    "max_workers",
-    default=10,
-    help="Maximum number of concurrent workers.",
-    type=int,
-)
-@click.option(
-    "--timeout",
-    "timeout",
-    default=10,
-    help="Timeout in seconds for testing each proxy.",
-    type=int,
-)
 def merge(
     sources_file: str,
     output_dir: str,
@@ -89,8 +77,6 @@ def merge(
     country: str | None,
     min_latency: float | None,
     max_latency: float | None,
-    max_workers: int,
-    timeout: int,
 ):
     """
     Run the full pipeline: fetch, test, and generate outputs.
@@ -113,10 +99,6 @@ def merge(
             sys.exit(1)
 
         click.echo(f"✓ Loaded {len(sources)} sources")
-
-        # Update settings
-        settings.test_max_workers = max_workers
-        settings.test_timeout = timeout
 
         # Run pipeline
         with Progress() as progress:
@@ -168,25 +150,11 @@ def update_databases():
 @click.option(
     "--output",
     "output_dir",
-    default=settings.output_dir,
+    default="output",
     help="Directory to save generated files.",
     type=click.Path(file_okay=False),
 )
-@click.option(
-    "--timeout",
-    "timeout",
-    default=8,
-    help="Timeout in seconds for testing each proxy.",
-    type=int,
-)
-@click.option(
-    "--max-workers",
-    "max_workers",
-    default=15,
-    help="Maximum number of concurrent workers.",
-    type=int,
-)
-def retest(input_file: str, output_dir: str, timeout: int, max_workers: int):
+def retest(input_file: str, output_dir: str):
     """
     Retest proxies from a JSON file.
     """
@@ -225,10 +193,6 @@ def retest(input_file: str, output_dir: str, timeout: int, max_workers: int):
             ]
             click.echo("\n".join(error_lines), err=True)
             sys.exit(1)
-
-        # Update settings
-        settings.test_timeout = timeout
-        settings.test_max_workers = max_workers
 
         # Run pipeline
         with Progress() as progress:

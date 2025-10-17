@@ -1,32 +1,66 @@
-from __future__ import annotations
+import os
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional
 
-from typing import List
+@dataclass
+class ProxyConfig:
+    """Centralized configuration for all proxy operations"""
 
-from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+    # Test URLs and timeouts (CENTRALIZED)
+    TEST_URLS = {
+        'primary': 'https://www.google.com/generate_204',
+        'fallback1': 'https://www.gstatic.com/generate_204',
+        'fallback2': 'http://httpbin.org/status/200',
+    }
 
+    TEST_TIMEOUT = int(os.getenv('TEST_TIMEOUT', '10'))
+    SECURITY_CHECK_TIMEOUT = int(os.getenv('SECURITY_CHECK_TIMEOUT', '8'))
+    RETEST_TIMEOUT = int(os.getenv('RETEST_TIMEOUT', '8'))
+    GEOIP_TIMEOUT = int(os.getenv('GEOIP_TIMEOUT', '5'))
 
-class Settings(BaseSettings):
-    """
-    Main application configuration model.
-    """
+    # Latency thresholds
+    MIN_LATENCY = int(os.getenv('MIN_LATENCY', '10'))  # milliseconds
+    MAX_LATENCY = int(os.getenv('MAX_LATENCY', '10000'))  # milliseconds
 
-    sources: List[str] = Field(
-        default_factory=list,
-        description="Comma-separated URLs of subscription sources.",
-    )
-    test_timeout: int = Field(5, description="Timeout in seconds for testing each proxy.")
-    test_max_workers: int = Field(
-        10, description="Maximum number of concurrent workers for testing proxies."
-    )
-    output_dir: str = Field("output", description="Directory to save the output files.")
+    # Rate limiting
+    RATE_LIMIT_REQUESTS = int(os.getenv('RATE_LIMIT_REQUESTS', '100'))
+    RATE_LIMIT_WINDOW = int(os.getenv('RATE_LIMIT_WINDOW', '60'))  # seconds
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_prefix="CONFIGSTREAM_",
-        case_sensitive=False,
-        env_nested_delimiter="__",
-    )
+    # Memory management
+    BATCH_SIZE = int(os.getenv('BATCH_SIZE', '50'))
+    CACHE_TTL = int(os.getenv('CACHE_TTL', '1800'))  # 30 minutes
 
+    # Protocol colors (moved from hardcoded JavaScript)
+    PROTOCOL_COLORS = {
+        'vmess': '#FF6B6B',
+        'vless': '#4ECDC4',
+        'shadowsocks': '#45B7D1',
+        'trojan': '#96CEB4',
+        'hysteria': '#FFEAA7',
+        'hysteria2': '#DFE6E9',
+        'tuic': '#A29BFE',
+        'wireguard': '#74B9FF',
+        'naive': '#FD79A8',
+        'http': '#FDCB6E',
+        'https': '#6C5CE7',
+        'socks': '#00B894'
+    }
 
-settings = Settings()  # type: ignore
+    # Malicious node detection thresholds
+    SECURITY = {
+        'content_injection_threshold': 5,  # bytes difference
+        'header_strip_threshold': 2,  # headers
+        'redirect_follow_limit': 3,
+        'suspicious_port_range': [(0, 1024), (5000, 5999), (8000, 8999)],
+        'blocked_countries': os.getenv('BLOCKED_COUNTRIES', '').split(','),
+        'malicious_asn_list': [
+            # Known malicious ASNs - expand as needed
+            'AS13335',  # Cloudflare - some malicious uses
+            'AS16509',  # Amazon - honeypot detection
+        ]
+    }
+
+    # Logging
+    MASK_SENSITIVE_DATA = True
+    LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')

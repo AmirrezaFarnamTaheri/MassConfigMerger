@@ -129,6 +129,10 @@ jobs:
             echo "✅ GeoIP databases ready"
           fi
 
+      - name: Install security dependencies
+        run: |
+          pip install aiohttp aiohttp-proxy
+
       - name: Run merge pipeline with retry
         id: merge
         uses: nick-invision/retry@v3
@@ -140,9 +144,10 @@ jobs:
           command: |
             configstream merge \
               --sources sources.txt \
-              --output output/ \
-              --max-workers 20 \
-              --timeout 10
+              --output output/
+        env:
+          MASK_SENSITIVE_DATA: "true"
+          LOG_LEVEL: "INFO"
 
       - name: Validate output files
         run: |
@@ -320,9 +325,7 @@ jobs:
           command: |
             configstream retest \
               --input output/proxies.json \
-              --output output/ \
-              --timeout 8 \
-              --max-workers 15
+              --output output/
 
       - name: Update metadata
         if: steps.check.outputs.exists == 'true'

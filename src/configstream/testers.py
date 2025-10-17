@@ -1,54 +1,79 @@
-from __future__ import annotations
-
 import asyncio
 from datetime import datetime, timezone
+import logging
 
 import aiohttp
 from aiohttp_proxy import ProxyConnector
 from singbox2proxy import SingBoxProxy
 
 from .core import Proxy
+from .config import ProxyConfig
 from .services import IProxyTester
 
-
-# Configuration
-TEST_URL = "https://www.google.com/generate_204"
-TEST_TIMEOUT = 10
-SECURITY_CHECK_TIMEOUT = 5
-
-# Security test endpoints
-SECURITY_TESTS = {
-    "redirect": "http://httpbin.org/redirect/1",
-    "headers": "http://httpbin.org/headers",
-    "content": "http://example.com",
-    "ssl": "https://www.howsmyssl.com/a/check",
-}
+# Remove tester.py - consolidate all here
+logger = logging.getLogger(__name__)
 
 
 class SingBoxTester(IProxyTester):
-    """Concrete implementation of IProxyTester using SingBox."""
+    """Concrete implementation of IProxyTester using SingBox"""
+
+    def __init__(self):
+        self.config = ProxyConfig()
+        self.current_test_url_index = 0
 
     async def test(self, proxy: Proxy) -> Proxy:
-        """Test a single proxy configuration."""
+        """
+        Test a single proxy configuration with fallback URLs.
+        Uses centralized configuration for timeouts.
+        """
         proxy.tested_at = datetime.now(timezone.utc).isoformat()
 
         sb_proxy = SingBoxProxy(proxy.config)
         try:
             await sb_proxy.start()
             connector = ProxyConnector.from_url(sb_proxy.http_proxy_url)
-            async with aiohttp.ClientSession(connector=connector) as session:
-                start_time = asyncio.get_event_loop().time()
-                async with session.get(TEST_URL, timeout=aiohttp.ClientTimeout(total=TEST_TIMEOUT)) as response:
-                    if response.status == 204:
-                        end_time = asyncio.get_event_loop().time()
-                        proxy.latency = round((end_time - start_time) * 1000, 2)
-                        proxy.is_working = True
-                    else:
-                        proxy.is_working = False
+
+            # Try multiple test URLs
+            for test_url in self.config.TEST_URLS.values():
+                try:
+                    async with aiohttp.ClientSession(
+                        connector=connector
+                    ) as session:
+                        start_time = asyncio.get_event_loop().time()
+                        async with session.get(
+                            test_url,
+                            timeout=aiohttp.ClientTimeout(
+                                total=self.config.TEST_TIMEOUT
+                            )
+                        ) as response:
+                            if response.status == 204:
+                                end_time = asyncio.get_event_loop().time()
+                                proxy.latency = round((end_time - start_time) * 1000, 2)
+                                proxy.is_working = True
+                                break
+
+                except asyncio.TimeoutError:
+                    continue
+                except Exception as e:
+                    logger.debug(f"Test URL {test_url} failed: {str(e)}")
+                    continue
+
+            if not proxy.is_working:
+                proxy.security_issues.append("All test URLs failed")
+
         except Exception as e:
             proxy.is_working = False
-            proxy.security_issues.append(f"Connection failed: {str(e)}")
+            # Mask sensitive data in logs
+            if self.config.MASK_SENSITIVE_DATA:
+                proxy.security_issues.append(f"Connection failed: [MASKED]")
+            else:
+                proxy.security_issues.append(f"Connection failed: {str(e)}")
+            logger.error(f"Proxy test error: {str(e)[:50]}")
+
         finally:
-            await sb_proxy.stop()
+            try:
+                await sb_proxy.stop()
+            except:
+                pass
 
         return proxy
