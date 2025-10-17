@@ -59,7 +59,7 @@ class ProxyTester:
             await connector.close()
             return proxy
 
-async def test_proxy(config: str, timeout: int = 10) -> Optional[Proxy]:
+async def run_single_proxy_test(config: str, timeout: int = 10) -> Optional[Proxy]:
     """Test a single proxy configuration"""
     proxy = parse_config(config)
     if proxy:
@@ -78,17 +78,6 @@ def parse_config(config: str) -> Optional[Proxy]:
             return _parse_shadowsocks(config)
         elif config.startswith("trojan://"):
             return _parse_trojan(config)
-        else:
-            # Generic parse
-            parsed = urlparse(config)
-            return Proxy(
-                config=config,
-                protocol=parsed.scheme,
-                address=parsed.hostname or "",
-                port=parsed.port or 443,
-                uuid=parsed.username or "",
-                remarks=unquote(parsed.fragment or "")
-            )
     except Exception:
         return None
 
