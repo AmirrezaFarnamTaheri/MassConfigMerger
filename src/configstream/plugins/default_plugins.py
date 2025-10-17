@@ -6,7 +6,7 @@ from typing import List, Any, Dict
 import aiohttp
 
 from . import SourcePlugin, FilterPlugin, ExportPlugin
-from ..core import Proxy, generate_base64_subscription, generate_clash_config, generate_raw_configs, generate_proxies_json, generate_statistics_json
+from ..core import Proxy, generate_base64_subscription, generate_clash_config
 
 
 class UrlSourcePlugin(SourcePlugin):
@@ -136,70 +136,4 @@ class ClashExportPlugin(ExportPlugin):
             (output_path / "clash.yaml").write_text(content, encoding="utf-8")
 
 
-class RawExportPlugin(ExportPlugin):
-    """Default plugin for exporting raw configurations."""
 
-    @property
-    def name(self) -> str:
-        return "raw_export"
-
-    @property
-    def version(self) -> str:
-        return "1.0.0"
-
-    async def initialize(self, config: Dict[str, Any]) -> None:
-        pass
-
-    async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        return {}
-
-    async def export(self, proxies: List[Proxy], output_path: Path) -> None:
-        content = generate_raw_configs(proxies)
-        if content:
-            (output_path / "configs_raw.txt").write_text(content, encoding="utf-8")
-
-
-class ProxiesJsonExportPlugin(ExportPlugin):
-    """Default plugin for exporting to detailed JSON."""
-
-    @property
-    def name(self) -> str:
-        return "proxies_json_export"
-
-    @property
-    def version(self) -> str:
-        return "1.0.0"
-
-    async def initialize(self, config: Dict[str, Any]) -> None:
-        pass
-
-    async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        return {}
-
-    async def export(self, proxies: List[Proxy], output_path: Path) -> None:
-        content = generate_proxies_json(proxies)
-        if content:
-            (output_path / "proxies.json").write_text(content, encoding="utf-8")
-
-
-class StatsJsonExportPlugin(ExportPlugin):
-    """Default plugin for exporting to statistics JSON."""
-
-    @property
-    def name(self) -> str:
-        return "stats_json_export"
-
-    @property
-    def version(self) -> str:
-        return "1.0.0"
-
-    async def initialize(self, config: Dict[str, Any]) -> None:
-        pass
-
-    async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        return {}
-
-    async def export(self, proxies: List[Proxy], output_path: Path) -> None:
-        content = generate_statistics_json(proxies)
-        if content:
-            (output_path / "statistics.json").write_text(content, encoding="utf-8")
