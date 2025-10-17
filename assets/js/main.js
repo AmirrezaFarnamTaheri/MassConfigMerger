@@ -31,12 +31,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- DATA FETCHING & INITIALIZATION ---
     (async () => {
+        if (!window.stateManager) {
+            console.error("StateManager not found!");
+            return;
+        }
+        window.stateManager.setLoading(true, 'Fetching latest data...');
         try {
             // Fetch metadata and statistics in parallel
             const [metadata, stats] = await Promise.all([
                 fetchMetadata(),
                 fetchStatistics()
             ]);
+
+            // Store protocol colors globally
+            if (metadata && metadata.protocol_colors) {
+                window.PROTOCOL_COLORS = metadata.protocol_colors;
+            }
 
             // Update footer timestamp
             if (metadata && metadata.generated_at) {
@@ -54,12 +64,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateElement('workingConfigs', stats.working || 0);
                 }
             }
+            window.stateManager.setSuccess('Page loaded successfully!');
         } catch (error) {
-            console.error("Failed to initialize page with data:", error);
+            window.stateManager.setError('Failed to initialize page data.', error);
             // Update UI to show that data loading failed
             updateElement('footerUpdate', 'N/A');
             updateElement('totalConfigs', 'N/A');
             updateElement('workingConfigs', 'N/A');
+        } finally {
+            window.stateManager.setLoading(false);
         }
     })();
 });
@@ -103,62 +116,6 @@ function initTheme() {
         setTheme(e.matches ? 'dark' : 'light', true);
     });
 }
-
-/**
- * Global error handler with user-friendly messages
- */
-
-class ErrorBoundary {
-  static init() {
-    // Handle uncaught errors
-    window.addEventListener('error', (event) => {
-      console.error('Global error caught:', event.error);
-      this.showErrorNotification(
-        'An error occurred',
-        'Please refresh the page or contact support'
-      );
-    });
-
-    // Handle unhandled promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
-      console.error('Unhandled promise rejection:', event.reason);
-      this.showErrorNotification(
-        'A request failed',
-        'Please refresh and try again'
-      );
-      event.preventDefault();
-    });
-  }
-
-  static showErrorNotification(title, message) {
-    const notification = document.createElement('div');
-    notification.className = 'error-notification';
-    notification.innerHTML = `
-      <div class="error-content">
-        <h3>${title}</h3>
-        <p>${message}</p>
-        <button onclick="this.parentElement.parentElement.remove()">Dismiss</button>
-      </div>
-    `;
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-      notification.remove();
-    }, 8000);
-  }
-
-  static async safeAsyncOperation(operation, fallback = null) {
-    try {
-      return await operation();
-    } catch (error) {
-      console.error('Operation failed:', error);
-      return fallback;
-    }
-  }
-}
-
-// Initialize on page load
-ErrorBoundary.init();
 
 function initHeaderScroll() {
     const header = document.querySelector('.header');

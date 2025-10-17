@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const protocolFilter = document.getElementById('filterProtocol');
     const locationFilter = document.getElementById('filterLocation');
     const tableBody = document.getElementById('proxiesTableBody');
-    const loadingContainer = document.getElementById('loadingContainer');
     const emptyState = document.getElementById('emptyState');
     const proxiesTable = document.getElementById('proxiesTable');
 
@@ -18,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const filteredProxies = allProxies.filter(p => {
             const protocol = p.protocol.toLowerCase();
-            const location = [p.location?.city, p.location?.country].filter(Boolean).join(', ').toLowerCase();
+            const location = p.country_code ? p.country_code.toLowerCase() : '';
             return protocol.includes(protoFilter) && location.includes(locFilter);
         });
 
@@ -34,8 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
         filteredProxies.sort((a, b) => {
             let valA, valB;
             if (currentSort.key === 'location') {
-                valA = [a.location?.city, a.location?.country].filter(Boolean).join(', ');
-                valB = [b.location?.city, b.location?.country].filter(Boolean).join(', ');
+                valA = a.country_code || '';
+                valB = b.country_code || '';
             } else {
                 valA = a[currentSort.key];
                 valB = b[currentSort.key];
@@ -47,22 +46,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         tableBody.innerHTML = filteredProxies.map((p, index) => {
-            const city = p.location?.city || '—';
-            const country = p.location?.country || '—';
-            const latency = (p.latency ?? '') !== '' ? `${p.latency}ms` : '—';
-            const protocol = p.protocol || '—';
+            const country = p.country_code || 'Unknown';
+            const latency = p.latency ? `${p.latency}ms` : 'N/A';
+            const protocol = p.protocol || 'N/A';
             const config = p.config || '';
             return `
                 <tr style="--delay: ${index * 0.03}s">
                     <td>${protocol}</td>
-                    <td>${city}${city !== '—' && country !== '—' ? ', ' : ''}${country}</td>
+                    <td>${country}</td>
                     <td>${latency}</td>
-                    <td><button class="btn btn-secondary copy-btn" data-config="${config}"><i data-feather="copy"></i></button></td>
+                    <td><button class="btn btn-secondary copy-btn" data-config="${encodeURIComponent(config)}"><i data-feather="copy"></i></button></td>
                 </tr>
             `;
         }).join('');
         feather.replace();
-        initCopyButtons(); // Re-initialize copy buttons for the new rows
     };
 
     protocolFilter.addEventListener('input', renderTable);
@@ -90,14 +87,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function fetchAndRenderProxies() {
+        window.stateManager.setLoading(true, 'Loading proxies...');
         try {
             allProxies = await fetchProxies();
-            loadingContainer.style.display = 'none';
             renderTable();
+            window.stateManager.setSuccess(`Loaded ${allProxies.length} proxies.`);
         } catch (error) {
-            console.error('Error fetching proxies:', error);
-            loadingContainer.innerHTML = '<p>Failed to load proxy data.</p>';
+            window.stateManager.setError('Failed to load proxies.', error);
+        } finally {
+            window.stateManager.setLoading(false);
         }
+    }
+
+    // Subscribe to state changes to disable filters while loading
+    if (window.stateManager) {
+        window.stateManager.subscribe('isLoading', (isLoading) => {
+            protocolFilter.disabled = isLoading;
+            locationFilter.disabled = isLoading;
+        });
     }
 
     fetchAndRenderProxies();

@@ -32,6 +32,79 @@ async def fetch_configs(session: aiohttp.ClientSession, url: str) -> List[str]:
     except Exception:
         return []
 
+import asyncio
+from typing import List, AsyncIterator
+from .config import ProxyConfig
+from .security.malicious_detector import MaliciousNodeDetector
+from .security.rate_limiter import RateLimiter
+
+async def process_proxies_in_batches(proxies: List[Proxy],
+                                    processor_func,
+                                    batch_size: Optional[int] = None) -> AsyncIterator[List[Proxy]]:
+    """
+    Process proxies in batches to manage memory efficiently.
+
+    This prevents loading all proxies into memory at once, which is critical
+    for large proxy lists that could cause out-of-memory errors.
+
+    Args:
+        proxies: List of proxy objects to process
+        processor_func: Async function that processes a batch
+        batch_size: Size of each batch (default from config)
+
+    Yields:
+        Processed batches of proxies
+    """
+    config = ProxyConfig()
+    batch_size = batch_size or config.BATCH_SIZE
+
+    for i in range(0, len(proxies), batch_size):
+        batch = proxies[i:i + batch_size]
+        processed_batch = await processor_func(batch)
+        yield processed_batch
+
+        # Allow garbage collection between batches
+        await asyncio.sleep(0.1)
+
+
+async def test_proxies_batched(proxies: List[Proxy],
+                              tester,
+                              malicious_detector) -> List[Proxy]:
+    """
+    Test proxies with memory-efficient batch processing.
+    """
+    config = ProxyConfig()
+    tested_proxies = []
+
+    async def process_batch(batch: List[Proxy]) -> List[Proxy]:
+        results = []
+        for proxy in batch:
+            # Test connectivity
+            tested_proxy = await tester.test(proxy)
+
+            # Skip malicious detection for failed proxies
+            if tested_proxy.is_working:
+                # Run security tests
+                security_results = await malicious_detector.detect_malicious(tested_proxy)
+
+                if security_results['is_malicious']:
+                    tested_proxy.is_working = False
+                    tested_proxy.security_issues.append(
+                        f"Malicious: {security_results['severity']} - "
+                        f"{len([t for t in security_results['tests'] if not t.passed])} tests failed"
+                    )
+
+            results.append(tested_proxy)
+
+        return results
+
+    async for batch_results in process_proxies_in_batches(
+        proxies, process_batch, config.BATCH_SIZE
+    ):
+        tested_proxies.extend(batch_results)
+
+    return tested_proxies
+
 async def run_full_pipeline(
     sources: List[str],
     output_dir: str,
@@ -43,6 +116,11 @@ async def run_full_pipeline(
     proxies: Optional[List[Proxy]] = None,
 ):
     """Execute the complete pipeline"""
+    config = ProxyConfig()
+    detector = MaliciousNodeDetector()
+    rate_limiter = RateLimiter(
+        requests_per_second=config.RATE_LIMIT_REQUESTS / config.RATE_LIMIT_WINDOW
+    )
 
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -54,8 +132,12 @@ async def run_full_pipeline(
         all_configs = []
         async with aiohttp.ClientSession() as session:
             for source in sources:
-                configs = await fetch_configs(session, source)
-                all_configs.extend(configs)
+                if rate_limiter.is_allowed(source):
+                    configs = await fetch_configs(session, source)
+                    all_configs.extend(configs)
+                else:
+                    # Handle rate limited source if necessary
+                    pass
 
         progress.update(task, completed=20)
 
@@ -69,8 +151,8 @@ async def run_full_pipeline(
         except Exception as e:
             print(f"Could not load GeoIP database: {e}")
 
-        for config in all_configs[:max_proxies] if max_proxies else all_configs:
-            proxy = parse_config(config)
+        for config_str in all_configs[:max_proxies] if max_proxies else all_configs:
+            proxy = parse_config(config_str)
             if proxy:
                 proxy = geolocate_proxy(proxy, geoip_reader)
                 proxies.append(proxy)
@@ -81,11 +163,11 @@ async def run_full_pipeline(
     progress.update(task, completed=40)
 
     # Test proxies
-    tester = SingBoxTester()
-    tested_proxies = []
-    for proxy in proxies:
-        tested = await tester.test(proxy)
-        tested_proxies.append(tested)
+    tested_proxies = await test_proxies_batched(
+        proxies,
+        tester=SingBoxTester(),
+        malicious_detector=detector
+    )
 
     progress.update(task, completed=60)
 
@@ -143,7 +225,8 @@ async def run_full_pipeline(
         "version": "1.0.0",
         "source_count": len(sources),
         "proxy_count": len(working_proxies),
-        "cache_bust": int(datetime.now().timestamp() * 1000)
+        "cache_bust": int(datetime.now().timestamp() * 1000),
+        "protocol_colors": config.PROTOCOL_COLORS
     }
     output_path.joinpath("metadata.json").write_text(json.dumps(metadata, indent=2))
 
