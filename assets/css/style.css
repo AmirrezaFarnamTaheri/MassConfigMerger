@@ -379,6 +379,7 @@ main {
     grid-template-columns: 2fr 1fr;
     gap: calc(var(--space-unit) * 4);
     align-items: flex-start;
+    margin-top: calc(var(--space-unit) * 4);
 }
 
 @media (max-width: 992px) {

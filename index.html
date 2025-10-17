@@ -17,7 +17,18 @@
     <header class="header">
         <div class="container">
             <a href="index.html" class="logo" aria-label="ConfigStream Home">
-                <img src="src/configstream/logo.svg" alt="ConfigStream Logo" class="logo-svg">
+                <svg class="logo-svg loading-animation" width="48" height="48" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="logo-gradient-header" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="var(--brand-primary)"/>
+                            <stop offset="100%" stop-color="var(--brand-secondary)"/>
+                        </linearGradient>
+                    </defs>
+                    <g>
+                        <path d="M29.5 6C36.4036 6 42 11.5964 42 18.5C42 25.4036 36.4036 31 29.5 31H14.5" stroke="url(#logo-gradient-header)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M14.5 38C7.59644 38 2 32.4036 2 25.5C2 18.5964 7.59644 13 14.5 13H29.5" stroke="url(#logo-gradient-header)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </g>
+                </svg>
                 <span>ConfigStream</span>
             </a>
             <nav class="nav" id="main-nav" aria-label="Main navigation">
