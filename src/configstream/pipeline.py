@@ -16,7 +16,17 @@ async def fetch_configs(session: aiohttp.ClientSession, url: str) -> List[str]:
     try:
         async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as response:
             text = await response.text()
-            return [line.strip() for line in text.splitlines() if line.strip()]
+            content = text.strip()
+            # If it's a single long line and decodes to text with scheme prefixes, treat as base64 subscription
+            if "\n" not in content:
+                try:
+                    decoded = base64.b64decode(content + "==", validate=False).decode("utf-8", errors="ignore")
+                    # Heuristic: check if decoded contains known scheme prefixes
+                    if any(s in decoded for s in ("vmess://", "vless://", "ss://", "trojan://")):
+                        return [line.strip() for line in decoded.splitlines() if line.strip()]
+                except Exception:
+                    pass
+            return [line.strip() for line in content.splitlines() if line.strip()]
     except Exception:
         return []
 

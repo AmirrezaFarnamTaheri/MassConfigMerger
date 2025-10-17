@@ -35,20 +35,29 @@ class Proxy:
 class ProxyTester:
     """Tests proxy connectivity"""
 
-    def __init__(self, timeout: int = 10):
+    def __init__(self, timeout: int = 10, test_url: str = "http://www.gstatic.com/generate_204"):
         self.timeout = timeout
+        self.test_url = test_url
 
     async def test(self, proxy: Proxy) -> Proxy:
         """Test proxy connectivity"""
+        from aiohttp_proxy import ProxyConnector
+        import aiohttp
+
+        connector = ProxyConnector.from_url(proxy.config)
+        start_time = asyncio.get_running_loop().time()
         try:
-            # Simulate testing (replace with actual implementation)
-            await asyncio.sleep(0.1)
-            proxy.is_working = True
-            proxy.latency = 100.0
-            proxy.tested_at = datetime.now(timezone.utc).isoformat()
-            return proxy
+            async with aiohttp.ClientSession(connector=connector) as session:
+                async with session.get(self.test_url, timeout=self.timeout) as response:
+                    if 200 <= response.status < 300:
+                        proxy.is_working = True
+                        end_time = asyncio.get_running_loop().time()
+                        proxy.latency = (end_time - start_time) * 1000  # in ms
         except Exception:
             proxy.is_working = False
+        finally:
+            proxy.tested_at = datetime.now(timezone.utc).isoformat()
+            await connector.close()
             return proxy
 
 async def test_proxy(config: str, timeout: int = 10) -> Optional[Proxy]:
@@ -87,10 +96,18 @@ def parse_config(config: str) -> Optional[Proxy]:
 def _parse_vmess(config: str) -> Optional[Proxy]:
     """Parse VMess configuration"""
     try:
-        # Remove vmess:// prefix
-        data = config.replace("vmess://", "")
-        # Decode base64
-        decoded = base64.b64decode(data).decode('utf-8')
+        data = config[len("vmess://"):]
+        # Normalize padding
+        pad_len = (-len(data)) % 4
+        if pad_len:
+            data += "=" * pad_len
+        decoded_bytes = None
+        try:
+            decoded_bytes = base64.b64decode(data)
+        except Exception:
+            # Try URL-safe base64
+            decoded_bytes = base64.urlsafe_b64decode(data)
+        decoded = decoded_bytes.decode("utf-8", errors="ignore")
         vmess_data = json.loads(decoded)
 
         return Proxy(
@@ -126,15 +143,29 @@ def _parse_vless(config: str) -> Optional[Proxy]:
 def _parse_shadowsocks(config: str) -> Optional[Proxy]:
     """Parse Shadowsocks configuration"""
     try:
-        parsed = urlparse(config)
-        return Proxy(
+        # Handle ss://<base64>@host:port#remark format
+        if "@" in config:
+            encoded_part, host_part = config.replace("ss://", "").split("@", 1)
+            host, port_remark = host_part.split(":", 1)
+            port, remark_part = port_remark.split("#", 1) if "#" in port_remark else (port_remark, "")
+
+            decoded_user_info = base64.b64decode(encoded_part).decode('utf-8')
+            method, password = decoded_user_info.split(":", 1)
+        else:
+            # Fallback for other potential formats, though less common
+            return None
+
+        proxy = Proxy(
             config=config,
             protocol="shadowsocks",
-            address=parsed.hostname or "",
-            port=parsed.port or 443,
-            uuid="",
-            remarks=unquote(parsed.fragment or "")
+            address=host,
+            port=int(port),
+            uuid="", # Not used for shadowsocks
+            remarks=unquote(remark_part or "")
         )
+        proxy._details['method'] = method
+        proxy._details['password'] = password
+        return proxy
     except Exception:
         return None
 
@@ -164,17 +195,33 @@ def generate_clash_config(proxies: List[Proxy]) -> str:
     clash_proxies = []
     for p in proxies:
         if p.is_working:
-            clash_proxies.append({
+            proxy_data = {
                 "name": p.remarks or f"{p.protocol}-{p.address}",
                 "type": p.protocol,
                 "server": p.address,
-                "port": p.port
-            })
+                "port": p.port,
+                "uuid": p.uuid,
+            }
+            # Add protocol-specific fields
+            if p.protocol in ["vmess", "vless"]:
+                proxy_data.update({
+                    "alterId": p._details.get("aid", 0),
+                    "cipher": p._details.get("scy", "auto"),
+                    "tls": p._details.get("tls", "") == "tls",
+                    "network": p._details.get("net", "tcp"),
+                })
+            elif p.protocol == "shadowsocks":
+                proxy_data.update({
+                    "cipher": p._details.get("method"),
+                    "password": p._details.get("password"),
+                })
+
+            clash_proxies.append(proxy_data)
 
     return yaml.dump({
         "proxies": clash_proxies,
         "proxy-groups": [{
-            "name": "ConfigStream",
+            "name": "🚀 ConfigStream",
             "type": "select",
             "proxies": [p["name"] for p in clash_proxies]
         }]

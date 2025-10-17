@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from pathlib import Path
 from rich.progress import Progress
 
-from src.configstream.pipeline import run_full_pipeline
-from src.configstream.core import Proxy
+from configstream.pipeline import run_full_pipeline
+from configstream.core import Proxy
 
 
 @pytest.fixture
@@ -15,13 +15,13 @@ def mock_progress():
 
 
 @pytest.mark.asyncio
-@patch("src.configstream.pipeline.PluginManager")
-@patch("src.configstream.pipeline.parse_config")
-@patch("src.configstream.pipeline.SingBoxTester")
+@patch("configstream.pipeline.fetch_configs")
+@patch("configstream.pipeline.parse_config")
+@patch("configstream.pipeline.ProxyTester")
 async def test_run_full_pipeline_success(
     mock_tester,
     mock_parse_config,
-    mock_plugin_manager,
+    mock_fetch_configs,
     mock_progress,
     tmp_path,
 ):
@@ -30,20 +30,7 @@ async def test_run_full_pipeline_success(
     sources = ["http://source1.com", "http://source2.com"]
     output_dir = str(tmp_path)
 
-    # Mock the plugin manager and its plugins
-    mock_pm_instance = mock_plugin_manager.return_value
-    mock_source_plugin = AsyncMock()
-    mock_source_plugin.fetch_proxies.side_effect = [["proxy1"], ["proxy2"]]
-    mock_pm_instance.source_plugins = {"url_source": mock_source_plugin}
-
-    mock_export_plugin = AsyncMock()
-    mock_pm_instance.export_plugins = {
-        "base64_export": mock_export_plugin,
-        "clash_export": mock_export_plugin,
-        "raw_export": mock_export_plugin,
-        "proxies_json_export": mock_export_plugin,
-        "stats_json_export": mock_export_plugin,
-    }
+    mock_fetch_configs.side_effect = [["proxy1"], ["proxy2"]]
 
     proxy_obj1 = Proxy(config="proxy1", protocol="vmess", address="1.1.1.1", port=443)
     proxy_obj2 = Proxy(config="proxy2", protocol="vless", address="2.2.2.2", port=443)
@@ -64,60 +51,42 @@ async def test_run_full_pipeline_success(
     await run_full_pipeline(sources, output_dir, mock_progress)
 
     # Assert
-    assert mock_source_plugin.fetch_proxies.call_count == 2
+    assert mock_fetch_configs.call_count == 2
     assert mock_parse_config.call_count == 2
     assert mock_tester_instance.test.call_count == 2
-    assert mock_export_plugin.export.call_count == 5
+    assert (tmp_path / "clash.yaml").exists()
 
 
 @pytest.mark.asyncio
-@patch("src.configstream.pipeline.PluginManager")
-async def test_run_full_pipeline_no_configs_fetched(mock_plugin_manager, mock_progress):
+@patch("configstream.pipeline.fetch_configs")
+async def test_run_full_pipeline_no_configs_fetched(mock_fetch_configs, mock_progress, tmp_path):
     """Test pipeline when no configs are fetched."""
-    mock_pm_instance = mock_plugin_manager.return_value
-    mock_source_plugin = AsyncMock()
-    mock_source_plugin.fetch_proxies.return_value = []
-    mock_pm_instance.source_plugins = {"url_source": mock_source_plugin}
+    mock_fetch_configs.return_value = []
+    output_dir = str(tmp_path)
 
-    await run_full_pipeline(["http://source.com"], "/tmp", mock_progress)
+    await run_full_pipeline(["http://source.com"], output_dir, mock_progress)
 
-    mock_progress.console.print.assert_called_with("[bold red]No configurations fetched. Exiting.[/bold red]")
+    assert (tmp_path / "clash.yaml").read_text() == "proxies: []\nproxy-groups:\n- name: \"\\U0001F680 ConfigStream\"\n  proxies: []\n  type: select\n"
 
 
 @pytest.mark.asyncio
-@patch("src.configstream.pipeline.PluginManager")
-@patch("src.configstream.pipeline.parse_config")
-@patch("src.configstream.pipeline.SingBoxTester")
+@patch("configstream.pipeline.fetch_configs")
+@patch("configstream.pipeline.parse_config")
+@patch("configstream.pipeline.ProxyTester")
 async def test_run_full_pipeline_no_working_proxies(
     mock_tester,
     mock_parse_config,
-    mock_plugin_manager,
+    mock_fetch_configs,
     mock_progress,
     tmp_path
 ):
     """Test pipeline when no working proxies are found after filtering."""
-    mock_pm_instance = mock_plugin_manager.return_value
-    mock_source_plugin = AsyncMock()
-    mock_source_plugin.fetch_proxies.return_value = ["proxy1"]
-    mock_pm_instance.source_plugins = {"url_source": mock_source_plugin}
+    mock_fetch_configs.return_value = ["proxy1"]
 
-    mock_filter_plugin = AsyncMock()
-    mock_filter_plugin.filter_proxies.return_value = []
-    mock_pm_instance.filter_plugins = {"latency_filter": mock_filter_plugin}
-
-    mock_export_plugin = AsyncMock()
-    mock_pm_instance.export_plugins = {
-        "base64_export": mock_export_plugin,
-        "clash_export": mock_export_plugin,
-        "raw_export": mock_export_plugin,
-        "proxies_json_export": mock_export_plugin,
-        "stats_json_export": mock_export_plugin,
-    }
-
-    mock_parse_config.return_value = Proxy(config="proxy1")
+    mock_parse_config.return_value = Proxy(config="proxy1", protocol="vmess", address="1.1.1.1", port=443)
 
     mock_tester_instance = mock_tester.return_value
-    mock_tester_instance.test = AsyncMock(return_value=Proxy(config="proxy1", is_working=True, latency=1000))
+    mock_tester_instance.test = AsyncMock(return_value=Proxy(config="proxy1", protocol="vmess", address="1.1.1.1", port=443, is_working=False, latency=1000))
 
     await run_full_pipeline(
         sources=["http://source.com"],
@@ -127,4 +96,4 @@ async def test_run_full_pipeline_no_working_proxies(
     )
 
     assert mock_tester_instance.test.call_count == 1
-    assert mock_export_plugin.export.call_count == 5
+    assert not (tmp_path / "clash.yaml").exists() or (tmp_path / "clash.yaml").read_text() == "proxies: []\nproxy-groups:\n- name: \"\\U0001F680 ConfigStream\"\n  proxies: []\n  type: select\n"
