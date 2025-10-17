@@ -1,6 +1,6 @@
 import asyncio
 import time
-from typing import List, Dict
+from typing import Dict
 from dataclasses import dataclass
 import statistics
 
@@ -38,7 +38,7 @@ class ProxyBenchmark:
                 await asyncio.sleep(0.1)
                 elapsed = time.perf_counter() - start
                 times.append(elapsed * 1000)  # Convert to ms
-            except:
+            except Exception:
                 pass
 
             await asyncio.sleep(0.1)  # Small delay between tests
@@ -72,7 +72,7 @@ class ProxyBenchmark:
             await asyncio.sleep(0.5)
             download_time = time.perf_counter() - start
             download_speed = 1.0 / download_time  # MB/s
-        except:
+        except Exception:
             download_speed = 0
 
         # Upload test
@@ -86,7 +86,7 @@ class ProxyBenchmark:
             await asyncio.sleep(0.5)
             upload_time = time.perf_counter() - start
             upload_speed = 1.0 / upload_time  # MB/s
-        except:
+        except Exception:
             upload_speed = 0
 
         return {

@@ -3,11 +3,13 @@
 import asyncio
 import aiohttp
 import json
+import base64
 from pathlib import Path
 from typing import List, Optional
 from rich.progress import Progress
 
-from .core import Proxy, ProxyTester, parse_config
+from .core import Proxy, parse_config
+from .testers import SingBoxTester
 from .core import generate_base64_subscription, generate_clash_config
 from datetime import datetime, timezone
 
@@ -16,7 +18,17 @@ async def fetch_configs(session: aiohttp.ClientSession, url: str) -> List[str]:
     try:
         async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as response:
             text = await response.text()
-            return [line.strip() for line in text.splitlines() if line.strip()]
+            content = text.strip()
+            # If it's a single long line and decodes to text with scheme prefixes, treat as base64 subscription
+            if "\n" not in content:
+                try:
+                    decoded = base64.b64decode(content + "==", validate=False).decode("utf-8", errors="ignore")
+                    # Heuristic: check if decoded contains known scheme prefixes
+                    if any(s in decoded for s in ("vmess://", "vless://", "ss://", "trojan://")):
+                        return [line.strip() for line in decoded.splitlines() if line.strip()]
+                except Exception:
+                    pass
+            return [line.strip() for line in content.splitlines() if line.strip()]
     except Exception:
         return []
 
@@ -28,6 +40,7 @@ async def run_full_pipeline(
     country: Optional[str] = None,
     min_latency: Optional[int] = None,
     max_latency: Optional[int] = None,
+    proxies: Optional[List[Proxy]] = None,
 ):
     """Execute the complete pipeline"""
 
@@ -36,26 +49,27 @@ async def run_full_pipeline(
 
     task = progress.add_task("[cyan]Processing proxies...", total=100)
 
-    # Fetch configurations
-    all_configs = []
-    async with aiohttp.ClientSession() as session:
-        for source in sources:
-            configs = await fetch_configs(session, source)
-            all_configs.extend(configs)
+    if not proxies:
+        # Fetch configurations
+        all_configs = []
+        async with aiohttp.ClientSession() as session:
+            for source in sources:
+                configs = await fetch_configs(session, source)
+                all_configs.extend(configs)
 
-    progress.update(task, completed=20)
+        progress.update(task, completed=20)
 
-    # Parse configurations
-    proxies = []
-    for config in all_configs[:max_proxies] if max_proxies else all_configs:
-        proxy = parse_config(config)
-        if proxy:
-            proxies.append(proxy)
+        # Parse configurations
+        proxies = []
+        for config in all_configs[:max_proxies] if max_proxies else all_configs:
+            proxy = parse_config(config)
+            if proxy:
+                proxies.append(proxy)
 
     progress.update(task, completed=40)
 
     # Test proxies
-    tester = ProxyTester()
+    tester = SingBoxTester()
     tested_proxies = []
     for proxy in proxies:
         tested = await tester.test(proxy)
@@ -90,6 +104,7 @@ async def run_full_pipeline(
     # Generate JSON outputs
     proxies_data = [
         {
+            "config": p.config,
             "protocol": p.protocol,
             "address": p.address,
             "port": p.port,

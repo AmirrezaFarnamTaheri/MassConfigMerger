@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 from pathlib import Path
 
+from ..core import Proxy
+
 class Plugin(ABC):
     """Base plugin interface"""
 

@@ -203,6 +203,7 @@ body.dark a:hover {
     -webkit-backdrop-filter: blur(24px) saturate(180%);
     border-bottom: 1px solid var(--border-light);
     box-shadow: 0 4px 30px rgba(0,0,0,0.08);
+    transition: background-color var(--transition-fast), backdrop-filter var(--transition-fast), border-bottom var(--transition-fast), box-shadow var(--transition-fast);
 }
 body.dark .header.scrolled {
     background: var(--bg-glass-dark);
@@ -236,6 +237,16 @@ body.dark .logo { color: var(--text-primary-dark); }
 }
 .logo:hover .logo-svg path {
     stroke-dashoffset: 0;
+}
+
+.loading-animation path {
+    animation: streamflow 2s ease-in-out forwards;
+}
+
+@keyframes streamflow {
+    to {
+        stroke-dashoffset: 0;
+    }
 }
 .logo:hover .logo-svg {
     transform: rotate(5deg) scale(1.1);

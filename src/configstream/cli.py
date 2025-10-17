@@ -6,6 +6,7 @@ import sys
 import gzip
 import hashlib
 from pathlib import Path
+import json
 
 import click
 import requests
@@ -13,6 +14,7 @@ from rich.progress import Progress
 
 from . import pipeline
 from .config import settings
+from .core import Proxy
 
 # GeoIP Database URLs
 GEOIP_COUNTRY_URL = "https://cdn.jsdelivr.net/npm/geolite2-country/GeoLite2-Country.mmdb.gz"
@@ -271,7 +273,7 @@ def update_databases():
 
     # Remove existing databases
     for db_path in [GEOIP_COUNTRY_DB_PATH, GEOIP_CITY_DB_PATH, GEOIP_ASN_DB_PATH]:
-        if os.path.exists(db_path):
+        if db_path.exists():
             db_path.unlink()
             click.echo(f"✓ Removed old database: {db_path.name}")
 
@@ -279,6 +281,65 @@ def update_databases():
     download_geoip_dbs()
 
     click.echo("✓ All databases updated successfully!")
+
+
+@main.command()
+@click.option(
+    "--input",
+    "input_file",
+    default="output/proxies.json",
+    help="Path to the proxies JSON file.",
+    type=click.Path(exists=True, dir_okay=False),
+)
+@click.option(
+    "--output",
+    "output_dir",
+    default=settings.output_dir,
+    help="Directory to save generated files.",
+    type=click.Path(file_okay=False),
+)
+def retest(input_file: str, output_dir: str):
+    """
+    Retest proxies from a JSON file.
+    """
+    # Set event loop policy for Windows
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+    try:
+        # Read proxies from file
+        with open(input_file, "r") as f:
+            proxies_data = json.load(f)
+
+        if not proxies_data:
+            click.echo("✗ No proxies found in the specified file.", err=True)
+            sys.exit(1)
+
+        click.echo(f"✓ Loaded {len(proxies_data)} proxies")
+
+        # Create Proxy objects
+        proxies = [Proxy(**p) for p in proxies_data]
+
+        # Run pipeline
+        with Progress() as progress:
+            asyncio.run(
+                pipeline.run_full_pipeline(
+                    [],
+                    output_dir,
+                    progress,
+                    proxies=proxies,
+                )
+            )
+
+        click.echo("\n✓ Retest completed successfully!")
+        click.echo(f"✓ Output files saved to: {output_dir}")
+
+    except FileNotFoundError:
+        click.echo(f"✗ Input file not found: {input_file}", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"✗ An error occurred: {e}", err=True)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

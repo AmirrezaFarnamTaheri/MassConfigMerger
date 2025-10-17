@@ -1,8 +1,9 @@
-name: Merge VPN Subscriptions
+name: Merge and Retest VPN Subscriptions
 
 on:
   schedule:
-    - cron: '0 */3 * * *'
+    - cron: '0 */3 * * *'  # Run merge every 3 hours
+    - cron: '*/30 * * * *' # Run retest every 30 minutes
   workflow_dispatch:
   push:
     paths:
@@ -16,6 +17,7 @@ permissions:
 
 jobs:
   merge-configs:
+    if: github.event.schedule == '0 */3 * * *' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -86,6 +88,37 @@ jobs:
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: vpn-configs-${{ github.run_number }}
+          name: vpn-configs
           path: output/
-          retention-days: 30
+
+  retest-configs:
+    if: github.event.schedule == '*/30 * * * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: vpn-configs
+          path: output/
+
+      - name: Run retest
+        run: |
+          configstream retest
