@@ -24,7 +24,7 @@ async def test_singbox_tester_success(aiohttp_client):
         mock_singbox_proxy.return_value = mock_sb_instance
 
         tester = SingBoxTester()
-        proxy = Proxy(config="test_config", protocol="test", address="test.com", port=1)
+        proxy = Proxy(config="test_config")
 
         # We need to patch the TEST_URL to point to our mock server
         with patch("src.configstream.testers.TEST_URL", str(client.server.make_url("/generate_204"))):
@@ -44,7 +44,7 @@ async def test_singbox_tester_failure():
         mock_singbox_proxy.return_value = mock_sb_instance
 
         tester = SingBoxTester()
-        proxy = Proxy(config="test_config", protocol="test", address="test.com", port=1)
+        proxy = Proxy(config="test_config")
         tested_proxy = await tester.test(proxy)
 
         assert tested_proxy.is_working is False

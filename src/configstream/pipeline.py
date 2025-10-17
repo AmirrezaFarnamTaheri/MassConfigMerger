@@ -10,8 +10,6 @@ from rich.progress import Progress
 from .core import Proxy, ProxyTester, parse_config
 from .core import generate_base64_subscription, generate_clash_config
 from datetime import datetime, timezone
-from .plugins.manager import PluginManager
-from .testers import SingBoxTester
 
 async def fetch_configs(session: aiohttp.ClientSession, url: str) -> List[str]:
     """Fetch configurations from a URL"""
@@ -44,10 +42,6 @@ async def run_full_pipeline(
         for source in sources:
             configs = await fetch_configs(session, source)
             all_configs.extend(configs)
-
-    if not all_configs:
-        progress.console.print("[bold red]No configurations fetched. Exiting.[/bold red]")
-        return
 
     progress.update(task, completed=20)
 

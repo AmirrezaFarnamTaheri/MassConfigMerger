@@ -161,77 +161,21 @@ def generate_base64_subscription(proxies: List[Proxy]) -> str:
 
 def generate_clash_config(proxies: List[Proxy]) -> str:
     """Generate Clash configuration"""
-    working_proxies = [p for p in proxies if p.is_working]
-    if not working_proxies:
-        return ""
-
     clash_proxies = []
-    for p in working_proxies:
-        clash_proxies.append({
-            "name": p.remarks or f"{p.protocol}-{p.address}",
-            "type": p.protocol,
-            "server": p.address,
-            "port": p.port,
-        })
+    for p in proxies:
+        if p.is_working:
+            clash_proxies.append({
+                "name": p.remarks or f"{p.protocol}-{p.address}",
+                "type": p.protocol,
+                "server": p.address,
+                "port": p.port
+            })
 
     return yaml.dump({
         "proxies": clash_proxies,
         "proxy-groups": [{
-            "name": "🚀 ConfigStream",
+            "name": "ConfigStream",
             "type": "select",
             "proxies": [p["name"] for p in clash_proxies]
         }]
     })
-
-def generate_raw_configs(proxies: List[Proxy]) -> str:
-    """Generate raw configs file"""
-    return "\n".join([p.config for p in proxies if p.is_working])
-
-def generate_proxies_json(proxies: List[Proxy]) -> str:
-    """Generate detailed proxies JSON file"""
-    working_proxies = [p for p in proxies if p.is_working]
-    proxies_data = [
-        {
-            "protocol": p.protocol,
-            "remarks": p.remarks,
-            "address": p.address,
-            "port": p.port,
-            "uuid": p.uuid,
-            "latency": p.latency,
-            "location": {
-                "country": p.country,
-                "country_code": p.country_code,
-                "city": p.city,
-                "asn": {
-                    "number": p.asn_number,
-                    "name": p.asn,
-                },
-            },
-        }
-        for p in working_proxies
-    ]
-    return json.dumps(proxies_data, indent=2)
-
-
-def generate_statistics_json(proxies: List[Proxy]) -> str:
-    """Generate statistics JSON file"""
-    working_proxies = [p for p in proxies if p.is_working]
-
-    protocols = {}
-    for p in working_proxies:
-        protocols[p.protocol] = protocols.get(p.protocol, 0) + 1
-
-    countries = {}
-    for p in working_proxies:
-        if p.country_code:
-            countries[p.country_code] = countries.get(p.country_code, 0) + 1
-
-    stats = {
-        "total_tested": len(proxies),
-        "working": len(working_proxies),
-        "failed": len(proxies) - len(working_proxies),
-        "success_rate": round(len(working_proxies) / len(proxies) * 100, 2) if proxies else 0,
-        "protocols": protocols,
-        "countries": countries,
-    }
-    return json.dumps(stats, indent=2)

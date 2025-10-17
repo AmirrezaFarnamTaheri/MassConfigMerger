@@ -58,7 +58,7 @@ def working_proxies():
 @pytest.fixture
 def all_proxies(working_proxies):
     """Fixture for a list of all proxies, including failed ones."""
-    p3 = Proxy(config="trojan://test3", protocol="trojan", address="fake.com", port=443, is_working=False)
+    p3 = Proxy(config="trojan://test3", is_working=False)
     return working_proxies + [p3]
 
 

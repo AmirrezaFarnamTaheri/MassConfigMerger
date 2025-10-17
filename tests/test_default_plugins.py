@@ -3,7 +3,7 @@ import aiohttp
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
-from configstream.plugins.default_plugins import (
+from src.configstream.plugins.default_plugins import (
     UrlSourcePlugin,
     CountryFilterPlugin,
     LatencyFilterPlugin,
@@ -13,7 +13,7 @@ from configstream.plugins.default_plugins import (
     ProxiesJsonExportPlugin,
     StatsJsonExportPlugin,
 )
-from configstream.core import Proxy
+from src.configstream.core import Proxy
 
 
 @pytest.mark.asyncio
@@ -37,9 +37,9 @@ async def test_url_source_plugin(aiohttp_client):
 async def test_country_filter_plugin():
     """Test the CountryFilterPlugin."""
     proxies = [
-        Proxy(config="p1", protocol="test", address="test.com", port=1, country_code="US"),
-        Proxy(config="p2", protocol="test", address="test.com", port=1, country_code="DE"),
-        Proxy(config="p3", protocol="test", address="test.com", port=1, country_code="US"),
+        Proxy(config="p1", country_code="US"),
+        Proxy(config="p2", country_code="DE"),
+        Proxy(config="p3", country_code="US"),
     ]
     plugin = CountryFilterPlugin("US")
     filtered_proxies = await plugin.filter_proxies(proxies)
@@ -52,9 +52,9 @@ async def test_country_filter_plugin():
 async def test_latency_filter_plugin():
     """Test the LatencyFilterPlugin."""
     proxies = [
-        Proxy(config="p1", protocol="test", address="test.com", port=1, latency=100),
-        Proxy(config="p2", protocol="test", address="test.com", port=1, latency=600),
-        Proxy(config="p3", protocol="test", address="test.com", port=1, latency=400),
+        Proxy(config="p1", latency=100),
+        Proxy(config="p2", latency=600),
+        Proxy(config="p3", latency=400),
     ]
     plugin = LatencyFilterPlugin(500)
     filtered_proxies = await plugin.filter_proxies(proxies)
@@ -66,7 +66,7 @@ async def test_latency_filter_plugin():
 @pytest.mark.asyncio
 async def test_base64_export_plugin(tmp_path):
     """Test the Base64ExportPlugin."""
-    proxies = [Proxy(config="proxy1", protocol="test", address="test.com", port=1, is_working=True, is_secure=True)]
+    proxies = [Proxy(config="proxy1", is_working=True, is_secure=True)]
     plugin = Base64ExportPlugin()
     await plugin.export(proxies, tmp_path)
 
@@ -90,7 +90,7 @@ async def test_clash_export_plugin(tmp_path):
 @pytest.mark.asyncio
 async def test_raw_export_plugin(tmp_path):
     """Test the RawExportPlugin."""
-    proxies = [Proxy(config="proxy1", protocol="test", address="test.com", port=1, is_working=True, is_secure=True)]
+    proxies = [Proxy(config="proxy1", is_working=True, is_secure=True)]
     plugin = RawExportPlugin()
     await plugin.export(proxies, tmp_path)
 
@@ -114,7 +114,7 @@ async def test_proxies_json_export_plugin(tmp_path):
 @pytest.mark.asyncio
 async def test_stats_json_export_plugin(tmp_path):
     """Test the StatsJsonExportPlugin."""
-    proxies = [Proxy(config="proxy1", protocol="vmess", address="test.com", port=1, country_code="US", is_working=True, is_secure=True, latency=100)]
+    proxies = [Proxy(config="proxy1", protocol="vmess", country_code="US", is_working=True, is_secure=True, latency=100)]
     plugin = StatsJsonExportPlugin()
     await plugin.export(proxies, tmp_path)
 
