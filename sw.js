@@ -2,7 +2,7 @@
  * Service Worker - Handles offline and caching strategies
  */
 
-const CACHE_VERSION = '1.0.0';
+const CACHE_VERSION = '1.0.1';
 const CACHE_NAME = `configstream-v${CACHE_VERSION.replace(/\./g, '-')}`;
 
 // URLs to pre-cache
@@ -71,9 +71,9 @@ self.addEventListener('fetch', (event) => {
     return event.respondWith(networkFirst(request));
   }
 
-  // Strategy 2: Cache first for static assets
+  // Strategy 2: Network first for static assets
   if (url.pathname.startsWith('/assets/')) {
-    return event.respondWith(cacheFirst(request));
+    return event.respondWith(networkFirst(request));
   }
 
   // Strategy 3: Network first for HTML pages
