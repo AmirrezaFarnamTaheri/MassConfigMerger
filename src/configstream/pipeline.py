@@ -8,7 +8,8 @@ from pathlib import Path
 from typing import List, Optional
 from rich.progress import Progress
 
-from .core import Proxy, ProxyTester, parse_config
+from .core import Proxy, parse_config
+from .testers import SingBoxTester
 from .core import generate_base64_subscription, generate_clash_config
 from datetime import datetime, timezone
 
@@ -68,7 +69,7 @@ async def run_full_pipeline(
     progress.update(task, completed=40)
 
     # Test proxies
-    tester = ProxyTester()
+    tester = SingBoxTester()
     tested_proxies = []
     for proxy in proxies:
         tested = await tester.test(proxy)
@@ -103,6 +104,7 @@ async def run_full_pipeline(
     # Generate JSON outputs
     proxies_data = [
         {
+            "config": p.config,
             "protocol": p.protocol,
             "address": p.address,
             "port": p.port,

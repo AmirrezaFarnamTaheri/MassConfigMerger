@@ -17,7 +17,7 @@ def mock_progress():
 @pytest.mark.asyncio
 @patch("configstream.pipeline.fetch_configs")
 @patch("configstream.pipeline.parse_config")
-@patch("configstream.pipeline.ProxyTester")
+@patch("configstream.pipeline.SingBoxTester")
 async def test_run_full_pipeline_success(
     mock_tester,
     mock_parse_config,
@@ -72,7 +72,7 @@ async def test_run_full_pipeline_no_configs_fetched(mock_fetch_configs, mock_pro
 @pytest.mark.asyncio
 @patch("configstream.pipeline.fetch_configs")
 @patch("configstream.pipeline.parse_config")
-@patch("configstream.pipeline.ProxyTester")
+@patch("configstream.pipeline.SingBoxTester")
 async def test_run_full_pipeline_no_working_proxies(
     mock_tester,
     mock_parse_config,
