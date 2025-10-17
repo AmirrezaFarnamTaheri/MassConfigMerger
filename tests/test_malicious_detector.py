@@ -200,8 +200,8 @@ class TestSuspiciousPorts:
 class TestOverallDetection:
     """Tests for overall maliciousness detection"""
 
-    @patch('src.configstream.security.malicious_detector.aiohttp.ClientSession')
-    @patch('src.configstream.security.malicious_detector.ProxyConnector.from_url')
+    @patch('configstream.security.malicious_detector.aiohttp.ClientSession')
+    @patch('configstream.security.malicious_detector.ProxyConnector.from_url')
     @pytest.mark.asyncio
     async def test_clean_proxy_overall(self, mock_connector, mock_session, detector, sample_proxy):
         """A clean proxy should score 0 and pass all checks."""
@@ -220,8 +220,8 @@ class TestOverallDetection:
         assert result['score'] == 0
         assert result['severity'] == 'low'
 
-    @patch('src.configstream.security.malicious_detector.aiohttp.ClientSession')
-    @patch('src.configstream.security.malicious_detector.ProxyConnector.from_url')
+    @patch('configstream.security.malicious_detector.aiohttp.ClientSession')
+    @patch('configstream.security.malicious_detector.ProxyConnector.from_url')
     @pytest.mark.asyncio
     async def test_malicious_proxy_overall(self, mock_connector, mock_session, detector, sample_proxy):
         """A malicious proxy should score high and be flagged."""
