@@ -1,14 +1,25 @@
-# ConfigStream
-# Copyright (C) 2025 Amirreza "Farnam" Taheri
-# This program comes with ABSOLUTELY NO WARRANTY; for details type `show w`.
-# This is free software, and you are welcome to redistribute it
-# under certain conditions; type `show c` for details.
-# For more information, see <https://amirrezafarnamtaheri.github.io/configStream/>.
+"""ConfigStream - VPN Configuration Aggregator"""
 
-"""
-ConfigStream: A tool for aggregating and managing VPN configurations.
-"""
+__version__ = "1.0.0"
+__author__ = "Amirreza Farnam Taheri"
 
-__version__ = "0.4.0"
-__author__ = "Amirreza 'Farnam' Taheri"
-__email__ = "taherifarnam@gmail.com"
+# Import core components if they exist
+__all__ = []
+
+try:
+    from .config import Settings, settings
+    __all__.extend(["Settings", "settings"])
+except ImportError:
+    pass
+
+try:
+    from .core import Proxy, ProxyTester, test_proxy, parse_config
+    __all__.extend(["Proxy", "ProxyTester", "test_proxy", "parse_config"])
+except ImportError:
+    pass
+
+try:
+    from .pipeline import run_full_pipeline
+    __all__.append("run_full_pipeline")
+except ImportError:
+    pass

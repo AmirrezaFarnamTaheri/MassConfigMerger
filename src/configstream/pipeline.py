@@ -1,118 +1,129 @@
-from __future__ import annotations
+"""Main processing pipeline"""
 
 import asyncio
+import aiohttp
+import json
 from pathlib import Path
+from typing import List, Optional
 from rich.progress import Progress
 
-from .di import Container
-from .events import EventBus
+from .core import Proxy, ProxyTester, parse_config
+from .core import generate_base64_subscription, generate_clash_config
+from datetime import datetime, timezone
 from .plugins.manager import PluginManager
-from .parsers import parse_config
-from .proxy_service import ProxyService
-from .repositories import InMemoryProxyRepository
-from .services import IProxyRepository, IProxyTester
 from .testers import SingBoxTester
-from .security.advanced_tests import AdvancedSecurityTester
-from .benchmarks import ProxyBenchmark
 
+async def fetch_configs(session: aiohttp.ClientSession, url: str) -> List[str]:
+    """Fetch configurations from a URL"""
+    try:
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as response:
+            text = await response.text()
+            return [line.strip() for line in text.splitlines() if line.strip()]
+    except Exception:
+        return []
 
 async def run_full_pipeline(
-    sources: list[str],
+    sources: List[str],
     output_dir: str,
     progress: Progress,
-    max_proxies: int | None = None,
-    country: str | None = None,
-    min_latency: float | None = None,
-    max_latency: float | None = None,
+    max_proxies: Optional[int] = None,
+    country: Optional[str] = None,
+    min_latency: Optional[int] = None,
+    max_latency: Optional[int] = None,
 ):
-    """
-    Main asynchronous pipeline for fetching, testing, and generating.
-    """
-    # Setup DI container
-    container = Container()
-    container.register_singleton(EventBus, EventBus())
-    container.register(IProxyRepository, InMemoryProxyRepository)
-    container.register(IProxyTester, SingBoxTester)
-    container.register(AdvancedSecurityTester)
-    container.register(ProxyBenchmark)
-    container.register_factory(
-        ProxyService,
-        lambda c: ProxyService(
-            c.resolve(IProxyRepository),
-            c.resolve(IProxyTester),
-            c.resolve(EventBus),
-            c.resolve(AdvancedSecurityTester),
-            c.resolve(ProxyBenchmark),
-        ),
-    )
+    """Execute the complete pipeline"""
 
-    plugin_manager = PluginManager()
-    plugin_manager.discover_plugins()
-
-    # Step 1: Fetch configurations
-    fetched_configs = []
-    source_plugin = plugin_manager.source_plugins.get("url_source")
-    if source_plugin:
-        async def _fetch(source):
-            return await source_plugin.fetch_proxies(source)
-
-        results = await asyncio.gather(*[_fetch(s) for s in sources])
-        for result in results:
-            fetched_configs.extend(result)
-
-    if not fetched_configs:
-        progress.console.print("[bold red]No configurations fetched. Exiting.[/bold red]")
-        return
-
-    # Step 2: Parse and process proxies
-    parsed_proxies = [parse_config(c) for c in fetched_configs if c]
-    valid_proxies = [p for p in parsed_proxies if p is not None]
-
-    proxy_service = container.resolve(ProxyService)
-
-    semaphore = asyncio.Semaphore(50) # Limit concurrent processing
-    async def process_proxy_task(proxy):
-        async with semaphore:
-            await proxy_service.process_proxy(proxy)
-
-    await asyncio.gather(*[process_proxy_task(p) for p in valid_proxies])
-
-    # Step 3: Get results from repository
-    proxy_repo = container.resolve(IProxyRepository)
-    all_proxies = await proxy_repo.get_all()
-    working_proxies = [p for p in all_proxies if p.is_working and p.is_secure]
-
-    # Step 4: Apply filters
-    if country:
-        country_filter_plugin = plugin_manager.filter_plugins.get("country_filter")
-        if country_filter_plugin:
-            from .plugins.default_plugins import CountryFilterPlugin
-            working_proxies = await CountryFilterPlugin(country).filter_proxies(working_proxies)
-
-    if max_latency is not None:
-        latency_filter_plugin = plugin_manager.filter_plugins.get("latency_filter")
-        if latency_filter_plugin:
-            from .plugins.default_plugins import LatencyFilterPlugin
-            working_proxies = await LatencyFilterPlugin(max_latency).filter_proxies(working_proxies)
-
-
-    # Step 5: Generate outputs
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    export_plugins = [
-        "base64_export",
-        "clash_export",
-        "raw_export",
-        "proxies_json_export",
-        "stats_json_export",
-    ]
+    task = progress.add_task("[cyan]Processing proxies...", total=100)
 
-    for plugin_name in export_plugins:
-        plugin = plugin_manager.export_plugins.get(plugin_name)
-        if plugin:
-            await plugin.export(working_proxies, output_path)
+    # Fetch configurations
+    all_configs = []
+    async with aiohttp.ClientSession() as session:
+        for source in sources:
+            configs = await fetch_configs(session, source)
+            all_configs.extend(configs)
 
-    progress.console.print(
-        f"[bold blue]All output files generated in '{output_dir}'.[/bold blue]"
+    if not all_configs:
+        progress.console.print("[bold red]No configurations fetched. Exiting.[/bold red]")
+        return
+
+    progress.update(task, completed=20)
+
+    # Parse configurations
+    proxies = []
+    for config in all_configs[:max_proxies] if max_proxies else all_configs:
+        proxy = parse_config(config)
+        if proxy:
+            proxies.append(proxy)
+
+    progress.update(task, completed=40)
+
+    # Test proxies
+    tester = ProxyTester()
+    tested_proxies = []
+    for proxy in proxies:
+        tested = await tester.test(proxy)
+        tested_proxies.append(tested)
+
+    progress.update(task, completed=60)
+
+    # Filter working proxies
+    working_proxies = [p for p in tested_proxies if p.is_working]
+
+    # Apply filters
+    if country:
+        working_proxies = [p for p in working_proxies if p.country_code == country]
+    if min_latency:
+        working_proxies = [p for p in working_proxies if p.latency and p.latency >= min_latency]
+    if max_latency:
+        working_proxies = [p for p in working_proxies if p.latency and p.latency <= max_latency]
+
+    progress.update(task, completed=80)
+
+    # Generate outputs
+    output_path.joinpath("vpn_subscription_base64.txt").write_text(
+        generate_base64_subscription(working_proxies)
     )
+    output_path.joinpath("clash.yaml").write_text(
+        generate_clash_config(working_proxies)
+    )
+    output_path.joinpath("configs_raw.txt").write_text(
+        "\n".join([p.config for p in working_proxies])
+    )
+
+    # Generate JSON outputs
+    proxies_data = [
+        {
+            "protocol": p.protocol,
+            "address": p.address,
+            "port": p.port,
+            "latency": p.latency,
+            "country_code": p.country_code,
+            "remarks": p.remarks
+        }
+        for p in working_proxies
+    ]
+    output_path.joinpath("proxies.json").write_text(json.dumps(proxies_data, indent=2))
+
+    # Generate statistics
+    stats = {
+        "total_tested": len(tested_proxies),
+        "working": len(working_proxies),
+        "failed": len(tested_proxies) - len(working_proxies),
+        "success_rate": round(len(working_proxies) / len(tested_proxies) * 100, 2) if tested_proxies else 0
+    }
+    output_path.joinpath("statistics.json").write_text(json.dumps(stats, indent=2))
+
+    # Generate metadata
+    metadata = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "version": "1.0.0",
+        "source_count": len(sources),
+        "proxy_count": len(working_proxies),
+        "cache_bust": int(datetime.now().timestamp() * 1000)
+    }
+    output_path.joinpath("metadata.json").write_text(json.dumps(metadata, indent=2))
+
+    progress.update(task, completed=100)
