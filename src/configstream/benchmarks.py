@@ -1,6 +1,6 @@
 import asyncio
 import time
-from typing import Dict
+from typing import Any, Dict, Optional
 from dataclasses import dataclass
 import statistics
 
@@ -25,8 +25,8 @@ class ProxyBenchmark:
         self,
         proxy: Proxy,
         worker: SingBoxTester,
-        samples: int = 10
-    ) -> BenchmarkResult:
+        samples: int = 10,
+    ) -> Optional[BenchmarkResult]:
         """Benchmark latency with multiple samples"""
         times = []
 
@@ -62,9 +62,6 @@ class ProxyBenchmark:
         worker: SingBoxTester
     ) -> Dict[str, float]:
         """Benchmark download/upload speeds"""
-        # Download test
-        download_url = "https://httpbin.org/bytes/1048576"  # 1MB
-
         start = time.perf_counter()
         try:
             # This is a placeholder. In a real scenario, you would
@@ -74,10 +71,6 @@ class ProxyBenchmark:
             download_speed = 1.0 / download_time  # MB/s
         except Exception:
             download_speed = 0
-
-        # Upload test
-        upload_url = "https://httpbin.org/post"
-        upload_data = b"x" * 1048576  # 1MB
 
         start = time.perf_counter()
         try:
@@ -98,8 +91,8 @@ class ProxyBenchmark:
         self,
         proxy: Proxy,
         worker: SingBoxTester,
-        duration: int = 60
-    ) -> Dict[str, any]:
+        duration: int = 60,
+    ) -> Dict[str, Any]:
         """Test connection stability over time"""
         start_time = time.time()
         successful_requests = 0

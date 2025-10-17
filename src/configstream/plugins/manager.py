@@ -1,7 +1,7 @@
 import importlib
 import inspect
-from typing import Dict, List, Type, Any
 from pathlib import Path
+from typing import Any, Dict, List, Type
 
 from . import Plugin, SourcePlugin, FilterPlugin, ExportPlugin
 
@@ -55,8 +55,12 @@ class PluginManager:
         for plugin_name in source_plugins:
             plugin = self.source_plugins.get(plugin_name)
             if plugin:
-                proxies = await plugin.fetch_proxies(config.get('sources', []))
-                all_proxies.extend(proxies)
+                sources = config.get("sources", [])
+                if isinstance(sources, list):
+                    for source in sources:
+                        all_proxies.extend(await plugin.fetch_proxies(source))
+                else:
+                    all_proxies.extend(await plugin.fetch_proxies(str(sources)))
 
         # Apply filters
         filtered_proxies = all_proxies

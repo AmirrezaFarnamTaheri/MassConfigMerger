@@ -1,6 +1,5 @@
 """Main processing pipeline"""
 
-import asyncio
 import aiohttp
 import json
 import base64

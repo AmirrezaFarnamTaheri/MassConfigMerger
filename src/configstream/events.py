@@ -1,8 +1,8 @@
 from enum import Enum
-from typing import Callable, Dict, List, Any
-from dataclasses import dataclass
-from datetime import datetime, timezone
 import asyncio
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional
 
 class EventType(Enum):
     """Event types"""
@@ -59,8 +59,8 @@ class EventBus:
 
     def get_history(
         self,
-        event_type: EventType = None,
-        limit: int = 100
+        event_type: Optional[EventType] = None,
+        limit: int = 100,
     ) -> List[Event]:
         """Get event history"""
         history = self.event_history
