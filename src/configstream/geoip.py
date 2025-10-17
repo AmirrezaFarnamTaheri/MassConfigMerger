@@ -1,6 +1,4 @@
 """GeoIP database management"""
-
-import asyncio
 import os
 import tarfile
 from pathlib import Path
@@ -51,8 +49,12 @@ class GeoIPManager:
 
         return success
 
-    async def _download_and_extract(self, session: aiohttp.ClientSession,
-                                   url: str, db_type: str) -> None:
+    async def _download_and_extract(
+        self,
+        session: aiohttp.ClientSession,
+        url: str,
+        db_type: str,
+    ) -> None:
         """Download and extract GeoIP database"""
 
         # Download with timeout
@@ -74,8 +76,10 @@ class GeoIPManager:
                 # Find .mmdb file in archive
                 for member in tar.getmembers():
                     if member.name.endswith('.mmdb'):
-                        # Extract to data directory
-                        data = tar.extractfile(member).read()
+                        extracted = tar.extractfile(member)
+                        if extracted is None:
+                            continue
+                        data = extracted.read()
 
                         # Name based on type
                         if db_type == 'country':

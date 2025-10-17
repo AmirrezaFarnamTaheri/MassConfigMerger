@@ -6,7 +6,6 @@ import json
 import yaml
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Dict, List, Optional, Any
 from urllib.parse import urlparse, parse_qs, unquote
 
@@ -160,7 +159,7 @@ def _parse_shadowsocks(config: str) -> Optional[Proxy]:
             protocol="shadowsocks",
             address=host,
             port=int(port),
-            uuid="", # Not used for shadowsocks
+            uuid="",  # Not used for shadowsocks
             remarks=unquote(remark_part or "")
         )
         proxy._details['method'] = method

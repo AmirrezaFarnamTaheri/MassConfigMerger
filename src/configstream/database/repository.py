@@ -1,6 +1,5 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy import create_engine, func
+from sqlalchemy.orm import Session, sessionmaker
 from typing import List, Optional
 import hashlib
 from datetime import datetime, timedelta
@@ -52,10 +51,10 @@ class ProxyRepository:
 
     def get_active_proxies(
         self,
-        protocol: str = None,
-        country: str = None,
-        max_latency: float = None,
-        limit: int = None
+        protocol: Optional[str] = None,
+        country: Optional[str] = None,
+        max_latency: Optional[float] = None,
+        limit: Optional[int] = None,
     ) -> List[Proxy]:
         """Get active proxies with filters"""
         session: Session = self.SessionLocal()
@@ -82,8 +81,8 @@ class ProxyRepository:
         self,
         proxy_id: int,
         success: bool,
-        latency: float = None,
-        error: str = None
+        latency: Optional[float] = None,
+        error: Optional[str] = None,
     ) -> None:
         """Record test result"""
         session: Session = self.SessionLocal()
@@ -138,15 +137,17 @@ class ProxyRepository:
         try:
             total = session.query(Proxy).filter_by(is_active=True).count()
 
-            working = session.query(Proxy).filter(
-                Proxy.is_active == True,
-                Proxy.latency != None
-            ).count()
+            working = (
+                session.query(Proxy)
+                .filter(Proxy.is_active.is_(True), Proxy.latency.isnot(None))
+                .count()
+            )
 
-            from sqlalchemy import func
-            avg_latency = session.query(
-                func.avg(Proxy.latency)
-            ).filter(Proxy.is_active == True).scalar()
+            avg_latency = (
+                session.query(func.avg(Proxy.latency))
+                .filter(Proxy.is_active.is_(True))
+                .scalar()
+            )
 
             return {
                 'total': total,

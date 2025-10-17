@@ -1,7 +1,5 @@
-import asyncio
-import hashlib
-from typing import List, Dict, Optional
 from dataclasses import dataclass
+from typing import Callable, Dict
 
 from ..core import Proxy
 from ..testers import SingBoxTester
@@ -12,7 +10,7 @@ class SecurityTest:
     name: str
     description: str
     severity: str  # low, medium, high, critical
-    test_func: callable
+    test_func: Callable[[Proxy, SingBoxTester], Dict]
 
 class AdvancedSecurityTester:
     """Advanced security testing suite"""

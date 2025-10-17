@@ -1,6 +1,5 @@
-from typing import Any, Callable, Dict, Type, TypeVar
 from inspect import signature
-from .services import IProxyRepository, IProxyTester
+from typing import Any, Callable, Dict, Type, TypeVar
 
 T = TypeVar('T')
 

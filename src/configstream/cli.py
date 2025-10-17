@@ -205,8 +205,26 @@ def retest(input_file: str, output_dir: str, timeout: int, max_workers: int):
 
         click.echo(f"✓ Loaded {len(proxies_data)} proxies")
 
-        # Create Proxy objects
-        proxies = [Proxy(**p) for p in proxies_data]
+        # Create Proxy objects while validating the serialized data
+        proxies: list[Proxy] = []
+        invalid_entries: list[tuple[int, str]] = []
+
+        for index, proxy_payload in enumerate(proxies_data, start=1):
+            try:
+                proxies.append(Proxy(**proxy_payload))
+            except TypeError as exc:  # pragma: no cover - defensive guard
+                invalid_entries.append((index, str(exc)))
+
+        if invalid_entries:
+            error_lines = [
+                "✗ Invalid proxy definitions detected in the input file:",
+                *[
+                    f"  • Entry #{index}: {error}"
+                    for index, error in invalid_entries
+                ],
+            ]
+            click.echo("\n".join(error_lines), err=True)
+            sys.exit(1)
 
         # Update settings
         settings.test_timeout = timeout
