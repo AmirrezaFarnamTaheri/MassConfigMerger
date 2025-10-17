@@ -184,6 +184,36 @@ def _parse_trojan(config: str) -> Optional[Proxy]:
     except Exception:
         return None
 
+def geolocate_proxy(proxy: Proxy, geoip_reader=None) -> Proxy:
+    """
+    Add geolocation data to proxy.
+    Gracefully handles missing GeoIP database.
+    """
+    if geoip_reader is None:
+        # GeoIP not available - set defaults
+        proxy.country = "Unknown"
+        proxy.country_code = "XX"
+        proxy.city = "Unknown"
+        proxy.asn = "Unknown"
+        return proxy
+
+    try:
+        # Use geoip_reader to lookup address
+        response = geoip_reader.city(proxy.address)
+        proxy.country = response.country.name or "Unknown"
+        proxy.country_code = response.country.iso_code or "XX"
+        proxy.city = response.city.name or "Unknown"
+        proxy.asn = f"AS{response.autonomous_system_number}" if response.autonomous_system_number else "Unknown"
+
+    except Exception:
+        # GeoIP lookup failed - set defaults
+        proxy.country = "Unknown"
+        proxy.country_code = "XX"
+        proxy.city = "Unknown"
+        proxy.asn = "Unknown"
+
+    return proxy
+
 # Export functions for generating output formats
 def generate_base64_subscription(proxies: List[Proxy]) -> str:
     """Generate base64 subscription"""

@@ -2,8 +2,8 @@ name: Merge and Retest VPN Subscriptions
 
 on:
   schedule:
-    - cron: '0 */3 * * *'  # Run merge every 3 hours
-    - cron: '*/30 * * * *' # Run retest every 30 minutes
+    # Single hourly trigger - job type determined by script
+    - cron: '0 * * * *'
   workflow_dispatch:
   push:
     paths:
@@ -15,11 +15,75 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: merge-pipeline
+  cancel-in-progress: false
+
 jobs:
-  merge-configs:
-    if: github.event.schedule == '0 */3 * * *' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+  # ========================================================================
+  # STEP 1: Determine Job Type & Check for Concurrent Runs
+  # ========================================================================
+  prepare:
+    name: Prepare - Determine Job Type & Check Lock
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    outputs:
+      job-type: ${{ steps.determine.outputs.job_type }}
+      should-run: ${{ steps.lock.outputs.should_run }}
+      lock-acquired: ${{ steps.lock.outputs.lock_acquired }}
+    steps:
+      - name: Determine which job should run
+        id: determine
+        run: |
+          hour=$(date -u +%H)
+
+          # Merge at 0, 3, 6, 9, 12, 15, 18, 21 UTC
+          if [ $((hour % 3)) -eq 0 ]; then
+            job_type="merge"
+          else
+            job_type="retest"
+          fi
+
+          echo "job_type=${job_type}" >> $GITHUB_OUTPUT
+          echo "🔍 Determined job type: ${job_type}"
+
+      - name: Check for concurrent runs and acquire lock
+        id: lock
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Get all workflow runs in progress
+            const allRuns = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'merge.yml',
+              status: 'in_progress'
+            });
+
+            // Current run is always in the list
+            const inProgressCount = allRuns.data.workflow_runs.length;
+
+            if (inProgressCount > 1) {
+              // Another instance is already running
+              core.setOutput('should_run', 'false');
+              core.setOutput('lock_acquired', 'false');
+              console.log(`⚠️ Lock unavailable: ${inProgressCount - 1} other workflow(s) in progress`);
+            } else {
+              // We have the lock
+              core.setOutput('should_run', 'true');
+              core.setOutput('lock_acquired', 'true');
+              console.log('✅ Lock acquired - proceeding with workflow');
+            }
+
+  # ========================================================================
+  # STEP 2: Merge Job (Every 3 Hours)
+  # ========================================================================
+  merge-configs:
+    name: Merge Proxy Configurations
+    needs: prepare
+    if: needs.prepare.outputs.job-type == 'merge' && needs.prepare.outputs.should-run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
 
     steps:
       - name: Checkout repository
@@ -39,38 +103,105 @@ jobs:
           sudo apt-get install -y geoip-bin geoipupdate
 
       - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e .
+        uses: nick-invision/retry@v3
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            python -m pip install --upgrade pip
+            pip install -e .
 
       - name: Create output directory
-        run: mkdir -p output
+        run: mkdir -p output && chmod 755 output
 
-      - name: Run merge pipeline
+      - name: Download GeoIP databases
+        env:
+          MAXMIND_LICENSE_KEY: ${{ secrets.MAXMIND_LICENSE_KEY }}
         run: |
-          configstream merge \
-            --sources sources.txt \
-            --output output/ \
-            --max-workers 20 \
-            --timeout 10
-        continue-on-error: false
+          if [ -z "$MAXMIND_LICENSE_KEY" ]; then
+            echo "⚠️  MAXMIND_LICENSE_KEY not set"
+            echo "   GeoIP features will be disabled"
+            echo "   To enable, add secret to GitHub repository settings"
+          else
+            echo "📥 Downloading GeoIP databases..."
+            configstream update-databases
+            echo "✅ GeoIP databases ready"
+          fi
+
+      - name: Run merge pipeline with retry
+        id: merge
+        uses: nick-invision/retry@v3
+        with:
+          timeout_minutes: 40
+          max_attempts: 3
+          retry_wait_seconds: 30
+          retry_on: error
+          command: |
+            configstream merge \
+              --sources sources.txt \
+              --output output/ \
+              --max-workers 20 \
+              --timeout 10
+
+      - name: Validate output files
+        run: |
+          set -e
+          echo "📋 Validating output files..."
+
+          # Check files exist
+          for file in output/proxies.json output/statistics.json; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Missing: $file"
+              exit 1
+            fi
+            echo "✅ Found: $file"
+          done
+
+          # Validate JSON
+          for file in output/*.json; do
+            if ! python3 -m json.tool "$file" > /dev/null 2>&1; then
+              echo "❌ Invalid JSON: $file"
+              exit 1
+            fi
+            echo "✅ Valid JSON: $file"
+          done
+
+          # Check proxy count
+          proxy_count=$(python3 -c "import json; print(len(json.load(open('output/proxies.json'))))")
+          if [ "$proxy_count" -lt 1 ]; then
+            echo "⚠️ Warning: No proxies found (${proxy_count})"
+          else
+            echo "✅ Proxy count: ${proxy_count}"
+          fi
 
       - name: Generate metadata with cache-busting
         run: |
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           CACHE_BUST=$(date +%s)
 
-          cat > output/metadata.json << EOF
-          {
-            "generated_at": "$TIMESTAMP",
-            "cache_bust": "$CACHE_BUST",
-            "version": "1.0.0"
+          python3 << 'EOF'
+          import json
+          from datetime import datetime, timezone
+
+          metadata = {
+              "generated_at": "$TIMESTAMP",
+              "cache_bust": "$CACHE_BUST",
+              "version": "1.0.0",
+              "job_type": "merge",
+              "status": "success",
+              "workflow_run": "${{ github.run_id }}",
+              "commit": "${{ github.sha }}"
           }
+
+          with open('output/metadata.json', 'w') as f:
+              json.dump(metadata, f, indent=2)
+
+          print(f"✅ Metadata generated at {metadata['generated_at']}")
           EOF
 
-          echo "$TIMESTAMP" > output/LAST_UPDATE.txt
-
       - name: Commit and push changes
+        id: commit
         run: |
           git config --local user.name "github-actions[bot]"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
@@ -78,23 +209,72 @@ jobs:
           git add output/
 
           if git diff --staged --quiet; then
-            echo "No changes to commit"
+            echo "status=no-changes" >> $GITHUB_OUTPUT
+            echo "ℹ️ No changes to commit"
           else
-            git commit -m "🤖 Update configs - $TIMESTAMP [skip ci]"
-            git push
+            TIMESTAMP=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
+            PROXY_COUNT=$(python3 -c "import json; print(len(json.load(open('output/proxies.json'))))")
+
+            git commit -m "🤖 Merge configs - $TIMESTAMP
+
+            - Processed proxies: ${PROXY_COUNT}
+            - Generated at: $TIMESTAMP
+            - Workflow: ${{ github.run_id }}
+
+            [skip ci]"
+
+            echo "status=committed" >> $GITHUB_OUTPUT
+            echo "📝 Changes committed"
           fi
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        if: always()
+      - name: Push changes with retry
+        if: steps.commit.outputs.status == 'committed'
+        uses: nick-invision/retry@v3
         with:
-          name: vpn-configs
-          path: output/
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            git push origin main
 
+      - name: Trigger GitHub Pages deployment
+        if: steps.commit.outputs.status == 'committed'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('📱 Triggering GitHub Pages deployment...');
+            try {
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'deploy-pages.yml',
+                ref: 'main'
+              });
+              console.log('✅ Deployment workflow triggered');
+            } catch (error) {
+              console.warn('⚠️ Failed to trigger deployment:', error.message);
+              // Don't fail the entire workflow for this
+            }
+
+      - name: Report status
+        if: always()
+        run: |
+          echo "## 🤖 Merge Job Status"
+          echo "- Merge Status: ${{ job.status }}"
+          echo "- Changes: ${{ steps.commit.outputs.status }}"
+          echo "- Proxies: $(python3 -c 'import json; print(len(json.load(open(\"output/proxies.json\"))))' 2>/dev/null || echo 'Error')"
+          echo "- Workflow Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  # ========================================================================
+  # STEP 3: Retest Job (Every Hour When Not Merging)
+  # ========================================================================
   retest-configs:
-    if: github.event.schedule == '*/30 * * * *'
+    name: Retest Proxy Configurations
+    needs: prepare
+    if: needs.prepare.outputs.job-type == 'retest' && needs.prepare.outputs.should-run == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 35
 
     steps:
       - name: Checkout repository
@@ -109,16 +289,119 @@ jobs:
           cache: 'pip'
 
       - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e .
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: nick-invision/retry@v3
         with:
-          name: vpn-configs
-          path: output/
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            python -m pip install --upgrade pip
+            pip install -e .
 
-      - name: Run retest
+      - name: Check if proxies file exists
+        id: check
         run: |
-          configstream retest
+          if [ -f "output/proxies.json" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            proxy_count=$(python3 -c "import json; print(len(json.load(open('output/proxies.json'))))")
+            echo "count=${proxy_count}" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "count=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run retest with retry
+        if: steps.check.outputs.exists == 'true'
+        uses: nick-invision/retry@v3
+        with:
+          timeout_minutes: 30
+          max_attempts: 2
+          retry_wait_seconds: 30
+          command: |
+            configstream retest \
+              --input output/proxies.json \
+              --output output/ \
+              --timeout 8 \
+              --max-workers 15
+
+      - name: Update metadata
+        if: steps.check.outputs.exists == 'true'
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          python3 << 'EOF'
+          import json
+
+          metadata_file = 'output/metadata.json'
+
+          try:
+              with open(metadata_file, 'r') as f:
+                  metadata = json.load(f)
+          except:
+              metadata = {}
+
+          metadata['last_retest_at'] = "$TIMESTAMP"
+          metadata['last_retest_status'] = 'success'
+
+          with open(metadata_file, 'w') as f:
+              json.dump(metadata, f, indent=2)
+
+          print(f"✅ Retest metadata updated at {metadata['last_retest_at']}")
+          EOF
+
+      - name: Commit changes if needed
+        id: commit
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add output/
+
+          if git diff --staged --quiet; then
+            echo "status=no-changes" >> $GITHUB_OUTPUT
+            echo "ℹ️ No changes to commit"
+          else
+            TIMESTAMP=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
+
+            git commit -m "🔄 Retest configs - $TIMESTAMP
+
+            - Retest complete: $TIMESTAMP
+            - Workflow: ${{ github.run_id }}
+
+            [skip ci]"
+
+            echo "status=committed" >> $GITHUB_OUTPUT
+            echo "📝 Changes committed"
+          fi
+
+      - name: Push changes with retry
+        if: steps.commit.outputs.status == 'committed'
+        uses: nick-invision/retry@v3
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            git push origin main
+
+      - name: Report status
+        if: always()
+        run: |
+          echo "## 🔄 Retest Job Status"
+          echo "- Retest Status: ${{ job.status }}"
+          echo "- Proxies Found: ${{ steps.check.outputs.count }}"
+          echo "- Changes: ${{ steps.commit.outputs.status }}"
+          echo "- Workflow Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  # ========================================================================
+  # STEP 4: Unlock (Always runs to prevent deadlock)
+  # ========================================================================
+  unlock:
+    name: Release Lock
+    needs: [prepare, merge-configs, retest-configs]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release workflow lock
+        run: |
+          echo "✅ Workflow completed, lock released"

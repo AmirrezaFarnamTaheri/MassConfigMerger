@@ -1,233 +1,361 @@
-/**
- * ConfigStream - Shared JavaScript Utilities
- * Common functions used across all pages
- */
+// Cache configuration
+const CACHE_CONFIG = {
+  metadataExpiry: 5 * 60 * 1000,        // 5 minutes
+  proxiesExpiry: 15 * 60 * 1000,        // 15 minutes
+  statsExpiry: 10 * 60 * 1000,          // 10 minutes
+};
 
-// ============================================
-// PATH & URL UTILITIES
-// ============================================
+// Memory cache for API responses
+const cache = {
+  metadata: { data: null, expiry: 0 },
+  proxies: { data: null, expiry: 0 },
+  statistics: { data: null, expiry: 0 },
+};
 
 /**
- * Get the base path for GitHub Pages
- * Handles both project pages and custom domains
+ * Generate cache-busting query parameter
+ * @returns {string} Cache-bust token with timestamp
  */
-function getBasePath() {
-    const pathname = window.location.pathname;
-    
-    // Check if running on GitHub Pages project site
-    if (pathname.includes('/ConfigStream/')) {
-        return '/ConfigStream/';
-    }
-    
-    // For root domain or localhost
-    return pathname.endsWith('/') ? pathname : '/';
+function getCacheBust() {
+  return `?cb=${Date.now()}`;
 }
 
 /**
- * Fetch with cache-busting and proper path resolution
- * @param {string} relativePath - Path relative to base
+ * Check if cached data is still valid
+ * @param {string} key Cache key
+ * @returns {boolean} True if cache is valid
+ */
+function isCacheValid(key) {
+  if (!cache[key] || !cache[key].data) return false;
+  return Date.now() < cache[key].expiry;
+}
+
+/**
+ * Fetch with retry logic
+ * @param {string} url URL to fetch
+ * @param {number} retries Number of retries (default: 3)
+ * @param {number} delay Delay between retries in ms (default: 1000)
  * @returns {Promise<Response>}
  */
-async function fetchWithPath(relativePath) {
-    const BASE_PATH = getBasePath();
-    const cacheBust = `_=${new Date().getTime()}`;
-    const separator = relativePath.includes('?') ? '&' : '?';
-    const fullPath = `${BASE_PATH}${relativePath}${separator}${cacheBust}`;
-    
+async function fetchWithRetry(url, retries = 3, delay = 1000) {
+  for (let i = 0; i < retries; i++) {
     try {
-        const response = await fetch(fullPath);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
         }
-        return response;
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return response;
     } catch (error) {
-        console.error(`Failed to fetch ${fullPath}:`, error);
+      if (i < retries - 1) {
+        console.warn(`Fetch attempt ${i + 1} failed, retrying in ${delay}ms:`, error.message);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay = Math.min(delay * 2, 8000); // Exponential backoff, max 8s
+      } else {
         throw error;
+      }
     }
+  }
 }
 
 /**
- * Build full URL for file downloads
- * @param {string} relativePath - Path relative to base
- * @returns {string}
- */
-function getFullUrl(relativePath) {
-    const BASE_PATH = getBasePath();
-    return `${window.location.origin}${BASE_PATH}${relativePath}`;
-}
-
-// ============================================
-// DATA FETCHING
-// ============================================
-
-/**
- * Fetch metadata with error handling
- * @returns {Promise<Object>}
+ * Fetch metadata with caching
+ * @returns {Promise<Object>} Metadata object
  */
 async function fetchMetadata() {
-    try {
-        const response = await fetchWithPath('output/metadata.json');
-        return await response.json();
-    } catch (error) {
-        console.error('Error fetching metadata:', error);
-        return {
-            generated_at: new Date().toISOString(),
-            cache_bust: Date.now(),
-            version: '1.0.0'
-        };
+  if (isCacheValid('metadata')) {
+    console.log('📦 Using cached metadata');
+    return cache.metadata.data;
+  }
+
+  try {
+    const url = `output/metadata.json${getCacheBust()}`;
+    const response = await fetchWithRetry(url, 3, 1000);
+    const data = await response.json();
+
+    cache.metadata = {
+      data,
+      expiry: Date.now() + CACHE_CONFIG.metadataExpiry
+    };
+
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to fetch metadata:', error);
+    if (cache.metadata.data) {
+      console.log('📦 Using stale metadata from cache');
+      return cache.metadata.data;
     }
+    throw error;
+  }
 }
 
 /**
- * Fetch statistics with error handling
- * @returns {Promise<Object>}
- */
-async function fetchStatistics() {
-    try {
-        const response = await fetchWithPath('output/statistics.json');
-        return await response.json();
-    } catch (error) {
-        console.error('Error fetching statistics:', error);
-        return {
-            total_tested: 0,
-            working: 0,
-            failed: 0,
-            success_rate: 0,
-            latency: { average: 0 }
-        };
-    }
-}
-
-/**
- * Fetch proxies with error handling
- * @returns {Promise<Array>}
+ * Fetch all proxies with caching and pagination support
+ * @returns {Promise<Array>} Array of proxy objects
  */
 async function fetchProxies() {
-    try {
-        const response = await fetchWithPath('output/proxies.json');
-        const proxies = await response.json();
-        return Array.isArray(proxies) ? proxies : [];
-    } catch (error) {
-        console.error('Error fetching proxies:', error);
-        return [];
-    }
-}
+  if (isCacheValid('proxies')) {
+    console.log('📦 Using cached proxies');
+    return cache.proxies.data;
+  }
 
-// ============================================
-// TIME & DATE UTILITIES
-// ============================================
+  try {
+    const url = `output/proxies.json${getCacheBust()}`;
+    const response = await fetchWithRetry(url, 3, 1000);
+    const data = await response.json();
+
+    // Validate proxy data
+    if (!Array.isArray(data)) {
+      throw new Error('Invalid proxy data format: expected array');
+    }
+
+    // Enrich proxies with calculated fields
+    const enrichedProxies = data.map(proxy => ({
+      ...proxy,
+      location: {
+        city: proxy.city || 'Unknown',
+        country: proxy.country_code || 'XX',
+        flag: getCountryFlag(proxy.country_code)
+      },
+      latency: proxy.latency || null,
+      protocolColor: getProtocolColor(proxy.protocol),
+      statusIcon: getStatusIcon(proxy.is_working !== false)
+    }));
+
+    cache.proxies = {
+      data: enrichedProxies,
+      expiry: Date.now() + CACHE_CONFIG.proxiesExpiry
+    };
+
+    console.log(`✅ Loaded ${enrichedProxies.length} proxies`);
+    return enrichedProxies;
+  } catch (error) {
+    console.error('❌ Failed to fetch proxies:', error);
+    if (cache.proxies.data) {
+      console.log('📦 Using stale proxies from cache');
+      return cache.proxies.data;
+    }
+    throw error;
+  }
+}
 
 /**
- * Format date to human-readable string
- * @param {Date|string} date - Date object or ISO string
- * @returns {string}
+ * Fetch statistics with caching
+ * @returns {Promise<Object>} Statistics object
  */
-function formatDate(date) {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZoneName: 'short'
-    });
-}
+async function fetchStatistics() {
+  if (isCacheValid('statistics')) {
+    console.log('📦 Using cached statistics');
+    return cache.statistics.data;
+  }
 
-// ============================================
-// UI UTILITIES
-// ============================================
+  try {
+    const url = `output/statistics.json${getCacheBust()}`;
+    const response = await fetchWithRetry(url, 3, 1000);
+    const data = await response.json();
+
+    cache.statistics = {
+      data,
+      expiry: Date.now() + CACHE_CONFIG.statsExpiry
+    };
+
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to fetch statistics:', error);
+    if (cache.statistics.data) {
+      console.log('📦 Using stale statistics from cache');
+      return cache.statistics.data;
+    }
+    throw error;
+  }
+}
 
 /**
- * Update element with loading state
- * @param {string} elementId - Element ID
- * @param {string|number} value - Value to display
- * @param {Object} options - Options
+ * Get color for protocol badge
+ * @param {string} protocol Protocol name
+ * @returns {string} CSS class or hex color
  */
-function updateElement(elementId, value, options = {}) {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-
-    el.textContent = value;
-    el.classList.remove('skeleton', 'loading');
-
-    if (options.removeStyles) {
-        el.style.width = 'auto';
-        el.style.height = 'auto';
-    }
-
-    if (options.addClass) {
-        el.classList.add(options.addClass);
-    }
+function getProtocolColor(protocol) {
+  const colors = {
+    'vmess': '#FF6B6B',
+    'vless': '#4ECDC4',
+    'shadowsocks': '#45B7D1',
+    'trojan': '#96CEB4',
+    'hysteria': '#FFEAA7',
+    'hysteria2': '#DFE6E9',
+    'tuic': '#A29BFE',
+    'wireguard': '#74B9FF',
+    'naive': '#FD79A8',
+    'http': '#FDCB6E',
+    'https': '#6C5CE7',
+    'socks': '#00B894'
+  };
+  return colors[protocol?.toLowerCase()] || '#95A5A6';
 }
 
-async function copyToClipboard(text, button = null) {
-    try {
-        await navigator.clipboard.writeText(text);
-        
-        if (button) {
-            const originalHTML = button.innerHTML;
-            button.innerHTML = '<i data-feather="check"></i><span>Copied!</span>';
-            button.classList.add('copied');
-            
-            if (typeof feather !== 'undefined') {
-                feather.replace();
-            }
-            
-            setTimeout(() => {
-                button.innerHTML = originalHTML;
-                button.classList.remove('copied');
-                if (typeof feather !== 'undefined') {
-                    feather.replace();
-                }
-            }, 2000);
-        }
-        
-        return true;
-    } catch (err) {
-        console.error('Failed to copy:', err);
+/**
+ * Get country flag emoji
+ * @param {string} countryCode ISO country code
+ * @returns {string} Flag emoji
+ */
+function getCountryFlag(countryCode) {
+  if (!countryCode || countryCode.length !== 2) return '🌍';
 
-        if (button) {
-            const originalHTML = button.innerHTML;
-            button.innerHTML = '<i data-feather="x"></i><span>Failed</span>';
-            button.classList.add('error');
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => 127397 + char.charCodeAt(0));
 
-            if (typeof feather !== 'undefined') {
-                feather.replace();
-            }
-
-            setTimeout(() => {
-                button.innerHTML = originalHTML;
-                button.classList.remove('error');
-                if (typeof feather !== 'undefined') {
-                    feather.replace();
-                }
-            }, 2000);
-        } else {
-            alert('Failed to copy. Please try again.');
-        }
-        return false;
-    }
+  return String.fromCodePoint(...codePoints);
 }
 
-function initCopyButtons() {
-    document.addEventListener('click', async (e) => {
-        const button = e.target.closest('.copy-btn');
-        if (!button) return;
-        
-        const config = button.dataset.config;
-        const file = button.dataset.file;
-        
-        let textToCopy;
-        
-        if (config) {
-            textToCopy = decodeURIComponent(config);
-        } else if (file) {
-            textToCopy = getFullUrl(file);
-        } else {
-            return;
-        }
-        
-        await copyToClipboard(textToCopy, button);
+/**
+ * Get status icon
+ * @param {boolean} isWorking Working status
+ * @returns {string} Status icon emoji
+ */
+function getStatusIcon(isWorking) {
+  return isWorking ? '✅' : '❌';
+}
+
+/**
+ * Debounce function for expensive operations
+ * @param {Function} func Function to debounce
+ * @param {number} wait Wait time in milliseconds
+ * @returns {Function} Debounced function
+ */
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+/**
+ * Throttle function
+ * @param {Function} func Function to throttle
+ * @param {number} limit Limit time in milliseconds
+ * @returns {Function} Throttled function
+ */
+function throttle(func, limit) {
+  let inThrottle;
+  return function (...args) {
+    if (!inThrottle) {
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  };
+}
+
+/**
+ * Update DOM element content safely
+ * @param {string} elementId Element ID
+ * @param {string|number} content Content to set
+ * @param {string} method Method: 'text' or 'html' (default: 'text')
+ */
+function updateElement(elementId, content, method = 'text') {
+  const element = document.getElementById(elementId);
+  if (!element) {
+    console.warn(`Element with ID "${elementId}" not found`);
+    return;
+  }
+
+  if (method === 'html') {
+    // Only set innerHTML if absolutely necessary and sanitized
+    element.innerHTML = sanitizeHTML(content);
+  } else {
+    element.textContent = content;
+  }
+}
+
+/**
+ * Basic HTML sanitization
+ * @param {string} html HTML to sanitize
+ * @returns {string} Sanitized HTML
+ */
+function sanitizeHTML(html) {
+  const div = document.createElement('div');
+  div.textContent = html;
+  return div.innerHTML;
+}
+
+/**
+ * Clear all caches
+ */
+function clearCache() {
+  Object.keys(cache).forEach(key => {
+    cache[key] = { data: null, expiry: 0 };
+  });
+  console.log('🗑️ Cache cleared');
+}
+
+/**
+ * Format timestamp for display
+ * @param {string} isoString ISO 8601 timestamp
+ * @returns {string} Formatted timestamp
+ */
+function formatTimestamp(isoString) {
+  try {
+    const date = new Date(isoString);
+    return date.toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      timeZoneName: 'short'
     });
+  } catch {
+    return isoString;
+  }
 }
+
+/**
+ * Export object as JSON file
+ * @param {Object} data Data to export
+ * @param {string} filename Filename for export
+ */
+function exportJSON(data, filename = 'export.json') {
+  const jsonString = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonString], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+// Export for use in other modules
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    fetchMetadata,
+    fetchProxies,
+    fetchStatistics,
+    debounce,
+    throttle,
+    updateElement,
+    clearCache,
+    formatTimestamp,
+    exportJSON,
+    getProtocolColor,
+    getCountryFlag,
+    getCacheBust
+  };
+}
+
+console.log('✅ Utils.js loaded successfully');

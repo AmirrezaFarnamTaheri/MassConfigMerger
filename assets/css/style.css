@@ -240,7 +240,7 @@ body.dark .logo { color: var(--text-primary-dark); }
 }
 
 .loading-animation path {
-    animation: streamflow 4s ease-in-out forwards;
+    animation: streamflow 6s ease-in-out forwards;
 }
 
 @keyframes streamflow {
