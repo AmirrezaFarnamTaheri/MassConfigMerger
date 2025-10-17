@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize theme
     initTheme();
 
+    // Initialize header scroll effect
+    initHeaderScroll();
+
     // Initialize copy buttons
     initCopyButtons();
 
@@ -131,6 +134,19 @@ function initTheme() {
 
     prefersDark.addEventListener('change', (e) => {
         setTheme(e.matches ? 'dark' : 'light', true);
+    });
+}
+
+function initHeaderScroll() {
+    const header = document.querySelector('.header');
+    if (!header) return;
+
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 50) {
+            header.classList.add('scrolled');
+        } else {
+            header.classList.remove('scrolled');
+        }
     });
 }
 
