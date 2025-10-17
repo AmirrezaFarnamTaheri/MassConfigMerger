@@ -2,7 +2,7 @@ import asyncio
 import pytest
 from aiohttp import web
 
-from src.configstream.fetcher import fetch_from_source
+from configstream.fetcher import fetch_from_source
 
 
 @pytest.mark.asyncio

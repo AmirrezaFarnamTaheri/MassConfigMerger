@@ -3,7 +3,7 @@ import asyncio
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock
 
-from src.configstream.events import EventBus, Event, EventType
+from configstream.events import EventBus, Event, EventType
 
 
 @pytest.fixture

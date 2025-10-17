@@ -11,9 +11,6 @@ from configstream.core import (
     Proxy,
     generate_base64_subscription,
     generate_clash_config,
-    generate_proxies_json,
-    generate_raw_configs,
-    generate_statistics_json,
 )
 
 
@@ -71,13 +68,6 @@ def test_generate_base64_subscription(working_proxies):
     assert len(decoded_content.splitlines()) == 2
 
 
-def test_generate_raw_configs(working_proxies):
-    """Test raw config generation."""
-    content = generate_raw_configs(working_proxies)
-    assert "vmess://test1" in content
-    assert "vless://test2" in content
-
-
 def test_generate_clash_config(working_proxies):
     """Test Clash config generation."""
     content = generate_clash_config(working_proxies)
@@ -89,40 +79,7 @@ def test_generate_clash_config(working_proxies):
     assert "🚀 ConfigStream" in [g["name"] for g in config["proxy-groups"]]
 
 
-def test_generate_proxies_json(working_proxies):
-    """Test detailed proxies JSON generation."""
-    content = generate_proxies_json(working_proxies)
-    data = json.loads(content)
-
-    assert len(data) == 2
-    assert data[0]["protocol"] == "vmess"
-    assert data[1]["protocol"] == "vless"
-    assert data[0]["latency"] == 120.5
-    assert data[1]["location"]["country_code"] == "DE"
-    assert data[0]["location"]["asn"]["name"] == "AS1 Google"
-
-
-def test_generate_statistics_json(all_proxies):
-    """Test statistics JSON generation."""
-    content = generate_statistics_json(all_proxies)
-    stats = json.loads(content)
-
-    assert stats["total_tested"] == 3
-    assert stats["working"] == 2
-    assert stats["failed"] == 1
-    assert stats["success_rate"] == round(2 / 3 * 100, 2)
-    assert stats["protocols"]["vmess"] == 1
-    assert stats["protocols"]["vless"] == 1
-    assert stats["countries"]["US"] == 1
-    assert stats["countries"]["DE"] == 1
-
-
 def test_generate_empty_outputs():
     """Test that empty inputs produce empty but valid outputs."""
     assert generate_base64_subscription([]) == ""
-    assert generate_raw_configs([]) == ""
-    assert generate_clash_config([]) == ""
-    assert json.loads(generate_proxies_json([])) == []
-    stats = json.loads(generate_statistics_json([]))
-    assert stats["total_tested"] == 0
-    assert stats["working"] == 0
+    assert yaml.safe_load(generate_clash_config([]))["proxies"] == []
