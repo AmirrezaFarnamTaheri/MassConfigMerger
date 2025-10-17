@@ -3,6 +3,7 @@
 import asyncio
 import aiohttp
 import json
+import base64
 from pathlib import Path
 from typing import List, Optional
 from rich.progress import Progress

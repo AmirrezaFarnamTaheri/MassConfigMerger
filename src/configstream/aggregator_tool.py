@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Legacy aggregator tool for backward compatibility"""
 
-import sys
 import click
 
 @click.command()

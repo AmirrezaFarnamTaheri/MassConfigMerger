@@ -6,6 +6,7 @@ import sys
 import gzip
 import hashlib
 from pathlib import Path
+import json
 
 import click
 import requests
@@ -13,6 +14,7 @@ from rich.progress import Progress
 
 from . import pipeline
 from .config import settings
+from .core import Proxy
 
 # GeoIP Database URLs
 GEOIP_COUNTRY_URL = "https://cdn.jsdelivr.net/npm/geolite2-country/GeoLite2-Country.mmdb.gz"
@@ -271,7 +273,7 @@ def update_databases():
 
     # Remove existing databases
     for db_path in [GEOIP_COUNTRY_DB_PATH, GEOIP_CITY_DB_PATH, GEOIP_ASN_DB_PATH]:
-        if os.path.exists(db_path):
+        if db_path.exists():
             db_path.unlink()
             click.echo(f"✓ Removed old database: {db_path.name}")
 
