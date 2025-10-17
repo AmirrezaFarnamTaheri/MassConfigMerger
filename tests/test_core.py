@@ -1,17 +1,12 @@
 from __future__ import annotations
 
 import base64
-import json
-from unittest.mock import MagicMock
 
 import pytest
 import yaml
 
-from configstream.core import (
-    Proxy,
-    generate_base64_subscription,
-    generate_clash_config,
-)
+from configstream.core import (Proxy, generate_base64_subscription,
+                               generate_clash_config)
 
 
 @pytest.fixture

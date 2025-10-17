@@ -1,5 +1,6 @@
 from pathlib import Path
 
+
 def build():
     """
     Preprocesses HTML files to include header and footer partials.
@@ -32,6 +33,7 @@ def build():
             print(f"Finished processing {file_name}.")
         else:
             print(f"Warning: {file_name} not found.")
+
 
 if __name__ == "__main__":
     build()

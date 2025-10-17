@@ -60,13 +60,31 @@
                     <p>Explore our complete list of vetted proxies. Search, sort, and find the perfect connection for your needs.</p>
                 </div>
 
-                <div class="table-controls">
-                    <input type="text" id="filterProtocol" class="filter-input" placeholder="Filter by protocol (e.g., vmess)...">
-                    <input type="text" id="filterLocation" class="filter-input" placeholder="Filter by country (e.g., US)...">
+                <div class="filter-controls">
+                    <div class="filter-input-group">
+                        <i data-feather="list"></i>
+                        <input type="text" id="filterProtocol" class="filter-input" placeholder="Filter by protocol...">
+                    </div>
+                    <div class="filter-input-group">
+                        <i data-feather="map-pin"></i>
+                        <input type="text" id="filterLocation" class="filter-input" placeholder="Filter by country...">
+                    </div>
                 </div>
 
                 <div class="table-container">
                     <div id="loadingContainer" class="loader" role="status" aria-live="polite">
+                        <svg class="logo-svg loading-animation" width="80" height="80" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="logo-gradient-loader" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="var(--brand-primary)"/>
+                                    <stop offset="100%" stop-color="var(--brand-secondary)"/>
+                                </linearGradient>
+                            </defs>
+                            <g>
+                                <path d="M29.5 6C36.4036 6 42 11.5964 42 18.5C42 25.4036 36.4036 31 29.5 31H14.5" stroke="url(#logo-gradient-loader)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M14.5 38C7.59644 38 2 32.4036 2 25.5C2 18.5964 7.59644 13 14.5 13H29.5" stroke="url(#logo-gradient-loader)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </g>
+                        </svg>
                         <p>Loading and testing live proxies...</p>
                     </div>
                     <div id="emptyState" class="empty-state hidden">

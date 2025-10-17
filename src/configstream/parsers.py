@@ -25,7 +25,9 @@ def parse_config(config: str) -> Proxy | None:
         return _parse_tuic(config)
     elif config.startswith("wg://") or config.startswith("wireguard://"):
         return _parse_wireguard(config)
-    elif any(config.startswith(f"{p}://") for p in ["ssh", "http", "https", "socks", "socks4", "socks5"]):
+    elif any(
+        config.startswith(f"{p}://") for p in ["ssh", "http", "https", "socks", "socks4", "socks5"]
+    ):
         return _parse_generic(config)
     elif config.startswith("naive+https://"):
         return _parse_naive(config)
@@ -38,6 +40,10 @@ def _parse_naive(config: str) -> Proxy | None:
         parsed = urlparse(config.replace("naive+", ""))
         query = parse_qs(parsed.query)
 
+        details = {k: v[0] for k, v in query.items()}
+        if parsed.password:
+            details["password"] = parsed.password
+
         return Proxy(
             config=config,
             protocol="naive",
@@ -45,7 +51,7 @@ def _parse_naive(config: str) -> Proxy | None:
             address=parsed.hostname or "",
             port=parsed.port or 443,
             uuid=parsed.username or "",
-            _details={k: v[0] for k, v in query.items()},
+            _details=details,
         )
     except Exception:
         return None
@@ -115,7 +121,7 @@ def _parse_tuic(config: str) -> Proxy | None:
 
         # TUIC format: tuic://uuid:password@server:port
         uuid_pass = parsed.username
-        uuid = uuid_pass.split(':')[0] if uuid_pass and ':' in uuid_pass else uuid_pass
+        uuid = uuid_pass.split(":")[0] if uuid_pass and ":" in uuid_pass else uuid_pass
 
         return Proxy(
             config=config,
@@ -136,6 +142,10 @@ def _parse_generic(config: str) -> Proxy | None:
         parsed = urlparse(config)
         query = parse_qs(parsed.query)
 
+        details = {k: v[0] for k, v in query.items()}
+        if parsed.password:
+            details["password"] = parsed.password
+
         return Proxy(
             config=config,
             protocol=parsed.scheme,
@@ -143,7 +153,7 @@ def _parse_generic(config: str) -> Proxy | None:
             address=parsed.hostname or "",
             port=parsed.port or 0,
             uuid=parsed.username or "",
-            _details={k: v[0] for k, v in query.items()},
+            _details=details,
         )
     except Exception:
         return None
@@ -174,7 +184,7 @@ def _parse_ss(config: str) -> Proxy | None:
         parsed = urlparse(config)
 
         encoded = parsed.username or ""
-        padded = encoded + '=' * (-len(encoded) % 4)
+        padded = encoded + "=" * (-len(encoded) % 4)
         decoded = base64.b64decode(padded).decode("utf-8")
 
         if ":" not in decoded:
@@ -216,8 +226,8 @@ def _parse_vless(config: str) -> Proxy | None:
 def _parse_vmess(config: str) -> Proxy | None:
     """Parse vmess:// URI."""
     try:
-        encoded = config[len("vmess://"):]
-        padded = encoded + '=' * (-len(encoded) % 4)
+        encoded = config[len("vmess://") :]
+        padded = encoded + "=" * (-len(encoded) % 4)
         decoded = base64.b64decode(padded).decode("utf-8")
         details = json.loads(decoded)
 

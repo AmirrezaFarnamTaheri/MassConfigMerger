@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import asyncio
-import sys
 import json
+import sys
 from pathlib import Path
 
 import click
-from rich.progress import Progress
 from rich.console import Console
+from rich.progress import Progress
 
 from . import pipeline
 from .config import ProxyConfig
@@ -17,6 +17,7 @@ from .logging_config import setup_logging
 
 console = Console()
 config = ProxyConfig()
+
 
 @click.group()
 @click.version_option(version="1.0.0")
@@ -139,6 +140,7 @@ def update_databases():
         console.print("❌ Some databases failed to update.")
         console.print("   Check MAXMIND_LICENSE_KEY environment variable or GitHub secret.")
 
+
 @main.command()
 @click.option(
     "--input",
@@ -186,10 +188,7 @@ def retest(input_file: str, output_dir: str):
         if invalid_entries:
             error_lines = [
                 "✗ Invalid proxy definitions detected in the input file:",
-                *[
-                    f"  • Entry #{index}: {error}"
-                    for index, error in invalid_entries
-                ],
+                *[f"  • Entry #{index}: {error}" for index, error in invalid_entries],
             ]
             click.echo("\n".join(error_lines), err=True)
             sys.exit(1)

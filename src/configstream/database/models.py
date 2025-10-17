@@ -1,16 +1,17 @@
-from sqlalchemy import (
-    Column, Integer, String, Float, Boolean,
-    DateTime, JSON, ForeignKey, Text, Index
-)
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
+
+from sqlalchemy import (JSON, Boolean, Column, DateTime, Float, ForeignKey,
+                        Index, Integer, String, Text)
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
+
 class Proxy(Base):
     """Proxy model"""
-    __tablename__ = 'proxies'
+
+    __tablename__ = "proxies"
 
     id = Column(Integer, primary_key=True)
     config_hash = Column(String(64), unique=True, index=True)
@@ -45,16 +46,18 @@ class Proxy(Base):
     test_results = relationship("ProxyTestResult", back_populates="proxy")
 
     __table_args__ = (
-        Index('idx_active_latency', 'is_active', 'latency'),
-        Index('idx_country_protocol', 'country', 'protocol'),
+        Index("idx_active_latency", "is_active", "latency"),
+        Index("idx_country_protocol", "country", "protocol"),
     )
+
 
 class ProxyTestResult(Base):
     """Individual test result"""
-    __tablename__ = 'proxy_test_results'
+
+    __tablename__ = "proxy_test_results"
 
     id = Column(Integer, primary_key=True)
-    proxy_id = Column(Integer, ForeignKey('proxies.id'))
+    proxy_id = Column(Integer, ForeignKey("proxies.id"))
 
     tested_at = Column(DateTime, default=datetime.utcnow)
     success = Column(Boolean)
@@ -63,9 +66,11 @@ class ProxyTestResult(Base):
 
     proxy = relationship("Proxy", back_populates="test_results")
 
+
 class Source(Base):
     """Proxy source"""
-    __tablename__ = 'sources'
+
+    __tablename__ = "sources"
 
     id = Column(Integer, primary_key=True)
     url = Column(String(500), unique=True)
@@ -82,9 +87,11 @@ class Source(Base):
     consecutive_failures = Column(Integer, default=0)
     success_rate = Column(Float)
 
+
 class Statistics(Base):
     """Historical statistics"""
-    __tablename__ = 'statistics'
+
+    __tablename__ = "statistics"
 
     id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)

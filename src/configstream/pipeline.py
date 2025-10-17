@@ -1,17 +1,19 @@
 """Main processing pipeline"""
 
-import aiohttp
-import json
 import base64
+import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
-from rich.progress import Progress
-import geoip2.database
 
-from .core import Proxy, parse_config, geolocate_proxy
+import aiohttp
+import geoip2.database
+from rich.progress import Progress
+
+from .core import (Proxy, generate_base64_subscription, generate_clash_config,
+                   geolocate_proxy, parse_config)
 from .testers import SingBoxTester
-from .core import generate_base64_subscription, generate_clash_config
-from datetime import datetime, timezone
+
 
 async def fetch_configs(session: aiohttp.ClientSession, url: str) -> List[str]:
     """Fetch configurations from a URL"""
@@ -22,7 +24,9 @@ async def fetch_configs(session: aiohttp.ClientSession, url: str) -> List[str]:
             # If it's a single long line and decodes to text with scheme prefixes, treat as base64 subscription
             if "\n" not in content:
                 try:
-                    decoded = base64.b64decode(content + "==", validate=False).decode("utf-8", errors="ignore")
+                    decoded = base64.b64decode(content + "==", validate=False).decode(
+                        "utf-8", errors="ignore"
+                    )
                     # Heuristic: check if decoded contains known scheme prefixes
                     if any(s in decoded for s in ("vmess://", "vless://", "ss://", "trojan://")):
                         return [line.strip() for line in decoded.splitlines() if line.strip()]
@@ -32,15 +36,18 @@ async def fetch_configs(session: aiohttp.ClientSession, url: str) -> List[str]:
     except Exception:
         return []
 
+
 import asyncio
-from typing import List, AsyncIterator
+from typing import AsyncIterator, List
+
 from .config import ProxyConfig
 from .security.malicious_detector import MaliciousNodeDetector
 from .security.rate_limiter import RateLimiter
 
-async def process_proxies_in_batches(proxies: List[Proxy],
-                                    processor_func,
-                                    batch_size: Optional[int] = None) -> AsyncIterator[List[Proxy]]:
+
+async def process_proxies_in_batches(
+    proxies: List[Proxy], processor_func, batch_size: Optional[int] = None
+) -> AsyncIterator[List[Proxy]]:
     """
     Process proxies in batches to manage memory efficiently.
 
@@ -59,7 +66,7 @@ async def process_proxies_in_batches(proxies: List[Proxy],
     batch_size = batch_size or config.BATCH_SIZE
 
     for i in range(0, len(proxies), batch_size):
-        batch = proxies[i:i + batch_size]
+        batch = proxies[i : i + batch_size]
         processed_batch = await processor_func(batch)
         yield processed_batch
 
@@ -67,9 +74,7 @@ async def process_proxies_in_batches(proxies: List[Proxy],
         await asyncio.sleep(0.1)
 
 
-async def test_proxies_batched(proxies: List[Proxy],
-                              tester,
-                              malicious_detector) -> List[Proxy]:
+async def test_proxies_batched(proxies: List[Proxy], tester, malicious_detector) -> List[Proxy]:
     """
     Test proxies with memory-efficient batch processing.
     """
@@ -87,7 +92,7 @@ async def test_proxies_batched(proxies: List[Proxy],
                 # Run security tests
                 security_results = await malicious_detector.detect_malicious(tested_proxy)
 
-                if security_results['is_malicious']:
+                if security_results["is_malicious"]:
                     tested_proxy.is_working = False
                     tested_proxy.security_issues.append(
                         f"Malicious: {security_results['severity']} - "
@@ -104,6 +109,7 @@ async def test_proxies_batched(proxies: List[Proxy],
         tested_proxies.extend(batch_results)
 
     return tested_proxies
+
 
 async def run_full_pipeline(
     sources: List[str],
@@ -164,9 +170,7 @@ async def run_full_pipeline(
 
     # Test proxies
     tested_proxies = await test_proxies_batched(
-        proxies,
-        tester=SingBoxTester(),
-        malicious_detector=detector
+        proxies, tester=SingBoxTester(), malicious_detector=detector
     )
 
     progress.update(task, completed=60)
@@ -188,9 +192,7 @@ async def run_full_pipeline(
     output_path.joinpath("vpn_subscription_base64.txt").write_text(
         generate_base64_subscription(working_proxies)
     )
-    output_path.joinpath("clash.yaml").write_text(
-        generate_clash_config(working_proxies)
-    )
+    output_path.joinpath("clash.yaml").write_text(generate_clash_config(working_proxies))
     output_path.joinpath("configs_raw.txt").write_text(
         "\n".join([p.config for p in working_proxies])
     )
@@ -204,7 +206,7 @@ async def run_full_pipeline(
             "port": p.port,
             "latency": p.latency,
             "country_code": p.country_code,
-            "remarks": p.remarks
+            "remarks": p.remarks,
         }
         for p in working_proxies
     ]
@@ -215,7 +217,9 @@ async def run_full_pipeline(
         "total_tested": len(tested_proxies),
         "working": len(working_proxies),
         "failed": len(tested_proxies) - len(working_proxies),
-        "success_rate": round(len(working_proxies) / len(tested_proxies) * 100, 2) if tested_proxies else 0
+        "success_rate": (
+            round(len(working_proxies) / len(tested_proxies) * 100, 2) if tested_proxies else 0
+        ),
     }
     output_path.joinpath("statistics.json").write_text(json.dumps(stats, indent=2))
 
@@ -226,7 +230,7 @@ async def run_full_pipeline(
         "source_count": len(sources),
         "proxy_count": len(working_proxies),
         "cache_bust": int(datetime.now().timestamp() * 1000),
-        "protocol_colors": config.PROTOCOL_COLORS
+        "protocol_colors": config.PROTOCOL_COLORS,
     }
     output_path.joinpath("metadata.json").write_text(json.dumps(metadata, indent=2))
 

@@ -5,6 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+
 def run_command(cmd, description):
     """Run a command and report results"""
     print(f"\n🔍 {description}...")
@@ -21,6 +22,7 @@ def run_command(cmd, description):
         print(f"❌ {description} - ERROR: {e}")
         return False
 
+
 def main():
     checks = [
         ("pytest tests/", "Running tests"),
@@ -33,7 +35,7 @@ def main():
         ".github/workflows/generate-configs.yml",
         "index.html",
         "pyproject.toml",
-        "README.md"
+        "README.md",
     ]
 
     print("📁 Checking required files...")
@@ -53,6 +55,7 @@ def main():
     else:
         print("\n⚠️  Some checks failed. Please review the errors above.")
         return False
+
 
 if __name__ == "__main__":
     sys.exit(0 if main() else 1)

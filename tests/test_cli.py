@@ -84,7 +84,7 @@ def test_retest_command_happy_path(mock_run_pipeline, fs):
             "port": 443,
             "latency": 100,
             "country_code": "US",
-            "remarks": "test1"
+            "remarks": "test1",
         }
     ]
     fs.create_file("output/proxies.json", contents=json.dumps(proxies_data))

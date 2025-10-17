@@ -1,7 +1,8 @@
 from inspect import signature
 from typing import Any, Callable, Dict, Type, TypeVar
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 class Container:
     """Dependency injection container"""
@@ -45,7 +46,7 @@ class Container:
         sig = signature(implementation.__init__)
         params = {}
         for param_name, param in sig.parameters.items():
-            if param_name == 'self':
+            if param_name == "self":
                 continue
             if param.annotation != param.empty:
                 params[param_name] = self.resolve(param.annotation)

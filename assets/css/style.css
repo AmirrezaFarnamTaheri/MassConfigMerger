@@ -240,7 +240,7 @@ body.dark .logo { color: var(--text-primary-dark); }
 }
 
 .loading-animation path {
-    animation: streamflow 6s ease-in-out forwards;
+    animation: streamflow 5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 @keyframes streamflow {
@@ -628,6 +628,144 @@ body.dark .hero .subtitle { color: var(--text-secondary-dark); }
 .card, .stats-card, .hero > *, .download-card, #proxiesTableBody tr {
     animation-delay: var(--delay, 0s);
 }
+
+/* Filter Controls */
+.filter-controls {
+    display: flex;
+    gap: calc(var(--space-unit) * 3);
+    margin-bottom: calc(var(--space-unit) * 4);
+    flex-wrap: wrap;
+}
+
+.filter-input-group {
+    position: relative;
+    flex-grow: 1;
+}
+
+.filter-input-group .feather {
+    position: absolute;
+    top: 50%;
+    left: calc(var(--space-unit) * 2);
+    transform: translateY(-50%);
+    color: var(--text-secondary-light);
+    transition: color var(--transition-fast);
+}
+
+body.dark .filter-input-group .feather {
+    color: var(--text-secondary-dark);
+}
+
+.filter-input {
+    width: 100%;
+    padding: calc(var(--space-unit) * 2) calc(var(--space-unit) * 2) calc(var(--space-unit) * 2) calc(var(--space-unit) * 6);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+    background-color: var(--bg-secondary-light);
+    color: var(--text-primary-light);
+    font-size: 1rem;
+    font-family: var(--font-sans);
+    transition: all var(--transition-fast);
+}
+
+body.dark .filter-input {
+    border-color: var(--border-dark);
+    background-color: var(--bg-secondary-dark);
+    color: var(--text-primary-dark);
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-primary) 20%, transparent);
+}
+
+body.dark .filter-input:focus {
+    border-color: var(--brand-primary-dark);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-primary-dark) 20%, transparent);
+}
+
+.filter-input:focus + .feather {
+    color: var(--brand-primary);
+}
+
+body.dark .filter-input:focus + .feather {
+    color: var(--brand-primary-dark);
+}
+
+/* Proxies Table */
+.proxies-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 calc(var(--space-unit) * 1.5);
+}
+
+.proxies-table th {
+    text-align: left;
+    padding: calc(var(--space-unit) * 2) calc(var(--space-unit) * 3);
+    color: var(--text-secondary-light);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+
+body.dark .proxies-table th {
+    color: var(--text-secondary-dark);
+}
+
+.proxies-table th:hover {
+    color: var(--text-primary-light);
+}
+
+body.dark .proxies-table th:hover {
+    color: var(--text-primary-dark);
+}
+
+.proxies-table th .feather {
+    width: 16px;
+    height: 16px;
+    margin-left: var(--space-unit);
+    transition: transform var(--transition-fast);
+}
+
+.proxies-table th[aria-sort="ascending"] .feather {
+    transform: rotate(180deg);
+}
+.proxies-table th[aria-sort="descending"] .feather {
+    transform: rotate(0deg);
+}
+
+.proxies-table td {
+    padding: calc(var(--space-unit) * 2.5) calc(var(--space-unit) * 3);
+    background: var(--bg-secondary-light);
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+    transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+body.dark .proxies-table td {
+    background: var(--bg-secondary-dark);
+    border-color: var(--border-dark);
+}
+
+.proxies-table tr:first-child td:first-child { border-top-left-radius: var(--radius-lg); }
+.proxies-table tr:first-child td:last-child { border-top-right-radius: var(--radius-lg); }
+.proxies-table tr:last-child td:first-child { border-bottom-left-radius: var(--radius-lg); }
+.proxies-table tr:last-child td:last-child { border-bottom-right-radius: var(--radius-lg); }
+
+.proxies-table tr:hover td {
+    background: color-mix(in srgb, var(--brand-primary) 5%, var(--bg-secondary-light));
+}
+body.dark .proxies-table tr:hover td {
+    background: color-mix(in srgb, var(--brand-primary-dark) 10%, var(--bg-secondary-dark));
+}
+
+.copy-btn .feather {
+    width: 18px;
+    height: 18px;
+}
+
 
 /* Empty State Styles */
 .empty-state {

@@ -87,25 +87,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function fetchAndRenderProxies() {
-        window.stateManager.setLoading(true, 'Loading proxies...');
+        const loadingContainer = document.getElementById('loadingContainer');
+        const proxiesTable = document.getElementById('proxiesTable');
+
+        loadingContainer.classList.remove('hidden');
+        proxiesTable.classList.add('hidden');
+
         try {
             allProxies = await fetchProxies();
             renderTable();
-            window.stateManager.setSuccess(`Loaded ${allProxies.length} proxies.`);
         } catch (error) {
             window.stateManager.setError('Failed to load proxies.', error);
         } finally {
-            window.stateManager.setLoading(false);
+            loadingContainer.classList.add('hidden');
         }
     }
 
-    // Subscribe to state changes to disable filters while loading
-    if (window.stateManager) {
-        window.stateManager.subscribe('isLoading', (isLoading) => {
-            protocolFilter.disabled = isLoading;
-            locationFilter.disabled = isLoading;
-        });
-    }
 
     fetchAndRenderProxies();
 });

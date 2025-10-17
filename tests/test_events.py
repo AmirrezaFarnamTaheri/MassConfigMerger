@@ -1,9 +1,9 @@
-import pytest
-import asyncio
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock
 
-from configstream.events import EventBus, Event, EventType
+import pytest
+
+from configstream.events import Event, EventBus, EventType
 
 
 @pytest.fixture
@@ -17,7 +17,9 @@ async def test_event_bus_subscribe_and_publish(event_bus: EventBus):
     handler = AsyncMock()
     event_bus.subscribe(EventType.PROXY_TESTED, handler)
 
-    event = Event(type=EventType.PROXY_TESTED, timestamp=datetime.now(timezone.utc), data={"proxy": "proxy1"})
+    event = Event(
+        type=EventType.PROXY_TESTED, timestamp=datetime.now(timezone.utc), data={"proxy": "proxy1"}
+    )
     await event_bus.publish(event)
 
     handler.assert_called_once_with(event)
@@ -30,7 +32,9 @@ async def test_event_bus_unsubscribe(event_bus: EventBus):
     event_bus.subscribe(EventType.PROXY_TESTED, handler)
     event_bus.unsubscribe(EventType.PROXY_TESTED, handler)
 
-    event = Event(type=EventType.PROXY_TESTED, timestamp=datetime.now(timezone.utc), data={"proxy": "proxy1"})
+    event = Event(
+        type=EventType.PROXY_TESTED, timestamp=datetime.now(timezone.utc), data={"proxy": "proxy1"}
+    )
     await event_bus.publish(event)
 
     handler.assert_not_called()
@@ -39,8 +43,12 @@ async def test_event_bus_unsubscribe(event_bus: EventBus):
 @pytest.mark.asyncio
 async def test_event_bus_history(event_bus: EventBus):
     """Test the event history functionality."""
-    event1 = Event(type=EventType.PROXY_TESTED, timestamp=datetime.now(timezone.utc), data={"proxy": "proxy1"})
-    event2 = Event(type=EventType.PROXY_FAILED, timestamp=datetime.now(timezone.utc), data={"proxy": "proxy2"})
+    event1 = Event(
+        type=EventType.PROXY_TESTED, timestamp=datetime.now(timezone.utc), data={"proxy": "proxy1"}
+    )
+    event2 = Event(
+        type=EventType.PROXY_FAILED, timestamp=datetime.now(timezone.utc), data={"proxy": "proxy2"}
+    )
 
     await event_bus.publish(event1)
     await event_bus.publish(event2)

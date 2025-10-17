@@ -7,19 +7,22 @@ __author__ = "Amirreza Farnam Taheri"
 __all__ = []
 
 try:
-    from .config import Settings, settings
+    pass
+
     __all__.extend(["Settings", "settings"])
 except ImportError:
     pass
 
 try:
-    from .core import Proxy, ProxyTester, test_proxy, parse_config
+    pass
+
     __all__.extend(["Proxy", "ProxyTester", "test_proxy", "parse_config"])
 except ImportError:
     pass
 
 try:
-    from .pipeline import run_full_pipeline
+    pass
+
     __all__.append("run_full_pipeline")
 except ImportError:
     pass
