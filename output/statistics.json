@@ -1,17 +1,6 @@
 {
-  "total_tested": 2,
-  "working": 2,
+  "total_tested": 0,
+  "working": 0,
   "failed": 0,
-  "success_rate": 100,
-  "latency": {
-    "average": 125
-  },
-  "countries": {
-    "US": 1,
-    "DE": 1
-  },
-  "protocols": {
-    "vmess": 1,
-    "vless": 1
-  }
+  "success_rate": 0
 }

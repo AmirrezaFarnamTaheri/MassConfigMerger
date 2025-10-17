@@ -1,6 +1,9 @@
 {
-  "generated_at": "2025-10-17T12:00:00Z",
-  "cache_bust": "1234567890",
+  "generated_at": "$TIMESTAMP",
+  "cache_bust": "$CACHE_BUST",
   "version": "1.0.0",
-  "status": "success"
+  "job_type": "merge",
+  "status": "success",
+  "workflow_run": "18601113367",
+  "commit": "a0e71df56bf3cfe36bc932a57d4eb94dd530261b"
 }

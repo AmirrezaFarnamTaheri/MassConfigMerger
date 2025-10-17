@@ -1,0 +1,5 @@
+proxies: []
+proxy-groups:
+- name: "\U0001F680 ConfigStream"
+  proxies: []
+  type: select
