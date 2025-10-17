@@ -7,8 +7,9 @@ import base64
 from pathlib import Path
 from typing import List, Optional
 from rich.progress import Progress
+import geoip2.database
 
-from .core import Proxy, parse_config
+from .core import Proxy, parse_config, geolocate_proxy
 from .testers import SingBoxTester
 from .core import generate_base64_subscription, generate_clash_config
 from datetime import datetime, timezone
@@ -59,12 +60,24 @@ async def run_full_pipeline(
 
         progress.update(task, completed=20)
 
-        # Parse configurations
+        # Parse and geolocate configurations
         proxies = []
+        geoip_reader = None
+        try:
+            geoip_db_path = Path("data/GeoLite2-City.mmdb")
+            if geoip_db_path.exists():
+                geoip_reader = geoip2.database.Reader(str(geoip_db_path))
+        except Exception as e:
+            print(f"Could not load GeoIP database: {e}")
+
         for config in all_configs[:max_proxies] if max_proxies else all_configs:
             proxy = parse_config(config)
             if proxy:
+                proxy = geolocate_proxy(proxy, geoip_reader)
                 proxies.append(proxy)
+
+        if geoip_reader:
+            geoip_reader.close()
 
     progress.update(task, completed=40)
 

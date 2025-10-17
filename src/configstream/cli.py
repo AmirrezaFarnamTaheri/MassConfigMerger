@@ -1,142 +1,20 @@
 from __future__ import annotations
 
 import asyncio
-import os
 import sys
-import gzip
-import hashlib
-from pathlib import Path
 import json
+from pathlib import Path
 
 import click
-import requests
 from rich.progress import Progress
+from rich.console import Console
 
 from . import pipeline
 from .config import settings
 from .core import Proxy
+from .geoip import download_geoip_dbs
 
-# GeoIP Database URLs
-GEOIP_COUNTRY_URL = "https://cdn.jsdelivr.net/npm/geolite2-country/GeoLite2-Country.mmdb.gz"
-GEOIP_CITY_URL = "https://cdn.jsdelivr.net/gh/wp-statistics/GeoLite2-City@master/GeoLite2-City.mmdb.gz"
-GEOIP_ASN_URL = "https://github.com/iplocate/ip-address-databases/raw/main/ip-to-asn/ip-to-asn.mmdb"
-
-DATA_DIR = Path("data")
-GEOIP_COUNTRY_DB_PATH = DATA_DIR / "GeoLite2-Country.mmdb"
-GEOIP_CITY_DB_PATH = DATA_DIR / "GeoLite2-City.mmdb"
-GEOIP_ASN_DB_PATH = DATA_DIR / "ip-to-asn.mmdb"
-
-
-def _download_file(url: str, dest_path: Path, expected_hash: str | None = None) -> bool:
-    """
-    Download a file from URL to destination path with optional hash verification.
-    """
-    try:
-        click.echo(f"Downloading from {url}...")
-        dest_path.parent.mkdir(parents=True, exist_ok=True)
-
-        with requests.get(url, stream=True, timeout=60) as r:
-            r.raise_for_status()
-            total_size = int(r.headers.get('content-length', 0))
-            block_size = 8192
-            with open(dest_path, "wb") as f:
-                if total_size:
-                    with Progress() as progress:
-                        task = progress.add_task("[cyan]Downloading...", total=total_size)
-                        for chunk in r.iter_content(chunk_size=block_size):
-                            f.write(chunk)
-                            progress.update(task, advance=len(chunk))
-                else:
-                    for chunk in r.iter_content(chunk_size=block_size):
-                        f.write(chunk)
-
-        # Verify hash if provided
-        if expected_hash:
-            with open(dest_path, "rb") as f:
-                file_hash = hashlib.sha256(f.read()).hexdigest()
-                if file_hash != expected_hash:
-                    click.echo(f"✗ Hash mismatch! Expected {expected_hash}, got {file_hash}", err=True)
-                    dest_path.unlink(missing_ok=True)
-                    return False
-
-        click.echo(f"✓ Downloaded successfully: {dest_path.name}")
-        return True
-    except requests.RequestException as e:
-        click.echo(f"✗ Error downloading from {url}: {e}", err=True)
-        dest_path.unlink(missing_ok=True)
-        return False
-    except Exception as e:
-        click.echo(f"✗ An unexpected error occurred: {e}", err=True)
-        dest_path.unlink(missing_ok=True)
-        return False
-
-
-def download_geoip_dbs():
-    """Download and extract GeoIP databases if they don't exist."""
-    DATA_DIR.mkdir(exist_ok=True)
-
-    # Download Country DB
-    if not os.path.exists(GEOIP_COUNTRY_DB_PATH):
-        click.echo("GeoIP Country database not found, downloading...")
-        gz_path = DATA_DIR / "GeoLite2-Country.mmdb.gz"
-
-        if _download_file(GEOIP_COUNTRY_URL, gz_path):
-            try:
-                with gzip.open(gz_path, "rb") as f_in:
-                    with open(GEOIP_COUNTRY_DB_PATH, "wb") as f_out:
-                        f_out.write(f_in.read())
-                # Basic sanity check to ensure extraction produced data
-                if os.path.getsize(GEOIP_COUNTRY_DB_PATH) == 0:
-                    click.echo("✗ Extracted Country database is empty, aborting.", err=True)
-                    if os.path.exists(GEOIP_COUNTRY_DB_PATH):
-                        os.remove(GEOIP_COUNTRY_DB_PATH)
-                    sys.exit(1)
-                click.echo("✓ GeoIP Country database extracted successfully")
-            except gzip.BadGzipFile as e:
-                click.echo(f"✗ Error decompressing Country database: {e}", err=True)
-                sys.exit(1)
-            finally:
-                # Only remove archive if we have a valid non-empty output
-                if os.path.exists(GEOIP_COUNTRY_DB_PATH) and os.path.getsize(GEOIP_COUNTRY_DB_PATH) > 0:
-                    if os.path.exists(gz_path):
-                        os.remove(gz_path)
-        else:
-            sys.exit(1)
-
-    # Download City DB
-    if not os.path.exists(GEOIP_CITY_DB_PATH):
-        click.echo("GeoIP City database not found, downloading...")
-        gz_path = DATA_DIR / "GeoLite2-City.mmdb.gz"
-        tmp_city_path = DATA_DIR / "GeoLite2-City.mmdb.tmp"
-
-        if _download_file(GEOIP_CITY_URL, gz_path):
-            try:
-                with gzip.open(gz_path, "rb") as f_in, open(tmp_city_path, "wb") as f_out:
-                    f_out.write(f_in.read())
-                os.rename(tmp_city_path, GEOIP_CITY_DB_PATH)
-                click.echo("✓ GeoIP City database extracted successfully")
-            except gzip.BadGzipFile as e:
-                click.echo(f"✗ Error decompressing City database: {e}", err=True)
-                click.echo("⚠ Warning: City database decompression failed; proceeding without City DB.")
-                if os.path.exists(tmp_city_path):
-                    os.remove(tmp_city_path)
-            except Exception as e:
-                click.echo(f"✗ Error writing City database: {e}", err=True)
-                if os.path.exists(tmp_city_path):
-                    os.remove(tmp_city_path)
-            finally:
-                if os.path.exists(gz_path):
-                    os.remove(gz_path)
-        else:
-            click.echo("⚠ Warning: City database download failed; proceeding without City DB.")
-
-    # Download ASN DB
-    if not os.path.exists(GEOIP_ASN_DB_PATH):
-        click.echo("GeoIP ASN database not found, downloading...")
-        if not _download_file(GEOIP_ASN_URL, GEOIP_ASN_DB_PATH):
-            sys.exit(1)
-        click.echo("✓ GeoIP ASN database downloaded successfully")
-
+console = Console()
 
 @click.group()
 @click.version_option(version="1.0.0")
@@ -218,7 +96,8 @@ def merge(
     Run the full pipeline: fetch, test, and generate outputs.
     """
     # Download GeoIP databases
-    download_geoip_dbs()
+    console.print("Checking for GeoIP databases...")
+    asyncio.run(download_geoip_dbs())
 
     # Set event loop policy for Windows
     if sys.platform == "win32":
@@ -269,19 +148,14 @@ def update_databases():
     """
     Update GeoIP databases.
     """
-    click.echo("Updating GeoIP databases...")
+    console.print("Updating GeoIP databases...")
+    success = asyncio.run(download_geoip_dbs())
 
-    # Remove existing databases
-    for db_path in [GEOIP_COUNTRY_DB_PATH, GEOIP_CITY_DB_PATH, GEOIP_ASN_DB_PATH]:
-        if db_path.exists():
-            db_path.unlink()
-            click.echo(f"✓ Removed old database: {db_path.name}")
-
-    # Download fresh databases
-    download_geoip_dbs()
-
-    click.echo("✓ All databases updated successfully!")
-
+    if success:
+        console.print("✅ All databases updated successfully!")
+    else:
+        console.print("❌ Some databases failed to update.")
+        console.print("   Check MAXMIND_LICENSE_KEY environment variable or GitHub secret.")
 
 @main.command()
 @click.option(
@@ -298,7 +172,21 @@ def update_databases():
     help="Directory to save generated files.",
     type=click.Path(file_okay=False),
 )
-def retest(input_file: str, output_dir: str):
+@click.option(
+    "--timeout",
+    "timeout",
+    default=8,
+    help="Timeout in seconds for testing each proxy.",
+    type=int,
+)
+@click.option(
+    "--max-workers",
+    "max_workers",
+    default=15,
+    help="Maximum number of concurrent workers.",
+    type=int,
+)
+def retest(input_file: str, output_dir: str, timeout: int, max_workers: int):
     """
     Retest proxies from a JSON file.
     """
@@ -319,6 +207,10 @@ def retest(input_file: str, output_dir: str):
 
         # Create Proxy objects
         proxies = [Proxy(**p) for p in proxies_data]
+
+        # Update settings
+        settings.test_timeout = timeout
+        settings.test_max_workers = max_workers
 
         # Run pipeline
         with Progress() as progress:

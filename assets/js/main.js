@@ -29,72 +29,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // --- DATA FETCHING ---
-    async function updateStats() {
-        const metadata = await fetchMetadata();
-        const stats = await fetchStatistics();
-
-        const date = new Date(metadata.generated_at);
-        const formatted = formatDate(date);
-        updateElement('footerUpdate', formatted, { removeStyles: true });
-
-        if (document.getElementById('totalConfigs')) {
-            updateElement('totalConfigs', stats.total_tested || 0, { removeStyles: true });
-        }
-        if (document.getElementById('workingConfigs')) {
-            updateElement('workingConfigs', stats.working || 0, { removeStyles: true });
-        }
-    }
-
-    async function updateClashFileSize() {
-        const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        const formatSize = (n) => {
-            if (!Number.isFinite(n) || n < 0) return 'N/A';
-            const i = n > 0 ? Math.min(units.length - 1, Math.floor(Math.log(n) / Math.log(1024))) : 0;
-            return `${(n / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
-        };
-        const setNA = () => updateElement('clash-filesize', 'N/A');
+    // --- DATA FETCHING & INITIALIZATION ---
+    (async () => {
         try {
-            const url = getFullUrl('output/clash.yaml');
-            const sameOrigin = new URL(url, window.location.href).origin === window.location.origin;
+            // Fetch metadata and statistics in parallel
+            const [metadata, stats] = await Promise.all([
+                fetchMetadata(),
+                fetchStatistics()
+            ]);
 
-            // Try HEAD first (avoid CORS failures by allowing opaque, then guard)
-            let response = await fetch(url, { method: 'HEAD', mode: sameOrigin ? 'cors' : 'no-cors' });
-            let sizeNum = NaN;
-
-            if (response && response.ok && response.type !== 'opaque') {
-                const sizeHeader = response.headers.get('Content-Length');
-                sizeNum = sizeHeader ? parseInt(sizeHeader, 10) : NaN;
+            // Update footer timestamp
+            if (metadata && metadata.generated_at) {
+                const date = new Date(metadata.generated_at);
+                const formatted = formatTimestamp(date);
+                updateElement('footerUpdate', formatted);
             }
 
-            // If HEAD didn't provide a size, try a safe ranged GET only if same-origin
-            if ((!Number.isFinite(sizeNum) || sizeNum < 0) && sameOrigin) {
-                response = await fetch(url, { method: 'GET', headers: { Range: 'bytes=0-0' } });
-                if (response.status === 206) {
-                    const contentRange = response.headers.get('Content-Range'); // "bytes 0-0/12345"
-                    const totalMatch = contentRange && contentRange.match(/\/(\d+)$/);
-                    sizeNum = totalMatch ? parseInt(totalMatch[1], 10) : NaN;
+            // Update stats card
+            if (stats) {
+                if (document.getElementById('totalConfigs')) {
+                    updateElement('totalConfigs', stats.total_tested || 0);
+                }
+                if (document.getElementById('workingConfigs')) {
+                    updateElement('workingConfigs', stats.working || 0);
                 }
             }
-
-            if (Number.isFinite(sizeNum) && sizeNum >= 0) {
-                updateElement('clash-filesize', formatSize(sizeNum));
-            } else {
-                setNA();
-            }
         } catch (error) {
-            console.error('Could not fetch Clash file size:', error);
-            setNA();
+            console.error("Failed to initialize page with data:", error);
+            // Update UI to show that data loading failed
+            updateElement('footerUpdate', 'N/A');
+            updateElement('totalConfigs', 'N/A');
+            updateElement('workingConfigs', 'N/A');
         }
-    }
-
-    // --- INITIALIZE ---
-    if(document.getElementById('totalConfigs')) {
-        updateStats();
-    }
-    if(document.getElementById('clash-filesize')) {
-        updateClashFileSize();
-    }
+    })();
 });
 
 function initTheme() {
@@ -136,6 +103,62 @@ function initTheme() {
         setTheme(e.matches ? 'dark' : 'light', true);
     });
 }
+
+/**
+ * Global error handler with user-friendly messages
+ */
+
+class ErrorBoundary {
+  static init() {
+    // Handle uncaught errors
+    window.addEventListener('error', (event) => {
+      console.error('Global error caught:', event.error);
+      this.showErrorNotification(
+        'An error occurred',
+        'Please refresh the page or contact support'
+      );
+    });
+
+    // Handle unhandled promise rejections
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      this.showErrorNotification(
+        'A request failed',
+        'Please refresh and try again'
+      );
+      event.preventDefault();
+    });
+  }
+
+  static showErrorNotification(title, message) {
+    const notification = document.createElement('div');
+    notification.className = 'error-notification';
+    notification.innerHTML = `
+      <div class="error-content">
+        <h3>${title}</h3>
+        <p>${message}</p>
+        <button onclick="this.parentElement.parentElement.remove()">Dismiss</button>
+      </div>
+    `;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.remove();
+    }, 8000);
+  }
+
+  static async safeAsyncOperation(operation, fallback = null) {
+    try {
+      return await operation();
+    } catch (error) {
+      console.error('Operation failed:', error);
+      return fallback;
+    }
+  }
+}
+
+// Initialize on page load
+ErrorBoundary.init();
 
 function initHeaderScroll() {
     const header = document.querySelector('.header');

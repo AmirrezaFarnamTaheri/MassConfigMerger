@@ -1,0 +1,85 @@
+name: Deploy Pages on Merge Complete
+
+on:
+  workflow_run:
+    workflows: ["Merge and Retest VPN Subscriptions"]
+    types:
+      - completed
+    branches: [main]
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'output/**'
+      - '.nojekyll'
+      - 'index.html'
+      - 'proxies.html'
+      - 'statistics.html'
+      - 'assets/**'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Create GitHub Pages artifact
+        run: |
+          # Create minimal deployment package
+          mkdir -p github_pages_root
+
+          # Copy only public files
+          cp -r index.html proxies.html statistics.html github_pages_root/
+          cp -r assets github_pages_root/
+          cp -r output github_pages_root/
+          cp .nojekyll github_pages_root/
+          cp README.md github_pages_root/
+
+          # Create a manifest for transparency
+          cat > github_pages_root/FILES_MANIFEST.txt << 'EOF'
+          This GitHub Pages deployment contains:
+          - index.html, proxies.html, statistics.html (Public pages)
+          - assets/ (CSS, JavaScript, images)
+          - output/ (Generated proxy configurations and metadata)
+          - README.md (Project documentation)
+
+          This deployment DOES NOT contain:
+          - Source code (src/)
+          - Git history (.git/)
+          - Configuration files (pyproject.toml, sources.txt)
+          - Test files (tests/)
+          EOF
+
+          ls -la github_pages_root/
+
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'github_pages_root'
+          retention-days: 1
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Verify deployment
+        run: |
+          echo "Pages deployed successfully to:"
+          echo "${{ steps.deployment.outputs.page_url }}"
