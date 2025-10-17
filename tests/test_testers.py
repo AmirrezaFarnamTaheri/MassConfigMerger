@@ -1,9 +1,11 @@
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 from aiohttp import web
 
-from configstream.testers import SingBoxTester
 from configstream.core import Proxy
+from configstream.testers import SingBoxTester
+
 
 @pytest.mark.asyncio
 async def test_singbox_tester_success(aiohttp_client):
@@ -11,6 +13,7 @@ async def test_singbox_tester_success(aiohttp_client):
     Test the SingBoxTester with a successful proxy connection.
     This test mocks the SingBoxProxy and the test URL endpoint.
     """
+
     # Arrange
     async def handler(request):
         # This handler will be called by the tester through the mock proxy
@@ -20,11 +23,12 @@ async def test_singbox_tester_success(aiohttp_client):
     app.router.add_get("/generate_204", handler)
     client = await aiohttp_client(app)
 
-    test_urls = {'primary': str(client.server.make_url("/generate_204"))}
+    test_urls = {"primary": str(client.server.make_url("/generate_204"))}
 
     # Patch the config to use our mock server URL
-    with patch("configstream.testers.ProxyConfig.TEST_URLS", test_urls), \
-         patch("configstream.testers.SingBoxProxy") as mock_singbox_proxy:
+    with patch("configstream.testers.ProxyConfig.TEST_URLS", test_urls), patch(
+        "configstream.testers.SingBoxProxy"
+    ) as mock_singbox_proxy:
 
         # Configure the mock SingBoxProxy
         mock_sb_instance = AsyncMock()
@@ -68,6 +72,7 @@ async def test_singbox_tester_failure_masked():
     # Assert
     assert tested_proxy.is_working is False
     assert "Connection failed: [MASKED]" in tested_proxy.security_issues[0]
+
 
 @pytest.mark.asyncio
 async def test_singbox_tester_failure_unmasked():

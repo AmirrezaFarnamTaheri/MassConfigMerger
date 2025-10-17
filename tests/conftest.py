@@ -64,7 +64,9 @@ def fs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> SimpleFS:
 
 
 @pytest.fixture
-def aiohttp_client(request: pytest.FixtureRequest) -> Callable[[web.Application], Awaitable[TestClient]]:
+def aiohttp_client(
+    request: pytest.FixtureRequest,
+) -> Callable[[web.Application], Awaitable[TestClient]]:
     """Create an ``aiohttp`` test client without external pytest plugins."""
 
     active_clients: List[TestClient] = []
@@ -91,4 +93,3 @@ def aiohttp_client(request: pytest.FixtureRequest) -> Callable[[web.Application]
 
     request.addfinalizer(cleanup)
     return factory
-

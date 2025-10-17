@@ -1,13 +1,13 @@
 import asyncio
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
 
 import aiohttp
 from aiohttp_proxy import ProxyConnector
 from singbox2proxy import SingBoxProxy
 
-from .core import Proxy
 from .config import ProxyConfig
+from .core import Proxy
 from .services import IProxyTester
 
 # Remove tester.py - consolidate all here
@@ -36,15 +36,10 @@ class SingBoxTester(IProxyTester):
             # Try multiple test URLs
             for test_url in self.config.TEST_URLS.values():
                 try:
-                    async with aiohttp.ClientSession(
-                        connector=connector
-                    ) as session:
+                    async with aiohttp.ClientSession(connector=connector) as session:
                         start_time = asyncio.get_event_loop().time()
                         async with session.get(
-                            test_url,
-                            timeout=aiohttp.ClientTimeout(
-                                total=self.config.TEST_TIMEOUT
-                            )
+                            test_url, timeout=aiohttp.ClientTimeout(total=self.config.TEST_TIMEOUT)
                         ) as response:
                             if response.status == 204:
                                 end_time = asyncio.get_event_loop().time()

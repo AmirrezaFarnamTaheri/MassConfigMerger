@@ -1,4 +1,5 @@
 import asyncio
+
 import pytest
 from aiohttp import web
 
@@ -8,6 +9,7 @@ from configstream.fetcher import fetch_from_source
 @pytest.mark.asyncio
 async def test_fetch_from_source_success(aiohttp_client):
     """Test successful fetching from a source."""
+
     async def handler(request):
         return web.Response(text="proxy1\nproxy2\n#comment\nproxy3")
 
@@ -25,6 +27,7 @@ async def test_fetch_from_source_success(aiohttp_client):
 @pytest.mark.asyncio
 async def test_fetch_from_source_http_error(aiohttp_client):
     """Test fetch with an HTTP error."""
+
     async def handler(request):
         return web.Response(status=500, text="Internal Server Error")
 
@@ -42,6 +45,7 @@ async def test_fetch_from_source_http_error(aiohttp_client):
 @pytest.mark.asyncio
 async def test_fetch_from_source_timeout(aiohttp_client):
     """Test fetch with a timeout."""
+
     async def handler(request):
         await asyncio.sleep(2)
         return web.Response(text="proxy1")
@@ -59,6 +63,7 @@ async def test_fetch_from_source_timeout(aiohttp_client):
 @pytest.mark.asyncio
 async def test_fetch_from_source_empty_source(aiohttp_client):
     """Test fetching from an empty source."""
+
     async def handler(request):
         return web.Response(text="")
 

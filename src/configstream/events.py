@@ -1,11 +1,13 @@
-from enum import Enum
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
+
 
 class EventType(Enum):
     """Event types"""
+
     PROXY_DISCOVERED = "proxy_discovered"
     PROXY_TESTED = "proxy_tested"
     PROXY_FAILED = "proxy_failed"
@@ -15,13 +17,16 @@ class EventType(Enum):
     PIPELINE_COMPLETED = "pipeline_completed"
     ERROR_OCCURRED = "error_occurred"
 
+
 @dataclass
 class Event:
     """Event data structure"""
+
     type: EventType
     timestamp: datetime
     data: Dict[str, Any]
     source: str = "configstream"
+
 
 class EventBus:
     """Central event bus for pub/sub pattern"""
@@ -52,8 +57,7 @@ class EventBus:
         # Notify subscribers
         if event.type in self.subscribers:
             tasks = [
-                asyncio.create_task(handler(event))
-                for handler in self.subscribers[event.type]
+                asyncio.create_task(handler(event)) for handler in self.subscribers[event.type]
             ]
             await asyncio.gather(*tasks, return_exceptions=True)
 

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from typing import List
+
 from .core import Proxy
 from .services import IProxyRepository
+
 
 class InMemoryProxyRepository(IProxyRepository):
     """In-memory implementation of the proxy repository."""

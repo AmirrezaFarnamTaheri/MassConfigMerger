@@ -1,5 +1,6 @@
 from configstream.config import ProxyConfig
 
+
 def test_proxy_config_load_defaults():
     """
     Test that the default proxy configurations are loaded correctly.

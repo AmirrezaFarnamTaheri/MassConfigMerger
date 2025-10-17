@@ -109,4 +109,3 @@ def downgrade() -> None:
     op.drop_index("idx_country_protocol", table_name="proxies")
     op.drop_index("idx_active_latency", table_name="proxies")
     op.drop_table("proxies")
-

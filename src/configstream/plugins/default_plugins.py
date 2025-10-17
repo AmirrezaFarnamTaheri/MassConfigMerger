@@ -1,16 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Any, Dict
-
-import aiohttp
-from pathlib import Path
 from typing import Any, Dict, List
 
 import aiohttp
 
-from . import ExportPlugin, FilterPlugin, SourcePlugin
 from ..core import Proxy, generate_base64_subscription, generate_clash_config
+from . import ExportPlugin, FilterPlugin, SourcePlugin
 
 
 class UrlSourcePlugin(SourcePlugin):
@@ -138,6 +134,3 @@ class ClashExportPlugin(ExportPlugin):
         content = generate_clash_config(proxies)
         if content:
             (output_path / "clash.yaml").write_text(content, encoding="utf-8")
-
-
-

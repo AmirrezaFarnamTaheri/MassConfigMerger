@@ -1,10 +1,12 @@
-from sqlalchemy import create_engine, func
-from sqlalchemy.orm import Session, sessionmaker
-from typing import List, Optional
 import hashlib
 from datetime import datetime, timedelta
+from typing import List, Optional
 
-from .models import Base, Proxy, ProxyTestResult, Source
+from sqlalchemy import create_engine, func
+from sqlalchemy.orm import Session, sessionmaker
+
+from .models import Base, Proxy, ProxyTestResult
+
 
 class ProxyRepository:
     """Repository for proxy operations"""
@@ -22,12 +24,10 @@ class ProxyRepository:
         """Save or update proxy"""
         session: Session = self.SessionLocal()
         try:
-            config_hash = self._get_config_hash(proxy_data['config'])
+            config_hash = self._get_config_hash(proxy_data["config"])
 
             # Check if exists
-            existing = session.query(Proxy).filter_by(
-                config_hash=config_hash
-            ).first()
+            existing = session.query(Proxy).filter_by(config_hash=config_hash).first()
 
             if existing:
                 # Update
@@ -37,10 +37,7 @@ class ProxyRepository:
                 proxy = existing
             else:
                 # Create new
-                proxy = Proxy(
-                    config_hash=config_hash,
-                    **proxy_data
-                )
+                proxy = Proxy(config_hash=config_hash, **proxy_data)
                 session.add(proxy)
 
             session.commit()
@@ -89,10 +86,7 @@ class ProxyRepository:
         try:
             # Create test result
             result = ProxyTestResult(
-                proxy_id=proxy_id,
-                success=success,
-                latency=latency,
-                error_message=error
+                proxy_id=proxy_id, success=success, latency=latency, error_message=error
             )
             session.add(result)
 
@@ -123,9 +117,7 @@ class ProxyRepository:
         session: Session = self.SessionLocal()
         try:
             cutoff = datetime.utcnow() - timedelta(days=days)
-            deleted = session.query(Proxy).filter(
-                Proxy.last_seen < cutoff
-            ).delete()
+            deleted = session.query(Proxy).filter(Proxy.last_seen < cutoff).delete()
             session.commit()
             return deleted
         finally:
@@ -144,16 +136,14 @@ class ProxyRepository:
             )
 
             avg_latency = (
-                session.query(func.avg(Proxy.latency))
-                .filter(Proxy.is_active.is_(True))
-                .scalar()
+                session.query(func.avg(Proxy.latency)).filter(Proxy.is_active.is_(True)).scalar()
             )
 
             return {
-                'total': total,
-                'working': working,
-                'failed': total - working,
-                'avg_latency': avg_latency
+                "total": total,
+                "working": working,
+                "failed": total - working,
+                "avg_latency": avg_latency,
             }
         finally:
             session.close()

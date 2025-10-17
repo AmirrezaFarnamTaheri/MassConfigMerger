@@ -1,10 +1,11 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from pathlib import Path
+
+import pytest
 from rich.progress import Progress
 
-from configstream.pipeline import run_full_pipeline
 from configstream.core import Proxy
+from configstream.pipeline import run_full_pipeline
+
 
 @pytest.fixture
 def mock_progress():
@@ -14,6 +15,7 @@ def mock_progress():
     progress.update = MagicMock()
     return progress
 
+
 def create_proxy(config, is_working=False, latency=None):
     """Helper to create valid Proxy objects for tests."""
     return Proxy(
@@ -22,8 +24,9 @@ def create_proxy(config, is_working=False, latency=None):
         address="1.2.3.4",
         port=80,
         is_working=is_working,
-        latency=latency
+        latency=latency,
     )
+
 
 @patch("configstream.pipeline.RateLimiter")
 @patch("configstream.pipeline.MaliciousNodeDetector")
@@ -33,7 +36,14 @@ def create_proxy(config, is_working=False, latency=None):
 @patch("configstream.pipeline.geolocate_proxy")
 @pytest.mark.asyncio
 async def test_run_full_pipeline_success(
-    mock_geolocate, mock_parse, mock_fetch, mock_tester, mock_detector, mock_ratelimiter, mock_progress, tmp_path
+    mock_geolocate,
+    mock_parse,
+    mock_fetch,
+    mock_tester,
+    mock_detector,
+    mock_ratelimiter,
+    mock_progress,
+    tmp_path,
 ):
     """
     Test the full pipeline with a mix of working, non-working, and malicious proxies.
@@ -53,11 +63,10 @@ async def test_run_full_pipeline_success(
             proxy.is_working = True
             proxy.latency = 100
         return proxy
+
     mock_tester.return_value.test = AsyncMock(side_effect=mock_test_side_effect)
 
-    mock_detector.return_value.detect_malicious = AsyncMock(
-        return_value={'is_malicious': False}
-    )
+    mock_detector.return_value.detect_malicious = AsyncMock(return_value={"is_malicious": False})
 
     # Act
     await run_full_pipeline(sources, output_dir, mock_progress)
@@ -73,6 +82,7 @@ async def test_run_full_pipeline_success(
     assert "test-1.2.3.4" in clash_config
     assert "c2" not in clash_config
 
+
 @patch("configstream.pipeline.RateLimiter")
 @patch("configstream.pipeline.MaliciousNodeDetector")
 @patch("configstream.pipeline.SingBoxTester")
@@ -81,7 +91,14 @@ async def test_run_full_pipeline_success(
 @patch("configstream.pipeline.geolocate_proxy")
 @pytest.mark.asyncio
 async def test_run_full_pipeline_malicious_proxy(
-    mock_geolocate, mock_parse, mock_fetch, mock_tester, mock_detector, mock_ratelimiter, mock_progress, tmp_path
+    mock_geolocate,
+    mock_parse,
+    mock_fetch,
+    mock_tester,
+    mock_detector,
+    mock_ratelimiter,
+    mock_progress,
+    tmp_path,
 ):
     """
     Test that a proxy flagged as malicious is filtered out.
@@ -93,8 +110,12 @@ async def test_run_full_pipeline_malicious_proxy(
     mock_geolocate.side_effect = lambda p, r: p
 
     # Correctly mock the async methods to return awaitables
-    mock_tester.return_value.test = AsyncMock(return_value=create_proxy("c1", is_working=True, latency=100))
-    mock_detector.return_value.detect_malicious = AsyncMock(return_value={'is_malicious': True, 'severity': 'critical', 'tests': []})
+    mock_tester.return_value.test = AsyncMock(
+        return_value=create_proxy("c1", is_working=True, latency=100)
+    )
+    mock_detector.return_value.detect_malicious = AsyncMock(
+        return_value={"is_malicious": True, "severity": "critical", "tests": []}
+    )
 
     # Act
     await run_full_pipeline(["http://source.com"], str(tmp_path), mock_progress)
@@ -106,6 +127,7 @@ async def test_run_full_pipeline_malicious_proxy(
 
     stats_file = (tmp_path / "statistics.json").read_text()
     import json
+
     stats = json.loads(stats_file)
     assert stats["working"] == 0
     assert stats["failed"] == 1

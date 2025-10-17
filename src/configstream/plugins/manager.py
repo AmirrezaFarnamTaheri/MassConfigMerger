@@ -3,7 +3,8 @@ import inspect
 from pathlib import Path
 from typing import Any, Dict, List, Type
 
-from . import Plugin, SourcePlugin, FilterPlugin, ExportPlugin
+from . import ExportPlugin, FilterPlugin, Plugin, SourcePlugin
+
 
 class PluginManager:
     """Manages plugin lifecycle"""
@@ -47,7 +48,7 @@ class PluginManager:
         source_plugins: List[str],
         filter_plugins: List[str],
         export_plugins: List[str],
-        config: Dict[str, Any]
+        config: Dict[str, Any],
     ) -> None:
         """Execute plugin pipeline"""
         # Fetch from sources
@@ -73,4 +74,4 @@ class PluginManager:
         for plugin_name in export_plugins:
             plugin = self.export_plugins.get(plugin_name)
             if plugin:
-                await plugin.export(filtered_proxies, config.get('output_path'))
+                await plugin.export(filtered_proxies, config.get("output_path"))
