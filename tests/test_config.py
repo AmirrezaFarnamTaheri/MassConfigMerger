@@ -1,14 +1,24 @@
-from configstream.config import ProxyConfig
+from configstream.config import AppSettings
 
 
-def test_proxy_config_load_defaults():
-    """
-    Test that the default proxy configurations are loaded correctly.
-    """
-    config = ProxyConfig()
-    assert config.TEST_TIMEOUT == 10
-    assert config.BATCH_SIZE == 50
-    assert config.RATE_LIMIT_REQUESTS == 100
-    assert "vmess" in config.PROTOCOL_COLORS
-    assert "primary" in config.TEST_URLS
-    assert "blocked_countries" in config.SECURITY
+def test_app_settings_defaults():
+    """Test that AppSettings has default values."""
+    settings = AppSettings()
+    assert settings.TEST_TIMEOUT == 10
+    assert settings.BATCH_SIZE == 50
+    assert "vmess" in settings.PROTOCOL_COLORS
+
+
+def test_app_settings_env_override(monkeypatch):
+    """Test that AppSettings can be overridden by environment variables."""
+    monkeypatch.setenv("TEST_TIMEOUT", "25")
+    monkeypatch.setenv("BATCH_SIZE", "100")
+
+    # The AppSettings class reads environment variables at import time,
+    # so we need to reload the module to pick up the patched values.
+    import importlib
+    from configstream import config
+    importlib.reload(config)
+    settings = config.AppSettings()
+    assert settings.TEST_TIMEOUT == 25
+    assert settings.BATCH_SIZE == 100

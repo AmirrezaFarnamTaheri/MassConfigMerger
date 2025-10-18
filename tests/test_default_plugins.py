@@ -1,7 +1,7 @@
 import aiohttp
 import pytest
 
-from configstream.core import Proxy
+from configstream.models import Proxy
 from configstream.plugins.default_plugins import (Base64ExportPlugin,
                                                   ClashExportPlugin,
                                                   CountryFilterPlugin,
@@ -113,7 +113,7 @@ async def test_clash_export_plugin(tmp_path):
             address="test.com",
             port=443,
             uuid="uuid",
-            _details={},
+            details={},
             is_working=True,
             is_secure=True,
         )

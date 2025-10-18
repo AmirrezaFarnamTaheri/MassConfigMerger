@@ -26,7 +26,7 @@ def detector():
 def sample_proxy():
     """Create a sample proxy for testing"""
     return Proxy(
-        config=VALID_PROXY_CONFIG,  # Use a valid format
+        config=VALID_PROXY_CONFIG,
         protocol="vmess",
         address="1.2.3.4",
         port=443,
@@ -41,18 +41,11 @@ def mock_session():
     Create a mock aiohttp session that correctly handles the async context manager.
     """
     session = AsyncMock(spec=aiohttp.ClientSession)
-
-    # This is the object that will be returned by __aenter__
     mock_response = AsyncMock(spec=aiohttp.ClientResponse)
-
-    # This is the context manager object returned by session.get()
     context_manager = AsyncMock()
     context_manager.__aenter__.return_value = mock_response
-
-    # Make session.get a regular MagicMock that returns the context manager
     session.get = MagicMock(return_value=context_manager)
 
-    # Add a helper to configure the mock response for each test
     def _configure_get(status=200,
                        text="",
                        json_data=None,
@@ -132,8 +125,6 @@ class TestHeaderManipulation:
     @pytest.mark.asyncio
     async def test_headers_stripped(self, detector, mock_session,
                                     sample_proxy):
-        # This response strips ALL custom headers.
-        # len(missing_headers) will be 3, which is > the threshold of 2.
         response_data = {"headers": {}}
         mock_session.configure_get(json_data=response_data)
         result = await detector._test_header_manipulation(
@@ -191,13 +182,13 @@ class TestMalwareReputation:
 
     @pytest.mark.asyncio
     async def test_malicious_asn(self, detector, sample_proxy):
-        sample_proxy.asn = "AS13335"  # Known malicious
+        sample_proxy.asn = "AS13335"
         result = await detector._test_malware_reputation(sample_proxy)
         assert result.passed is False
 
     @pytest.mark.asyncio
     async def test_blocked_country(self, detector, sample_proxy):
-        sample_proxy.country_code = "IR"  # Known blocked
+        sample_proxy.country_code = "IR"
         detector.config.SECURITY["blocked_countries"] = ["IR"]
         result = await detector._test_malware_reputation(sample_proxy)
         assert result.passed is False
@@ -214,7 +205,7 @@ class TestSuspiciousPorts:
 
     @pytest.mark.asyncio
     async def test_reserved_port(self, detector, sample_proxy):
-        sample_proxy.port = 22  # Reserved
+        sample_proxy.port = 22
         result = await detector._test_suspicious_ports(sample_proxy)
         assert result.passed is False
 
@@ -227,7 +218,6 @@ class TestOverallDetection:
     @pytest.mark.asyncio
     async def test_clean_proxy_overall(self, mock_connector, mock_session,
                                        detector, sample_proxy):
-        """A clean proxy should score 0 and pass all checks."""
         with patch.multiple(
                 detector,
                 _test_content_injection=AsyncMock(
@@ -254,7 +244,6 @@ class TestOverallDetection:
     @pytest.mark.asyncio
     async def test_malicious_proxy_overall(self, mock_connector, mock_session,
                                            detector, sample_proxy):
-        """A malicious proxy should score high and be flagged."""
         with patch.multiple(
                 detector,
                 _test_content_injection=AsyncMock(

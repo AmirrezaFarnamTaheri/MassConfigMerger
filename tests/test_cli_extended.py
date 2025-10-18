@@ -120,7 +120,7 @@ def test_cli_merge_country_filter(runner):
                 cli, ["merge", "--sources", "sources.txt", "--country", "US"])
             assert result.exit_code == 0, result.output
             # Check that the country filter was passed to the pipeline
-            assert mock_pipeline.call_args.kwargs["country"] == "US"
+            assert mock_pipeline.call_args.kwargs["country_filter"] == "US"
 
 
 def test_cli_merge_sources_file_not_found(runner):

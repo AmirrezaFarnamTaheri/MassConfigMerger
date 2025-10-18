@@ -1,21 +1,23 @@
 {
-  "generated_at": "2025-10-18T16:18:33.475011+00:00",
   "version": "1.0.0",
-  "source_count": 8,
-  "proxy_count": 0,
-  "cache_bust": 1760804313475,
-  "protocol_colors": {
-    "vmess": "#FF6B6B",
-    "vless": "#4ECDC4",
-    "shadowsocks": "#45B7D1",
-    "trojan": "#96CEB4",
-    "hysteria": "#FFEAA7",
-    "hysteria2": "#DFE6E9",
-    "tuic": "#A29BFE",
-    "wireguard": "#74B9FF",
-    "naive": "#FD79A8",
-    "http": "#FDCB6E",
-    "https": "#6C5CE7",
-    "socks": "#00B894"
+  "generated_at": "2025-10-18T19:25:05.567948+00:00",
+  "updated_at": "2025-10-18T19:25:22.478677+00:00",
+  "proxy_count": 1,
+  "working_count": 1,
+  "source_count": 1,
+  "cache_bust": 1760815522478,
+  "stats": {
+    "generated_at": "2025-10-18T19:25:05.567948+00:00",
+    "generated_now": "2025-10-18T19:25:22.478107+00:00",
+    "total_fetched": 5075,
+    "total_tested": 5049,
+    "total_working": 1,
+    "total_filtered": 1,
+    "success_rate": 0.02,
+    "average_latency_ms": 7790.94,
+    "protocol_distribution": {
+      "vmess": 1
+    },
+    "cache_bust": 1760815522478
   }
 }

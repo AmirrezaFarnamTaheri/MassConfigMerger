@@ -236,6 +236,32 @@ async def fetch_from_source(
                        error=last_error)
 
 
+class SourceFetcher:
+    """A class to fetch proxy configurations from multiple sources."""
+
+    async def fetch_all(self,
+                        sources: list[str],
+                        max_proxies: int | None = None) -> list[str]:
+        """
+        Fetch all proxy configurations from the given sources.
+
+        Args:
+            sources: A list of source URLs.
+            max_proxies: The maximum number of proxies to fetch.
+
+        Returns:
+            A list of proxy configurations.
+        """
+        results = await fetch_multiple_sources(sources)
+        all_configs = []
+        for result in results.values():
+            if result.success:
+                all_configs.extend(result.configs)
+        if max_proxies is not None:
+            return all_configs[:max_proxies]
+        return all_configs
+
+
 async def fetch_multiple_sources(sources: list[str],
                                  max_concurrent: int = 10,
                                  timeout: int = 30) -> dict[str, FetchResult]:

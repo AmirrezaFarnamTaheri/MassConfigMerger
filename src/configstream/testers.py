@@ -6,7 +6,7 @@ import aiohttp
 from aiohttp_proxy import ProxyConnector
 from singbox2proxy import SingBoxProxy
 
-from .config import ProxyConfig
+from .config import AppSettings
 from .core import Proxy
 from .services import IProxyTester
 
@@ -17,8 +17,9 @@ logger = logging.getLogger(__name__)
 class SingBoxTester(IProxyTester):
     """Concrete implementation of IProxyTester using SingBox"""
 
-    def __init__(self):
-        self.config = ProxyConfig()
+    def __init__(self, timeout: int | None = None):
+        self.config = AppSettings()
+        self.timeout = timeout if timeout is not None else self.config.TEST_TIMEOUT
         self.current_test_url_index = 0
 
     async def test(self, proxy: Proxy) -> Proxy:
@@ -39,10 +40,10 @@ class SingBoxTester(IProxyTester):
                     async with aiohttp.ClientSession(
                             connector=connector) as session:
                         start_time = asyncio.get_event_loop().time()
-                        async with session.get(test_url,
-                                               timeout=aiohttp.ClientTimeout(
-                                                   total=self.config.
-                                                   TEST_TIMEOUT)) as response:
+                        async with session.get(
+                                test_url,
+                                timeout=aiohttp.ClientTimeout(
+                                    total=self.timeout)) as response:
                             if response.status == 204:
                                 end_time = asyncio.get_event_loop().time()
                                 proxy.latency = round(
