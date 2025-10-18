@@ -5,7 +5,8 @@ from typing import Any
 
 import aiohttp
 
-from ..core import Proxy, generate_base64_subscription, generate_clash_config
+from ..models import Proxy
+from ..output import generate_base64_subscription, generate_clash_config
 from . import ExportPlugin, FilterPlugin, SourcePlugin
 
 

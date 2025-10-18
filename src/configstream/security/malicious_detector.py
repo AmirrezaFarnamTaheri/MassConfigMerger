@@ -5,7 +5,7 @@ from typing import Any
 import aiohttp
 from aiohttp_proxy import ProxyConnector
 
-from ..config import ProxyConfig
+from ..config import AppSettings
 from ..core import Proxy
 
 
@@ -24,7 +24,7 @@ class MaliciousNodeDetector:
     """Comprehensive detection of malicious proxies"""
 
     def __init__(self):
-        self.config = ProxyConfig()
+        self.config = AppSettings()
         self.test_results: dict[str, list[SecurityTest]] = {}
 
         # Content fingerprints for known-good sites

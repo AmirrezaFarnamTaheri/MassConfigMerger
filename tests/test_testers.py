@@ -16,7 +16,6 @@ async def test_singbox_tester_success(aiohttp_client):
 
     # Arrange
     async def handler(request):
-        # This handler will be called by the tester through the mock proxy
         return web.Response(status=204)
 
     app = web.Application()
@@ -25,15 +24,12 @@ async def test_singbox_tester_success(aiohttp_client):
 
     test_urls = {"primary": str(client.server.make_url("/generate_204"))}
 
-    # Patch the config to use our mock server URL
-    with patch("configstream.testers.ProxyConfig.TEST_URLS", test_urls), patch(
+    with patch("configstream.testers.AppSettings.TEST_URLS", test_urls), patch(
             "configstream.testers.SingBoxProxy") as mock_singbox_proxy:
 
-        # Configure the mock SingBoxProxy
         mock_sb_instance = AsyncMock()
         mock_sb_instance.start = AsyncMock()
         mock_sb_instance.stop = AsyncMock()
-        # This is the key: the tester will use this URL to connect to the proxy
         mock_sb_instance.http_proxy_url = str(client.server.make_url("/"))
         mock_singbox_proxy.return_value = mock_sb_instance
 

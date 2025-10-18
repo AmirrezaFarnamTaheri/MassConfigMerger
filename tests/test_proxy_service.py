@@ -2,7 +2,7 @@ import asyncio
 import unittest
 from unittest.mock import AsyncMock, MagicMock
 
-from configstream.core import Proxy
+from configstream.core import Proxy, ProxyTestResult
 from configstream.events import Event, EventBus, EventType
 from configstream.proxy_service import ProxyService
 from configstream.services import IProxyRepository, IProxyTester
@@ -39,7 +39,12 @@ class TestProxyService(unittest.TestCase):
             is_working=True,
             latency=100,
         )
-        self.tester.test.return_value = tested_proxy
+        self.tester.test.return_value = ProxyTestResult(
+            success=True,
+            latency_ms=100,
+            geolocation=None,
+            timestamp=None,
+            proxy=tested_proxy)
 
         await self.service.process_proxy(proxy)
 
@@ -65,7 +70,12 @@ class TestProxyService(unittest.TestCase):
                              address="proxy",
                              port=8080,
                              is_working=False)
-        self.tester.test.return_value = tested_proxy
+        self.tester.test.return_value = ProxyTestResult(
+            success=False,
+            latency_ms=None,
+            geolocation=None,
+            timestamp=None,
+            proxy=tested_proxy)
 
         await self.service.process_proxy(proxy)
 

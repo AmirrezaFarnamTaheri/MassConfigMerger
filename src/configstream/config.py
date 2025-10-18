@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class ProxyConfig:
+class AppSettings:
     """Centralized configuration for all proxy operations"""
 
     # Test URLs and timeouts (CENTRALIZED)

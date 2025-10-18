@@ -5,8 +5,9 @@ import base64
 import pytest
 import yaml
 
-from configstream.core import (Proxy, generate_base64_subscription,
-                               generate_clash_config)
+from configstream.models import Proxy
+from configstream.output import (generate_base64_subscription,
+                                 generate_clash_config)
 
 
 @pytest.fixture
@@ -20,13 +21,6 @@ def working_proxies():
         port=1000,
         uuid="uuid1",
         is_working=True,
-        is_secure=True,
-        latency=120.5,
-        country="USA",
-        country_code="US",
-        city="New York",
-        asn="AS1 Google",
-        asn_number=1,
     )
     p2 = Proxy(
         config="vless://test2",
@@ -36,13 +30,6 @@ def working_proxies():
         port=2000,
         uuid="uuid2",
         is_working=True,
-        is_secure=True,
-        latency=88.0,
-        country="Germany",
-        country_code="DE",
-        city="Berlin",
-        asn="AS2 Cloudflare",
-        asn_number=2,
     )
     return [p1, p2]
 
@@ -50,22 +37,23 @@ def working_proxies():
 @pytest.fixture
 def all_proxies(working_proxies):
     """Fixture for a list of all proxies, including failed ones."""
-    p3 = Proxy(config="trojan://test3", is_working=False)
+    p3 = Proxy(config="trojan://test3", protocol="trojan", address="3.3.3.3", port=3000, is_working=False)
     return working_proxies + [p3]
 
 
-def test_generate_base64_subscription(working_proxies):
+def test_generate_base64_subscription(all_proxies):
     """Test Base64 subscription generation."""
-    content = generate_base64_subscription(working_proxies)
+    content = generate_base64_subscription(all_proxies)
     decoded_content = base64.b64decode(content).decode("utf-8")
     assert "vmess://test1" in decoded_content
     assert "vless://test2" in decoded_content
+    assert "trojan://test3" not in decoded_content
     assert len(decoded_content.splitlines()) == 2
 
 
-def test_generate_clash_config(working_proxies):
+def test_generate_clash_config(all_proxies):
     """Test Clash config generation."""
-    content = generate_clash_config(working_proxies)
+    content = generate_clash_config(all_proxies)
     config = yaml.safe_load(content)
 
     assert len(config["proxies"]) == 2

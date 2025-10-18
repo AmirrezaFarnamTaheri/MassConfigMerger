@@ -52,8 +52,7 @@ dev = [
     "mypy",
     "pre-commit",
     "pip-audit",
-    "sqlalchemy",
-    "alembic",
+    "pytest-mock",
 ]
 
 [project.urls]
@@ -77,11 +76,33 @@ addopts = [
     "--strict-markers",
     "--cov=configstream",
     "--cov-report=term-missing",
+    "--cov-report=html",
 ]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+asyncio_mode = "auto"
+norecursedirs = ["__pycache__"]
 
 [tool.black]
 line-length = 100
-target-version = ['py38', 'py39', 'py310', 'py311']
+target-version = ["py310", "py311", "py312"]
+include = "\\.pyi?$"
+extend-exclude = """
+/(
+  # directories
+  \\.eggs
+  | \\.git
+  | \\.hg
+  | \\.mypy_cache
+  | \\.tox
+  | \\.venv
+  | build
+  | dist
+)/
+"""
 
 [tool.mypy]
 python_version = "3.10"

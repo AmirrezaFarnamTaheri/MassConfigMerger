@@ -41,8 +41,16 @@ def test_cli_retest_command(runner, mocker):
     }
     mocker.patch("builtins.open",
                  mocker.mock_open(read_data=json.dumps([valid_proxy])))
-    mocker.patch("configstream.pipeline.run_full_pipeline",
-                 new_callable=AsyncMock)
+    mocker.patch(
+        "configstream.pipeline.run_full_pipeline",
+        new_callable=AsyncMock,
+        return_value={
+            "success": True,
+            "stats": {},
+            "output_files": {},
+            "error": None
+            },
+        )
     result = runner.invoke(
         cli,
         ["retest", "--input", "output/proxies.json", "--output", "output/"])

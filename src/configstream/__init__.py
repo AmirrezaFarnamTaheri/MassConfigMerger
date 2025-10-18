@@ -1,28 +1,25 @@
-"""ConfigStream - VPN Configuration Aggregator"""
+"""
+ConfigStream - VPN Configuration Aggregator
+
+This package provides tools to fetch, test, and manage VPN configurations
+from various sources.
+"""
 
 __version__ = "1.0.0"
-__author__ = "Amirreza Farnam Taheri"
+__author__ = "Amirreza 'Farnam' Taheri"
 
-# Import core components if they exist
-__all__ = []
+# Import key components to be available at the package level
+from .core import Proxy, ProxyTester, parse_config
+from .pipeline import run_full_pipeline
+from .config import AppSettings
 
-try:
-    pass
-
-    __all__.extend(["Settings", "settings"])
-except ImportError:
-    pass
-
-try:
-    pass
-
-    __all__.extend(["Proxy", "ProxyTester", "test_proxy", "parse_config"])
-except ImportError:
-    pass
-
-try:
-    pass
-
-    __all__.append("run_full_pipeline")
-except ImportError:
-    pass
+# Define the public API of the package
+__all__ = [
+    "Proxy",
+    "ProxyTester",
+    "parse_config",
+    "run_full_pipeline",
+    "AppSettings",
+    "__version__",
+    "__author__",
+]

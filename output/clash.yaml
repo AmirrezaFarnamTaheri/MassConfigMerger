@@ -1,5 +1,22 @@
-proxies: []
+proxies:
+- add: free-russian01-cdn.xiaohouzi.club
+  aid: 233
+  host: free-russian01-cdn.xiaohouzi.club
+  id: 3d31728e-064d-42b8-b945-f79c008f73fc
+  name: "\U0001F1FA\U0001F1F8US-76.223.54.146-1565"
+  net: ws
+  path: /
+  port: 80
+  ps: "\U0001F1FA\U0001F1F8US-76.223.54.146-1565"
+  security: auto
+  server: free-russian01-cdn.xiaohouzi.club
+  skip-cert-verify: true
+  sni: ''
+  tls: ''
+  type: auto
+  uuid: 3d31728e-064d-42b8-b945-f79c008f73fc
 proxy-groups:
 - name: "\U0001F680 ConfigStream"
-  proxies: []
+  proxies:
+  - "\U0001F1FA\U0001F1F8US-76.223.54.146-1565"
   type: select

@@ -1,6 +1,14 @@
 {
-  "total_tested": 0,
-  "working": 0,
-  "failed": 0,
-  "success_rate": 0
+  "generated_at": "2025-10-18T19:25:05.567948+00:00",
+  "generated_now": "2025-10-18T19:25:22.478107+00:00",
+  "total_fetched": 5075,
+  "total_tested": 5049,
+  "total_working": 1,
+  "total_filtered": 1,
+  "success_rate": 0.02,
+  "average_latency_ms": 7790.94,
+  "protocol_distribution": {
+    "vmess": 1
+  },
+  "cache_bust": 1760815522478
 }

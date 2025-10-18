@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "config": "vmess://ewogICAgImFkZCI6ICJmcmVlLXJ1c3NpYW4wMS1jZG4ueGlhb2hvdXppLmNsdWIiLAogICAgImFpZCI6IDIzMywKICAgICJob3N0IjogImZyZWUtcnVzc2lhbjAxLWNkbi54aWFvaG91emkuY2x1YiIsCiAgICAiaWQiOiAiM2QzMTcyOGUtMDY0ZC00MmI4LWI5NDUtZjc5YzAwOGY3M2ZjIiwKICAgICJuZXQiOiAid3MiLAogICAgInBhdGgiOiAiLyIsCiAgICAicG9ydCI6IDgwLAogICAgInBzIjogIvCfh7rwn4e4VVMtNzYuMjIzLjU0LjE0Ni0xNTY1IiwKICAgICJ0bHMiOiAiIiwKICAgICJ0eXBlIjogImF1dG8iLAogICAgInNlY3VyaXR5IjogImF1dG8iLAogICAgInNraXAtY2VydC12ZXJpZnkiOiB0cnVlLAogICAgInNuaSI6ICIiCn0=",
+    "protocol": "vmess",
+    "address": "free-russian01-cdn.xiaohouzi.club",
+    "port": 80,
+    "latency_ms": 7790.943512999547,
+    "country": "Unknown",
+    "country_code": "XX",
+    "city": "",
+    "remarks": "\ud83c\uddfa\ud83c\uddf8US-76.223.54.146-1565"
+  }
+]

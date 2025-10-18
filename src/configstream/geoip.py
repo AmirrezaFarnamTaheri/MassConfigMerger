@@ -128,3 +128,38 @@ async def download_geoip_dbs() -> bool:
         manager.verify_databases()
 
     return success
+
+
+class GeoIPService:
+    """Service for geolocating proxies"""
+
+    def __init__(self, db_path: str = "data/GeoLite2-City.mmdb"):
+        self.db_path = Path(db_path)
+        self.reader = None
+        if self.db_path.exists():
+            import geoip2.database
+            self.reader = geoip2.database.Reader(str(self.db_path))
+
+    async def geolocate(self, proxy_config) -> dict | None:
+        """
+        Geolocate a proxy configuration.
+
+        Args:
+            proxy_config: The proxy configuration to geolocate.
+
+        Returns:
+            A dictionary with geolocation data, or None.
+        """
+        if not self.reader:
+            return None
+
+        try:
+            response = self.reader.city(proxy_config.host)
+            return {
+                "country_code": response.country.iso_code,
+                "country_name": response.country.name,
+                "city_name": response.city.name,
+                "asn": f"AS{response.autonomous_system.autonomous_system_number}",
+            }
+        except Exception:
+            return None

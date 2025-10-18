@@ -1,251 +1,368 @@
-"""Main processing pipeline"""
-
 import asyncio
 import base64
 import json
-from collections.abc import AsyncIterator
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import List, Optional
 
 import aiohttp
 import geoip2.database
 from rich.progress import Progress
 
-from .config import ProxyConfig
-from .core import (Proxy, generate_base64_subscription, generate_clash_config,
-                   geolocate_proxy, parse_config)
-from .security.malicious_detector import MaliciousNodeDetector
-from .security.rate_limiter import RateLimiter
-from .testers import SingBoxTester
+from .core import Proxy, ProxyTester, geolocate_proxy
+from .core import parse_config_batch
+from .output import (generate_base64_subscription, generate_clash_config,
+                     generate_singbox_config)
 
-
-async def fetch_configs(session: aiohttp.ClientSession, url: str) -> list[str]:
-    """Fetch configurations from a URL"""
-    try:
-        async with session.get(
-                url, timeout=aiohttp.ClientTimeout(total=30)) as response:
-            text = await response.text()
-            content = text.strip()
-            # If it's a single long line and decodes to text with scheme prefixes, treat as base64 subscription
-            if "\n" not in content:
-                try:
-                    decoded = base64.b64decode(
-                        content + "==", validate=False).decode("utf-8",
-                                                               errors="ignore")
-                    # Heuristic: check if decoded contains known scheme prefixes
-                    if any(s in decoded for s in ("vmess://", "vless://",
-                                                  "ss://", "trojan://")):
-                        return [
-                            line.strip() for line in decoded.splitlines()
-                            if line.strip()
-                        ]
-                except Exception:
-                    pass
-            return [
-                line.strip() for line in content.splitlines() if line.strip()
-            ]
-    except Exception:
-        return []
-
-
-async def process_proxies_in_batches(
-        proxies: list[Proxy],
-        processor_func,
-        batch_size: int | None = None) -> AsyncIterator[list[Proxy]]:
-    """
-    Process proxies in batches to manage memory efficiently.
-
-    This prevents loading all proxies into memory at once, which is critical
-    for large proxy lists that could cause out-of-memory errors.
-
-    Args:
-        proxies: List of proxy objects to process
-        processor_func: Async function that processes a batch
-        batch_size: Size of each batch (default from config)
-
-    Yields:
-        Processed batches of proxies
-    """
-    config = ProxyConfig()
-    batch_size = batch_size or config.BATCH_SIZE
-
-    for i in range(0, len(proxies), batch_size):
-        batch = proxies[i:i + batch_size]
-        processed_batch = await processor_func(batch)
-        yield processed_batch
-
-        # Allow garbage collection between batches
-        await asyncio.sleep(0.1)
-
-
-async def run_proxy_tests_in_batches(proxies: list[Proxy], tester,
-                                     malicious_detector) -> list[Proxy]:
-    """
-    Test proxies with memory-efficient batch processing.
-    """
-    config = ProxyConfig()
-    tested_proxies = []
-
-    async def process_batch(batch: list[Proxy]) -> list[Proxy]:
-        results = []
-        for proxy in batch:
-            # Test connectivity
-            tested_proxy = await tester.test(proxy)
-
-            # Skip malicious detection for failed proxies
-            if tested_proxy.is_working:
-                # Run security tests
-                security_results = await malicious_detector.detect_malicious(
-                    tested_proxy)
-
-                if security_results["is_malicious"]:
-                    tested_proxy.is_working = False
-                    tested_proxy.security_issues.append(
-                        f"Malicious: {security_results['severity']} - "
-                        f"{len([t for t in security_results['tests'] if not t.passed])} tests failed"
-                    )
-
-            results.append(tested_proxy)
-
-        return results
-
-    async for batch_results in process_proxies_in_batches(
-            proxies, process_batch, config.BATCH_SIZE):
-        tested_proxies.extend(batch_results)
-
-    return tested_proxies
+logger = logging.getLogger(__name__)
 
 
 async def run_full_pipeline(
-    sources: list[str],
+    sources: List[str],
     output_dir: str,
-    progress: Progress,
-    max_proxies: int | None = None,
-    country: str | None = None,
-    min_latency: int | None = None,
-    max_latency: int | None = None,
-    proxies: list[Proxy] | None = None,
-):
-    """Execute the complete pipeline"""
-    config = ProxyConfig()
-    detector = MaliciousNodeDetector()
-    rate_limiter = RateLimiter(requests_per_second=config.RATE_LIMIT_REQUESTS /
-                               config.RATE_LIMIT_WINDOW)
-
+    progress: Optional[Progress] = None,
+    max_workers: int = 10,
+    max_proxies: Optional[int] = None,
+    country_filter: Optional[str] = None,
+    min_latency: Optional[int] = None,
+    max_latency: Optional[int] = None,
+    timeout: int = 10,
+    proxies: Optional[List[Proxy]] = None,
+) -> dict:
+    start_time = datetime.now(timezone.utc)
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    task = progress.add_task("[cyan]Processing proxies...", total=100)
+    stats = {
+        "fetched": 0,
+        "tested": 0,
+        "working": 0,
+        "filtered": 0,
+    }
 
-    if not proxies:
-        # Fetch configurations
+    try:
+        logger.info(f"Starting pipeline with {len(sources)} sources")
+
+        if progress:
+            fetch_task = progress.add_task("Fetching configs...",
+                                           total=len(sources))
+
         all_configs = []
+
         async with aiohttp.ClientSession() as session:
-            for source in sources:
-                if rate_limiter.is_allowed(source):
-                    configs = await fetch_configs(session, source)
-                    all_configs.extend(configs)
-                else:
-                    # Handle rate limited source if necessary
-                    pass
+            tasks = [_fetch_source(session, source) for source in sources]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        progress.update(task, completed=20)
+            for source, result in zip(sources, results):
+                if isinstance(result, Exception):
+                    logger.warning(f"Failed to fetch {source}: {result}")
+                    continue
 
-        # Parse and geolocate configurations
-        proxies = []
+                configs, count = result
+                all_configs.extend(configs)
+                stats["fetched"] += count
+
+                if progress:
+                    progress.update(fetch_task, advance=1)
+
+        logger.info(f"Fetched {stats['fetched']} proxy configurations")
+
+        if stats["fetched"] == 0:
+            logger.error("No configurations fetched from any source")
+            return {
+                "success": False,
+                "stats": stats,
+                "output_files": {},
+                "error": "No configurations fetched",
+            }
+
+        if progress:
+            parse_task = progress.add_task("Parsing configs...",
+                                           total=stats["fetched"])
+
+        proxies = parse_config_batch(all_configs)
+
+        logger.info(f"Successfully parsed {len(proxies)} configurations")
+
+        if progress:
+            progress.update(parse_task, completed=stats["fetched"])
+
+        if not proxies:
+            logger.error("No configurations could be parsed")
+            return {
+                "success": False,
+                "stats": stats,
+                "output_files": {},
+                "error": "No configurations could be parsed",
+            }
+
+        if max_proxies and len(proxies) > max_proxies:
+            logger.info(
+                f"Limiting to {max_proxies} proxies (down from {len(proxies)})")
+            proxies = proxies[:max_proxies]
+
+        if proxies:
+            stats["tested"] = len(proxies)
+        else:
+            stats["tested"] = 0
+
+        if progress:
+            test_task = progress.add_task("Testing proxies...",
+                                          total=len(proxies))
+
+        tester = ProxyTester(
+            max_workers=max_workers,
+            timeout=timeout,
+        )
+
+        tested_proxies = []
+
+        for proxy in await tester.test_all(proxies):
+            tested_proxies.append(proxy.proxy)
+            stats["working"] += 1 if proxy.success else 0
+
+            if progress:
+                progress.update(test_task, advance=1)
+
+        logger.info(
+            f"Tested {len(tested_proxies)} proxies, {stats['working']} working"
+        )
+
+        if progress:
+            geo_task = progress.add_task("Geolocating...",
+                                         total=len(tested_proxies))
+
         geoip_reader = None
         try:
             geoip_db_path = Path("data/GeoLite2-City.mmdb")
             if geoip_db_path.exists():
                 geoip_reader = geoip2.database.Reader(str(geoip_db_path))
+                logger.info("Loaded GeoIP database")
+            else:
+                logger.warning(f"GeoIP database not found at {geoip_db_path}")
         except Exception as e:
-            print(f"Could not load GeoIP database: {e}")
+            logger.warning(f"Could not load GeoIP database: {e}")
 
-        for config_str in all_configs[:
-                                      max_proxies] if max_proxies else all_configs:
-            proxy = parse_config(config_str)
-            if proxy:
-                proxy = geolocate_proxy(proxy, geoip_reader)
-                proxies.append(proxy)
+        for proxy in tested_proxies:
+            if proxy.is_working:
+                await geolocate_proxy(proxy, geoip_reader)
+
+            if progress:
+                progress.update(geo_task, advance=1)
 
         if geoip_reader:
             geoip_reader.close()
 
-    progress.update(task, completed=40)
+        if progress:
+            filter_task = progress.add_task("Filtering...",
+                                            total=len(tested_proxies))
 
-    # Test proxies
-    tested_proxies = await run_proxy_tests_in_batches(
-        proxies, tester=SingBoxTester(), malicious_detector=detector)
+        working_proxies = [p for p in tested_proxies if p.is_working]
 
-    progress.update(task, completed=60)
+        if country_filter:
+            working_proxies = [
+                p for p in working_proxies if p.country_code
+                and p.country_code.upper() == country_filter.upper()
+            ]
+            logger.info(
+                f"Filtered to {len(working_proxies)} proxies in {country_filter}"
+            )
 
-    # Filter working proxies
-    working_proxies = [p for p in tested_proxies if p.is_working]
+        if min_latency is not None:
+            working_proxies = [
+                p for p in working_proxies
+                if p.latency and p.latency >= min_latency
+            ]
+            logger.info(
+                f"Filtered to {len(working_proxies)} proxies with latency >= {min_latency}ms"
+            )
 
-    # Apply filters
-    if country:
-        working_proxies = [
-            p for p in working_proxies if p.country_code == country
-        ]
-    if min_latency:
-        working_proxies = [
-            p for p in working_proxies
-            if p.latency and p.latency >= min_latency
-        ]
-    if max_latency:
-        working_proxies = [
-            p for p in working_proxies
-            if p.latency and p.latency <= max_latency
-        ]
+        if max_latency is not None:
+            working_proxies = [
+                p for p in working_proxies
+                if p.latency and p.latency <= max_latency
+            ]
+            logger.info(
+                f"Filtered to {len(working_proxies)} proxies with latency <= {max_latency}ms"
+            )
 
-    progress.update(task, completed=80)
+        working_proxies.sort(key=lambda p: p.latency or float('inf'))
 
-    # Generate outputs
-    output_path.joinpath("vpn_subscription_base64.txt").write_text(
-        generate_base64_subscription(working_proxies))
-    output_path.joinpath("clash.yaml").write_text(
-        generate_clash_config(working_proxies))
-    output_path.joinpath("configs_raw.txt").write_text("\n".join(
-        [p.config for p in working_proxies]))
+        stats["filtered"] = len(working_proxies)
 
-    # Generate JSON outputs
-    proxies_data = [{
-        "config": p.config,
-        "protocol": p.protocol,
-        "address": p.address,
-        "port": p.port,
-        "latency": p.latency,
-        "country_code": p.country_code,
-        "remarks": p.remarks,
-    } for p in working_proxies]
-    output_path.joinpath("proxies.json").write_text(
-        json.dumps(proxies_data, indent=2))
+        if progress:
+            progress.update(filter_task, completed=len(tested_proxies))
 
-    # Generate statistics
-    stats = {
-        "total_tested":
-        len(tested_proxies),
-        "working":
-        len(working_proxies),
-        "failed":
-        len(tested_proxies) - len(working_proxies),
-        "success_rate":
-        (round(len(working_proxies) / len(tested_proxies) *
-               100, 2) if tested_proxies else 0),
-    }
-    output_path.joinpath("statistics.json").write_text(
-        json.dumps(stats, indent=2))
+        logger.info(
+            f"Final result: {stats['filtered']} proxies after filtering")
 
-    # Generate metadata
-    metadata = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "version": "1.0.0",
-        "source_count": len(sources),
-        "proxy_count": len(working_proxies),
-        "cache_bust": int(datetime.now().timestamp() * 1000),
-        "protocol_colors": config.PROTOCOL_COLORS,
-    }
-    output_path.joinpath("metadata.json").write_text(
-        json.dumps(metadata, indent=2))
+        if not working_proxies:
+            logger.warning("No proxies passed all filters")
 
-    progress.update(task, completed=100)
+        if progress:
+            gen_task = progress.add_task("Generating outputs...", total=4)
+
+        output_files = {}
+
+        try:
+            sub_content = generate_base64_subscription(working_proxies)
+            sub_path = output_path / "vpn_subscription_base64.txt"
+            sub_path.write_text(sub_content)
+            output_files["subscription"] = str(sub_path)
+            if progress:
+                progress.update(gen_task, advance=1)
+
+            clash_content = generate_clash_config(working_proxies)
+            clash_path = output_path / "clash.yaml"
+            clash_path.write_text(clash_content)
+            output_files["clash"] = str(clash_path)
+            if progress:
+                progress.update(gen_task, advance=1)
+
+            try:
+                singbox_content = generate_singbox_config(working_proxies)
+                singbox_path = output_path / "singbox.json"
+                singbox_path.write_text(singbox_content)
+                output_files["singbox"] = str(singbox_path)
+            except Exception as e:
+                logger.warning(f"Could not generate SingBox format: {e}")
+            if progress:
+                progress.update(gen_task, advance=1)
+
+            raw_content = "\n".join(p.config for p in working_proxies)
+            raw_path = output_path / "configs_raw.txt"
+            raw_path.write_text(raw_content)
+            output_files["raw"] = str(raw_path)
+
+            proxies_json = []
+            for p in working_proxies:
+                proxies_json.append({
+                    "config": p.config,
+                    "protocol": p.protocol,
+                    "address": p.address,
+                    "port": p.port,
+                    "latency_ms": p.latency,
+                    "country": p.country,
+                    "country_code": p.country_code,
+                    "city": p.city,
+                    "remarks": p.remarks,
+                })
+
+            json_path = output_path / "proxies.json"
+            json_path.write_text(json.dumps(proxies_json, indent=2))
+            output_files["json"] = str(json_path)
+            if progress:
+                progress.update(gen_task, advance=1)
+
+            success_rate = (stats["working"] / stats["tested"] *
+                            100) if stats["tested"] > 0 else 0
+            protocol_counts = {}
+            for p in working_proxies:
+                protocol_counts[p.protocol] = protocol_counts.get(
+                    p.protocol, 0) + 1
+
+            stats_json = {
+                "generated_at":
+                start_time.isoformat(),
+                "generated_now":
+                datetime.now(timezone.utc).isoformat(),
+                "total_fetched":
+                stats["fetched"],
+                "total_tested":
+                stats["tested"],
+                "total_working":
+                stats["working"],
+                "total_filtered":
+                stats["filtered"],
+                "success_rate":
+                round(success_rate, 2),
+                "average_latency_ms":
+                round(
+                    sum(p.latency for p in working_proxies if p.latency) /
+                    len([p for p in working_proxies if p.latency]),
+                    2) if working_proxies else 0,
+                "protocol_distribution":
+                protocol_counts,
+                "cache_bust":
+                int(datetime.now().timestamp() * 1000),
+            }
+
+            stats_path = output_path / "statistics.json"
+            stats_path.write_text(json.dumps(stats_json, indent=2))
+            output_files["statistics"] = str(stats_path)
+
+            metadata = {
+                "version": "1.0.0",
+                "generated_at": start_time.isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "proxy_count": len(working_proxies),
+                "working_count": stats["working"],
+                "source_count": len(sources),
+                "cache_bust": int(datetime.now().timestamp() * 1000),
+                "stats": stats_json,
+            }
+
+            metadata_path = output_path / "metadata.json"
+            metadata_path.write_text(json.dumps(metadata, indent=2))
+            output_files["metadata"] = str(metadata_path)
+
+        except Exception as e:
+            logger.error(f"Failed to generate outputs: {e}")
+            return {
+                "success": False,
+                "stats": stats,
+                "output_files": output_files,
+                "error": f"Generation failed: {e}",
+            }
+
+        elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
+        logger.info(
+            f"Pipeline completed successfully in {elapsed:.1f} seconds")
+
+        return {
+            "success": True,
+            "stats": stats,
+            "output_files": output_files,
+            "error": None,
+        }
+
+    except Exception as e:
+        logger.error(f"Pipeline failed with exception: {e}", exc_info=True)
+        return {
+            "success": False,
+            "stats": stats,
+            "output_files": {},
+            "error": f"Pipeline failed: {e}",
+        }
+
+
+async def _fetch_source(session: aiohttp.ClientSession,
+                        source_url: str) -> tuple:
+    try:
+        timeout = aiohttp.ClientTimeout(total=30)
+
+        async with session.get(source_url, timeout=timeout, ssl=True) as response:
+            if response.status != 200:
+                raise Exception(f"HTTP {response.status}")
+
+            text = await response.text()
+
+            if text.strip().count('\n') > 0 and len(text) > 100:
+                try:
+                    decoded = base64.b64decode(text).decode('utf-8')
+                    text = decoded
+                except Exception:
+                    pass
+
+            configs = [
+                line.strip() for line in text.split('\n')
+                if line.strip() and not line.strip().startswith('#')
+            ]
+
+            logger.debug(f"Fetched {len(configs)} configs from {source_url}")
+            return (configs, len(configs))
+
+    except Exception as e:
+        logger.error(f"Error fetching {source_url}: {e}")
+        raise

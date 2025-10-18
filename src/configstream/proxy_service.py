@@ -26,12 +26,12 @@ class ProxyService:
         tested_proxy = await self.tester.test(proxy)
 
         # Emit event
-        if tested_proxy.is_working:
+        if tested_proxy.success:
             await self.event_bus.publish(
                 Event(
                     type=EventType.PROXY_TESTED,
                     timestamp=datetime.now(timezone.utc),
-                    data={"proxy": tested_proxy},
+                    data={"proxy": tested_proxy.proxy},
                 ))
         else:
             await self.event_bus.publish(
@@ -39,10 +39,10 @@ class ProxyService:
                     type=EventType.PROXY_FAILED,
                     timestamp=datetime.now(timezone.utc),
                     data={
-                        "proxy": tested_proxy,
+                        "proxy": tested_proxy.proxy,
                         "error": "Failed connectivity test"
                     },
                 ))
 
         # Save
-        await self.repository.save(tested_proxy)
+        await self.repository.save(tested_proxy.proxy)
