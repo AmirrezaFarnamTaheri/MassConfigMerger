@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Legacy aggregator tool for backward compatibility"""
 
+import subprocess
+import sys
+
 import click
 
 
@@ -9,12 +12,26 @@ import click
 @click.option("--hours", type=int, default=24, help="Legacy option, not used.")
 def main(with_merger, hours):
     """Legacy tool - redirects to main CLI"""
-    from .cli import main as cli_main
+    print(
+        "Legacy aggregator_tool is deprecated. Redirecting to `configstream merge`..."
+    )
 
-    # It's better to call the function with arguments than to manipulate sys.argv
-    # The arguments are hardcoded as per the original logic.
-    args = ["merge", "--sources", "sources.txt", "--output", "output/"]
-    return cli_main(args)
+    args = [
+        "configstream", "merge", "--sources", "sources.txt", "--output",
+        "output/"
+    ]
+    try:
+        subprocess.run(args, check=True)
+    except FileNotFoundError:
+        print(f"Error: The command 'configstream' was not found.",
+              file=sys.stderr)
+        print("Please ensure that the package is installed correctly.",
+              file=sys.stderr)
+        sys.exit(1)
+    except subprocess.CalledProcessError as e:
+        print(f"The command failed with exit code {e.returncode}",
+              file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

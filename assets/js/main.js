@@ -1,23 +1,4 @@
-function initPreloader() {
-    const preloader = document.getElementById('preloader');
-    const logo = document.querySelector('.logo-svg');
-    if (!preloader) return;
-
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            preloader.classList.add('hidden');
-            document.body.classList.add('loaded');
-            if (logo) {
-                logo.classList.add('loading-animation');
-            }
-        }, 200); // Small delay to ensure content is rendered
-    });
-}
-
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize preloader
-    initPreloader();
-
     // Initialize theme
     initTheme();
 
@@ -35,8 +16,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- DATA FETCHING & INITIALIZATION ---
     (async () => {
+        const preloader = document.getElementById('preloader');
+        const logo = document.querySelector('.logo-svg');
+
         if (!window.stateManager) {
             console.error("StateManager not found!");
+            if (preloader) {
+                preloader.classList.add('hidden');
+                document.body.classList.add('loaded');
+            }
             return;
         }
         window.stateManager.setLoading(true, 'Fetching latest data...');
@@ -77,6 +65,16 @@ document.addEventListener('DOMContentLoaded', () => {
             updateElement('workingConfigs', 'N/A');
         } finally {
             window.stateManager.setLoading(false);
+            // Hide preloader after data fetching is complete
+            if (preloader) {
+                setTimeout(() => {
+                    preloader.classList.add('hidden');
+                    document.body.classList.add('loaded');
+                    if (logo) {
+                        logo.classList.add('loading-animation');
+                    }
+                }, 100);
+            }
         }
     })();
 });

@@ -14,8 +14,14 @@ class TestInMemoryProxyRepository(unittest.TestCase):
         asyncio.run(self.save_and_get_all_async())
 
     async def save_and_get_all_async(self):
-        proxy1 = Proxy(config="test://proxy1", protocol="test", address="proxy1", port=8080)
-        proxy2 = Proxy(config="test://proxy2", protocol="test", address="proxy2", port=8080)
+        proxy1 = Proxy(config="test://proxy1",
+                       protocol="test",
+                       address="proxy1",
+                       port=8080)
+        proxy2 = Proxy(config="test://proxy2",
+                       protocol="test",
+                       address="proxy2",
+                       port=8080)
 
         await self.repository.save(proxy1)
         await self.repository.save(proxy2)

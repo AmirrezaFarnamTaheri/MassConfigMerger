@@ -1,4 +1,3 @@
-
 import aiohttp
 import pytest
 
@@ -32,9 +31,21 @@ async def test_url_source_plugin(aiohttp_client):
 async def test_country_filter_plugin():
     """Test the CountryFilterPlugin."""
     proxies = [
-        Proxy(config="p1", protocol="vmess", address="1.1.1.1", port=443, country_code="US"),
-        Proxy(config="p2", protocol="vless", address="2.2.2.2", port=443, country_code="DE"),
-        Proxy(config="p3", protocol="ss", address="3.3.3.3", port=443, country_code="US"),
+        Proxy(config="p1",
+              protocol="vmess",
+              address="1.1.1.1",
+              port=443,
+              country_code="US"),
+        Proxy(config="p2",
+              protocol="vless",
+              address="2.2.2.2",
+              port=443,
+              country_code="DE"),
+        Proxy(config="p3",
+              protocol="ss",
+              address="3.3.3.3",
+              port=443,
+              country_code="US"),
     ]
     plugin = CountryFilterPlugin("US")
     filtered_proxies = await plugin.filter_proxies(proxies)
@@ -47,9 +58,21 @@ async def test_country_filter_plugin():
 async def test_latency_filter_plugin():
     """Test the LatencyFilterPlugin."""
     proxies = [
-        Proxy(config="p1", protocol="vmess", address="1.1.1.1", port=443, latency=100),
-        Proxy(config="p2", protocol="vless", address="2.2.2.2", port=443, latency=600),
-        Proxy(config="p3", protocol="ss", address="3.3.3.3", port=443, latency=400),
+        Proxy(config="p1",
+              protocol="vmess",
+              address="1.1.1.1",
+              port=443,
+              latency=100),
+        Proxy(config="p2",
+              protocol="vless",
+              address="2.2.2.2",
+              port=443,
+              latency=600),
+        Proxy(config="p3",
+              protocol="ss",
+              address="3.3.3.3",
+              port=443,
+              latency=400),
     ]
     plugin = LatencyFilterPlugin(500)
     filtered_proxies = await plugin.filter_proxies(proxies)
@@ -101,3 +124,43 @@ async def test_clash_export_plugin(tmp_path):
     output_file = tmp_path / "clash.yaml"
     assert output_file.exists()
     assert "name: test" in output_file.read_text()
+
+
+@pytest.mark.asyncio
+async def test_url_source_plugin_init_exec():
+    plugin = UrlSourcePlugin()
+    await plugin.initialize({})
+    result = await plugin.execute({})
+    assert result == {}
+
+
+@pytest.mark.asyncio
+async def test_country_filter_plugin_init_exec():
+    plugin = CountryFilterPlugin("US")
+    await plugin.initialize({})
+    result = await plugin.execute({})
+    assert result == {}
+
+
+@pytest.mark.asyncio
+async def test_latency_filter_plugin_init_exec():
+    plugin = LatencyFilterPlugin(500)
+    await plugin.initialize({})
+    result = await plugin.execute({})
+    assert result == {}
+
+
+@pytest.mark.asyncio
+async def test_base64_export_plugin_init_exec():
+    plugin = Base64ExportPlugin()
+    await plugin.initialize({})
+    result = await plugin.execute({})
+    assert result == {}
+
+
+@pytest.mark.asyncio
+async def test_clash_export_plugin_init_exec():
+    plugin = ClashExportPlugin()
+    await plugin.initialize({})
+    result = await plugin.execute({})
+    assert result == {}

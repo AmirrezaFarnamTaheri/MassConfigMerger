@@ -36,18 +36,21 @@ class SingBoxTester(IProxyTester):
             # Try multiple test URLs
             for test_url in self.config.TEST_URLS.values():
                 try:
-                    async with aiohttp.ClientSession(connector=connector) as session:
+                    async with aiohttp.ClientSession(
+                            connector=connector) as session:
                         start_time = asyncio.get_event_loop().time()
-                        async with session.get(
-                            test_url, timeout=aiohttp.ClientTimeout(total=self.config.TEST_TIMEOUT)
-                        ) as response:
+                        async with session.get(test_url,
+                                               timeout=aiohttp.ClientTimeout(
+                                                   total=self.config.
+                                                   TEST_TIMEOUT)) as response:
                             if response.status == 204:
                                 end_time = asyncio.get_event_loop().time()
-                                proxy.latency = round((end_time - start_time) * 1000, 2)
+                                proxy.latency = round(
+                                    (end_time - start_time) * 1000, 2)
                                 proxy.is_working = True
                                 break
 
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     continue
                 except Exception as e:
                     logger.debug(f"Test URL {test_url} failed: {str(e)}")
@@ -68,7 +71,7 @@ class SingBoxTester(IProxyTester):
         finally:
             try:
                 await sb_proxy.stop()
-            except:
+            except Exception:
                 pass
 
         return proxy

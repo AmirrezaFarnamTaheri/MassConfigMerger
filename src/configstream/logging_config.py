@@ -16,7 +16,10 @@ class SensitiveDataFilter(logging.Filter):
         message = record.getMessage()
 
         # Mask UUIDs and passwords
-        message = re.sub(self.PATTERNS["uuid"], "[MASKED_CREDENTIAL]", message, flags=re.IGNORECASE)
+        message = re.sub(self.PATTERNS["uuid"],
+                         "[MASKED_CREDENTIAL]",
+                         message,
+                         flags=re.IGNORECASE)
 
         # Mask emails
         message = re.sub(self.PATTERNS["email"], "[MASKED_EMAIL]", message)
@@ -38,7 +41,8 @@ def setup_logging(log_level: str = "INFO", mask_sensitive: bool = True):
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
 
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # Add new handlers
     file_handler = logging.FileHandler("configstream.log")
@@ -52,5 +56,7 @@ def setup_logging(log_level: str = "INFO", mask_sensitive: bool = True):
     # Add filter if requested
     if mask_sensitive:
         # Avoid adding filter if it already exists
-        if not any(isinstance(f, SensitiveDataFilter) for f in root_logger.filters):
+        if not any(
+                isinstance(f, SensitiveDataFilter)
+                for f in root_logger.filters):
             root_logger.addFilter(SensitiveDataFilter())

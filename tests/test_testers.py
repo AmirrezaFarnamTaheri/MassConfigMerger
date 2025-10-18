@@ -27,8 +27,7 @@ async def test_singbox_tester_success(aiohttp_client):
 
     # Patch the config to use our mock server URL
     with patch("configstream.testers.ProxyConfig.TEST_URLS", test_urls), patch(
-        "configstream.testers.SingBoxProxy"
-    ) as mock_singbox_proxy:
+            "configstream.testers.SingBoxProxy") as mock_singbox_proxy:
 
         # Configure the mock SingBoxProxy
         mock_sb_instance = AsyncMock()
@@ -39,7 +38,10 @@ async def test_singbox_tester_success(aiohttp_client):
         mock_singbox_proxy.return_value = mock_sb_instance
 
         tester = SingBoxTester()
-        proxy = Proxy(config="test_config", protocol="vmess", address="1.1.1.1", port=443)
+        proxy = Proxy(config="test_config",
+                      protocol="vmess",
+                      address="1.1.1.1",
+                      port=443)
 
         # Act
         tested_proxy = await tester.test(proxy)
@@ -58,13 +60,17 @@ async def test_singbox_tester_failure_masked():
     # Arrange
     with patch("configstream.testers.SingBoxProxy") as mock_singbox_proxy:
         mock_sb_instance = AsyncMock()
-        mock_sb_instance.start = AsyncMock(side_effect=Exception("Connection refused"))
+        mock_sb_instance.start = AsyncMock(
+            side_effect=Exception("Connection refused"))
         mock_sb_instance.stop = AsyncMock()
         mock_singbox_proxy.return_value = mock_sb_instance
 
         tester = SingBoxTester()
         tester.config.MASK_SENSITIVE_DATA = True
-        proxy = Proxy(config="test_config", protocol="vmess", address="1.1.1.1", port=443)
+        proxy = Proxy(config="test_config",
+                      protocol="vmess",
+                      address="1.1.1.1",
+                      port=443)
 
         # Act
         tested_proxy = await tester.test(proxy)
@@ -82,13 +88,17 @@ async def test_singbox_tester_failure_unmasked():
     # Arrange
     with patch("configstream.testers.SingBoxProxy") as mock_singbox_proxy:
         mock_sb_instance = AsyncMock()
-        mock_sb_instance.start = AsyncMock(side_effect=Exception("Connection refused"))
+        mock_sb_instance.start = AsyncMock(
+            side_effect=Exception("Connection refused"))
         mock_sb_instance.stop = AsyncMock()
         mock_singbox_proxy.return_value = mock_sb_instance
 
         tester = SingBoxTester()
         tester.config.MASK_SENSITIVE_DATA = False
-        proxy = Proxy(config="test_config", protocol="vmess", address="1.1.1.1", port=443)
+        proxy = Proxy(config="test_config",
+                      protocol="vmess",
+                      address="1.1.1.1",
+                      port=443)
 
         # Act
         tested_proxy = await tester.test(proxy)

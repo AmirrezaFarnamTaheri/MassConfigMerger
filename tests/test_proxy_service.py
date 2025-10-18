@@ -14,9 +14,9 @@ class TestProxyService(unittest.TestCase):
         self.repository = MagicMock(spec=IProxyRepository)
         self.tester = MagicMock(spec=IProxyTester)
         self.event_bus = MagicMock(spec=EventBus)
-        self.service = ProxyService(
-            repository=self.repository, tester=self.tester, event_bus=self.event_bus
-        )
+        self.service = ProxyService(repository=self.repository,
+                                    tester=self.tester,
+                                    event_bus=self.event_bus)
 
         # Async mocks
         self.repository.save = AsyncMock()
@@ -27,7 +27,10 @@ class TestProxyService(unittest.TestCase):
         asyncio.run(self.process_working_proxy_async())
 
     async def process_working_proxy_async(self):
-        proxy = Proxy(config="test://proxy", protocol="test", address="proxy", port=8080)
+        proxy = Proxy(config="test://proxy",
+                      protocol="test",
+                      address="proxy",
+                      port=8080)
         tested_proxy = Proxy(
             config="test://proxy",
             protocol="test",
@@ -53,10 +56,15 @@ class TestProxyService(unittest.TestCase):
         asyncio.run(self.process_failed_proxy_async())
 
     async def process_failed_proxy_async(self):
-        proxy = Proxy(config="test://proxy", protocol="test", address="proxy", port=8080)
-        tested_proxy = Proxy(
-            config="test://proxy", protocol="test", address="proxy", port=8080, is_working=False
-        )
+        proxy = Proxy(config="test://proxy",
+                      protocol="test",
+                      address="proxy",
+                      port=8080)
+        tested_proxy = Proxy(config="test://proxy",
+                             protocol="test",
+                             address="proxy",
+                             port=8080,
+                             is_working=False)
         self.tester.test.return_value = tested_proxy
 
         await self.service.process_proxy(proxy)

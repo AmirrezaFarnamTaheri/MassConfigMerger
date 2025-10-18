@@ -979,3 +979,33 @@ body.dark #preloader {
     opacity: 0;
     visibility: hidden;
 }
+/* Logo animation - spins on load */
+@keyframes spin-rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Apply animation to logo element during page load */
+.logo-animated {
+    animation: spin-rotate 5s linear 1 forwards;
+}
+
+/* After animation completes, logo should be solid black */
+.logo-animated.animation-complete {
+    filter: brightness(0);
+    color: #000000;
+}
+
+/* For inline SVG logos */
+.logo-animated.animation-complete svg {
+    filter: brightness(0);
+}
+
+/* For image logos */
+.logo-animated.animation-complete img {
+    filter: brightness(0);
+}

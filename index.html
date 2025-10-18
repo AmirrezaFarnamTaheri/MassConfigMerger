@@ -13,7 +13,18 @@
 </head>
 <body>
     <div id="preloader">
-        <div class="loader-logo"></div>
+        <svg class="logo-animated" width="80" height="80" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="var(--brand-primary)"/>
+                    <stop offset="100%" stop-color="var(--brand-secondary)"/>
+                </linearGradient>
+            </defs>
+            <g>
+                <path d="M29.5 6C36.4036 6 42 11.5964 42 18.5C42 25.4036 36.4036 31 29.5 31H14.5" stroke="url(#logo-gradient)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M14.5 38C7.59644 38 2 32.4036 2 25.5C2 18.5964 7.59644 13 14.5 13H29.5" stroke="url(#logo-gradient)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            </g>
+        </svg>
     </div>
     <div class="nav-overlay"></div>
     <header class="header">
@@ -172,6 +183,7 @@
     <script src="assets/js/error-handler.js" defer></script>
     <script src="assets/js/state-manager.js" defer></script>
     <script src="assets/js/utils.js" defer></script>
+    <script src="assets/js/cache-config.js" defer></script>
     <script src="assets/js/cache-manager.js" defer></script>
     <script src="assets/js/main.js" defer></script>
 </body>

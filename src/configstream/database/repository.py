@@ -1,6 +1,5 @@
 import hashlib
 from datetime import datetime, timedelta
-from typing import List, Optional
 
 from sqlalchemy import create_engine, func
 from sqlalchemy.orm import Session, sessionmaker
@@ -27,7 +26,8 @@ class ProxyRepository:
             config_hash = self._get_config_hash(proxy_data["config"])
 
             # Check if exists
-            existing = session.query(Proxy).filter_by(config_hash=config_hash).first()
+            existing = session.query(Proxy).filter_by(
+                config_hash=config_hash).first()
 
             if existing:
                 # Update
@@ -48,11 +48,11 @@ class ProxyRepository:
 
     def get_active_proxies(
         self,
-        protocol: Optional[str] = None,
-        country: Optional[str] = None,
-        max_latency: Optional[float] = None,
-        limit: Optional[int] = None,
-    ) -> List[Proxy]:
+        protocol: str | None = None,
+        country: str | None = None,
+        max_latency: float | None = None,
+        limit: int | None = None,
+    ) -> list[Proxy]:
         """Get active proxies with filters"""
         session: Session = self.SessionLocal()
         try:
@@ -78,16 +78,17 @@ class ProxyRepository:
         self,
         proxy_id: int,
         success: bool,
-        latency: Optional[float] = None,
-        error: Optional[str] = None,
+        latency: float | None = None,
+        error: str | None = None,
     ) -> None:
         """Record test result"""
         session: Session = self.SessionLocal()
         try:
             # Create test result
-            result = ProxyTestResult(
-                proxy_id=proxy_id, success=success, latency=latency, error_message=error
-            )
+            result = ProxyTestResult(proxy_id=proxy_id,
+                                     success=success,
+                                     latency=latency,
+                                     error_message=error)
             session.add(result)
 
             # Update proxy stats
@@ -117,7 +118,8 @@ class ProxyRepository:
         session: Session = self.SessionLocal()
         try:
             cutoff = datetime.utcnow() - timedelta(days=days)
-            deleted = session.query(Proxy).filter(Proxy.last_seen < cutoff).delete()
+            deleted = session.query(Proxy).filter(
+                Proxy.last_seen < cutoff).delete()
             session.commit()
             return deleted
         finally:
@@ -129,15 +131,11 @@ class ProxyRepository:
         try:
             total = session.query(Proxy).filter_by(is_active=True).count()
 
-            working = (
-                session.query(Proxy)
-                .filter(Proxy.is_active.is_(True), Proxy.latency.isnot(None))
-                .count()
-            )
+            working = (session.query(Proxy).filter(
+                Proxy.is_active.is_(True), Proxy.latency.isnot(None)).count())
 
-            avg_latency = (
-                session.query(func.avg(Proxy.latency)).filter(Proxy.is_active.is_(True)).scalar()
-            )
+            avg_latency = (session.query(func.avg(Proxy.latency)).filter(
+                Proxy.is_active.is_(True)).scalar())
 
             return {
                 "total": total,

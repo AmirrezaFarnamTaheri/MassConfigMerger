@@ -23,7 +23,8 @@ VALID_VMESS_DETAILS = {
     "scy": "auto",
 }
 VALID_VMESS_JSON = json.dumps(VALID_VMESS_DETAILS)
-VALID_VMESS_BASE64 = base64.b64encode(VALID_VMESS_JSON.encode("utf-8")).decode("utf-8")
+VALID_VMESS_BASE64 = base64.b64encode(
+    VALID_VMESS_JSON.encode("utf-8")).decode("utf-8")
 VALID_VMESS_CONFIG = f"vmess://{VALID_VMESS_BASE64}"
 
 # VLESS
@@ -32,7 +33,8 @@ VALID_VLESS_CONFIG = "vless://b1a2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6@server2.examp
 # Shadowsocks (SS)
 SS_METHOD = "aes-256-gcm"
 SS_PASSWORD = "a-very-secret-password"
-SS_USER_INFO = base64.b64encode(f"{SS_METHOD}:{SS_PASSWORD}".encode("utf-8")).decode("utf-8")
+SS_USER_INFO = base64.b64encode(
+    f"{SS_METHOD}:{SS_PASSWORD}".encode()).decode("utf-8")
 VALID_SS_CONFIG = f"ss://{SS_USER_INFO}@server3.example.com:8888#My-SS-Proxy"
 
 # Hysteria2
@@ -46,7 +48,6 @@ VALID_WG_CONFIG = "wg://server6.example.com:51820?private_key=...&public_key=...
 
 # Trojan
 VALID_TROJAN_CONFIG = "trojan://password@server7.example.com:443#My-Trojan-Proxy"
-
 
 INVALID_CONFIG = "invalid-protocol://some-data"
 MALFORMED_VMESS_CONFIG = "vmess://this-is-not-base64"
@@ -132,7 +133,9 @@ def test_parse_valid_trojan():
 
 
 def test_parse_valid_hysteria():
-    proxy = parse_config("hysteria://example.com:443?protocol=udp&auth=password#Hysteria%20Test")
+    proxy = parse_config(
+        "hysteria://example.com:443?protocol=udp&auth=password#Hysteria%20Test"
+    )
     assert proxy is not None
     assert proxy.protocol == "hysteria"
     assert proxy.address == "example.com"
@@ -154,7 +157,8 @@ def test_parse_valid_generic_http():
 
 
 def test_parse_valid_naive():
-    proxy = parse_config("naive+https://user:pass@example.com:443#Naive%20Test")
+    proxy = parse_config(
+        "naive+https://user:pass@example.com:443#Naive%20Test")
     assert proxy is not None
     assert proxy.protocol == "naive"
     assert proxy.address == "example.com"

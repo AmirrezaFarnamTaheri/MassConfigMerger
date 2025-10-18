@@ -1,9 +1,21 @@
 {
-  "generated_at": "$TIMESTAMP",
-  "cache_bust": "$CACHE_BUST",
+  "generated_at": "2025-10-18T13:53:19.228865+00:00",
   "version": "1.0.0",
-  "job_type": "merge",
-  "status": "success",
-  "workflow_run": "18611835454",
-  "commit": "cae24eb77641017d5ed0c3730f8c88025293dcda"
+  "source_count": 1,
+  "proxy_count": 0,
+  "cache_bust": 1760795599228,
+  "protocol_colors": {
+    "vmess": "#FF6B6B",
+    "vless": "#4ECDC4",
+    "shadowsocks": "#45B7D1",
+    "trojan": "#96CEB4",
+    "hysteria": "#FFEAA7",
+    "hysteria2": "#DFE6E9",
+    "tuic": "#A29BFE",
+    "wireguard": "#74B9FF",
+    "naive": "#FD79A8",
+    "http": "#FDCB6E",
+    "https": "#6C5CE7",
+    "socks": "#00B894"
+  }
 }

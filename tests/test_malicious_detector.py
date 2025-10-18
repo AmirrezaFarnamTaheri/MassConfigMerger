@@ -53,7 +53,11 @@ def mock_session():
     session.get = MagicMock(return_value=context_manager)
 
     # Add a helper to configure the mock response for each test
-    def _configure_get(status=200, text="", json_data=None, history=None, side_effect=None):
+    def _configure_get(status=200,
+                       text="",
+                       json_data=None,
+                       history=None,
+                       side_effect=None):
         if side_effect:
             context_manager.__aenter__.side_effect = side_effect
         else:
@@ -72,14 +76,18 @@ class TestContentInjection:
     """Tests for content injection detection"""
 
     @pytest.mark.asyncio
-    async def test_clean_content_passes(self, detector, mock_session, sample_proxy):
-        mock_session.configure_get(text="<html><body>Clean content</body></html>")
-        result = await detector._test_content_injection(mock_session, sample_proxy)
+    async def test_clean_content_passes(self, detector, mock_session,
+                                        sample_proxy):
+        mock_session.configure_get(
+            text="<html><body>Clean content</body></html>")
+        result = await detector._test_content_injection(
+            mock_session, sample_proxy)
         assert result.passed is True
         assert result.severity == "none"
 
     @pytest.mark.asyncio
-    async def test_injected_content_fails(self, detector, mock_session, sample_proxy):
+    async def test_injected_content_fails(self, detector, mock_session,
+                                          sample_proxy):
         malicious_content = """
         <html><body>
         <script>document.domain='attacker.com'</script>
@@ -88,14 +96,17 @@ class TestContentInjection:
         </body></html>
         """
         mock_session.configure_get(text=malicious_content)
-        result = await detector._test_content_injection(mock_session, sample_proxy)
+        result = await detector._test_content_injection(
+            mock_session, sample_proxy)
         assert result.passed is False
         assert result.severity == "critical"
 
     @pytest.mark.asyncio
-    async def test_timeout_handled_gracefully(self, detector, mock_session, sample_proxy):
+    async def test_timeout_handled_gracefully(self, detector, mock_session,
+                                              sample_proxy):
         mock_session.configure_get(side_effect=asyncio.TimeoutError())
-        result = await detector._test_content_injection(mock_session, sample_proxy)
+        result = await detector._test_content_injection(
+            mock_session, sample_proxy)
         assert result.passed is False
         assert result.severity == "medium"
 
@@ -104,7 +115,8 @@ class TestHeaderManipulation:
     """Tests for header manipulation detection"""
 
     @pytest.mark.asyncio
-    async def test_headers_preserved(self, detector, mock_session, sample_proxy):
+    async def test_headers_preserved(self, detector, mock_session,
+                                     sample_proxy):
         response_data = {
             "headers": {
                 "X-Custom-Header": "test-value-12345",
@@ -113,16 +125,19 @@ class TestHeaderManipulation:
             }
         }
         mock_session.configure_get(json_data=response_data)
-        result = await detector._test_header_manipulation(mock_session, sample_proxy)
+        result = await detector._test_header_manipulation(
+            mock_session, sample_proxy)
         assert result.passed is True
 
     @pytest.mark.asyncio
-    async def test_headers_stripped(self, detector, mock_session, sample_proxy):
+    async def test_headers_stripped(self, detector, mock_session,
+                                    sample_proxy):
         # This response strips ALL custom headers.
         # len(missing_headers) will be 3, which is > the threshold of 2.
         response_data = {"headers": {}}
         mock_session.configure_get(json_data=response_data)
-        result = await detector._test_header_manipulation(mock_session, sample_proxy)
+        result = await detector._test_header_manipulation(
+            mock_session, sample_proxy)
         assert result.passed is False
         assert result.severity == "high"
 
@@ -137,7 +152,8 @@ class TestDNSLeak:
         assert result.passed is True
 
     @pytest.mark.asyncio
-    async def test_possible_dns_leak(self, detector, mock_session, sample_proxy):
+    async def test_possible_dns_leak(self, detector, mock_session,
+                                     sample_proxy):
         mock_session.configure_get(status=404)
         result = await detector._test_dns_leak(mock_session, sample_proxy)
         assert result.passed is False
@@ -148,15 +164,19 @@ class TestRedirectHijacking:
     """Tests for redirect hijacking detection"""
 
     @pytest.mark.asyncio
-    async def test_normal_redirects(self, detector, mock_session, sample_proxy):
+    async def test_normal_redirects(self, detector, mock_session,
+                                    sample_proxy):
         mock_session.configure_get(history=[1, 2])
-        result = await detector._test_redirect_hijacking(mock_session, sample_proxy)
+        result = await detector._test_redirect_hijacking(
+            mock_session, sample_proxy)
         assert result.passed is True
 
     @pytest.mark.asyncio
-    async def test_excessive_redirects(self, detector, mock_session, sample_proxy):
+    async def test_excessive_redirects(self, detector, mock_session,
+                                       sample_proxy):
         mock_session.configure_get(history=[1, 2, 3, 4])
-        result = await detector._test_redirect_hijacking(mock_session, sample_proxy)
+        result = await detector._test_redirect_hijacking(
+            mock_session, sample_proxy)
         assert result.passed is False
         assert result.severity == "medium"
 
@@ -205,18 +225,23 @@ class TestOverallDetection:
     @patch("configstream.security.malicious_detector.aiohttp.ClientSession")
     @patch("configstream.security.malicious_detector.ProxyConnector.from_url")
     @pytest.mark.asyncio
-    async def test_clean_proxy_overall(self, mock_connector, mock_session, detector, sample_proxy):
+    async def test_clean_proxy_overall(self, mock_connector, mock_session,
+                                       detector, sample_proxy):
         """A clean proxy should score 0 and pass all checks."""
         with patch.multiple(
-            detector,
-            _test_content_injection=AsyncMock(return_value=SecurityTest("test", True, "none", "")),
-            _test_header_manipulation=AsyncMock(
-                return_value=SecurityTest("test", True, "none", "")
-            ),
-            _test_dns_leak=AsyncMock(return_value=SecurityTest("test", True, "none", "")),
-            _test_redirect_hijacking=AsyncMock(return_value=SecurityTest("test", True, "none", "")),
-            _test_malware_reputation=AsyncMock(return_value=SecurityTest("test", True, "none", "")),
-            _test_suspicious_ports=AsyncMock(return_value=SecurityTest("test", True, "none", "")),
+                detector,
+                _test_content_injection=AsyncMock(
+                    return_value=SecurityTest("test", True, "none", "")),
+                _test_header_manipulation=AsyncMock(
+                    return_value=SecurityTest("test", True, "none", "")),
+                _test_dns_leak=AsyncMock(
+                    return_value=SecurityTest("test", True, "none", "")),
+                _test_redirect_hijacking=AsyncMock(
+                    return_value=SecurityTest("test", True, "none", "")),
+                _test_malware_reputation=AsyncMock(
+                    return_value=SecurityTest("test", True, "none", "")),
+                _test_suspicious_ports=AsyncMock(
+                    return_value=SecurityTest("test", True, "none", "")),
         ):
             result = await detector.detect_malicious(sample_proxy)
 
@@ -227,28 +252,23 @@ class TestOverallDetection:
     @patch("configstream.security.malicious_detector.aiohttp.ClientSession")
     @patch("configstream.security.malicious_detector.ProxyConnector.from_url")
     @pytest.mark.asyncio
-    async def test_malicious_proxy_overall(
-        self, mock_connector, mock_session, detector, sample_proxy
-    ):
+    async def test_malicious_proxy_overall(self, mock_connector, mock_session,
+                                           detector, sample_proxy):
         """A malicious proxy should score high and be flagged."""
         with patch.multiple(
-            detector,
-            _test_content_injection=AsyncMock(
-                return_value=SecurityTest("test", False, "critical", "")
-            ),
-            _test_header_manipulation=AsyncMock(
-                return_value=SecurityTest("test", False, "high", "")
-            ),
-            _test_dns_leak=AsyncMock(return_value=SecurityTest("test", False, "high", "")),
-            _test_redirect_hijacking=AsyncMock(
-                return_value=SecurityTest("test", False, "medium", "")
-            ),
-            _test_malware_reputation=AsyncMock(
-                return_value=SecurityTest("test", False, "high", "")
-            ),
-            _test_suspicious_ports=AsyncMock(
-                return_value=SecurityTest("test", False, "medium", "")
-            ),
+                detector,
+                _test_content_injection=AsyncMock(
+                    return_value=SecurityTest("test", False, "critical", "")),
+                _test_header_manipulation=AsyncMock(
+                    return_value=SecurityTest("test", False, "high", "")),
+                _test_dns_leak=AsyncMock(
+                    return_value=SecurityTest("test", False, "high", "")),
+                _test_redirect_hijacking=AsyncMock(
+                    return_value=SecurityTest("test", False, "medium", "")),
+                _test_malware_reputation=AsyncMock(
+                    return_value=SecurityTest("test", False, "high", "")),
+                _test_suspicious_ports=AsyncMock(
+                    return_value=SecurityTest("test", False, "medium", "")),
         ):
             result = await detector.detect_malicious(sample_proxy)
 
