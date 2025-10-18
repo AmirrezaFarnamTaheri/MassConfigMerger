@@ -9,30 +9,147 @@
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/state-manager.css">
     <link rel="stylesheet" href="assets/css/error-handler.css">
+    <link rel="stylesheet" href="assets/css/loading.css">
+    <link rel="stylesheet" href="assets/css/header-animation.css">
     <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body>
-    <div id="preloader">
-        <div class="loader-logo"></div>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen" role="status" aria-live="polite">
+      <div class="loading-container">
+        <!-- Logo Animation -->
+        <div class="loading-logo">
+          <svg viewBox="0 0 200 200" class="logo-svg">
+            <defs>
+              <!-- Stream gradient -->
+              <linearGradient id="loadingStreamGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#667eea" />
+                <stop offset="50%" style="stop-color:#764ba2" />
+                <stop offset="100%" style="stop-color:#f093fb" />
+              </linearGradient>
+              
+              <!-- Flow effect -->
+              <linearGradient id="loadingFlowEffect" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:rgba(255,255,255,0.8);stop-opacity:0" />
+                <stop offset="50%" style="stop-color:rgba(255,255,255,0.8);stop-opacity:1" />
+                <stop offset="100%" style="stop-color:rgba(255,255,255,0.8);stop-opacity:0" />
+              </linearGradient>
+              
+              <!-- Mask for flow effect -->
+              <mask id="loadingFlowMask">
+                <rect x="0" y="0" width="200" height="200" fill="url(#loadingFlowEffect)">
+                  <animate attributeName="x" from="-200" to="200" dur="1.2s" fill="freeze" />
+                </rect>
+              </mask>
+            </defs>
+            
+            <!-- Main circle -->
+            <circle cx="100" cy="100" r="45" fill="none"
+                    stroke="url(#loadingStreamGradient)" stroke-width="3"
+                    class="loading-circle" />
+            
+            <!-- Flow overlay -->
+            <circle cx="100" cy="100" r="45" fill="none"
+                    stroke="white" stroke-width="3"
+                    mask="url(#loadingFlowMask)"
+                    class="loading-flow" />
+            
+            <!-- Center waves -->
+            <g class="loading-waves">
+              <path d="M75,95 Q85,85 95,95 T115,95" stroke="url(#loadingStreamGradient)"
+                    stroke-width="2.5" fill="none" class="loading-wave loading-wave-1" />
+              <path d="M75,100 Q85,90 95,100 T115,100" stroke="url(#loadingStreamGradient)"
+                    stroke-width="2.5" fill="none" class="loading-wave loading-wave-2" />
+              <path d="M75,105 Q85,95 95,105 T115,105" stroke="url(#loadingStreamGradient)"
+                    stroke-width="2.5" fill="none" class="loading-wave loading-wave-3" />
+            </g>
+            
+            <!-- Data particles -->
+            <g class="loading-particles">
+              <circle cx="130" cy="70" r="2" fill="url(#loadingStreamGradient)" class="loading-particle" />
+              <circle cx="70" cy="130" r="2" fill="url(#loadingStreamGradient)" class="loading-particle" />
+              <circle cx="140" cy="120" r="2" fill="url(#loadingStreamGradient)" class="loading-particle" />
+            </g>
+          </svg>
+        </div>
+        
+        <!-- Loading Message -->
+        <div class="loading-message">
+          <p class="loading-text" id="loadingText">Fetching latest configurations...</p>
+          <div class="loading-dots">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+        </div>
+        
+        <!-- Progress hint -->
+        <p class="loading-hint" id="loadingHint">Taking longer than usual...</p>
+      </div>
+      
+      <!-- Screen reader -->
+      <span class="sr-only" aria-atomic="true" id="loadingAnnounce">Loading content, please wait</span>
     </div>
     <div class="nav-overlay"></div>
     <header class="header">
         <div class="container">
-            <a href="index.html" class="logo" aria-label="ConfigStream Home">
-                <svg class="logo-svg loading-animation" width="48" height="48" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="logo-gradient-header" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="var(--brand-primary)"/>
-                            <stop offset="100%" stop-color="var(--brand-secondary)"/>
-                        </linearGradient>
-                    </defs>
-                    <g>
-                        <path d="M29.5 6C36.4036 6 42 11.5964 42 18.5C42 25.4036 36.4036 31 29.5 31H14.5" stroke="url(#logo-gradient-header)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M14.5 38C7.59644 38 2 32.4036 2 25.5C2 18.5964 7.59644 13 14.5 13H29.5" stroke="url(#logo-gradient-header)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </g>
-                </svg>
-                <span>ConfigStream</span>
-            </a>
+            <div class="header-logo-wrapper">
+              <svg viewBox="0 0 200 200" class="header-logo" id="headerLogo" aria-label="ConfigStream Logo">
+                <defs>
+                  <!-- Stream gradient (colorful initially) -->
+                  <linearGradient id="headerStreamGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" class="gradient-start" style="stop-color:#667eea" />
+                    <stop offset="50%" class="gradient-mid" style="stop-color:#764ba2" />
+                    <stop offset="100%" class="gradient-end" style="stop-color:#f093fb" />
+                  </linearGradient>
+
+                  <!-- Flow effect -->
+                  <linearGradient id="flowEffect" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:rgba(255,255,255,0.8);stop-opacity:0" />
+                    <stop offset="50%" style="stop-color:rgba(255,255,255,0.8);stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:rgba(255,255,255,0.8);stop-opacity:0" />
+                  </linearGradient>
+
+                  <!-- Mask for flow effect -->
+                  <mask id="flowMask">
+                    <rect x="0" y="0" width="200" height="200" fill="url(#flowEffect)">
+                      <animate attributeName="x" from="-200" to="200" dur="1.2s" fill="freeze" />
+                    </rect>
+                  </mask>
+                </defs>
+
+                <!-- Main circle -->
+                <circle cx="100" cy="100" r="45" fill="none"
+                        stroke="url(#headerStreamGradient)" stroke-width="3"
+                        class="header-circle" />
+
+                <!-- Flow overlay -->
+                <circle cx="100" cy="100" r="45" fill="none"
+                        stroke="white" stroke-width="3"
+                        mask="url(#flowMask)"
+                        class="header-flow" />
+
+                <!-- Center waves -->
+                <g class="header-waves">
+                  <path d="M75,95 Q85,85 95,95 T115,95" stroke="url(#headerStreamGradient)"
+                        stroke-width="2.5" fill="none" class="header-wave header-wave-1" />
+                  <path d="M75,100 Q85,90 95,100 T115,100" stroke="url(#headerStreamGradient)"
+                        stroke-width="2.5" fill="none" class="header-wave header-wave-2" />
+                  <path d="M75,105 Q85,95 95,105 T115,105" stroke="url(#headerStreamGradient)"
+                        stroke-width="2.5" fill="none" class="header-wave header-wave-3" />
+                </g>
+
+                <!-- Data particles -->
+                <g class="header-particles">
+                  <circle cx="130" cy="70" r="2" fill="url(#headerStreamGradient)" class="header-particle" />
+                  <circle cx="70" cy="130" r="2" fill="url(#headerStreamGradient)" class="header-particle" />
+                  <circle cx="140" cy="120" r="2" fill="url(#headerStreamGradient)" class="header-particle" />
+                </g>
+              </svg>
+
+              <!-- Logo text -->
+              <span class="header-logo-text">ConfigStream</span>
+            </div>
             <nav class="nav" id="main-nav" aria-label="Main navigation">
                 <a href="index.html" class="nav-link">Home</a>
                 <a href="proxies.html" class="nav-link">Proxy List</a>
@@ -123,6 +240,7 @@
     <script src="assets/js/state-manager.js" defer></script>
     <script src="assets/js/utils.js" defer></script>
     <script src="assets/js/cache-manager.js" defer></script>
+    <script src="assets/js/loading-controller.js" defer></script>
     <script src="assets/js/main.js" defer></script>
     <script src="assets/js/proxies.js" defer></script>
 </body>
