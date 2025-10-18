@@ -36,8 +36,7 @@ def test_cli_retest_command(runner, mocker):
         "is_secure": True,
         "security_issues": [],
         "tested_at": "2024-01-01T00:00:00Z",
-        "_details": {},
-        "security": "auto",
+        "details": {},
     }
     mocker.patch("builtins.open",
                  mocker.mock_open(read_data=json.dumps([valid_proxy])))
