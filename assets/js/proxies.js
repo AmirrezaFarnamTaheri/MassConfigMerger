@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
         proxiesTable.classList.add('hidden');
 
         try {
-            allProxies = await fetchProxies();
+            allProxies = await window.api.fetchProxies();
             renderTable();
         } catch (error) {
             window.stateManager.setError('Failed to load proxies.', error);

@@ -21,14 +21,14 @@ config = ProxyConfig()
 
 @click.group()
 @click.version_option(version="1.0.0")
-def cli():
+def main():
     """
     ConfigStream: Automated VPN Configuration Aggregator.
     """
     setup_logging(config.LOG_LEVEL, config.MASK_SENSITIVE_DATA)
 
 
-@cli.command()
+@main.command()
 @click.option(
     "--sources",
     "sources_file",
@@ -127,7 +127,7 @@ def merge(
         sys.exit(1)
 
 
-@cli.command()
+@main.command()
 def update_databases():
     """
     Update GeoIP databases.
@@ -144,7 +144,7 @@ def update_databases():
         )
 
 
-@cli.command()
+@main.command()
 @click.option(
     "--input",
     "input_file",
@@ -221,4 +221,4 @@ def retest(input_file: str, output_dir: str):
 
 
 if __name__ == "__main__":
-    cli()
+    main()
