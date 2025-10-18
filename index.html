@@ -1,178 +1,117 @@
 <!DOCTYPE html>
-<html lang="en" class="no-js">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Access the free, open internet with ConfigStream. We provide auto-updating, security-tested VPN configurations for everyone.">
-    <title>ConfigStream - Your Gateway to the Open Internet</title>
-    <link rel="icon" type="image/svg+xml" href="src/configstream/logo.svg">
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/state-manager.css">
-    <link rel="stylesheet" href="assets/css/error-handler.css">
-    <script src="https://unpkg.com/feather-icons"></script>
+    <title>ConfigStream - Proxy Configuration Manager</title>
+
+    <!-- Your CSS files here -->
+    <link rel="stylesheet" href="/assets/css/style.css">
+
+    <!-- CRITICAL: CSS for logo animation - comes BEFORE any scripts -->
+    <style>
+        /* Logo animation - spins on load */
+        @keyframes spin-rotate {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Apply animation to logo element during page load */
+        .logo-animated {
+            animation: spin-rotate 1s linear 1 forwards;
+        }
+
+        /* After animation completes, logo should be solid black */
+        .logo-animated.animation-complete {
+            filter: brightness(0);
+            color: #000000;
+        }
+
+        /* For inline SVG logos */
+        .logo-animated.animation-complete svg {
+            filter: brightness(0);
+        }
+
+        /* For image logos */
+        .logo-animated.animation-complete img {
+            filter: brightness(0);
+        }
+    </style>
 </head>
 <body>
     <div id="preloader">
-        <div class="loader-logo"></div>
+        <svg class="logo-animated" width="80" height="80" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="var(--brand-primary)"/>
+                    <stop offset="100%" stop-color="var(--brand-secondary)"/>
+                </linearGradient>
+            </defs>
+            <g>
+                <path d="M29.5 6C36.4036 6 42 11.5964 42 18.5C42 25.4036 36.4036 31 29.5 31H14.5" stroke="url(#logo-gradient)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M14.5 38C7.59644 38 2 32.4036 2 25.5C2 18.5964 7.59644 13 14.5 13H29.5" stroke="url(#logo-gradient)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            </g>
+        </svg>
     </div>
-    <div class="nav-overlay"></div>
-    <header class="header">
-        <div class="container">
-            <a href="index.html" class="logo" aria-label="ConfigStream Home">
-                <svg class="logo-svg" width="48" height="48" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="logo-gradient-header" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="var(--brand-primary)"/>
-                            <stop offset="100%" stop-color="var(--brand-secondary)"/>
-                        </linearGradient>
-                    </defs>
-                    <g>
-                        <path d="M29.5 6C36.4036 6 42 11.5964 42 18.5C42 25.4036 36.4036 31 29.5 31H14.5" stroke="url(#logo-gradient-header)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M14.5 38C7.59644 38 2 32.4036 2 25.5C2 18.5964 7.59644 13 14.5 13H29.5" stroke="url(#logo-gradient-header)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </g>
-                </svg>
-                <span>ConfigStream</span>
-            </a>
-            <nav class="nav" id="main-nav" aria-label="Main navigation">
-                <a href="index.html" class="nav-link">Home</a>
-                <a href="proxies.html" class="nav-link">Proxy List</a>
-                <a href="statistics.html" class="nav-link">Analytics</a>
-            </nav>
-            <div class="header-actions">
-                <button id="theme-switcher" class="theme-btn" aria-label="Toggle theme">
-                    <div class="theme-btn-inner">
-                        <i data-feather="moon" class="moon-icon"></i>
-                        <i data-feather="sun" class="sun-icon"></i>
-                    </div>
-                </button>
-                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" class="github-btn" target="_blank" rel="noopener noreferrer" aria-label="View on GitHub">
-                    <i data-feather="github"></i>
-                </a>
-            </div>
-        </div>
-    </header>
+    <!-- Your HTML content here -->
 
-    <main>
-        <div class="container">
-            <section class="hero text-center">
-                <h1 style="--delay: 0.1s;">Unlock the Internet</h1>
-                <p class="subtitle" style="--delay: 0.2s;">
-                    Access a world of information with our free, auto-updating VPN configurations. We continuously test and provide reliable proxies to ensure your connection to a free and open internet.
-                </p>
-                <div class="hero-actions" style="--delay: 0.3s;">
-                    <a href="proxies.html" class="btn btn-primary">
-                        <i data-feather="zap"></i>
-                        <span>Browse Proxies</span>
-                    </a>
-                    <a href="#downloads" class="btn btn-secondary">
-                        <i data-feather="download"></i>
-                        <span>Get Configs</span>
-                    </a>
-                </div>
-            </section>
+    <!--
+    ========================================================================
+    SCRIPT LOADING ORDER - THIS IS CRITICAL FOR CACHE FUNCTIONALITY
+    ========================================================================
 
-            <section class="stats-card" style="--delay: 0.4s;">
-                <div class="stats-card-inner">
-                    <div class="stat-item">
-                        <div class="stat-icon"><i data-feather="bar-chart-2"></i></div>
-                        <div class="stat-value-wrapper">
-                            <div id="totalConfigs" class="stat-value loading">0</div>
-                            <div class="stat-label">Proxies Tested</div>
-                        </div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-icon"><i data-feather="check-circle"></i></div>
-                        <div class="stat-value-wrapper">
-                            <div id="workingConfigs" class="stat-value loading">0</div>
-                            <div class="stat-label">Currently Online</div>
-                        </div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-icon"><i data-feather="clock"></i></div>
-                        <div class="stat-value-wrapper">
-                            <div class="stat-value">3 hrs</div>
-                            <div class="stat-label">Update Frequency</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+    The order below must be respected:
+    1. Cache configuration (loaded FIRST)
+    2. Cache manager (depends on cache configuration)
+    3. Any other scripts that use cache features
+    4. Service worker registration (happens last)
 
-            <div class="main-grid">
-                <section id="downloads" class="card" style="--delay: 0.5s;" aria-labelledby="downloads-heading">
-                    <div class="card-header text-center">
-                        <h2 id="downloads-heading">Get Your Configs</h2>
-                        <p class="subtitle">Choose your preferred format. All downloads contain our latest tested proxies.</p>
-                    </div>
-                    <div class="downloads-grid">
-                        <div class="download-card" style="--delay: 0.6s;">
-                            <div class="download-icon"><i data-feather="copy"></i></div>
-                            <div class="download-info">
-                                <h3 class="download-title">Base64 Subscription</h3>
-                                <p class="download-desc">A single link for easy import into V2Ray, Xray, and other compatible clients.</p>
-                            </div>
-                            <button class="btn btn-primary copy-btn" data-file="output/vpn_subscription_base64.txt">
-                                <i data-feather="copy"></i>
-                                <span>Copy Link</span>
-                            </button>
-                        </div>
-                        <div class="download-card" style="--delay: 0.7s;">
-                            <div class="download-icon"><i data-feather="download"></i></div>
-                            <div class="download-info">
-                                <h3 class="download-title">Clash Config</h3>
-                                <p class="download-desc">A ready-to-use YAML file, perfect for Clash users.</p>
-                            </div>
-                            <a href="output/clash.yaml" class="btn btn-primary" download>
-                                <i data-feather="download"></i>
-                                <span>Download</span>
-                            </a>
-                        </div>
-                        <div class="download-card" style="--delay: 0.8s;">
-                            <div class="download-icon"><i data-feather="file-text"></i></div>
-                            <div class="download-info">
-                                <h3 class="download-title">Raw Proxy Links</h3>
-                                <p class="download-desc">A simple text file with one proxy per line for custom scripts.</p>
-                            </div>
-                            <button class="btn btn-primary copy-btn" data-file="output/configs_raw.txt">
-                                <i data-feather="copy"></i>
-                                <span>Copy Content</span>
-                            </button>
-                        </div>
-                    </div>
-                </section>
+    If you change this order, you will get undefined reference errors.
+    -->
 
-                <div class="info-column">
-                    <section class="card info-card" style="--delay: 0.9s;">
-                        <h3><i data-feather="globe"></i> Our Mission</h3>
-                        <p>We believe that everyone has the right to access information without restriction. Our mission is to empower users worldwide with the tools they need to stay connected and informed, bypassing digital barriers and promoting a more open internet.</p>
-                    </section>
-                    <section class="card info-card" style="--delay: 1.0s;">
-                        <h3><i data-feather="activity"></i> How It Works</h3>
-                        <p>Our system, powered by GitHub Actions, works tirelessly to scan public sources for new proxies. Each one is rigorously tested for speed, security, and reliability. The best ones are automatically compiled into fresh configuration files, updated every three hours.</p>
-                    </section>
-                    <section class="card notice-card" style="--delay: 1.1s;">
-                        <h3><i data-feather="alert-triangle"></i> An Important Notice on Privacy</h3>
-                        <p>These configurations use free, public proxies. While we diligently filter for malicious nodes, we cannot guarantee the privacy of your data. We strongly advise against using these proxies for sensitive activities. For casual browsing and bypassing geo-restrictions, they are a powerful free tool. <strong>Use at your own risk.</strong></p>
-                    </section>
-                </div>
-            </div>
-        </div>
-    </main>
+    <!-- STEP 1: Load shared cache configuration FIRST -->
+    <!-- This file creates globalThis.ConfigStreamCache -->
+    <script src="/assets/js/cache-config.js"></script>
 
-    <footer class="footer">
-        <div class="container">
-            <div class="social-links">
-                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream" target="_blank" rel="noopener noreferrer" aria-label="Visit our GitHub page"><i data-feather="github"></i></a>
-                <a href="https://github.com/AmirrezaFarnamTaheri/ConfigStream/issues" target="_blank" rel="noopener noreferrer" aria-label="Report an issue"><i data-feather="alert-circle"></i></a>
-            </div>
-            <p>A passion project for a free and open internet. ✨</p>
-            <p class="last-updated">Last updated: <span id="footerUpdate" class="loading">checking...</span></p>
-        </div>
-    </footer>
+    <!-- STEP 2: Load cache manager SECOND -->
+    <!-- This file needs globalThis.ConfigStreamCache to exist -->
+    <script src="/assets/js/cache-manager.js"></script>
 
-    <script src="assets/js/error-handler.js" defer></script>
-    <script src="assets/js/state-manager.js" defer></script>
-    <script src="assets/js/utils.js" defer></script>
-    <script src="assets/js/cache-manager.js" defer></script>
-    <script src="assets/js/main.js" defer></script>
+    <!-- STEP 3: Load your main application scripts -->
+    <!-- These can now safely use either cacheManager or globalThis.ConfigStreamCache -->
+    <script src="/assets/js/main.js"></script>
+
+    <!-- STEP 4: Register the service worker and handle updates -->
+    <!-- This inline script comes LAST, after everything else is loaded -->
+    <script>
+        // Verify that cache manager is available
+        if (typeof cacheManager === 'undefined') {
+            console.error('FATAL: cacheManager is not available! cache-manager.js failed to load.');
+        }
+
+        // Verify that cache configuration is available
+        if (!globalThis.ConfigStreamCache) {
+            console.error('FATAL: Cache configuration not available! cache-config.js failed to load.');
+        }
+
+        // Listen for service worker updates
+        window.addEventListener('sw-update-ready', () => {
+            console.log('A new version of the app is available. Reload to update.');
+            // You can show a notification here
+        });
+
+        // Optional: Add a debug command to the console
+        window.cacheDebug = async function() {
+            const stats = await cacheManager.getCacheStats();
+            console.log('Cache Statistics:', stats);
+            console.log('Cache Configuration:', globalThis.ConfigStreamCache);
+        };
+
+        console.log('Application initialized. Type cacheDebug() in console for cache info.');
+    </script>
 </body>
 </html>

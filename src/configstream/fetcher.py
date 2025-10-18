@@ -156,7 +156,15 @@ async def fetch_from_source(
 
                     # Basic validation for proxy configs
                     # (vmess://, vless://, ss://, trojan://, etc.)
-                    configs.append(line)
+                    if any(line.startswith(prefix) for prefix in [
+                        'vmess://', 'vless://', 'ss://', 'trojan://',
+                        'hysteria://', 'hysteria2://', 'tuic://',
+                        'wireguard://', 'naive://', 'http://', 'https://',
+                        'socks://', 'socks5://', 'socks4://'
+                    ]):
+                        configs.append(line)
+                    else:
+                        logger.debug(f"Skipping invalid config line: {line[:50]}...")
 
                 # Log success
                 logger.info(f"Successfully fetched {len(configs)} configs from {source} "

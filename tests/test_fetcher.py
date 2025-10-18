@@ -11,7 +11,7 @@ async def test_fetch_from_source_success(aiohttp_client):
     """Test successful fetching from a source."""
 
     async def handler(request):
-        return web.Response(text="proxy1\nproxy2\n#comment\nproxy3")
+        return web.Response(text="vmess://proxy1\nvless://proxy2\n#comment\nss://proxy3")
 
     app = web.Application()
     app.router.add_get("/", handler)
@@ -22,7 +22,7 @@ async def test_fetch_from_source_success(aiohttp_client):
         result = await fetch_from_source(session, source_url)
 
     assert result.success is True
-    assert result.configs == ["proxy1", "proxy2", "proxy3"]
+    assert result.configs == ["vmess://proxy1", "vless://proxy2", "ss://proxy3"]
     assert result.status_code == 200
 
 
