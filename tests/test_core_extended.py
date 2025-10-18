@@ -6,7 +6,7 @@ import yaml
 from configstream.core import (Proxy, ProxyTester,
                                generate_base64_subscription,
                                generate_clash_config, geolocate_proxy,
-                               parse_config, run_single_proxy_test)
+                               parse_config, run_single_proxy_test, _parse_vmess, _parse_vless, _parse_trojan, _parse_shadowsocks)
 
 
 @pytest.mark.parametrize(

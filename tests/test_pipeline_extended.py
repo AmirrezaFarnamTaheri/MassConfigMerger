@@ -1,12 +1,12 @@
 import asyncio
 import base64
-from unittest.mock import AsyncMock, MagicMock
-
+from unittest.mock import AsyncMock, MagicMock, patch
+import json
 import pytest
 
 from configstream.core import Proxy
 from configstream.pipeline import (fetch_configs, process_proxies_in_batches,
-                                   run_proxy_tests_in_batches)
+                                   run_proxy_tests_in_batches, run_full_pipeline)
 
 
 @pytest.mark.asyncio

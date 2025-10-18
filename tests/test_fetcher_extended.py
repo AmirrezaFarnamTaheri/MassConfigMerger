@@ -1,9 +1,9 @@
 import asyncio
-
+from unittest.mock import MagicMock, AsyncMock
 import pytest
 from aiohttp import web
 
-from configstream.fetcher import FetchResult, fetch_multiple_sources
+from configstream.fetcher import FetchResult, fetch_multiple_sources, fetch_from_source
 
 
 @pytest.mark.asyncio
