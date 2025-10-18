@@ -42,7 +42,9 @@ htmlcov/
 *.log
 logs/
 
-# Data (keep output/ for GitHub Pages)
+# Output files (generated during runs, committed by CI/CD)
+output/
+
 data/
 *.db
 *.sqlite

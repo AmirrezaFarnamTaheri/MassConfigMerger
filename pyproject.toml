@@ -115,3 +115,31 @@ module = [
     "singbox2proxy"
 ]
 ignore_missing_imports = true
+
+[tool.flake8]
+extend-ignore = ["E501", "E302", "E303", "E305", "E306", "W291", "W293"]
+per-file-ignores = [
+    "tests/*:E402,F401",
+]
+max-line-length = 100
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+    ".mypy_cache",
+    ".pytest_cache",
+]
+
+[tool.pylint.messages_control]
+disable = [
+    "missing-docstring",
+    "too-few-public-methods",
+    "R0801",  # duplicate-code
+]
+
+[tool.isort]
+profile = "black"
+line_length = 100

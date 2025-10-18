@@ -7,15 +7,13 @@ from aiohttp_proxy import ProxyConnector
 from singbox2proxy import SingBoxProxy
 
 from .config import AppSettings
-from .core import Proxy
-from .services import IProxyTester
+from .models import Proxy
 
-# Remove tester.py - consolidate all here
 logger = logging.getLogger(__name__)
 
 
-class SingBoxTester(IProxyTester):
-    """Concrete implementation of IProxyTester using SingBox"""
+class SingBoxTester:
+    """Concrete implementation of proxy tester using SingBox"""
 
     def __init__(self, timeout: int | None = None):
         self.config = AppSettings()

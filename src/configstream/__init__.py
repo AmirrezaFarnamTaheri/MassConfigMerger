@@ -9,14 +9,16 @@ __version__ = "1.0.0"
 __author__ = "Amirreza 'Farnam' Taheri"
 
 # Import key components to be available at the package level
-from .core import Proxy, ProxyTester, parse_config
+from .models import Proxy
+from .testers import SingBoxTester
+from .core import parse_config
 from .pipeline import run_full_pipeline
 from .config import AppSettings
 
 # Define the public API of the package
 __all__ = [
     "Proxy",
-    "ProxyTester",
+    "SingBoxTester",
     "parse_config",
     "run_full_pipeline",
     "AppSettings",

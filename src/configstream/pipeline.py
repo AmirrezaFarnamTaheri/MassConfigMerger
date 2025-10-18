@@ -10,8 +10,9 @@ import aiohttp
 import geoip2.database
 from rich.progress import Progress
 
-from .core import Proxy, ProxyTester, geolocate_proxy
+from .core import Proxy, geolocate_proxy
 from .core import parse_config_batch
+from .testers import SingBoxTester
 from .output import (generate_base64_subscription, generate_clash_config,
                      generate_singbox_config)
 
@@ -111,16 +112,14 @@ async def run_full_pipeline(
             test_task = progress.add_task("Testing proxies...",
                                           total=len(proxies))
 
-        tester = ProxyTester(
-            max_workers=max_workers,
-            timeout=timeout,
-        )
+        tester = SingBoxTester(timeout=timeout)
 
         tested_proxies = []
 
-        for proxy in await tester.test_all(proxies):
-            tested_proxies.append(proxy.proxy)
-            stats["working"] += 1 if proxy.success else 0
+        for proxy in proxies:
+            tested_proxy = await tester.test(proxy)
+            tested_proxies.append(tested_proxy)
+            stats["working"] += 1 if tested_proxy.is_working else 0
 
             if progress:
                 progress.update(test_task, advance=1)

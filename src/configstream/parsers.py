@@ -1,9 +1,12 @@
 import base64
 import json
+import logging
 from typing import Optional
 from urllib.parse import parse_qs, unquote, urlparse
 
 from .models import Proxy
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_vmess(config: str) -> Proxy | None:
@@ -20,7 +23,8 @@ def _parse_vmess(config: str) -> Proxy | None:
             remarks=vmess_data.get("ps", ""),
             details=vmess_data,
         )
-    except (json.JSONDecodeError, base64.binascii.Error, KeyError):
+    except (json.JSONDecodeError, base64.binascii.Error, KeyError) as e:
+        logger.debug(f"Failed to parse VMess config: {str(e)[:50]}")
         return None
 
 
@@ -39,7 +43,8 @@ def _parse_vless(config: str) -> Proxy | None:
             remarks=unquote(parsed.fragment or ""),
             details={k: v[0] for k, v in query.items()},
         )
-    except (ValueError, IndexError):
+    except (ValueError, IndexError) as e:
+        logger.debug(f"Failed to parse VLESS config: {str(e)[:50]}")
         return None
 
 
@@ -64,7 +69,8 @@ def _parse_ss(config: str) -> Proxy | None:
                 "password": password
             },
         )
-    except (ValueError, IndexError, base64.binascii.Error):
+    except (ValueError, IndexError, base64.binascii.Error) as e:
+        logger.debug(f"Failed to parse Shadowsocks config: {str(e)[:50]}")
         return None
 
 
@@ -82,7 +88,8 @@ def _parse_trojan(config: str) -> Proxy | None:
             remarks=unquote(parsed.fragment or ""),
             details=parse_qs(parsed.query),
         )
-    except (ValueError, IndexError):
+    except (ValueError, IndexError) as e:
+        logger.debug(f"Failed to parse Trojan config: {str(e)[:50]}")
         return None
 
 
@@ -100,7 +107,8 @@ def _parse_hysteria(config: str) -> Proxy | None:
             remarks=unquote(parsed.fragment or ""),
             details=parse_qs(parsed.query),
         )
-    except (ValueError, IndexError):
+    except (ValueError, IndexError) as e:
+        logger.debug(f"Failed to parse Hysteria config: {str(e)[:50]}")
         return None
 
 
@@ -118,7 +126,8 @@ def _parse_hysteria2(config: str) -> Proxy | None:
             remarks=unquote(parsed.fragment or ""),
             details=parse_qs(parsed.query),
         )
-    except (ValueError, IndexError):
+    except (ValueError, IndexError) as e:
+        logger.debug(f"Failed to parse Hysteria2 config: {str(e)[:50]}")
         return None
 
 
@@ -136,7 +145,8 @@ def _parse_tuic(config: str) -> Proxy | None:
             remarks=unquote(parsed.fragment or ""),
             details=parse_qs(parsed.query),
         )
-    except (ValueError, IndexError):
+    except (ValueError, IndexError) as e:
+        logger.debug(f"Failed to parse TUIC config: {str(e)[:50]}")
         return None
 
 
@@ -154,7 +164,8 @@ def _parse_wireguard(config: str) -> Proxy | None:
             remarks=unquote(parsed.fragment or ""),
             details=parse_qs(parsed.query),
         )
-    except (ValueError, IndexError):
+    except (ValueError, IndexError) as e:
+        logger.debug(f"Failed to parse Wireguard config: {str(e)[:50]}")
         return None
 
 
@@ -172,7 +183,8 @@ def _parse_naive(config: str) -> Proxy | None:
             details={"password": parsed.password or ""},
             remarks=unquote(parsed.fragment or ""),
         )
-    except (ValueError, IndexError):
+    except (ValueError, IndexError) as e:
+        logger.debug(f"Failed to parse Naive config: {str(e)[:50]}")
         return None
 
 
@@ -190,5 +202,6 @@ def _parse_generic(config: str) -> Proxy | None:
             details={"password": parsed.password or ""},
             remarks=unquote(parsed.fragment or ""),
         )
-    except (ValueError, IndexError):
+    except (ValueError, IndexError) as e:
+        logger.debug(f"Failed to parse Generic config: {str(e)[:50]}")
         return None

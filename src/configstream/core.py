@@ -1,13 +1,7 @@
 import asyncio
 import logging
-from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
 
-import aiohttp
-
-from .config import AppSettings
-from .geoip import GeoIPService
 from .parsers import (_parse_generic, _parse_hysteria, _parse_hysteria2,
                     _parse_naive, _parse_ss, _parse_trojan, _parse_tuic,
                     _parse_vless, _parse_vmess, _parse_wireguard)
@@ -17,77 +11,7 @@ from .models import Proxy
 logger = logging.getLogger(__name__)
 
 
-class ProxyTestResult:
-    def __init__(self,
-                 success: bool,
-                 latency_ms: Optional[float],
-                 geolocation: Optional[dict],
-                 timestamp: datetime,
-                 proxy: Proxy):
-        self.success = success
-        self.latency_ms = latency_ms
-        self.geolocation = geolocation
-        self.timestamp = timestamp
-        self.proxy = proxy
-
-
-class ProxyTester:
-    def __init__(self,
-                 test_url: str = "http://www.gstatic.com/generate_204",
-                 timeout: int = 10,
-                 ssl_verify: bool = True,
-                 max_workers: int = 10):
-        self.test_url = test_url
-        self.timeout = timeout
-        self.ssl_verify = ssl_verify
-        self.geoip_service = GeoIPService()
-        self.semaphore = asyncio.Semaphore(max_workers)
-
-    def _build_proxy_url(self, proxy: Proxy) -> str:
-        if proxy.uuid:
-            return (
-                f"{proxy.protocol}://{proxy.uuid}@{proxy.address}:{proxy.port}"
-            )
-        return f"{proxy.protocol}://{proxy.address}:{proxy.port}"
-
-    async def test(self, proxy: Proxy) -> ProxyTestResult:
-        start_time = asyncio.get_event_loop().time()
-        try:
-            connector = aiohttp.TCPConnector(ssl=self.ssl_verify,
-                                             ttl_dns_cache=300)
-            proxy_url = self._build_proxy_url(proxy)
-            async with aiohttp.ClientSession(connector=connector) as session:
-                async with session.get(
-                        self.test_url,
-                        proxy=proxy_url,
-                        timeout=aiohttp.ClientTimeout(total=self.timeout),
-                        ssl=self.ssl_verify) as response:
-                    if response.status == 200:
-                        latency = (asyncio.get_event_loop().time() -
-                                   start_time) * 1000
-                        geolocation = await self.geoip_service.geolocate(proxy)
-                        proxy.is_working = True
-                        proxy.latency = latency
-                        return ProxyTestResult(success=True,
-                                               latency_ms=latency,
-                                               geolocation=geolocation,
-                                               timestamp=datetime.now(),
-                                               proxy=proxy)
-        except (asyncio.TimeoutError, aiohttp.ClientError, Exception):
-            pass
-        proxy.is_working = False
-        return ProxyTestResult(success=False,
-                               latency_ms=None,
-                               geolocation=None,
-                               timestamp=datetime.now(),
-                               proxy=proxy)
-
-    async def test_all(self, proxies: List[Proxy]) -> List[ProxyTestResult]:
-        tasks = [self.test(proxy) for proxy in proxies]
-        return await asyncio.gather(*tasks)
-
-
-def parse_config(config_string: str) -> Optional[Proxy]:
+def parse_config(config_string: str) -> Proxy | None:
     if not config_string or not isinstance(config_string, str):
         return None
 
@@ -155,11 +79,3 @@ async def geolocate_proxy(proxy: Proxy, geoip_reader=None) -> Proxy:
         proxy.country_code = "XX"
     return proxy
 
-
-async def run_single_proxy_test(config: str,
-                                timeout: int = 10) -> ProxyTestResult | None:
-    proxy = parse_config(config)
-    if proxy:
-        tester = ProxyTester(timeout=timeout)
-        return await tester.test(proxy)
-    return None
