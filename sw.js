@@ -2,19 +2,7 @@
  * Service Worker - Handles offline and caching strategies
  */
 
-const CACHE_VERSION = '1.0.1';
-const CACHE_NAME = `configstream-v${CACHE_VERSION.replace(/\./g, '-')}`;
-
-// URLs to pre-cache
-const PRECACHE_URLS = [
-  '/',
-  '/index.html',
-  '/proxies.html',
-  '/statistics.html',
-  '/assets/css/framework.css',
-  '/assets/js/utils.js',
-  '/assets/js/cache-manager.js'
-];
+importScripts('/assets/js/cache-config.js');
 
 /**
  * Install event - pre-cache essential files

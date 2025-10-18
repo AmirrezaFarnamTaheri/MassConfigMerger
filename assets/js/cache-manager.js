@@ -2,28 +2,10 @@
  * Cache Manager - Handles browser caching strategy
  */
 
-const CACHE_VERSION = '1.0.0';
-const CACHE_NAME = `configstream-v${CACHE_VERSION.replace(/\./g, '-')}`;
-
-// Cache configuration
-const CACHE_STRATEGY = {
-  // Network first, fallback to cache
-  networkFirst: [
-    '/output/proxies.json',
-    '/output/statistics.json',
-    '/output/metadata.json'
-  ],
-  // Cache first, fallback to network
-  cacheFirst: [
-    '/assets/css/framework.css',
-    '/assets/js/utils.js',
-    '/assets/js/main.js'
-  ],
-  // Always fresh
-  noCache: [
-    '/output/metadata.json?',  // Trailing ? forces no-cache
-  ]
-};
+// For module environments, load the configuration
+if (typeof importScripts === 'function') {
+  importScripts('/assets/js/cache-config.js');
+}
 
 /**
  * Initialize service worker if supported

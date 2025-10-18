@@ -1,11 +1,15 @@
 function initPreloader() {
     const preloader = document.getElementById('preloader');
+    const logo = document.querySelector('.logo-svg');
     if (!preloader) return;
 
     window.addEventListener('load', () => {
         setTimeout(() => {
             preloader.classList.add('hidden');
             document.body.classList.add('loaded');
+            if (logo) {
+                logo.classList.add('loading-animation');
+            }
         }, 200); // Small delay to ensure content is rendered
     });
 }
@@ -64,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateElement('workingConfigs', stats.working || 0);
                 }
             }
-            window.stateManager.setSuccess('Page loaded successfully!');
+
         } catch (error) {
             window.stateManager.setError('Failed to initialize page data.', error);
             // Update UI to show that data loading failed
