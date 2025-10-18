@@ -19,9 +19,11 @@ async def test_fetch_from_source_success(aiohttp_client):
 
     source_url = str(client.server.make_url("/"))
     async with client.session as session:
-        configs = await fetch_from_source(session, source_url)
+        result = await fetch_from_source(session, source_url)
 
-    assert configs == ["proxy1", "proxy2", "proxy3"]
+    assert result.success is True
+    assert result.configs == ["proxy1", "proxy2", "proxy3"]
+    assert result.status_code == 200
 
 
 @pytest.mark.asyncio
@@ -37,9 +39,11 @@ async def test_fetch_from_source_http_error(aiohttp_client):
 
     source_url = str(client.server.make_url("/"))
     async with client.session as session:
-        configs = await fetch_from_source(session, source_url)
+        result = await fetch_from_source(session, source_url)
 
-    assert configs == []
+    assert result.success is False
+    assert result.configs == []
+    assert "Server error: 500" in result.error
 
 
 @pytest.mark.asyncio
@@ -56,8 +60,11 @@ async def test_fetch_from_source_timeout(aiohttp_client):
 
     source_url = str(client.server.make_url("/"))
     async with client.session as session:
-        configs = await fetch_from_source(session, source_url, timeout=1)
-    assert configs == []
+        result = await fetch_from_source(session, source_url, timeout=1)
+
+    assert result.success is False
+    assert result.configs == []
+    assert "Timeout" in result.error
 
 
 @pytest.mark.asyncio
@@ -73,6 +80,8 @@ async def test_fetch_from_source_empty_source(aiohttp_client):
 
     source_url = str(client.server.make_url("/"))
     async with client.session as session:
-        configs = await fetch_from_source(session, source_url)
+        result = await fetch_from_source(session, source_url)
 
-    assert configs == []
+    assert result.success is True
+    assert result.configs == []
+    assert result.status_code == 200
