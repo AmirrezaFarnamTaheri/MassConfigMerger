@@ -52,7 +52,8 @@ async def test_download_databases_success(mock_session, manager):
 @pytest.mark.asyncio
 @patch("aiohttp.ClientSession")
 async def test_download_databases_failure(mock_session, manager):
-    manager._download_and_extract = AsyncMock(side_effect=Exception("Download failed"))
+    manager._download_and_extract = AsyncMock(
+        side_effect=Exception("Download failed"))
     result = await manager.download_databases()
     assert not result
 
@@ -63,7 +64,8 @@ async def test_download_and_extract(manager, fs):
     tar_buffer = io.BytesIO()
     with tarfile.open(fileobj=tar_buffer, mode="w:gz") as tar:
         db_content = b"dummy_db_content"
-        tarinfo = tarfile.TarInfo(name="GeoLite2-City_20240101/GeoLite2-City.mmdb")
+        tarinfo = tarfile.TarInfo(
+            name="GeoLite2-City_20240101/GeoLite2-City.mmdb")
         tarinfo.size = len(db_content)
         tar.addfile(tarinfo, io.BytesIO(db_content))
     tar_buffer.seek(0)
@@ -80,7 +82,8 @@ async def test_download_and_extract(manager, fs):
     mock_session = MagicMock()
     mock_session.get.return_value = get_context_manager
 
-    await manager._download_and_extract(mock_session, "http://fake-url.com", "city")
+    await manager._download_and_extract(mock_session, "http://fake-url.com",
+                                        "city")
 
     db_path = Path("data") / "GeoLite2-City.mmdb"
     assert db_path.exists()

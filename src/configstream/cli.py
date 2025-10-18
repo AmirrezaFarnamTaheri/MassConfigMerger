@@ -21,14 +21,14 @@ config = ProxyConfig()
 
 @click.group()
 @click.version_option(version="1.0.0")
-def main():
+def cli():
     """
     ConfigStream: Automated VPN Configuration Aggregator.
     """
     setup_logging(config.LOG_LEVEL, config.MASK_SENSITIVE_DATA)
 
 
-@main.command()
+@cli.command()
 @click.option(
     "--sources",
     "sources_file",
@@ -93,7 +93,9 @@ def merge(
     try:
         # Read sources
         sources = Path(sources_file).read_text().splitlines()
-        sources = [s.strip() for s in sources if s.strip() and not s.startswith("#")]
+        sources = [
+            s.strip() for s in sources if s.strip() and not s.startswith("#")
+        ]
 
         if not sources:
             click.echo("✗ No sources found in the specified file.", err=True)
@@ -112,8 +114,7 @@ def merge(
                     country=country,
                     min_latency=min_latency,
                     max_latency=max_latency,
-                )
-            )
+                ))
 
         click.echo("\n✓ Pipeline completed successfully!")
         click.echo(f"✓ Output files saved to: {output_dir}")
@@ -126,7 +127,7 @@ def merge(
         sys.exit(1)
 
 
-@main.command()
+@cli.command()
 def update_databases():
     """
     Update GeoIP databases.
@@ -138,10 +139,12 @@ def update_databases():
         console.print("✅ All databases updated successfully!")
     else:
         console.print("❌ Some databases failed to update.")
-        console.print("   Check MAXMIND_LICENSE_KEY environment variable or GitHub secret.")
+        console.print(
+            "   Check MAXMIND_LICENSE_KEY environment variable or GitHub secret."
+        )
 
 
-@main.command()
+@cli.command()
 @click.option(
     "--input",
     "input_file",
@@ -166,7 +169,7 @@ def retest(input_file: str, output_dir: str):
 
     try:
         # Read proxies from file
-        with open(input_file, "r") as f:
+        with open(input_file) as f:
             proxies_data = json.load(f)
 
         if not proxies_data:
@@ -188,7 +191,10 @@ def retest(input_file: str, output_dir: str):
         if invalid_entries:
             error_lines = [
                 "✗ Invalid proxy definitions detected in the input file:",
-                *[f"  • Entry #{index}: {error}" for index, error in invalid_entries],
+                *[
+                    f"  • Entry #{index}: {error}"
+                    for index, error in invalid_entries
+                ],
             ]
             click.echo("\n".join(error_lines), err=True)
             sys.exit(1)
@@ -201,8 +207,7 @@ def retest(input_file: str, output_dir: str):
                     output_dir,
                     progress,
                     proxies=proxies,
-                )
-            )
+                ))
 
         click.echo("\n✓ Retest completed successfully!")
         click.echo(f"✓ Output files saved to: {output_dir}")
@@ -216,4 +221,4 @@ def retest(input_file: str, output_dir: str):
 
 
 if __name__ == "__main__":
-    main()
+    cli()

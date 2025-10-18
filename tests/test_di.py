@@ -9,11 +9,13 @@ class ServiceA:
 
 
 class ServiceB:
+
     def __init__(self, service_a: ServiceA):
         self.service_a = service_a
 
 
 class ServiceC:
+
     def __init__(self, service_b: ServiceB):
         self.service_b = service_b
 
@@ -52,7 +54,8 @@ class TestContainer(unittest.TestCase):
 
     def test_register_factory(self):
         self.container.register(ServiceA)
-        self.container.register_factory(ServiceB, lambda c: ServiceB(c.resolve(ServiceA)))
+        self.container.register_factory(
+            ServiceB, lambda c: ServiceB(c.resolve(ServiceA)))
         instance = self.container.resolve(ServiceB)
         self.assertIsInstance(instance, ServiceB)
         self.assertIsInstance(instance.service_a, ServiceA)

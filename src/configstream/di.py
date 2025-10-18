@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from inspect import signature
-from typing import Any, Callable, Dict, Type, TypeVar
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 
@@ -8,25 +9,28 @@ class Container:
     """Dependency injection container"""
 
     def __init__(self):
-        self._services: Dict[Type, Any] = {}
-        self._factories: Dict[Type, Callable] = {}
-        self._singletons: Dict[Type, Any] = {}
+        self._services: dict[type, Any] = {}
+        self._factories: dict[type, Callable] = {}
+        self._singletons: dict[type, Any] = {}
 
-    def register(self, interface: Type[T], implementation: Type[T] = None) -> None:
+    def register(self,
+                 interface: type[T],
+                 implementation: type[T] = None) -> None:
         """Register a service"""
         if implementation is None:
             implementation = interface
         self._services[interface] = implementation
 
-    def register_singleton(self, interface: Type[T], instance: T) -> None:
+    def register_singleton(self, interface: type[T], instance: T) -> None:
         """Register a singleton instance"""
         self._singletons[interface] = instance
 
-    def register_factory(self, interface: Type[T], factory: Callable[..., T]) -> None:
+    def register_factory(self, interface: type[T],
+                         factory: Callable[..., T]) -> None:
         """Register a factory function"""
         self._factories[interface] = factory
 
-    def resolve(self, interface: Type[T]) -> T:
+    def resolve(self, interface: type[T]) -> T:
         """Resolve a dependency"""
         # Check singletons first
         if interface in self._singletons:

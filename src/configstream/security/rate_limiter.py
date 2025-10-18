@@ -7,7 +7,10 @@ class RateLimiter:
 
     def __init__(self, requests_per_second: float = 10):
         self.rate = requests_per_second
-        self.buckets = defaultdict(lambda: {"tokens": 0, "last_update": time()})
+        self.buckets = defaultdict(lambda: {
+            "tokens": 0,
+            "last_update": time()
+        })
 
     def is_allowed(self, identifier: str) -> bool:
         """Check if request is allowed"""

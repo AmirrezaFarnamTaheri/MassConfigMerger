@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import aiohttp
 
@@ -20,21 +20,22 @@ class UrlSourcePlugin(SourcePlugin):
     def version(self) -> str:
         return "1.0.0"
 
-    async def initialize(self, config: Dict[str, Any]) -> None:
+    async def initialize(self, config: dict[str, Any]) -> None:
         pass
 
-    async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(self, context: dict[str, Any]) -> dict[str, Any]:
         return {}
 
-    async def fetch_proxies(self, url: str) -> List[str]:
+    async def fetch_proxies(self, url: str) -> list[str]:
         async with aiohttp.ClientSession() as session:
             try:
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as response:
+                async with session.get(
+                        url,
+                        timeout=aiohttp.ClientTimeout(total=30)) as response:
                     response.raise_for_status()
                     text = await response.text()
                     return [
-                        line.strip()
-                        for line in text.splitlines()
+                        line.strip() for line in text.splitlines()
                         if line.strip() and not line.strip().startswith("#")
                     ]
             except Exception as e:
@@ -56,13 +57,13 @@ class CountryFilterPlugin(FilterPlugin):
     def version(self) -> str:
         return "1.0.0"
 
-    async def initialize(self, config: Dict[str, Any]) -> None:
+    async def initialize(self, config: dict[str, Any]) -> None:
         pass
 
-    async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(self, context: dict[str, Any]) -> dict[str, Any]:
         return {}
 
-    async def filter_proxies(self, proxies: List[Proxy]) -> List[Proxy]:
+    async def filter_proxies(self, proxies: list[Proxy]) -> list[Proxy]:
         return [p for p in proxies if p.country_code.upper() == self._country]
 
 
@@ -80,14 +81,16 @@ class LatencyFilterPlugin(FilterPlugin):
     def version(self) -> str:
         return "1.0.0"
 
-    async def initialize(self, config: Dict[str, Any]) -> None:
+    async def initialize(self, config: dict[str, Any]) -> None:
         pass
 
-    async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(self, context: dict[str, Any]) -> dict[str, Any]:
         return {}
 
-    async def filter_proxies(self, proxies: List[Proxy]) -> List[Proxy]:
-        return [p for p in proxies if p.latency and p.latency <= self._max_latency]
+    async def filter_proxies(self, proxies: list[Proxy]) -> list[Proxy]:
+        return [
+            p for p in proxies if p.latency and p.latency <= self._max_latency
+        ]
 
 
 class Base64ExportPlugin(ExportPlugin):
@@ -101,16 +104,17 @@ class Base64ExportPlugin(ExportPlugin):
     def version(self) -> str:
         return "1.0.0"
 
-    async def initialize(self, config: Dict[str, Any]) -> None:
+    async def initialize(self, config: dict[str, Any]) -> None:
         pass
 
-    async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(self, context: dict[str, Any]) -> dict[str, Any]:
         return {}
 
-    async def export(self, proxies: List[Proxy], output_path: Path) -> None:
+    async def export(self, proxies: list[Proxy], output_path: Path) -> None:
         content = generate_base64_subscription(proxies)
         if content:
-            (output_path / "vpn_subscription_base64.txt").write_text(content, encoding="utf-8")
+            (output_path / "vpn_subscription_base64.txt").write_text(
+                content, encoding="utf-8")
 
 
 class ClashExportPlugin(ExportPlugin):
@@ -124,13 +128,13 @@ class ClashExportPlugin(ExportPlugin):
     def version(self) -> str:
         return "1.0.0"
 
-    async def initialize(self, config: Dict[str, Any]) -> None:
+    async def initialize(self, config: dict[str, Any]) -> None:
         pass
 
-    async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(self, context: dict[str, Any]) -> dict[str, Any]:
         return {}
 
-    async def export(self, proxies: List[Proxy], output_path: Path) -> None:
+    async def export(self, proxies: list[Proxy], output_path: Path) -> None:
         content = generate_clash_config(proxies)
         if content:
             (output_path / "clash.yaml").write_text(content, encoding="utf-8")

@@ -72,8 +72,7 @@ class TestPluginManager(unittest.TestCase):
             "    name = 'discovered'\n"
             "    version = '0.1.0'\n"
             "    async def initialize(self, config): pass\n"
-            "    async def execute(self, context): return context\n"
-        )
+            "    async def execute(self, context): return context\n")
 
         # Mock the import to return a module with the plugin class
         mock_module = MagicMock()
@@ -107,10 +106,10 @@ class TestPluginManager(unittest.TestCase):
         filter_plugin = DummyFilterPlugin()
         export_plugin = DummyExportPlugin()
 
-        source_plugin.fetch_proxies = AsyncMock(return_value=["proxy1_special", "proxy2"])
+        source_plugin.fetch_proxies = AsyncMock(
+            return_value=["proxy1_special", "proxy2"])
         filter_plugin.filter_proxies = AsyncMock(
-            side_effect=lambda proxies: [p for p in proxies if "special" in p]
-        )
+            side_effect=lambda proxies: [p for p in proxies if "special" in p])
         export_plugin.export = AsyncMock()
 
         self.manager.source_plugins["dummy_source"] = source_plugin
@@ -127,8 +126,10 @@ class TestPluginManager(unittest.TestCase):
         )
 
         source_plugin.fetch_proxies.assert_called_once_with("source1")
-        filter_plugin.filter_proxies.assert_called_once_with(["proxy1_special", "proxy2"])
-        export_plugin.export.assert_called_once_with(["proxy1_special"], Path("/tmp/output"))
+        filter_plugin.filter_proxies.assert_called_once_with(
+            ["proxy1_special", "proxy2"])
+        export_plugin.export.assert_called_once_with(["proxy1_special"],
+                                                     Path("/tmp/output"))
 
 
 if __name__ == "__main__":

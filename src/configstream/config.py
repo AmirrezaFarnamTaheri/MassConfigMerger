@@ -48,11 +48,15 @@ class ProxyConfig:
 
     # Malicious node detection thresholds
     SECURITY = {
-        "content_injection_threshold": 5,  # bytes difference
-        "header_strip_threshold": 2,  # headers
-        "redirect_follow_limit": 3,
+        "content_injection_threshold":
+        5,  # bytes difference
+        "header_strip_threshold":
+        2,  # headers
+        "redirect_follow_limit":
+        3,
         "suspicious_port_range": [(0, 1024), (5000, 5999), (8000, 8999)],
-        "blocked_countries": os.getenv("BLOCKED_COUNTRIES", "").split(","),
+        "blocked_countries":
+        os.getenv("BLOCKED_COUNTRIES", "").split(","),
         "malicious_asn_list": [
             # Known malicious ASNs - expand as needed
             "AS13335",  # Cloudflare - some malicious uses

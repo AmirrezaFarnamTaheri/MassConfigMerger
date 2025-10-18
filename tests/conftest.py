@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Awaitable, Callable, List
 
 import pytest
 from aiohttp import web
@@ -17,7 +17,8 @@ from aiohttp.test_utils import TestClient, TestServer
 def pytest_configure(config: pytest.Config) -> None:
     """Register custom markers used in the test-suite."""
 
-    config.addinivalue_line("markers", "asyncio: run the test inside an event loop")
+    config.addinivalue_line("markers",
+                            "asyncio: run the test inside an event loop")
 
 
 @pytest.hookimpl(tryfirst=True)
@@ -31,7 +32,8 @@ def pytest_pyfunc_call(pyfuncitem: pytest.Function) -> bool | None:
     if pyfuncitem.get_closest_marker("asyncio") is None:
         return None
 
-    fixture_names = pyfuncitem._fixtureinfo.argnames  # type: ignore[attr-defined]
+    # type: ignore[attr-defined]
+    fixture_names = pyfuncitem._fixtureinfo.argnames
     call_kwargs = {name: pyfuncitem.funcargs[name] for name in fixture_names}
     asyncio.run(test_func(**call_kwargs))
     return True
@@ -69,8 +71,8 @@ def aiohttp_client(
 ) -> Callable[[web.Application], Awaitable[TestClient]]:
     """Create an ``aiohttp`` test client without external pytest plugins."""
 
-    active_clients: List[TestClient] = []
-    active_servers: List[TestServer] = []
+    active_clients: list[TestClient] = []
+    active_servers: list[TestServer] = []
 
     async def factory(app: web.Application) -> TestClient:
         server = TestServer(app)

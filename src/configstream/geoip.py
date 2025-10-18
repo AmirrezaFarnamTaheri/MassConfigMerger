@@ -3,7 +3,6 @@
 import os
 import tarfile
 from pathlib import Path
-from typing import Optional
 
 import aiohttp
 
@@ -12,11 +11,13 @@ class GeoIPManager:
     """Download and manage GeoIP databases"""
 
     GEOIP_URLS = {
-        "country": "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key={key}&suffix=tar.gz",
-        "city": "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key={key}&suffix=tar.gz",
+        "country":
+        "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key={key}&suffix=tar.gz",
+        "city":
+        "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key={key}&suffix=tar.gz",
     }
 
-    def __init__(self, license_key: Optional[str] = None):
+    def __init__(self, license_key: str | None = None):
         self.license_key = license_key or os.getenv("MAXMIND_LICENSE_KEY")
         self.data_dir = Path("data")
         self.data_dir.mkdir(exist_ok=True)
@@ -42,10 +43,14 @@ class GeoIPManager:
                 try:
                     print(f"📥 Downloading GeoLite2-{db_type.title()}...")
                     await self._download_and_extract(session, url, db_type)
-                    print(f"✅ GeoLite2-{db_type.title()} downloaded successfully")
+                    print(
+                        f"✅ GeoLite2-{db_type.title()} downloaded successfully"
+                    )
 
                 except Exception as e:
-                    print(f"❌ Failed to download GeoLite2-{db_type.title()}: {str(e)}")
+                    print(
+                        f"❌ Failed to download GeoLite2-{db_type.title()}: {str(e)}"
+                    )
                     success = False
 
         return success
@@ -60,7 +65,9 @@ class GeoIPManager:
 
         # Download with timeout
         async with session.get(
-            url, timeout=aiohttp.ClientTimeout(total=300), ssl=True  # 5 minutes
+            url,
+            timeout=aiohttp.ClientTimeout(total=300),
+            ssl=True  # 5 minutes
         ) as response:
             if response.status != 200:
                 raise Exception(f"HTTP {response.status}")
@@ -102,7 +109,9 @@ class GeoIPManager:
         all_exist = True
         for db_path in required_dbs:
             if db_path.exists() and db_path.stat().st_size > 0:
-                print(f"✅ {db_path.name} exists ({db_path.stat().st_size} bytes)")
+                print(
+                    f"✅ {db_path.name} exists ({db_path.stat().st_size} bytes)"
+                )
             else:
                 print(f"❌ {db_path.name} missing or empty")
                 all_exist = False

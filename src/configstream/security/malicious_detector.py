@@ -1,7 +1,6 @@
-import asyncio
 import hashlib
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
 import aiohttp
 from aiohttp_proxy import ProxyConnector
@@ -18,7 +17,7 @@ class SecurityTest:
     passed: bool
     severity: str  # 'critical', 'high', 'medium', 'low'
     description: str
-    details: Dict[str, Any] = None
+    details: dict[str, Any] = None
 
 
 class MaliciousNodeDetector:
@@ -26,7 +25,7 @@ class MaliciousNodeDetector:
 
     def __init__(self):
         self.config = ProxyConfig()
-        self.test_results: Dict[str, List[SecurityTest]] = {}
+        self.test_results: dict[str, list[SecurityTest]] = {}
 
         # Content fingerprints for known-good sites
         self.content_fingerprints = {
@@ -34,7 +33,7 @@ class MaliciousNodeDetector:
             "gstatic": self._get_fingerprint_hash("https://www.gstatic.com"),
         }
 
-    async def detect_malicious(self, proxy: Proxy) -> Dict[str, Any]:
+    async def detect_malicious(self, proxy: Proxy) -> dict[str, Any]:
         """
         Comprehensive malicious proxy detection.
         Returns severity level and detailed findings.
@@ -53,13 +52,15 @@ class MaliciousNodeDetector:
             async with aiohttp.ClientSession(connector=connector) as session:
 
                 # Test 1: Content Injection Detection
-                injection_test = await self._test_content_injection(session, proxy)
+                injection_test = await self._test_content_injection(
+                    session, proxy)
                 results["tests"].append(injection_test)
                 if not injection_test.passed:
                     results["score"] += 25
 
                 # Test 2: Header Manipulation Detection
-                header_test = await self._test_header_manipulation(session, proxy)
+                header_test = await self._test_header_manipulation(
+                    session, proxy)
                 results["tests"].append(header_test)
                 if not header_test.passed:
                     results["score"] += 20
@@ -71,7 +72,8 @@ class MaliciousNodeDetector:
                     results["score"] += 15
 
                 # Test 4: Redirect Hijacking
-                redirect_test = await self._test_redirect_hijacking(session, proxy)
+                redirect_test = await self._test_redirect_hijacking(
+                    session, proxy)
                 results["tests"].append(redirect_test)
                 if not redirect_test.passed:
                     results["score"] += 15
@@ -95,8 +97,7 @@ class MaliciousNodeDetector:
                     passed=False,
                     severity="high",
                     description=f"Failed to run security tests: {str(e)}",
-                )
-            )
+                ))
             results["score"] = 50
 
         # Determine maliciousness
@@ -115,15 +116,15 @@ class MaliciousNodeDetector:
 
         return results
 
-    async def _test_content_injection(
-        self, session: aiohttp.ClientSession, proxy: Proxy
-    ) -> SecurityTest:
+    async def _test_content_injection(self, session: aiohttp.ClientSession,
+                                      proxy: Proxy) -> SecurityTest:
         """Detect if proxy modifies page content"""
         try:
             # Fetch through proxy
             async with session.get(
-                "https://www.google.com",
-                timeout=aiohttp.ClientTimeout(total=self.config.SECURITY_CHECK_TIMEOUT),
+                    "https://www.google.com",
+                    timeout=aiohttp.ClientTimeout(
+                        total=self.config.SECURITY_CHECK_TIMEOUT),
             ) as resp:
                 content_via_proxy = await resp.text()
 
@@ -139,8 +140,8 @@ class MaliciousNodeDetector:
             ]
 
             injected_scripts = sum(
-                1 for pattern in injection_patterns if pattern.lower() in content_via_proxy.lower()
-            )
+                1 for pattern in injection_patterns
+                if pattern.lower() in content_via_proxy.lower())
 
             if injected_scripts > 2:
                 return SecurityTest(
@@ -158,7 +159,7 @@ class MaliciousNodeDetector:
                 description="No content injection detected",
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return SecurityTest(
                 name="content_injection",
                 passed=False,
@@ -173,9 +174,8 @@ class MaliciousNodeDetector:
                 description=f"Content injection test failed: {str(e)}",
             )
 
-    async def _test_header_manipulation(
-        self, session: aiohttp.ClientSession, proxy: Proxy
-    ) -> SecurityTest:
+    async def _test_header_manipulation(self, session: aiohttp.ClientSession,
+                                        proxy: Proxy) -> SecurityTest:
         """Detect if proxy strips or modifies headers"""
         try:
             # Custom headers to send
@@ -186,9 +186,10 @@ class MaliciousNodeDetector:
             }
 
             async with session.get(
-                "http://httpbin.org/headers",
-                headers=custom_headers,
-                timeout=aiohttp.ClientTimeout(total=self.config.SECURITY_CHECK_TIMEOUT),
+                    "http://httpbin.org/headers",
+                    headers=custom_headers,
+                    timeout=aiohttp.ClientTimeout(
+                        total=self.config.SECURITY_CHECK_TIMEOUT),
             ) as resp:
                 data = await resp.json()
                 received_headers = data.get("headers", {})
@@ -206,7 +207,8 @@ class MaliciousNodeDetector:
                 if not found:
                     missing_headers.append(header_key)
 
-            if len(missing_headers) > self.config.SECURITY["header_strip_threshold"]:
+            if len(missing_headers
+                   ) > self.config.SECURITY["header_strip_threshold"]:
                 return SecurityTest(
                     name="header_manipulation",
                     passed=False,
@@ -230,13 +232,15 @@ class MaliciousNodeDetector:
                 description=f"Header test failed: {str(e)}",
             )
 
-    async def _test_dns_leak(self, session: aiohttp.ClientSession, proxy: Proxy) -> SecurityTest:
+    async def _test_dns_leak(self, session: aiohttp.ClientSession,
+                             proxy: Proxy) -> SecurityTest:
         """Detect DNS leaks"""
         try:
             # Use DNS leak detection service
             async with session.get(
-                "https://dns.google/dns-query?name=example.com&type=A",
-                timeout=aiohttp.ClientTimeout(total=self.config.SECURITY_CHECK_TIMEOUT),
+                    "https://dns.google/dns-query?name=example.com&type=A",
+                    timeout=aiohttp.ClientTimeout(
+                        total=self.config.SECURITY_CHECK_TIMEOUT),
             ) as resp:
                 if resp.status == 200:
                     return SecurityTest(
@@ -261,21 +265,22 @@ class MaliciousNodeDetector:
                 description=f"DNS leak test failed: {str(e)}",
             )
 
-    async def _test_redirect_hijacking(
-        self, session: aiohttp.ClientSession, proxy: Proxy
-    ) -> SecurityTest:
+    async def _test_redirect_hijacking(self, session: aiohttp.ClientSession,
+                                       proxy: Proxy) -> SecurityTest:
         """Detect redirect hijacking"""
         try:
             redirects_followed = 0
 
             async with session.get(
-                "http://httpbin.org/redirect/3",
-                allow_redirects=True,
-                timeout=aiohttp.ClientTimeout(total=self.config.SECURITY_CHECK_TIMEOUT),
+                    "http://httpbin.org/redirect/3",
+                    allow_redirects=True,
+                    timeout=aiohttp.ClientTimeout(
+                        total=self.config.SECURITY_CHECK_TIMEOUT),
             ) as resp:
                 redirects_followed = len(resp.history)
 
-            if redirects_followed > self.config.SECURITY["redirect_follow_limit"]:
+            if redirects_followed > self.config.SECURITY[
+                    "redirect_follow_limit"]:
                 return SecurityTest(
                     name="redirect_hijacking",
                     passed=False,
@@ -313,7 +318,8 @@ class MaliciousNodeDetector:
 
             # Check country
             if proxy.country_code in self.config.SECURITY["blocked_countries"]:
-                threat_indicators.append(f"Blocked country: {proxy.country_code}")
+                threat_indicators.append(
+                    f"Blocked country: {proxy.country_code}")
 
             # Check IP reputation (mock - implement with real API)
             # In production, integrate with AbuseIPDB, AlienVault, etc.
@@ -345,14 +351,18 @@ class MaliciousNodeDetector:
     async def _test_suspicious_ports(self, proxy: Proxy) -> SecurityTest:
         """Detect suspicious port configurations"""
         try:
-            for min_port, max_port in self.config.SECURITY["suspicious_port_range"]:
+            for min_port, max_port in self.config.SECURITY[
+                    "suspicious_port_range"]:
                 if min_port <= proxy.port <= max_port:
                     return SecurityTest(
                         name="suspicious_ports",
                         passed=False,
                         severity="medium",
                         description=f"Proxy uses suspicious port: {proxy.port}",
-                        details={"port": proxy.port, "range": (min_port, max_port)},
+                        details={
+                            "port": proxy.port,
+                            "range": (min_port, max_port)
+                        },
                     )
 
             return SecurityTest(

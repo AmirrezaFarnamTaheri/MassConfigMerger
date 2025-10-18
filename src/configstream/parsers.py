@@ -26,8 +26,8 @@ def parse_config(config: str) -> Proxy | None:
     elif config.startswith("wg://") or config.startswith("wireguard://"):
         return _parse_wireguard(config)
     elif any(
-        config.startswith(f"{p}://") for p in ["ssh", "http", "https", "socks", "socks4", "socks5"]
-    ):
+            config.startswith(f"{p}://")
+            for p in ["ssh", "http", "https", "socks", "socks4", "socks5"]):
         return _parse_generic(config)
     elif config.startswith("naive+https://"):
         return _parse_naive(config)
@@ -69,7 +69,10 @@ def _parse_wireguard(config: str) -> Proxy | None:
             remarks=unquote(parsed.fragment or ""),
             address=parsed.hostname or "",
             port=parsed.port or 51820,
-            _details={k: v[0] for k, v in query.items()},
+            _details={
+                k: v[0]
+                for k, v in query.items()
+            },
         )
     except Exception:
         return None
@@ -88,7 +91,10 @@ def _parse_hysteria2(config: str) -> Proxy | None:
             address=parsed.hostname or "",
             port=parsed.port or 443,
             uuid=parsed.username or "",
-            _details={k: v[0] for k, v in query.items()},
+            _details={
+                k: v[0]
+                for k, v in query.items()
+            },
         )
     except Exception:
         return None
@@ -107,7 +113,10 @@ def _parse_hysteria(config: str) -> Proxy | None:
             address=parsed.hostname or "",
             port=parsed.port or 443,
             uuid=parsed.username or "",
-            _details={k: v[0] for k, v in query.items()},
+            _details={
+                k: v[0]
+                for k, v in query.items()
+            },
         )
     except Exception:
         return None
@@ -121,7 +130,8 @@ def _parse_tuic(config: str) -> Proxy | None:
 
         # TUIC format: tuic://uuid:password@server:port
         uuid_pass = parsed.username
-        uuid = uuid_pass.split(":")[0] if uuid_pass and ":" in uuid_pass else uuid_pass
+        uuid = uuid_pass.split(
+            ":")[0] if uuid_pass and ":" in uuid_pass else uuid_pass
 
         return Proxy(
             config=config,
@@ -130,7 +140,10 @@ def _parse_tuic(config: str) -> Proxy | None:
             address=parsed.hostname or "",
             port=parsed.port or 443,
             uuid=uuid or "",
-            _details={k: v[0] for k, v in query.items()},
+            _details={
+                k: v[0]
+                for k, v in query.items()
+            },
         )
     except Exception:
         return None
@@ -172,7 +185,10 @@ def _parse_trojan(config: str) -> Proxy | None:
             address=parsed.hostname or "",
             port=parsed.port or 443,
             uuid=parsed.username or "",
-            _details={k: v[0] for k, v in query.items()},
+            _details={
+                k: v[0]
+                for k, v in query.items()
+            },
         )
     except Exception:
         return None
@@ -198,7 +214,10 @@ def _parse_ss(config: str) -> Proxy | None:
             remarks=unquote(parsed.fragment or ""),
             address=parsed.hostname or "",
             port=parsed.port or 8388,
-            _details={"method": method, "password": password},
+            _details={
+                "method": method,
+                "password": password
+            },
         )
     except Exception:
         return None
@@ -217,7 +236,10 @@ def _parse_vless(config: str) -> Proxy | None:
             address=parsed.hostname or "",
             port=parsed.port or 443,
             uuid=parsed.username or "",
-            _details={k: v[0] for k, v in query.items()},
+            _details={
+                k: v[0]
+                for k, v in query.items()
+            },
         )
     except Exception:
         return None
@@ -226,7 +248,7 @@ def _parse_vless(config: str) -> Proxy | None:
 def _parse_vmess(config: str) -> Proxy | None:
     """Parse vmess:// URI."""
     try:
-        encoded = config[len("vmess://") :]
+        encoded = config[len("vmess://"):]
         padded = encoded + "=" * (-len(encoded) % 4)
         decoded = base64.b64decode(padded).decode("utf-8")
         details = json.loads(decoded)

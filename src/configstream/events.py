@@ -1,8 +1,9 @@
 import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 
 class EventType(Enum):
@@ -24,7 +25,7 @@ class Event:
 
     type: EventType
     timestamp: datetime
-    data: Dict[str, Any]
+    data: dict[str, Any]
     source: str = "configstream"
 
 
@@ -32,8 +33,8 @@ class EventBus:
     """Central event bus for pub/sub pattern"""
 
     def __init__(self):
-        self.subscribers: Dict[EventType, List[Callable]] = {}
-        self.event_history: List[Event] = []
+        self.subscribers: dict[EventType, list[Callable]] = {}
+        self.event_history: list[Event] = []
         self.max_history = 1000
 
     def subscribe(self, event_type: EventType, handler: Callable) -> None:
@@ -57,15 +58,16 @@ class EventBus:
         # Notify subscribers
         if event.type in self.subscribers:
             tasks = [
-                asyncio.create_task(handler(event)) for handler in self.subscribers[event.type]
+                asyncio.create_task(handler(event))
+                for handler in self.subscribers[event.type]
             ]
             await asyncio.gather(*tasks, return_exceptions=True)
 
     def get_history(
         self,
-        event_type: Optional[EventType] = None,
+        event_type: EventType | None = None,
         limit: int = 100,
-    ) -> List[Event]:
+    ) -> list[Event]:
         """Get event history"""
         history = self.event_history
         if event_type:

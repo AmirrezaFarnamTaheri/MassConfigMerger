@@ -1,7 +1,7 @@
 import importlib
 import inspect
 from pathlib import Path
-from typing import Any, Dict, List, Type
+from typing import Any
 
 from . import ExportPlugin, FilterPlugin, Plugin, SourcePlugin
 
@@ -10,10 +10,10 @@ class PluginManager:
     """Manages plugin lifecycle"""
 
     def __init__(self):
-        self.plugins: Dict[str, Plugin] = {}
-        self.source_plugins: Dict[str, SourcePlugin] = {}
-        self.filter_plugins: Dict[str, FilterPlugin] = {}
-        self.export_plugins: Dict[str, ExportPlugin] = {}
+        self.plugins: dict[str, Plugin] = {}
+        self.source_plugins: dict[str, SourcePlugin] = {}
+        self.filter_plugins: dict[str, FilterPlugin] = {}
+        self.export_plugins: dict[str, ExportPlugin] = {}
 
     def discover_plugins(self, plugin_dir: Path = None) -> None:
         """Auto-discover plugins from directory"""
@@ -28,10 +28,11 @@ class PluginManager:
             module = importlib.import_module(module_name)
 
             for name, obj in inspect.getmembers(module):
-                if inspect.isclass(obj) and issubclass(obj, Plugin) and not inspect.isabstract(obj):
+                if inspect.isclass(obj) and issubclass(
+                        obj, Plugin) and not inspect.isabstract(obj):
                     self.register_plugin(obj)
 
-    def register_plugin(self, plugin_class: Type[Plugin]) -> None:
+    def register_plugin(self, plugin_class: type[Plugin]) -> None:
         """Register a plugin"""
         plugin = plugin_class()
         self.plugins[plugin.name] = plugin
@@ -45,10 +46,10 @@ class PluginManager:
 
     async def execute_pipeline(
         self,
-        source_plugins: List[str],
-        filter_plugins: List[str],
-        export_plugins: List[str],
-        config: Dict[str, Any],
+        source_plugins: list[str],
+        filter_plugins: list[str],
+        export_plugins: list[str],
+        config: dict[str, Any],
     ) -> None:
         """Execute plugin pipeline"""
         # Fetch from sources
@@ -61,17 +62,20 @@ class PluginManager:
                     for source in sources:
                         all_proxies.extend(await plugin.fetch_proxies(source))
                 else:
-                    all_proxies.extend(await plugin.fetch_proxies(str(sources)))
+                    all_proxies.extend(await
+                                       plugin.fetch_proxies(str(sources)))
 
         # Apply filters
         filtered_proxies = all_proxies
         for plugin_name in filter_plugins:
             plugin = self.filter_plugins.get(plugin_name)
             if plugin:
-                filtered_proxies = await plugin.filter_proxies(filtered_proxies)
+                filtered_proxies = await plugin.filter_proxies(filtered_proxies
+                                                               )
 
         # Export results
         for plugin_name in export_plugins:
             plugin = self.export_plugins.get(plugin_name)
             if plugin:
-                await plugin.export(filtered_proxies, config.get("output_path"))
+                await plugin.export(filtered_proxies,
+                                    config.get("output_path"))
